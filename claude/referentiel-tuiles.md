@@ -7,7 +7,7 @@ Ce référentiel liste **toutes les tuiles possibles**, à partir des règles D&
 ## Blocs et tailles (décidé avec Angle, 10 nov. 2026)
 
 - **Repères** : 8 tuiles de valeurs, 2 rangées de 4.
-- **Raccourcis** : 6 tuiles, 3 lignes de 2 ; tuiles larges avec une information sous le nom.
+- **Raccourcis** : 6 tuiles, 3 lignes de 2 ; tuiles larges avec une information sous le nom. **Par défaut** (décision d'Angle) : Tests de caractéristique, Jets de sauvegarde, États, Inventaire, Équipement, et une case vide.
 - **Bloc personnalisé** : créé et nommé par l'utilisateur, absent par défaut ; toutes les tailles de 1×1 à 4×4 (lignes × colonnes) ; grille où une tuile peut occuper plusieurs cases (ex. Emplacements sur une ligne entière). Repères et Raccourcis sont des blocs du même système, livrés par défaut.
 - Tous les blocs se réordonnent en **mode disposition** (verrouillé par défaut) ; ordre enregistré par perso.
 
