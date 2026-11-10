@@ -126,6 +126,16 @@ L'appli ne joue pas à la place du joueur, ne propose pas la meilleure action, n
 
 Principe : une fois la mécanique indiquée par le MJ, le joueur la trouve et l'exécute en deux clics maximum.
 
+### Moins, mais mieux (décision d'Angle, 10 nov. 2026)
+
+Après comparaison avec Le Compagnon (le-compagnon-dnd.fr : fiche 5E française très complète, outils MJ, table virtuelle, dés 3D, jets déduits des actions), Angle confirme que l'appli prend le chemin inverse : **faire moins, mais mieux**. Règles pour trancher toute nouvelle idée :
+
+- **Orientée joueur, à la table.** Une fonction n'entre que si elle sert le joueur au moment où le MJ vient de demander quelque chose. Outils MJ, préparation et gestion de campagne restent dehors (éventuel outil MJ séparé, plus tard).
+- **Deux clics maximum pour tout usage courant**, vérifiés en largeur iPhone : jet, sort, ressource, dégâts et soins, règle d'un état. Une fonction qui en demande trois est retravaillée ou abandonnée.
+- **Personnaliser plutôt qu'afficher plus.** Le joueur choisit ce qu'il voit (tuiles, section 15) ; l'écran par défaut reste dépouillé.
+- **Aucun agrément décoratif** : pas de dés 3D, pas de bruitages, pas d'animation qui retarde un résultat.
+- **Retirer compte autant qu'ajouter** : revue régulière de ce qui encombre.
+
 ## 9. Dés virtuels et dés physiques
 
 - Dés virtuels **verrouillés par défaut**. Interrupteur global dans « À la table », près des notes et de l'historique : « Dés virtuels : désactivés / activés ».
