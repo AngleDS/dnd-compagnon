@@ -772,6 +772,31 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     } finally { await ctx.close(); }
   });
 
+  await test('Recherche : états et repos trouvés, règle d’un état sans le cocher', async p => {
+    await diceTable(p);
+    await p.fill('#tq','empois');
+    ok((await p.innerText('#tres')).includes('Empoisonné'),'état trouvé par la recherche');
+    await p.click('#tres .trow .tname b');
+    ok((await p.innerText('.tcard')).includes('Désavantage aux jets d’attaque'),'règle de l’état dans la carte');
+    ok(!await p.locator('.tcard [data-act="lockCost"]').count(),'pas de coût modifiable pour un état');
+    await p.click('.tcard [data-act="cond"]');
+    eq(await p.evaluate(() => cur().conditions),['Empoisonné'],'état activé depuis la carte');
+    ok((await p.innerText('.tcard [data-act="cond"]')).includes('Retirer'),'bouton devenu Retirer');
+    await p.keyboard.press('Escape');
+    await p.click('[data-act="tsel"][data-k="rule:empoisonne"]');
+    eq(await p.evaluate(() => [S.T.pop,S.T.sel]),['card','rule:empoisonne'],'la pastille d’un état actif ouvre sa règle');
+    await p.keyboard.press('Escape');
+    await p.fill('#tq','repos');
+    ok((await p.innerText('#tres')).includes('Repos court'),'repos trouvé par la recherche');
+    await p.click('#tres .trow:has-text("Repos court") .tname b');
+    await p.click('.tcard [data-act="restOpen"]');
+    eq(await p.evaluate(() => [S.T.pop,S.T.restKind]),['rest','court'],'la carte mène au repos court');
+    await p.evaluate(() => { S.T.pop='cond'; render(); });
+    await p.click('.condpick:has-text("Aveuglé") .tinfo');
+    ok(await p.isVisible('#tip')&&(await p.innerText('#tip')).includes('Aveuglé'),'règle lue depuis la popup États');
+    eq(await p.evaluate(() => cur().conditions),['Empoisonné'],'lire la règle ne coche pas l’état');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
