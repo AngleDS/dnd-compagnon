@@ -261,6 +261,13 @@ function tPop(ch,D){
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const anim=S.lastPop!==k; S.lastPop=k;
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
+  if(k.startsWith("tiles:")){ const blk=k.slice(6), cat=TILE_CAT[blk]; if(!cat){ T.pop=null; return ""; }
+    const arr=blockTiles(ch,blk), free=arr.indexOf(""), unused=Object.keys(cat).filter(x=>!arr.includes(x)&&tileAvailable(ch,blk,x));
+    const rows=arr.map((id,i)=>`<div class="tpick${T.tileSlot===i?" on":""}"><span class="num muted">${i+1}</span><b>${id?esc(cat[id]):`<span class="muted">Case libre</span>`}</b><button class="btn small ghost" data-act="tileMove" data-blk="${blk}" data-i="${i}" data-d="-1" aria-label="Monter" ${i?"":"disabled"}>↑</button><button class="btn small ghost" data-act="tileMove" data-blk="${blk}" data-i="${i}" data-d="1" aria-label="Descendre" ${i<arr.length-1?"":"disabled"}>↓</button>${id?`<button class="btn small ghost" data-act="tileDel" data-blk="${blk}" data-i="${i}" aria-label="Vider la case">×</button>`:`<span class="tpickx"></span>`}</div>`).join("");
+    const add=unused.length?unused.map(x=>`<button class="chip" data-act="tileAdd" data-blk="${blk}" data-v="${x}" ${free<0?"disabled":""}>+ ${esc(cat[x])}</button>`).join(""):`<span class="muted">Toutes les tuiles sont déjà placées.</span>`;
+    return wrap("Personnaliser : "+TBLK.find(b=>b[0]===blk)[1],`<div class="tpicks">${rows}</div>
+      <div class="label" style="margin:14px 0 6px">Ajouter une tuile${free<0?" (vide d’abord une case)":""}</div><div class="row" style="flex-wrap:wrap;gap:6px">${add}</div>
+      <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn small ghost" data-act="tileReset" data-blk="${blk}">Tuiles par défaut</button></div>`); }
   if(k==="concchk") return ccPop(ch,D,anim);
   if(k==="equip") return wrap("Équipement",eqPop(ch,D)," xl");
   if(k==="hpmax"){ const b=D.hpBonus;
@@ -347,13 +354,7 @@ function viewTable(ch,D,banner=""){
       <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div></div></div>`,
     raccourcis:`<div class="tgrid tb-solo"><div class="tside table-reference">
       <div class="label" style="margin-bottom:12px">Raccourcis</div>
-      <div class="tpanels">
-        <button class="tpbtn" data-act="tpop" data-v="skills"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.3v9.4L12 21.5 3.5 16.7V7.3z"/><path d="M12 2.5 7.5 14h9zM3.5 7.3 7.5 14M20.5 7.3 16.5 14M7.5 14 12 21.5 16.5 14"/></svg>Tests de caractéristique<small class="tpsub">Caractéristiques et compétences</small></button>
-        <button class="tpbtn" data-act="tpop" data-v="saves"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.3 7.5 10 4.3-1.7 7.5-5.4 7.5-10v-6z"/><path d="M12 7v10M8 11h8"/></svg>Jets de sauvegarde<small class="tpsub">6 jets</small></button>
-        <button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5a4.5 4.5 0 1 0 4.5 4.5"/><path d="M12 10.5a1.5 1.5 0 1 0 1.5 1.5"/></svg>États${(ch.conditions||[]).length||+ch.exhaustion?` <span class="tpn">${(ch.conditions||[]).length+(+ch.exhaustion?1:0)}</span>`:""}<small class="tpsub">${(ch.conditions||[]).length?(ch.conditions||[]).length+" actif"+((ch.conditions||[]).length>1?"s":""):"Aucun"}${+ch.exhaustion?" · épuisement "+ch.exhaustion:""}</small></button>
-        <button class="tpbtn" data-act="tpop" data-v="inv"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V4.5a3 3 0 0 1 6 0V6"/><path d="M5 6h14l-1.2 13.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 11h6"/></svg>Inventaire<small class="tpsub">${(ch.bag||[]).filter(b=>(+b.qty||0)>0).length} objet${(ch.bag||[]).filter(b=>(+b.qty||0)>0).length>1?"s":""}</small></button>
-        <button class="tpbtn" data-act="tpop" data-v="equip"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.6"/><path d="M8 9.5h8l1.5 6h-2.2L15 21h-6l-.3-5.5H6.5z"/></svg>Équipement<small class="tpsub">Mains, armure, harmonisation</small></button>
-        <span class="tpbtn tplus" role="img" aria-label="Case libre" title="Case libre : on pourra y ajouter une tuile">+</span>
+      <div class="tpanels">${raccourcisTiles(ch,D)}
       </div></div></div>`,
     notes:`<div class="tgrid tb-solo"><div class="tbottom">
       <div class="row" style="gap:8px"><button class="btn" data-act="tpop" data-v="notes">Notes de partie${(ch.sessionNotes||"").trim()?` <span class="muted num">(${(ch.sessionNotes||"").trim().split(/\n+/).length} l.)</span>`:""}</button>
@@ -363,8 +364,38 @@ function viewTable(ch,D,banner=""){
   };
   return `${tPop(ch,D)}${tableBlocks(ch,blocks)}`;
 }
-/* Repères : 8 tuiles de valeurs (référentiel des tuiles). Une valeur absente laisse une case vide (décision d'Angle). */
+/* Tuiles des blocs Repères (8 cases) et Raccourcis (6 cases) : choix enregistré par perso dans ch.layout.tiles ;
+   une case libre affiche un « + » qui ouvre « Personnaliser ». Une valeur absente (DD sans sorts) laisse la case libre. */
 const REPERES_DEFAUT=["ca","init","vitesse","dd","pp","maitrise","attaques","taille"];
+const RACC_DEFAUT=["skills","saves","cond","inv","equip",""];
+const TILE_CAT={
+  reperes:{ca:"CA",init:"Initiative",vitesse:"Vitesse",dd:"DD des sorts",atks:"Attaque de sort",pp:"Perception passive",ip:"Intuition passive",ivp:"Investigation passive",maitrise:"Maîtrise",attaques:"Attaques par action",taille:"Taille",dv:"Dés de vie"},
+  raccourcis:{skills:"Tests de caractéristique",saves:"Jets de sauvegarde",cond:"États",inv:"Inventaire",equip:"Équipement",rest:"Repos",hist:"Historique des jets",notes:"Notes de partie"}
+};
+function blockTiles(ch,blk){
+  const def=blk==="reperes"?REPERES_DEFAUT:RACC_DEFAUT, cat=TILE_CAT[blk], saved=ch.layout?.tiles?.[blk];
+  const arr=Array.isArray(saved)?saved.slice(0,def.length).map(x=>typeof x==="string"&&cat[x]?x:""):def.slice();
+  while(arr.length<def.length) arr.push("");
+  // Sans sorts, DD et attaque de sort n'ont pas de valeur : leur case est libre.
+  if(blk==="reperes"&&!derive(ch).cast) return arr.map(x=>x==="dd"||x==="atks"?"":x);
+  return arr;
+}
+const tileAvailable=(ch,blk,id)=>!(blk==="reperes"&&(id==="dd"||id==="atks")&&!derive(ch).cast);
+function setBlockTiles(ch,blk,arr){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles,{[blk]:arr}); touch(S.cur); }
+const plusTile=(blk,i,cls)=>`<button class="${cls}" data-act="tilePick" data-blk="${blk}" data-i="${i}" aria-label="Case libre : ajouter une tuile" title="Ajouter une tuile">+</button>`;
+function raccourcisTiles(ch,D){
+  const R={
+    skills:()=>`<button class="tpbtn" data-act="tpop" data-v="skills"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.3v9.4L12 21.5 3.5 16.7V7.3z"/><path d="M12 2.5 7.5 14h9zM3.5 7.3 7.5 14M20.5 7.3 16.5 14M7.5 14 12 21.5 16.5 14"/></svg>Tests de caractéristique<small class="tpsub">Caractéristiques et compétences</small></button>`,
+    saves:()=>`<button class="tpbtn" data-act="tpop" data-v="saves"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.3 7.5 10 4.3-1.7 7.5-5.4 7.5-10v-6z"/><path d="M12 7v10M8 11h8"/></svg>Jets de sauvegarde<small class="tpsub">6 jets</small></button>`,
+    cond:()=>`<button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5a4.5 4.5 0 1 0 4.5 4.5"/><path d="M12 10.5a1.5 1.5 0 1 0 1.5 1.5"/></svg>États${(ch.conditions||[]).length||+ch.exhaustion?` <span class="tpn">${(ch.conditions||[]).length+(+ch.exhaustion?1:0)}</span>`:""}<small class="tpsub">${(ch.conditions||[]).length?(ch.conditions||[]).length+" actif"+((ch.conditions||[]).length>1?"s":""):"Aucun"}${+ch.exhaustion?" · épuisement "+ch.exhaustion:""}</small></button>`,
+    inv:()=>`<button class="tpbtn" data-act="tpop" data-v="inv"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V4.5a3 3 0 0 1 6 0V6"/><path d="M5 6h14l-1.2 13.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 11h6"/></svg>Inventaire<small class="tpsub">${(ch.bag||[]).filter(b=>(+b.qty||0)>0).length} objet${(ch.bag||[]).filter(b=>(+b.qty||0)>0).length>1?"s":""}</small></button>`,
+    equip:()=>`<button class="tpbtn" data-act="tpop" data-v="equip"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.6"/><path d="M8 9.5h8l1.5 6h-2.2L15 21h-6l-.3-5.5H6.5z"/></svg>Équipement<small class="tpsub">Mains, armure, harmonisation</small></button>`,
+    rest:()=>`<button class="tpbtn" data-act="restOpen" data-v=""><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/></svg>Repos<small class="tpsub">Court ou long</small></button>`,
+    hist:()=>`<button class="tpbtn" data-act="tpop" data-v="hist"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historique des jets<small class="tpsub">${(ch.rollLog||[]).length} jet${(ch.rollLog||[]).length>1?"s":""}</small></button>`,
+    notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
+  };
+  return blockTiles(ch,"raccourcis").map((id,i)=>id?R[id]():plusTile("raccourcis",i,"tpbtn tplus")).join("");
+}
 function reperesTiles(ch,D,size){
   const t=(v,l,title)=>`<span class="rtile"${title?` title="${esc(title)}"`:""}><b class="num">${v}</b><span class="label">${l}</span></span>`;
   const T={
@@ -375,9 +406,13 @@ function reperesTiles(ch,D,size){
     pp:()=>t(D.passive,"Perception passive","10 + ton modificateur de Perception"),
     maitrise:()=>t(sg(D.pb),"Maîtrise","Bonus de maîtrise"),
     attaques:()=>t(D.atkN,"Attaques par action"),
-    taille:()=>t(esc(String(size).split(" (")[0]),"Taille",String(size))
+    taille:()=>t(esc(String(size).split(" (")[0]),"Taille",String(size)),
+    atks:()=>D.cast?t(sg(D.cast.atk),"Attaque de sort"):"",
+    ip:()=>t(10+D.skills.intuition.val,"Intuition passive","10 + ton modificateur d'Intuition"),
+    ivp:()=>t(10+D.skills.investigation.val,"Investigation passive","10 + ton modificateur d'Investigation"),
+    dv:()=>t(`${Math.max(0,D.L-(+ch.hdUsed||0))}/${D.L}`,"Dés de vie","Dés de vie restants (d"+D.hd+")")
   };
-  return REPERES_DEFAUT.map(id=>T[id]()||`<span class="rtile vide" role="img" aria-label="Case libre" title="Case libre : on pourra y ajouter une tuile">+</span>`).join("");
+  return blockTiles(ch,"reperes").map((id,i)=>(id&&T[id]())||plusTile("reperes",i,"rtile vide")).join("");
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
 const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","Emplacements et états"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
@@ -389,7 +424,7 @@ function tableBlocks(ch,blocks){
   // Mode disposition : poignée et flèches sur chaque bloc ; le contenu est inactif pour éviter toute action par erreur.
   return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
   <div class="tblocks editing">${ids.map((id,n)=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">
-    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>
+    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${TILE_CAT[id]?`<button class="btn small" data-act="tpop" data-v="tiles:${id}">Personnaliser</button>`:""}
       <span class="row tblkmv"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc ${esc(label(id))}" ${n?"":"disabled"}>↑</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc ${esc(label(id))}" ${n<ids.length-1?"":"disabled"}>↓</button></span></div>
     <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section>`).join("")}</div>`;
 }

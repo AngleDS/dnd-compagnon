@@ -1006,6 +1006,32 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const v = document.querySelector('.tblk[data-blk="reperes"] .rtile.vide'); return [v.textContent.trim(), getComputedStyle(v).borderStyle]; }), ['+', 'dashed'], 'case libre des Repères : « + » en pointillés');
   });
 
+  await test('Personnaliser : « + » ouvre le choix, ajouter, vider, déplacer, défaut, enregistré et importé', async p => {
+    await diceTable(p);
+    const racc = () => p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));
+    await p.click('.tblk[data-blk="raccourcis"] .tplus');
+    eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:raccourcis', 5], 'le « + » ouvre Personnaliser sur sa case');
+    await p.click('.tpop [data-act="tileAdd"][data-v="rest"]');
+    eq((await racc())[5], 'restOpen', 'tuile Repos ajoutée dans la case libre');
+    await p.click('.tpop [data-act="tileDel"][data-i="0"]');
+    eq((await racc())[0], '+', 'case vidée');
+    await p.click('.tpop [data-act="tileMove"][data-i="1"][data-d="-1"]');
+    eq((await racc()).slice(0, 2), ['saves', '+'], 'tuile montée');
+    eq(await p.evaluate(() => cur().layout.tiles.raccourcis), ['saves','','cond','inv','equip','rest'], 'choix enregistré dans la fiche');
+    await p.keyboard.press('Escape');
+    await p.click('[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] [data-v="tiles:reperes"]');
+    await p.click('.tpop [data-act="tileAdd"][data-v="ivp"]');
+    const ivp = await p.evaluate(() => [blockTiles(cur(), 'reperes')[3], 10 + derive(cur()).skills.investigation.val]);
+    eq(ivp[0], 'ivp', 'Investigation passive dans la case libre du DD');
+    await p.click('.tpop [data-act="tileReset"]'); await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
+    eq(await p.evaluate(() => blockTiles(cur(), 'reperes')), ['ca','init','vitesse','','pp','maitrise','attaques','taille'], 'tuiles par défaut rétablies (sans sorts, la case du DD reste libre)');
+    ok(await p.evaluate(() => !tileAvailable(cur(), 'reperes', 'dd')), 'DD non proposé sans sorts');
+    const r = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); const id = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
+      try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { tiles: { reperes: 'x' } } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
+      return [S.docs[id].layout.tiles.raccourcis[5], bad]; });
+    eq(r[0], 'rest', 'tuiles suivent l’export'); ok(/tuiles/.test(r[1]), 'tuiles invalides refusées à l’import');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

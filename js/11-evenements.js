@@ -12,6 +12,11 @@ document.addEventListener("click",e=>{
     case "layoutEdit": S.layoutEdit=true; render(); break;
     case "layoutDone": S.layoutEdit=false; render(); break;
     case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } render(); break;
+    case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.pop="tiles:"+t.dataset.blk; render(); break; }
+    case "tileAdd": if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=Number.isInteger(S.T.tileSlot)&&arr[S.T.tileSlot]===""?S.T.tileSlot:arr.indexOf(""); if(i>=0){ arr[i]=t.dataset.v; setBlockTiles(ch,blk,arr); S.T.tileSlot=null; } render(); } break;
+    case "tileDel": if(ch){ const arr=blockTiles(ch,t.dataset.blk); arr[+t.dataset.i]=""; setBlockTiles(ch,t.dataset.blk,arr); S.T.tileSlot=+t.dataset.i; render(); } break;
+    case "tileMove": if(ch){ const arr=blockTiles(ch,t.dataset.blk), i=+t.dataset.i, j=i+(+t.dataset.d); if(j>=0&&j<arr.length){ [arr[i],arr[j]]=[arr[j],arr[i]]; setBlockTiles(ch,t.dataset.blk,arr); if(S.T.tileSlot===i) S.T.tileSlot=j; } render(); } break;
+    case "tileReset": if(ch){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles); delete ch.layout.tiles[t.dataset.blk]; touch(S.cur); S.T.tileSlot=null; render(); } break;
     case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
     case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); break;
