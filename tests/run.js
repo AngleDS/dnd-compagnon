@@ -323,6 +323,54 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       eq([...bad], [], 'tailles hors échelle en ' + vp.width + ' px');
     }
   });
+
+  // Écran tactile : cibles de 44×44 minimum ; croix de fermeture identiques ; corbeilles pour supprimer. Ordinateur : densité conservée.
+  const touchSmall = p => p.evaluate(() => {
+    const vis = el => { const r = el.getBoundingClientRect(); if (r.width < 1 || r.height < 1) return false; for (let e = el; e; e = e.parentElement) { const c = getComputedStyle(e); if (c.display === 'none' || c.visibility === 'hidden') return false; } return true; };
+    const root = document.querySelector('.tpop') || document.body, bad = new Set();
+    root.querySelectorAll('button,a[href],input:not([type=hidden]),select,textarea,summary,[data-act]:not([data-act=noop]):not(.tpopback),[role=button]').forEach(el => {
+      if (!vis(el) || (el.closest('.tpopback') && !el.closest('.tpop'))) return;
+      if (el.matches('input[type=checkbox],input[type=radio]')) { const l = el.closest('label'); if (l && l.getBoundingClientRect().height >= 43.5) return; }
+      const r = el.getBoundingClientRect();
+      if (el.matches('.tipl')) { if (r.height < 43.5) bad.add('terme ' + el.textContent.trim().slice(0, 15) + ' h' + Math.round(r.height)); return; } // mot d'aide dans le texte : hauteur seulement
+      if (r.right > innerWidth + 1 || r.left < -1) bad.add('hors écran ' + el.tagName.toLowerCase() + '[' + (el.dataset.act || '') + '] ' + (el.getAttribute('aria-label') || el.textContent).trim().slice(0, 20));
+      if (r.width < 43.5 || r.height < 43.5) bad.add(el.tagName.toLowerCase() + '.' + [...el.classList].join('.') + '[' + (el.dataset.act || '') + '] ' + Math.round(r.width) + '×' + Math.round(r.height));
+    });
+    return [...bad];
+  });
+  const closeSizes = p => p.evaluate(() => [...document.querySelectorAll('[aria-label^="Fermer"]')].filter(e => e.getBoundingClientRect().width > 0).map(e => { const r = e.getBoundingClientRect(); return Math.round(r.width) + '×' + Math.round(r.height) + ' ' + getComputedStyle(e).fontSize; }));
+
+  await test('Écran tactile : cibles de 44×44, croix de fermeture identiques, corbeilles', async p => {
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+    try {
+      await open(t);
+      await newWizardChar(t, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+      await t.evaluate(() => { S.rv = null; renderModal(); const ch = cur();
+        ch.bag = [{ id: 'z1', name: 'Dague', qty: 2 }, { id: 'z2', name: 'Trousseau de clés de la mine de l’Œil-de-Pierre (à rendre à la guilde)', qty: 1 }, { id: 'z3', name: 'Trousse de soins', qty: 1, charges: { auto: false, max: 10, rec: '', used: 0, when: 'long' } }, ...(ch.bag || [])];
+        ch.rollLog = [{ label: 'Initiative', total: 12, bd: 'd20 11 +1', t: Date.now() }]; ch.conditions = ['Empoisonné']; });
+      const bad = new Set(), closes = new Set();
+      for (const tab of ['jeu', 'comp', 'sorts', 'apt', 'inv', 'notes', 'build', 'table']) { await t.evaluate(tab => { S.T && (S.T.pop = null); S.tab = tab; render(); }, tab); (await touchSmall(t)).forEach(x => bad.add(tab + ' : ' + x)); }
+      for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'rest']) { await t.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await touchSmall(t)).forEach(x => bad.add(k + ' : ' + x)); (await closeSizes(t)).forEach(x => closes.add(x)); }
+      await t.evaluate(() => { S.T.pop = null; render(); tSelect(S.Titems.find(i => i.kind === 'init').key); }); await t.click('#t-d1');
+      (await closeSizes(t)).forEach(x => closes.add(x));
+      eq([...bad], [], 'cibles tactiles trop petites');
+      eq([...closes], ['44×44 28px'], 'croix de fermeture (popups et pavé numérique)');
+      await t.evaluate(() => { closeDicePad && closeDicePad(); S.T.pop = 'inv'; render(); });
+      const del = await t.evaluate(() => [...document.querySelectorAll('.btndel')].map(b => [!!b.querySelector('svg.ico'), b.textContent.includes('×')]));
+      ok(del.length > 0 && del.every(([svg, x]) => svg && !x), 'suppression par une corbeille : ' + JSON.stringify(del));
+      await t.evaluate(() => { S.T.pop = null; S.tab = 'jeu'; render(); });
+      ok(await t.evaluate(() => document.getElementById('freeExpr').getBoundingClientRect().width >= 120), 'champ « Jet libre » lisible');
+      ok(!errs.length, 'erreurs JS : ' + errs.join(' | '));
+    } finally { await ctx.close(); }
+    // Ordinateur (souris) : les petits boutons gardent leur taille, la croix reste identique.
+    await open(p);
+    await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); S.T.pop = 'hist'; render(); });
+    const desk = await p.evaluate(() => ({ small: document.querySelector('.btn.small').getBoundingClientRect().height }));
+    ok(desk.small < 40, 'densité conservée sur ordinateur : ' + desk.small);
+    eq([...new Set(await closeSizes(p))], ['44×44 28px'], 'croix sur ordinateur (popup et bannière)');
+  });
  
   await test('Thème : sombre par défaut, bouton du Menu pour passer en clair et revenir', async p => {
     await open(p);

@@ -1,6 +1,8 @@
 "use strict";
 const PAGE_CLONE = document.documentElement.cloneNode(true);
 /* ---------- constants ---------- */
+// Icône des boutons de suppression (corbeille), distincte de la croix de fermeture.
+const ICON_TRASH='<svg class="ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const AB = ["for","dex","con","int","sag","cha"];
 const ABN = {for:"Force",dex:"Dextérité",con:"Constitution",int:"Intelligence",sag:"Sagesse",cha:"Charisme"};
 const ABS = {for:"FOR",dex:"DEX",con:"CON",int:"INT",sag:"SAG",cha:"CHA"};

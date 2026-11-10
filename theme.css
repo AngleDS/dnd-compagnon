@@ -273,7 +273,8 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 .banner{display:flex;align-items:center;gap:10px;justify-content:space-between}
 .bannerx{flex:none;background:none;border:0;color:var(--muted);font-size:var(--fs-xl);line-height:1;width:32px;height:32px;border-radius:50%;cursor:pointer;display:grid;place-items:center}
 .bannerx:hover{color:var(--ink);background:var(--sheet2)}
-.tpophead [data-act="tpopclose"],.tiphead [data-act="tipclose"]{font-size:var(--fs-2xl);line-height:1;min-width:42px;min-height:42px;padding:0 8px;display:inline-grid;place-items:center}
+/* Croix de fermeture : une seule taille partout (popups, bulles, pavé numérique, bannière) */
+.tpophead [data-act="tpopclose"],.tiphead [data-act="tipclose"],#dice-pad [data-pad="cancel"],.bannerx{font-size:var(--fs-2xl);line-height:1;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;display:inline-grid;place-items:center}
 @media(max-width:720px){.top{grid-template-areas:"brand menu" "nav char"}.top .nav{grid-area:nav}}
 /* Bouton Repos à côté d'Inspiration héroïque ; popup de choix en deux cartes séparées. */
 .health-dice{cursor:default}
@@ -296,3 +297,21 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 .health-details .table-temp-value>b,.health-adjust>b,.health-dice>span:last-child{line-height:28px}
 @media(min-width:721px){.health-details{grid-auto-rows:1fr;align-content:center}}
 @media(max-width:720px){.health-details .table-temp-value>.label{white-space:normal}}
+/* Écrans tactiles (téléphone, tablette) : zones de 44×44 au minimum (recommandation Apple). L'ordinateur garde sa densité.
+   Placé en fin de thème et prioritaire, pour l'emporter sur les hauteurs fixées plus haut. */
+@media (pointer:coarse){
+  button,.btn,.btn.small,.hmenu,.rollbtn,label.btn,[role=button]{min-height:44px!important;min-width:44px!important}
+  .stepb{height:auto!important}
+  select,input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea{min-height:44px!important}
+  summary{padding-top:12px!important;padding-bottom:12px!important;min-height:44px;box-sizing:border-box}
+  a.aidelink{display:inline-flex;align-items:center;min-height:44px}
+  .tipl{padding-top:12px;padding-bottom:12px}
+  input[type=checkbox],input[type=radio]{width:22px;height:22px}
+  label:has(> input[type=checkbox]),label:has(> input[type=radio]){min-height:44px;display:inline-flex;align-items:center}
+  .tqclear{width:44px!important;height:44px!important;right:4px}
+  button.pip{position:relative;width:44px!important;height:44px!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important}
+  button.pip::before{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);box-sizing:border-box;border-radius:50%;border:1.5px solid var(--brass);background:var(--brass)}
+  button.pip.used::before{background:transparent}
+  .pips{gap:0!important}
+  .chg{flex-wrap:wrap;max-width:100%}
+}
