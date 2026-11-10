@@ -65,7 +65,7 @@ L'ordre de concaténation est inchangé ; le fichier construit est identique oct
 - un module contient `</script` ;
 - le JavaScript assemblé échoue à `node --check`.
 
-Tests : `node tests/run.js dist/dnd-compagnon.html` (Playwright ; persos temporaires ; Claude et navigateur simulés). Un seul navigateur pour toute la suite, un contexte isolé par test (vérifié par les tests « Isolation »). Durée dans l'espace de Claude : environ 55 s pour 78 tests (81 s avant le 10 nov. 2026). **Décision d'Angle (10 nov. 2026)** : pendant un lot, seulement les tests concernés (`--only`, environ 10 s) et un commit par sujet marqué « Tests ciblés » ; toute la suite une fois en fin de lot, obligatoire avant de rendre, publier ou passer la main (règle dans `AGENTS.md`). Sans carte graphique, chaque mouvement de souris simulé coûte une image (environ 80 ms) : limiter les `steps` des glisser et ne jamais laisser un clic attendre un élément absent (8 s perdues par attente). Playwright n'est pas installé sur le Mac : Claude lance la suite dans son espace de travail, sur le `dist/dnd-compagnon.html` construit par le Mac.
+Tests : `node tests/run.js dist/dnd-compagnon.html` (Playwright ; persos temporaires ; Claude et navigateur simulés). Un seul navigateur pour toute la suite, un contexte isolé par test (vérifié par les tests « Isolation »). Durée dans l'espace de Claude : environ 58 s pour 84 tests (81 s avant le 10 nov. 2026). **Décision d'Angle (10 nov. 2026)** : pendant un lot, seulement les tests concernés (`--only`, environ 10 s) et un commit par sujet marqué « Tests ciblés » ; toute la suite une fois en fin de lot, obligatoire avant de rendre, publier ou passer la main (règle dans `AGENTS.md`). Sans carte graphique, chaque mouvement de souris simulé coûte une image (environ 80 ms) : limiter les `steps` des glisser et ne jamais laisser un clic attendre un élément absent (8 s perdues par attente). Playwright n'est pas installé sur le Mac : Claude lance la suite dans son espace de travail, sur le `dist/dnd-compagnon.html` construit par le Mac.
 
 ## 4. Architecture
 
@@ -78,7 +78,7 @@ Tests : `node tests/run.js dist/dnd-compagnon.html` (Playwright ; persos tempora
 - Thème : `curTheme` / `applyTheme` / `setTheme` (03-demarrage) ; `data-theme` sur `<html>` (`dark` par défaut, `light`), enregistré dans `prefs.theme` et `localStorage` (`registre-theme`). Dans `theme.css`, chaque couleur est une variable `--df-<couleur sombre>` définie dans un bloc sombre et un bloc clair ; retouches du clair en fin de fichier.
 - Bandeau `setBanner(texte, clé)` : croix `bannerClose` ; avec une clé, la fermeture est retenue (`registre-banner-<clé>`, clé `local` pour « Mode local »).
 - Portrait (`data-act="portrait"`) : champ fichier `#portrait-file` créé à la demande dans `<body>`, **hors du rendu** (un `render()` pendant le choix de l'image le détruisait) ; id du perso dans `dataset.id`. Réduction en boucle (320 → 192 px) sous 60 000 caractères, en WebP ou en JPEG si le navigateur n'encode pas le WebP (Safari).
-- Vues : menu/liste ; fiche (bandeau avec portrait, onglets Jeu, Compétences, Sorts, Aptitudes, Inventaire, Notes, Construction) ; « À la table » ; Contenu perso (éditeur hors SRD) ; Grimoire.
+- Vues : menu/liste ; fiche (bandeau avec portrait, onglets Jeu, Compétences, Sorts, Aptitudes, Inventaire, Notes, Construction) ; « À la table » ; « Mes contenus » (vue `hb`, éditeur hors SRD, ex-« Contenu perso ») ; « Catalogue » (vue `comp`, SRD, ex-« Grimoire »).
 - « À la table » : bandeau de stats avec bouclier de CA ; carte santé (barre de PV, « PV max ± », dés de vie en affichage, Concentration, Inspiration héroïque, bouton Repos) ; popup Repos en deux cartes (`restOpen`, `restKind`, `restLong`, `restShort`) ; tour Action / Bonus / Réaction / Mouvement / Autre ; carte Détails `tCard`.
 - Assistants : création (`viewWizard`, `S.W`, 8 étapes) ; montée de niveau (`levelPlan` / `lvlModal` / `lvlApply`, enchaînement via `S.lvlTarget`, « Arrêter ici » confirmé par `lvlStop` / `lvlStopNo` / `lvlStopYes`).
 
@@ -205,12 +205,12 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 
 ## 14. À faire (ordre validé par Angle le 10 nov. 2026, sauf mention)
 
-**Lot 1 — Corrections sans décision** (relevées par l'audit « deux clics », la revue UX de ChatGPT et Angle ; feu vert d'Angle à attendre avant de commencer) :
-1. Onglets de la fiche qui se chevauchent sur iPhone (« CompétenSorts… ») : barre d'onglets défilante horizontalement, onglets à largeur naturelle, indice visible qu'elle continue. Ajouter un test qui détecte les chevauchements d'éléments (les tests de largeur actuels ne vérifient que le débordement de la page).
-2. Popups longues (« Tests de caractéristique »…) : indice visible que le contenu continue plus bas.
-3. Texte de la recherche tronqué sur téléphone : le raccourcir (piste : « Jet, action, sort… »).
-4. Tuile Initiative vide dans l'onglet Jeu (future « Feuille ») sur téléphone : vérifier et corriger.
-5. Import d'un personnage : revenir à la liste des personnages (avec un message « <nom> importé ») au lieu d'ouvrir l'onglet Jeu (aujourd'hui `S.view="sheet"; S.tab="jeu"` dans le gestionnaire d'import de `js/11-evenements.js`).
+**Lot 1 — Corrections sans décision : fait le 10 nov. 2026** (non publié ; suite complète 84/84 sur `bb583c3`).
+- Onglets de la fiche sur iPhone : la largeur minimale de 44 px laissait les onglets se tasser et se chevaucher (effet du commit `82f0cbd`). Barre défilante, fondu sur le bord qui continue, onglet actif ramené dans la partie visible ; lignes de compétences à 44 px (zones de toucher qui débordaient). Nouveau test : aucun élément cliquable n'en recouvre un autre (`343b393`).
+- Fiche en dés physiques : les valeurs écrites dans les boutons de lancer virtuel disparaissaient (initiative, modificateurs, sauvegardes, compétences, bonus d'attaque). Elles s'affichent comme du texte non cliquable (`29f5d17`).
+- Recherche : « Jet, action, sort… » ; fondu en bas d'une popup qui continue (`c025595`).
+- Import : retour à la liste des personnages avec le message « <nom> importé » (`cccc094`).
+- Noms : « Catalogue » (ex-Grimoire) et « Mes contenus » (ex-Contenu perso), identifiants internes inchangés (`hb`, `comp`) (`bb583c3`).
 
 **Lot 2 — En-tête d'« À la table » sur téléphone** (à redéfinir avec Angle avant tout code). « À la table » est le seul écran de jeu (section 16) : son en-tête est pensé uniquement pour jouer. Constat de l'audit : recherche à 870 px pour un écran de 844, rien du tour ni des jets visible sans défiler. Maquettes A (actuel), B (compact) et C (recherche collante) proposées le 10 nov. : **Angle n'est pas convaincu**. Point de départ suivant : ce qu'Angle veut voir en premier en ouvrant l'appli en pleine partie. Pistes plus franches à proposer : commandes en bas de l'écran, sous le pouce ; écran de jeu sans défilement, le reste en popups.
 
@@ -219,8 +219,6 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 **Lot 4 — Onglet « Feuille »** (chantier prévu plus tard par Angle ; section 16).
 
 **Idées notées par Angle (10 nov. 2026), à planifier** :
-- **Renommer « Grimoire » en « Catalogue »** (navigation, titre de la page, mentions dans l'appli).
-- **Renommer « Contenu perso » en « Mes contenus »** (décision d'Angle, 10 nov. 2026 ; navigation, titre de la page et mentions dans l'appli, dont l'assistant de création). « Homebrew » écarté : la page contient aussi les éléments saisis depuis les livres officiels hors SRD.
 - **« À la table » : accès rapide aux jets et actions les plus utilisés.** Existe déjà en partie : `T.recent` (6 derniers éléments ouverts, `js/08-table.js`), mais par récence, pour la session seulement, non enregistré. Piste : classement par fréquence tiré de l'historique des jets (`rollLog`) et des cartes ouvertes, enregistré dans la fiche. Information factuelle, sans deviner d'intention.
 - **« À la table » : plusieurs notes horodatées** au lieu de la zone unique « Notes de partie » (`sessionNotes`) : ajouter, lire, supprimer ; date et heure automatiques. Migration : l'ancienne note devient la première.
 - **Menu : générer un PDF propre de la fiche** (mise en page soignée, lisible à l'impression). Voisin du chantier « Feuille » (section 16), qui peut servir de base. Choix technique à faire (feuille de style d'impression ou génération directe).
