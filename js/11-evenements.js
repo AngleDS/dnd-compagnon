@@ -67,7 +67,9 @@ document.addEventListener("click",e=>{
     case "r20": rollD20(t.dataset.l, +t.dataset.m); break;
     case "dmg": rollDmg(t.dataset.l, t.dataset.e, t.dataset.crit==="1"); break;
     case "adv": S.adv=t.dataset.v; renderDice(); break;
-    case "histDel": { const i=+t.dataset.i; if(ch&&ch.rollLog&&ch.rollLog[i]){ ch.rollLog.splice(i,1); touch(S.cur); render(); } break; }
+    case "histDel": { const ix=String(t.dataset.i).split(",").map(Number).sort((a,b)=>b-a); if(ch&&ch.rollLog&&ix.length&&ix.every(i=>Number.isInteger(i)&&ch.rollLog[i])){ for(const i of ix) ch.rollLog.splice(i,1); touch(S.cur); render(); } break; }
+    case "histDay": S.hist={day:t.dataset.v,n:HIST_PAGE}; S.histConfirm=false; render(); break;
+    case "histMore": if(S.hist) S.hist.n+=HIST_PAGE; render(); break;
     case "clearLog": S.log=[]; if(ch&&S.T&&S.T.pop==="hist"){ if(t.dataset.ok){ ch.rollLog=[]; touch(S.cur); S.histConfirm=false; } else { S.histConfirm=true; } } renderDice(); render(); break;
     case "death": { const r=rnd(20); ch.death=ch.death||{s:0,f:0}; let txt;
       if(r===20){ ch.hp.cur=1; ch.death={s:0,f:0}; txt="20 naturel : tu reprends conscience avec 1 PV."; }
@@ -126,7 +128,7 @@ document.addEventListener("click",e=>{
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
     case "restLong": applyRest("long"); S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": applyRest("court"); S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
-    case "tpop": S.T.eqSlot=null; S.T.pop=t.dataset.v; S.histConfirm=false; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
+    case "tpop": S.T.eqSlot=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
     case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="card") S.T.q=""; S.T.pop=null; render(); } break;
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }

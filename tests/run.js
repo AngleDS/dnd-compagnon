@@ -185,6 +185,56 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(r, { ph: 'Trouver un jet, une action, un sort…', label: 'Recherche rapide' }, 'texte de la recherche');
     ok(await p.evaluate(() => !document.body.innerHTML.includes('Que fais-tu')), 'ancien texte absent');
   });
+
+  // Historique des jets : jets fabriqués pour le test (dates locales construites dans la page).
+  async function histSetup(p, spec) {
+    await open(p);
+    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
+    await p.evaluate(spec => {
+      cur().rollLog = spec.map(([label, total, d, h, mi, s, extra]) => Object.assign({ label, total, bd: 'd20 ' + total, t: new Date(2026, 10, d, h, mi, s || 0).getTime() }, extra || {}));
+      S.rv = null; renderModal(); S.tab = 'table'; render();
+    }, spec);
+    await p.click('[data-act="tpop"][data-v="hist"]');
+  }
+  const histRowsShown = p => p.evaluate(() => [...document.querySelectorAll('.thist .throw')].map(r => r.querySelector('.thl b').textContent));
+
+  await test('Historique : un jour à la fois, le plus récent par défaut', async p => {
+    await histSetup(p, [['Initiative', 15, 8, 21, 0], ['Perception', 12, 8, 20, 30], ['Arcanes', 9, 8, 20, 0], ['Médecine', 14, 7, 22, 0], ['Discrétion', 7, 7, 21, 0]]);
+    const chips = await p.evaluate(() => [...document.querySelectorAll('[data-act="histDay"]')].map(b => [b.dataset.v, b.getAttribute('aria-pressed'), b.textContent.replace(/\s+/g, ' ').trim()]));
+    eq(chips.map(c => [c[0], c[1]]), [['2026-11-08', 'true'], ['2026-11-07', 'false']], 'pastilles des jours');
+    ok(/\(3\)$/.test(chips[0][2]) && /\(2\)$/.test(chips[1][2]), 'nombre de jets par jour : ' + chips.map(c => c[2]).join(' | '));
+    eq(await histRowsShown(p), ['Initiative', 'Perception', 'Arcanes'], 'jets du jour le plus récent');
+    await p.click('[data-act="histDay"][data-v="2026-11-07"]');
+    eq(await histRowsShown(p), ['Médecine', 'Discrétion'], 'jets du jour choisi');
+    ok(await p.evaluate(() => !!document.querySelector('.thist .thbd')), 'détail des dés en ligne secondaire');
+  });
+
+  await test('Historique : attaque et dégâts regroupés sur une ligne, suppression des deux', async p => {
+    await histSetup(p, [
+      ['Canne-épée · dégâts', 8, 8, 20, 0, 10], ['Canne-épée — toucher', 14, 8, 20, 0, 0, { crit: false }],
+      ['Décharge occulte · dégâts', 6, 8, 19, 50], ['Initiative', 12, 8, 19, 45],
+      ['Lumière guérisseuse · soins', 7, 8, 19, 20], ['Canne-épée — toucher', 9, 8, 19, 0],
+      ['Arc long · dégâts', 5, 8, 18, 30], ['Arc long — toucher', 20, 8, 18, 0, 0, { crit: true }]]);
+    eq(await histRowsShown(p), ['Canne-épée', 'Décharge occulte · dégâts', 'Initiative', 'Lumière guérisseuse · soins', 'Canne-épée — toucher', 'Arc long · dégâts', 'Arc long — toucher'], 'une seule paire (même nom, moins de 10 minutes)');
+    const pair = await p.evaluate(() => { const r = document.querySelector('.thpair'); return [...r.querySelectorAll('.thv2 b')].map(b => b.textContent).concat(r.querySelector('.thbd').textContent); });
+    eq(pair, ['14', '8', 'toucher d20 14 · dégâts d20 8'], 'totaux et détail de la paire');
+    await p.click('.thpair .thdel');
+    eq(await p.evaluate(() => cur().rollLog.map(e => e.label)), ['Décharge occulte · dégâts', 'Initiative', 'Lumière guérisseuse · soins', 'Canne-épée — toucher', 'Arc long · dégâts', 'Arc long — toucher'], 'les deux jets de la paire supprimés');
+    await p.click('.thist .throw:nth-child(2) .thdel');
+    eq(await p.evaluate(() => cur().rollLog.map(e => e.label)), ['Décharge occulte · dégâts', 'Lumière guérisseuse · soins', 'Canne-épée — toucher', 'Arc long · dégâts', 'Arc long — toucher'], 'suppression d’une ligne simple');
+  });
+
+  await test('Historique : 30 lignes puis « Voir plus », remise à zéro en changeant de jour', async p => {
+    const spec = []; for (let i = 0; i < 45; i++) spec.push(['Jet ' + (i + 1), 10, 8, 22, 59 - i, 0]); spec.push(['Veille', 3, 7, 20, 0]);
+    await histSetup(p, spec);
+    eq((await histRowsShown(p)).length, 30, '30 lignes d’abord');
+    eq(await p.evaluate(() => document.querySelector('.thmore').textContent), 'Voir plus (15)', 'bouton');
+    await p.click('.thmore');
+    eq((await histRowsShown(p)).length, 45, 'toutes les lignes');
+    ok(await p.evaluate(() => !document.querySelector('.thmore')), 'bouton retiré');
+    await p.click('[data-act="histDay"][data-v="2026-11-07"]'); await p.click('[data-act="histDay"][data-v="2026-11-08"]');
+    eq((await histRowsShown(p)).length, 30, 'retour à 30 lignes');
+  });
  
   await test('Thème : sombre par défaut, bouton du Menu pour passer en clair et revenir', async p => {
     await open(p);

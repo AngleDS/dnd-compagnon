@@ -259,8 +259,7 @@ function tPop(ch,D){
       <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button></div>`); }
   if(k==="notes") return wrap("Notes de partie",`<textarea id="t-notes" data-bind="sessionNotes" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="min-height:260px;width:100%">${esc(ch.sessionNotes||"")}</textarea><div class="muted" style="font-size:12px;margin-top:6px">Séparées des notes du personnage. Enregistrées au fil de la frappe.</div>`);
   if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } return wrap("Détails",c," wide"); }
-  const HL=ch.rollLog||[];
-  if(k==="hist") return wrap("Historique des jets", HL.length?`<div class="row" style="justify-content:flex-end;margin-bottom:6px">${S.histConfirm?`<span class="muted" style="font-size:13px">Tout effacer ?</span><button class="btn small" data-act="clearLog" data-ok="1">Oui, effacer</button>`:`<button class="btn small ghost" data-act="clearLog">Effacer l'historique</button>`}</div><div class="thist">${HL.map((e,ix)=>{ const day=new Date(e.t).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"}), prev=ix?new Date(HL[ix-1].t).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"}):null; return (day!==prev?`<div class="label thday">${esc(day)}</div>`:"")+`<div class="throw ${e.crit?"crit":""} ${e.fumble?"fumble":""}"><span class="tht">${new Date(e.t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</span><span class="thl"><b>${esc(e.label)}</b>${e.bd?`<span class="muted"> ${esc(e.bd)}</span>`:""}</span><b class="num thv">${esc(String(e.total??""))}</b><button class="btn small ghost thdel" data-act="histDel" data-i="${ix}" aria-label="Supprimer cette ligne" title="Supprimer cette ligne">×</button></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px">Aucun jet pour l'instant. Les jets virtuels et les dés physiques que tu saisis apparaîtront ici.</div>`);
+  if(k==="hist") return wrap("Historique des jets", histBody(ch));
   if(k.startsWith("eco:")){ const e=k.slice(4); T.eco=e; const used=!!(ch.turn||{})[e];
     return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop" role="dialog" aria-modal="true" aria-label="${ECO[e]}" data-act="noop"><div class="tpophead"><b>${ECO[e]}</b><span class="row" style="gap:6px"><button class="btn small" data-act="tturn" data-v="${e}">${used?"Annuler":e==="autre"?"Marquer Autre terminé":"Marquer comme consommée"}</button><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></span></div><div class="tpopbody">${used?`<div class="muted" style="font-size:13px;margin-bottom:8px">✓ ${TURN_DONE[e]}</div>`:""}${tEco(ch,D)}</div></div></div>`; }
   const B={skills:["Tests de caractéristique",`<div class="tabil">${AB.map(a=>`<div class="tabrow"><button class="tabhead ${sgc(D.mods[a])}" data-act="tsel" data-k="abil:${a}"><span>${ABN[a]}</span><b class="num">${sg(D.mods[a])}</b></button><div class="tabsk">${S.C.skills.filter(s=>s.ability===a).map(s=>`<button class="tskc ${sgc(D.skills[s.id].val)}" data-act="tsel" data-k="skill:${s.id}">${D.skills[s.id].lv?`<span class="pdot p${D.skills[s.id].lv}" title="${D.skills[s.id].lv>1?"Expertise":"Maîtrise"}"></span>`:""}${esc(s.name)} <b class="num">${sg(D.skills[s.id].val)}</b></button>`).join("")||`<span class="muted" style="font-size:12px">Aucune compétence</span>`}</div></div>`).join("")}</div>${pLegend(true)}`],saves:["Jets de sauvegarde",`<div class="tsavegrid">${saves}</div>${pLegend(false)}`],cond:["États",`<div class="row" style="margin:6px 0 8px">${CONDS.map(c=>`<button class="chip" aria-pressed="${(ch.conditions||[]).includes(c)}" data-act="cond" data-v="${esc(c)}">${esc(c)}</button>`).join("")}</div>
@@ -701,4 +700,41 @@ function performTableItemUse(data){
       const cost=data.cost; consumeTableCost(cost);
       addLog({label:b.name,total:c0&&c0.max?(c0.max-(+c0.used||0)-n)+"/"+c0.max:"×"+b.qty,bd:c0&&c0.max?n+" charge"+(n>1?"s":"")+" dépensée"+(n>1?"s":"")+".":"Objet utilisé.",kind:"info",quiet:true});
       S.T.itemUseReceipt=tableItemReceipt(); touch(S.cur); return true;
+}
+/* ---------- Historique des jets : un jour à la fois, attaque et dégâts regroupés, « Voir plus » ---------- */
+const HIST_PAGE=30, HIST_PAIR_MS=600000;
+function histDayKey(t){ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+// Lignes affichées pour un jour, de la plus récente à la plus ancienne ; i = indices dans ch.rollLog.
+// Des dégâts (ou soins) qui suivent le jet pour toucher du même nom, le même jour et à moins de 10 minutes, forment une seule ligne.
+function histRows(HL,day){
+  const rows=[], used=new Set();
+  for(let i=0;i<HL.length;i++){
+    const e=HL[i]; if(used.has(i)||histDayKey(e.t)!==day) continue;
+    const m=/^(.*) (?:·|—) (dégâts|soins)(?:\s|$)/.exec(e.label||""), h=HL[i+1];
+    if(m&&h&&!used.has(i+1)&&h.label===m[1]+" — toucher"&&histDayKey(h.t)===day&&e.t>=h.t&&e.t-h.t<=HIST_PAIR_MS){
+      used.add(i+1); rows.push({pair:true,name:m[1],kind:m[2],hit:h,dmg:e,i:[i,i+1]});
+    } else rows.push({e,i:[i]});
+  }
+  return rows;
+}
+function histBody(ch){
+  const HL=ch.rollLog||[];
+  if(!HL.length) return `<div class="muted" style="font-size:13px">Aucun jet pour l'instant. Les jets virtuels et les dés physiques que tu saisis apparaîtront ici.</div>`;
+  const days=[], cnt={};
+  for(const e of HL){ const k=histDayKey(e.t); if(!(k in cnt)){ cnt[k]=0; days.push(k); } cnt[k]++; }
+  if(!S.hist||!days.includes(S.hist.day)) S.hist={day:days[0],n:HIST_PAGE};
+  const H=S.hist, rows=histRows(HL,H.day), shown=rows.slice(0,H.n);
+  const dayLabel=k=>new Date(k+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
+  const hhmm=t=>new Date(t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+  const del=r=>`<button class="btn small ghost thdel" data-act="histDel" data-i="${r.i.join(",")}" aria-label="Supprimer cette ligne" title="Supprimer cette ligne">×</button>`;
+  const cf=e=>(e.crit?" crit":"")+(e.fumble?" fumble":"");
+  const line=r=>{
+    if(r.pair){ const {hit,dmg}=r, bd=[hit.bd?"toucher "+hit.bd:"",dmg.bd?r.kind+" "+dmg.bd:""].filter(Boolean).join(" · ");
+      return `<div class="throw thpair"><span class="tht">${hhmm(hit.t)}</span><span class="thl"><b>${esc(r.name)}</b>${bd?`<small class="thbd">${esc(bd)}</small>`:""}</span><span class="thv thv2"><span class="thk">toucher</span> <b class="num thhit${cf(hit)}">${esc(String(hit.total??""))}</b> <span class="thk">${esc(r.kind)}</span> <b class="num">${esc(String(dmg.total??""))}</b></span>${del(r)}</div>`; }
+    const e=r.e;
+    return `<div class="throw${cf(e)}"><span class="tht">${hhmm(e.t)}</span><span class="thl"><b>${esc(e.label)}</b>${e.bd?`<small class="thbd">${esc(e.bd)}</small>`:""}</span><b class="num thv">${esc(String(e.total??""))}</b>${del(r)}</div>`;
+  };
+  const clear=S.histConfirm?`<span class="row" style="gap:6px"><span class="muted" style="font-size:13px">Tout effacer ?</span><button class="btn small" data-act="clearLog" data-ok="1">Oui, effacer</button></span>`:`<button class="btn small ghost" data-act="clearLog">Effacer l'historique</button>`;
+  return `<div class="thtop"><div class="row thdays">${days.map(k=>`<button class="chip" aria-pressed="${k===H.day}" data-act="histDay" data-v="${k}">${esc(dayLabel(k))} <span class="num">(${cnt[k]})</span></button>`).join("")}</div>${clear}</div>
+    <div class="thist">${shown.map(line).join("")}</div>${rows.length>shown.length?`<button class="btn small ghost thmore" data-act="histMore">Voir plus (${rows.length-shown.length})</button>`:""}`;
 }

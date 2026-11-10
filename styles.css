@@ -286,7 +286,7 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
 .tbottom{grid-column:1/-1;order:3;display:grid;gap:10px;margin-top:8px;padding-top:12px;border-top:1px solid var(--line);justify-items:start}
 .tbottom details{width:100%}
 .thist{display:grid}.thday{margin-top:10px;text-transform:capitalize}.thdel{padding:2px 8px;opacity:.55}.thdel:hover{opacity:1}.throw{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
-.tht{font-size:12px;color:var(--muted)}.thl{font-size:14px}.thv{font-size:20px}.throw.crit .thv{color:var(--ok,#2f7d4f)}.throw.fumble .thv{color:var(--blood)}
+.tht{font-size:12px;color:var(--muted)}.thtop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:6px}.thdays{gap:6px;flex-wrap:wrap}.thist .throw{padding:6px 0}.thbd{display:block;font-size:12px;color:var(--muted);font-weight:400}.thv2{display:flex;gap:6px;align-items:baseline;white-space:nowrap}.thv2 b{font-size:20px}.thk{font-size:12px;color:var(--muted)}.thhit.crit{color:var(--ok,#2f7d4f)}.thhit.fumble{color:var(--blood)}.thmore{margin-top:8px;width:100%}.thl{font-size:14px}.thv{font-size:20px}.throw.crit .thv{color:var(--ok,#2f7d4f)}.throw.fumble .thv{color:var(--blood)}
 .tbagrow.empty>span:first-child{opacity:.5;text-decoration:line-through}
 .lusec{display:grid;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}.lusec select{max-width:100%}.lul{margin:0;padding-left:18px}.lufeat summary{cursor:pointer;padding:3px 0}
 .warnchip{border-color:var(--blood)!important;color:var(--blood)}.warnchip small{font-size:11px}.warntxt{color:var(--blood);font-weight:600}

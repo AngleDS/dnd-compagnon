@@ -178,10 +178,10 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 
 ## 13. Questions ouvertes
 
-- **Recherche de « À la table »** : « Que fais-tu ? » remplacé par « Trouver un jet, une action, un sort… » (fait le 10 nov. 2026, testé). Gérer les variantes purement mécaniques (attaque/attaquer/frapper, « JS Constitution », « save CON », pluriels, accents, abréviations, fautes simples) **sans jamais** convertir une intention narrative en jet.
-- Recherche collante sur téléphone ; hiérarchie de l'en-tête sur téléphone (piste : PV, états et concentration, recherche, tour, CA/initiative/vitesse, perception passive et DD, taille) ; bouton « Ouvrir <test> » depuis une règle déjà ouverte qui cite un test.
+- **Recherche de « À la table »** : « Que fais-tu ? » remplacé par « Trouver un jet, une action, un sort… » (fait le 10 nov. 2026, testé). **Décision d'Angle (10 nov. 2026) : pas de recherche par variantes de vocabulaire** (attaquer/frapper, « save CON »…) : l'appli aide à chercher, elle ne devine pas une intention.
+- **Reporté (décision d'Angle, 10 nov. 2026)** : recherche collante sur téléphone ; hiérarchie de l'en-tête sur téléphone (piste : PV, états et concentration, recherche, tour, CA/initiative/vitesse, perception passive et DD, taille) ; bouton « Ouvrir <test> » depuis une règle déjà ouverte qui cite un test.
 - Onglet Jeu : certains automatismes de « À la table » n'y sont pas appliqués (ex. désavantage d'Empoisonné). Connu, non prioritaire.
-- Historique des jets : lisibilité, rotation ou limite, distinction entre annulation du suivi et annulation d'une dépense.
+- Historique des jets : lisibilité **faite le 10 nov. 2026** (un jour à la fois avec pastilles « dim. 8 nov. (124) », jour le plus récent par défaut ; toucher + dégâts/soins du même nom à moins de 10 minutes regroupés sur une ligne, supprimés ensemble ; lignes compactes avec détail des dés en petit ; 30 lignes puis « Voir plus »). Croix de suppression par ligne conservées telles quelles et filtres par type refusés pour le moment (décisions d'Angle). Restent : rotation ou limite (aujourd'hui 200 jets par perso), distinction entre annulation du suivi et annulation d'une dépense.
 - Menu « Réglages généraux » : dés virtuels, thème, futures préférences ; emplacement, persistance de chaque préférence (navigateur, copie personnelle, synchronisation) ; raccourci des dés à garder dans « À la table ».
 - Reliquats Claude (section 5).
 - Stratégie de sauvegarde entre appareils (navigateur, iPhone, iPad, copie personnelle, synchronisation, restauration, confidentialité) : à concevoir avant d'implémenter.
