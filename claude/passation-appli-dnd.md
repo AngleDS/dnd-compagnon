@@ -244,6 +244,8 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 
 Idée d'Angle (10 nov. 2026). **Rien n'est codé ; tout ce qui n'est pas marqué « décidé » reste à valider avec Angle avant de développer.**
 
+**Organisation de l'écran en blocs (décisions d'Angle, 10 nov. 2026)** : « À la table » est découpé en blocs que le joueur peut monter ou descendre par glisser-déposer (appui long au doigt) ; **ordre enregistré par perso** (il suit l'export). Blocs : 1) Bandeau personnage ; 2) **Repères** (2×4 tuiles de valeurs) ; 3) PV (carte santé) ; 4) Barre de recherche ; 5) **Ce tour** (bloc à part entière) ; 6) **Raccourcis** (2×6 tuiles : tuiles maîtresses, ressources, objets) ; 7) pied de page (notes, historique). **Un seul design responsive** (une colonne sur iPhone, deux sur iPad et ordinateur), pas d'interfaces séparées. **Emplacements de sorts en tuile** ; pour les lanceurs, piste d'Angle : tuiles ou blocs de tailles différentes (grille à définir), par exemple une « ligne » pleine largeur pour les emplacements.
+
 **Référentiel des tuiles : `claude/referentiel-tuiles.md`** (10 nov. 2026, décidé avec Angle) : liste exhaustive à partir des règles 2024 ; **tuiles maîtresses** pour les jets (une tuile ouvre la popup des jets qui en dépendent), **Initiative** seule tuile de jet individuelle, Concentration et santé dans la carte PV. Les tuiles obligatoires, le défaut par classe et le quota ci-dessous sont **mis de côté pour le moment** (décision d'Angle) ; le catalogue proposé ci-dessous est remplacé par le référentiel.
 
 Décidé par Angle :
