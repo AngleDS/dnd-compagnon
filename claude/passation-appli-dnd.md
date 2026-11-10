@@ -86,7 +86,7 @@ Tests : `node tests/run.js dist/dnd-compagnon.html` (Playwright ; persos tempora
 
 - `js/02-plateforme.js` expose `PLATFORM` : utilisateur, base de données, génération, navigateur Claude, téléchargement. Aucun autre module n'appelle `window.claude`.
 - Sans pont Claude : l'appli démarre en mode local, les persos sont dans le navigateur, les catalogues sont disponibles, les fonctions de jeu marchent.
-- Artefact publié : https://claude.ai/artifact/StZK93cX5zFvqDhjF5D62G (propriétaire : Angle), dernière version publiée v118. Données en ligne par utilisateur (`data/users/<uid>/`, fiche limitée à 256 Ko), lisibles et modifiables par Claude avec `ArtifactData` (toujours avec `if_version`).
+- Artefact publié : https://claude.ai/artifact/StZK93cX5zFvqDhjF5D62G (propriétaire : Angle), dernière version publiée v119 (10 nov. 2026). Données en ligne par utilisateur (`data/users/<uid>/`, fiche limitée à 256 Ko), lisibles et modifiables par Claude avec `ArtifactData` (toujours avec `if_version`).
 - Persos en ligne : `perso_cornelius` (Cornelius Ward, Humain Occultiste 3, Protecteur céleste, historique Médecin) ; `perso_vvofmqf02c3j` (Garrant, Aasimar Paladin 3, Serment de dévotion, Soldat, joueur Seb). Contenus hors SRD : `h_agathys`, `h_guerisseur`, `h_robuste`, `h_protecteur`, `h_medecin`, `hb_crsbnkdcxnl1` (Aasimar), `hb_m6495mrrhpfl` (Traité de médecine). Capacités à conserver à chaque publication (republier **sans** `capabilities`) : `db`, `downloads`, `user`, `sample`, `mcp` vers le navigateur de l'app (`preview_start`, `get_page_text`, `tabs_close`).
 - Remplissage automatique (`afRun`, `afNear`, `afWeb`, `afMem`) : AideDD via le navigateur de l'app → page la plus proche (`AIDE_IDX`) → recherche web limitée à `WEB_SITES` → mode mémoire (`sample`, marqué « à vérifier »). La lecture web ne marche que pour le propriétaire de l'artefact, dans l'app Claude sur ordinateur.
   - `afTab(r)` lit l'identifiant d'onglet quelle que soit la forme de la réponse ; `afCloseTab` attend la fermeture et signale un échec dans `S.afTabNote`. `preview_start` répond « Opened <url> in the browser pane (tabId seed) » ; avec un seul onglet, l'id `seed` est réutilisé.
@@ -162,9 +162,10 @@ Principe : une fois la mécanique indiquée par le MJ, le joueur la trouve et l'
 - v115 : bouton de thème sous « Menu », message « Mode local » fermable, croix des popups agrandies.
 - v116 : navigation qui reste sur le perso affiché, popup Repos en deux cartes.
 - v117 : interligne de la carte santé.
-- v118 : enregistrement du portrait (champ hors rendu, repli JPEG). Dernière version publiée de l'artefact au 10 nov. 2026.
+- v118 : enregistrement du portrait (champ hors rendu, repli JPEG).
 - Reprise hors Claude (9–10 nov. 2026) : sources autonomes avec catalogues dans `data/`, build sans page publiée, HTML nettoyé, version distribuée vierge, adaptateur `PLATFORM`, sauvegarde versionnée et imports validés, dés virtuels verrouillés, pavé numérique, suivi du tour. 64 tests.
 - 10 nov. 2026 : essai d'un dépôt GitHub privé partagé, abandonné (pull request #1 de `AngleDS/Compagnon` laissée ouverte, non fusionnée). Nouvelle méthode : dépôt Git local sur le Mac (commit de référence `e78717c`), GitHub en simple sauvegarde. Renommages sans accent ni espace (`a402ea1`, `b8118cd`), `AGENTS.md` / `CLAUDE.md` communs à Claude et ChatGPT, passation fusionnée. Aucun changement de comportement.
+- v119 (10 nov. 2026, commit `f8159ca`) : première publication depuis le dépôt local. Reprend la reprise ChatGPT (sauvegarde versionnée, `PLATFORM`, dés virtuels verrouillés par défaut, pavé numérique, suivi du tour) et le texte de recherche « Trouver un jet, une action, un sort… ». Vérifiée avant publication avec une copie en lecture seule des vraies données en ligne : calculs de Cornelius identiques à la v118, aucune erreur, aucune écriture à l'ouverture. Capacités de l'artefact conservées. La plateforme enveloppe la page dans son propre squelette HTML (balises en double sans effet). Garrant n'apparaît pas dans les données en ligne du propriétaire (peut-être dans l'espace de Seb) : à vérifier avec Seb.
 
 ## 12. Assistant de création — problèmes connus
 
@@ -187,7 +188,7 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 
 ## 14. À faire (ordre proposé, à valider avec Angle)
 
-1. Vérifier la version actuelle dans l'artefact (persos en ligne, `PLATFORM`) avant de publier la v119 (avec l'accord d'Angle) ; tests manuels : mode physique et virtuel, attaque, dégâts, sort, Action bonus, Réaction, annulation, Mouvement, Autre, Nouveau tour.
+1. v119 publiée. Reste à faire à la main dans l'artefact (app Claude) : tests manuels : mode physique et virtuel, attaque, dégâts, sort, Action bonus, Réaction, annulation, Mouvement, Autre, Nouveau tour.
 2. Finitions de « À la table » (section 13).
 3. Menu « Réglages généraux ».
 4. Assistant de création (section 12), dont les choix de traits d'espèce.
