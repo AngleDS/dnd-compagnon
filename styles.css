@@ -270,9 +270,17 @@ button.rtile{border-color:var(--brass);cursor:pointer}
 .tpicks{display:grid;gap:4px}
 .tpick{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto auto;align-items:center;gap:6px;padding:4px 6px;border:1px solid var(--line);border-radius:8px}
 .tpick.on{border-color:var(--brass)}.tpickx{display:inline-block;width:44px}
+/* Blocs personnalisés */
+.cgrid{display:grid;gap:8px;grid-auto-flow:dense;grid-auto-rows:minmax(68px,auto)}
+.ccell{display:grid;min-width:0}.ccell>*{width:100%;height:100%;box-sizing:border-box;margin:0}
+.rtile.rslots{flex-direction:row;flex-wrap:wrap;gap:6px 12px;justify-content:center}
+.ctpls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ctpl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:var(--sheet2);color:var(--ink);font:inherit;cursor:pointer}
+.ctpl:hover{border-color:var(--brass)}.ctplg{display:grid;gap:2px;width:40px}.ctplg i{display:block;height:7px;border:1px solid var(--brass);border-radius:2px}
+.cpick{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px;border:1px solid var(--line);border-radius:8px}.cpick b{flex:1 1 120px;min-width:0}
 /* Mode disposition */
 .tlayoutbar{display:flex;justify-content:center;margin:18px 0 6px}
-.tlayouttop{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;max-width:860px;margin:0 auto 12px;padding:10px 12px;border:1px solid var(--brass);border-radius:12px;background:var(--sheet);font-size:var(--fs-sm);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.tlayouttop{position:sticky;top:0;z-index:25;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;max-width:860px;margin:0 auto 12px;padding:10px 12px;border:1px solid var(--brass);border-radius:12px;background:var(--sheet);font-size:var(--fs-sm);box-shadow:0 6px 18px rgba(0,0,0,.35)}
 .tblocks.editing .tblk{border:1.5px dashed var(--brass);border-radius:12px;padding:8px 10px;background:var(--sheet)}
 .tblkh{display:flex;align-items:center;gap:8px;margin-bottom:6px}.tblkh b{flex:1;min-width:0}
 .tblkgrip{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;color:var(--brass);font-size:var(--fs-lg);letter-spacing:-3px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}

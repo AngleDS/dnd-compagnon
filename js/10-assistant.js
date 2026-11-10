@@ -224,6 +224,7 @@ function validateImportPack(pack){
   for(const k of ["attacks","bag","conditions","counters","feats","features","invocations","items","spells"]){ if(ch[k]!==undefined&&!Array.isArray(ch[k])) importFail(`Le champ « ${k} » doit être une liste.`); }
   if(ch.layout!==undefined&&(!plainObject(ch.layout)||(ch.layout.order!==undefined&&(!Array.isArray(ch.layout.order)||ch.layout.order.length>50||ch.layout.order.some(x=>typeof x!=="string"))))) importFail("La disposition d'« À la table » est invalide.");
   if(ch.layout?.tiles!==undefined&&(!plainObject(ch.layout.tiles)||Object.values(ch.layout.tiles).some(v=>!Array.isArray(v)||v.length>16||v.some(x=>typeof x!=="string")))) importFail("Les tuiles d'« À la table » sont invalides.");
+  if(ch.layout?.custom!==undefined&&(!Array.isArray(ch.layout.custom)||ch.layout.custom.length>20||ch.layout.custom.some(b=>!plainObject(b)||typeof b.id!=="string"||typeof b.name!=="string"||b.name.length>60||!Array.isArray(b.tiles||[])||(b.tiles||[]).length>16))) importFail("Les blocs personnalisés d'« À la table » sont invalides.");
   if(ch.hp!==undefined&&(!plainObject(ch.hp)||!Number.isFinite(+ch.hp.cur)||+ch.hp.cur<0||!Number.isFinite(+(ch.hp.temp||0))||+(ch.hp.temp||0)<0)) importFail("Les points de vie sont invalides.");
   const hb=pack.hb===undefined?[]:pack.hb; if(!Array.isArray(hb)||hb.length>500) importFail("Le contenu personnalisé est invalide ou trop volumineux.");
   const ids=new Set(); for(const h of hb){

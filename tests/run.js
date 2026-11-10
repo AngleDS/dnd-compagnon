@@ -1032,6 +1032,41 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(r[0], 'rest', 'tuiles suivent l’export'); ok(/tuiles/.test(r[1]), 'tuiles invalides refusées à l’import');
   });
 
+  await test('Bloc personnalisé : modèle, nom, tuiles et tailles, place, suppression, import', async p => {
+    await p.setViewportSize({width:390,height:844}); await diceTable(p);
+    await p.click('[data-act="layoutEdit"]'); await p.click('[data-act="tpop"][data-v="blkadd"]');
+    eq(await p.evaluate(() => document.querySelectorAll('.tpop .ctpl').length), 16, '16 modèles de 1×1 à 4×4');
+    ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); const e = document.elementFromPoint(r.left + 20, r.top + 10); return !!e.closest('.tpop'); }), 'popup au-dessus de la barre de disposition');
+    await p.click('.tpop [data-act="blkCreate"][data-r="2"][data-c="3"]');
+    const id = await p.evaluate(() => cur().layout.custom[0].id);
+    eq(await p.evaluate(() => [S.T.pop, cur().layout.custom[0].name, cur().layout.order.at(-1)]), ['tiles:' + id, 'Mon bloc 1', id], 'bloc créé, nommé, placé en bas, Personnaliser ouvert');
+    await p.fill(`.tpop input[data-cname="${id}"]`, 'Combat'); await p.press(`.tpop input[data-cname="${id}"]`, 'Tab');
+    eq(await p.evaluate(() => cur().layout.custom[0].name), 'Combat', 'bloc renommé');
+    for (const v of ['ca', 'init', 'skills']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
+    await p.click('.tpop [data-act="ctileSize"][data-i="0"][data-z="l"]');
+    eq(await p.evaluate(() => customUsed(cur().layout.custom[0])), 5, 'CA en ligne entière : 5 cases sur 6');
+    await p.click('.tpop [data-act="ctileSize"][data-i="1"][data-z="2"]');
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles[1].sz), '1', '2×2 refusé faute de place');
+    ok(await p.evaluate(() => document.querySelector('.tpop [data-act="ctileAdd"][data-t="pp"]').disabled === false), 'encore une case libre');
+    await p.click('.tpop [data-act="ctileMove"][data-i="2"][data-d="-1"]');
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => t.id)), ['ca', 'skills', 'init'], 'tuile montée');
+    await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
+    const g = await p.evaluate(id => { const b = document.querySelector(`.tblk[data-blk="${id}"]`); const c = [...b.querySelectorAll('.ccell')].map(e => e.getBoundingClientRect());
+      return { name: b.querySelector('.label').textContent, n: c.length, full: Math.round(c[0].width) > Math.round(c[1].width) * 2, plus: b.querySelectorAll('.rtile.vide').length, ov: document.documentElement.scrollWidth <= innerWidth }; }, id);
+    eq(g, { name: 'Combat', n: 4, full: true, plus: 1, ov: true }, 'rendu : CA sur toute la ligne, une case « + », pas de débordement');
+    await p.click(`.tblk[data-blk="${id}"] .rtile.vide`);
+    eq(await p.evaluate(() => S.T.pop), 'tiles:' + id, '« + » ouvre Personnaliser du bloc');
+    await p.keyboard.press('Escape');
+    const r = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); const nid = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
+      try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { custom: 'x' } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
+      return [S.docs[nid].layout.custom[0].name, bad]; });
+    eq(r[0], 'Combat', 'bloc suit l’export'); ok(/personnalisés/.test(r[1]), 'blocs invalides refusés');
+    await p.click('[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] [data-v="tiles:${id}"]`);
+    await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => cur().layout.custom.length === 1), 'demande de confirmation avant suppression');
+    await p.click('.tpop [data-act="cblkDelYes"]');
+    eq(await p.evaluate(id => [cur().layout.custom.length, cur().layout.order.includes(id), !!document.querySelector(`.tblk[data-blk="${id}"]`), S.T.pop], id), [0, false, false, null], 'bloc supprimé');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

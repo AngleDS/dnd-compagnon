@@ -261,6 +261,8 @@ function tPop(ch,D){
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const anim=S.lastPop!==k; S.lastPop=k;
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
+  if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
+  if(k==="blkadd") return wrap("Ajouter un bloc",`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Choisis la taille du bloc (lignes × colonnes) ; tu y placeras ensuite les tuiles de ton choix.</div><div class="ctpls">${[1,2,3,4].flatMap(r=>[1,2,3,4].map(c=>`<button class="ctpl" data-act="blkCreate" data-r="${r}" data-c="${c}" aria-label="Bloc de ${r} ligne${r>1?"s":""} et ${c} colonne${c>1?"s":""}"><span class="ctplg" style="grid-template-columns:repeat(${c},1fr)">${"<i></i>".repeat(r*c)}</span><small>${r}×${c}</small></button>`)).join("")}</div>`);
   if(k.startsWith("tiles:")){ const blk=k.slice(6), cat=TILE_CAT[blk]; if(!cat){ T.pop=null; return ""; }
     const arr=blockTiles(ch,blk), free=arr.indexOf(""), unused=Object.keys(cat).filter(x=>!arr.includes(x)&&tileAvailable(ch,blk,x));
     const rows=arr.map((id,i)=>`<div class="tpick${T.tileSlot===i?" on":""}"><span class="num muted">${i+1}</span><b>${id?esc(cat[id]):`<span class="muted">Case libre</span>`}</b><button class="btn small ghost" data-act="tileMove" data-blk="${blk}" data-i="${i}" data-d="-1" aria-label="Monter" ${i?"":"disabled"}>↑</button><button class="btn small ghost" data-act="tileMove" data-blk="${blk}" data-i="${i}" data-d="1" aria-label="Descendre" ${i<arr.length-1?"":"disabled"}>↓</button>${id?`<button class="btn small ghost" data-act="tileDel" data-blk="${blk}" data-i="${i}" aria-label="Vider la case">×</button>`:`<span class="tpickx"></span>`}</div>`).join("");
@@ -362,6 +364,7 @@ function viewTable(ch,D,banner=""){
       <button class="btn" data-act="virtualDice" role="switch" aria-checked="${virtualDiceEnabled()}">Dés virtuels : ${virtualDiceEnabled()?"activés":"désactivés"}</button></div>
       ${chargeRecoveryForms(ch)}</div></div>`
   };
+  for(const b of customBlocks(ch)) blocks[b.id]=customBlockHtml(ch,D,b,{slots:otherSlots,size:overviewSize});
   return `${tPop(ch,D)}${tableBlocks(ch,blocks)}`;
 }
 /* Tuiles des blocs Repères (8 cases) et Raccourcis (6 cases) : choix enregistré par perso dans ch.layout.tiles ;
@@ -383,8 +386,8 @@ function blockTiles(ch,blk){
 const tileAvailable=(ch,blk,id)=>!(blk==="reperes"&&(id==="dd"||id==="atks")&&!derive(ch).cast);
 function setBlockTiles(ch,blk,arr){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles,{[blk]:arr}); touch(S.cur); }
 const plusTile=(blk,i,cls)=>`<button class="${cls}" data-act="tilePick" data-blk="${blk}" data-i="${i}" aria-label="Case libre : ajouter une tuile" title="Ajouter une tuile">+</button>`;
-function raccourcisTiles(ch,D){
-  const R={
+function racTileMap(ch,D){
+  return {
     skills:()=>`<button class="tpbtn" data-act="tpop" data-v="skills"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.3v9.4L12 21.5 3.5 16.7V7.3z"/><path d="M12 2.5 7.5 14h9zM3.5 7.3 7.5 14M20.5 7.3 16.5 14M7.5 14 12 21.5 16.5 14"/></svg>Tests de caractéristique<small class="tpsub">Caractéristiques et compétences</small></button>`,
     saves:()=>`<button class="tpbtn" data-act="tpop" data-v="saves"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.3 7.5 10 4.3-1.7 7.5-5.4 7.5-10v-6z"/><path d="M12 7v10M8 11h8"/></svg>Jets de sauvegarde<small class="tpsub">6 jets</small></button>`,
     cond:()=>`<button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5a4.5 4.5 0 1 0 4.5 4.5"/><path d="M12 10.5a1.5 1.5 0 1 0 1.5 1.5"/></svg>États${(ch.conditions||[]).length||+ch.exhaustion?` <span class="tpn">${(ch.conditions||[]).length+(+ch.exhaustion?1:0)}</span>`:""}<small class="tpsub">${(ch.conditions||[]).length?(ch.conditions||[]).length+" actif"+((ch.conditions||[]).length>1?"s":""):"Aucun"}${+ch.exhaustion?" · épuisement "+ch.exhaustion:""}</small></button>`,
@@ -394,9 +397,9 @@ function raccourcisTiles(ch,D){
     hist:()=>`<button class="tpbtn" data-act="tpop" data-v="hist"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historique des jets<small class="tpsub">${(ch.rollLog||[]).length} jet${(ch.rollLog||[]).length>1?"s":""}</small></button>`,
     notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
   };
-  return blockTiles(ch,"raccourcis").map((id,i)=>id?R[id]():plusTile("raccourcis",i,"tpbtn tplus")).join("");
 }
-function reperesTiles(ch,D,size){
+function raccourcisTiles(ch,D){ const R=racTileMap(ch,D); return blockTiles(ch,"raccourcis").map((id,i)=>id?R[id]():plusTile("raccourcis",i,"tpbtn tplus")).join(""); }
+function repTileMap(ch,D,size){
   const t=(v,l,title)=>`<span class="rtile"${title?` title="${esc(title)}"`:""}><b class="num">${v}</b><span class="label">${l}</span></span>`;
   const T={
     ca:()=>t(D.ac,"CA",D.acNote||""),
@@ -412,19 +415,48 @@ function reperesTiles(ch,D,size){
     ivp:()=>t(10+D.skills.investigation.val,"Investigation passive","10 + ton modificateur d'Investigation"),
     dv:()=>t(`${Math.max(0,D.L-(+ch.hdUsed||0))}/${D.L}`,"Dés de vie","Dés de vie restants (d"+D.hd+")")
   };
-  return blockTiles(ch,"reperes").map((id,i)=>(id&&T[id]())||plusTile("reperes",i,"rtile vide")).join("");
+  return T;
+}
+function reperesTiles(ch,D,size){ const T=repTileMap(ch,D,size); return blockTiles(ch,"reperes").map((id,i)=>(id&&T[id]())||plusTile("reperes",i,"rtile vide")).join(""); }
+/* Blocs personnalisés (étape 6) : ch.layout.custom = [{id,name,r,c,tiles:[{id,sz}]}] ; taille d'une tuile : "1" (1×1), "2" (2×2), "l" (ligne entière).
+   Placement automatique dans l'ordre (les tuiles comblent les trous) ; les cases restantes affichent « + ». */
+function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,{slots:"Emplacements de sorts"}); }
+function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4):[]; }
+function customCopy(ch){ return customBlocks(ch).map(b=>Object.assign({},b,{tiles:(Array.isArray(b.tiles)?b.tiles:[]).map(t=>Object.assign({},t))})); }
+function saveCustom(ch,list){ ch.layout=Object.assign({},ch.layout,{custom:list}); touch(S.cur); }
+const tileCells=(sz,c)=>sz==="l"?c:(sz==="2"&&c>=2?4:1);
+const customUsed=b=>(b.tiles||[]).reduce((n,t)=>n+tileCells(t.sz,b.c),0);
+function customBlockHtml(ch,D,b,ctx){
+  const R=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), cap=b.r*b.c;
+  const one=(t,i)=>{ let h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:((T[t.id]&&T[t.id]())||(R[t.id]&&R[t.id]())||"");
+    if(!h) h=plusTile(b.id,i,"rtile vide");
+    return `<div class="ccell" style="${t.sz==="l"?"grid-column:1/-1":t.sz==="2"&&b.c>=2?"grid-column:span 2;grid-row:span 2":""}">${h}</div>`; };
+  let html=(b.tiles||[]).map(one).join(""); for(let k=customUsed(b);k<cap;k++) html+=`<div class="ccell">${plusTile(b.id,k,"rtile vide")}</div>`;
+  return `<div class="label" style="margin-bottom:8px">${esc(b.name)}</div><div class="cgrid" style="grid-template-columns:repeat(${b.c},minmax(0,1fr))">${html}</div>`;
+}
+function customPop(ch,D,id,wrap){
+  const b=customBlocks(ch).find(x=>x.id===id); if(!b){ S.T.pop=null; return ""; }
+  const cat=customCat(), cap=b.r*b.c, used=customUsed(b), tiles=b.tiles||[];
+  const rows=tiles.map((t,i)=>`<div class="cpick"><span class="num muted">${i+1}</span><b>${esc(cat[t.id]||t.id)}</b><span class="row" style="gap:4px">${[["1","1×1"],["2","2×2"],["l","Ligne"]].filter(([z])=>z!=="2"||b.c>=2).map(([z,l])=>`<button class="chip" aria-pressed="${(t.sz||"1")===z}" data-act="ctileSize" data-v="${id}" data-i="${i}" data-z="${z}">${l}</button>`).join("")}</span><span class="row" style="gap:2px"><button class="btn small ghost" data-act="ctileMove" data-v="${id}" data-i="${i}" data-d="-1" aria-label="Monter" ${i?"":"disabled"}>↑</button><button class="btn small ghost" data-act="ctileMove" data-v="${id}" data-i="${i}" data-d="1" aria-label="Descendre" ${i<tiles.length-1?"":"disabled"}>↓</button><button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${i}" aria-label="Retirer la tuile">×</button></span></div>`).join("")||`<div class="muted">Aucune tuile pour l’instant.</div>`;
+  const add=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&(x==="slots"?!!D.cast:tileAvailable(ch,"reperes",x))).map(x=>`<button class="chip" data-act="ctileAdd" data-v="${id}" data-t="${x}" ${used>=cap?"disabled":""}>+ ${esc(cat[x])}</button>`).join("");
+  const del=S.T.cdel===id?`<span class="row" style="gap:6px"><span>Supprimer ce bloc ?</span><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span>`:`<button class="btn small ghost" data-act="cblkDel" data-v="${id}">Supprimer le bloc</button>`;
+  return wrap("Personnaliser : "+b.name,`<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
+    <div class="muted" style="font-size:var(--fs-sm);margin:8px 0">Bloc ${b.r}×${b.c} · ${used}/${cap} cases occupées</div><div class="tpicks">${rows}</div>
+    <div class="label" style="margin:14px 0 6px">Ajouter une tuile${used>=cap?" (bloc plein)":""}</div><div class="row" style="flex-wrap:wrap;gap:6px">${add}</div>
+    <div class="row" style="justify-content:flex-end;margin-top:14px">${del}</div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
 const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","Emplacements et états"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
-function tableOrder(ch){ const ids=TBLK.map(b=>b[0]); const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[]; return [...new Set([...saved,...ids])]; }
+function blkLabel(ch,id){ return (TBLK.find(b=>b[0]===id)||[])[1]||customBlocks(ch).find(b=>b.id===id)?.name||id; }
+function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map(b=>b.id)]; const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[]; return [...new Set([...saved,...ids])]; }
 function tableBlocks(ch,blocks){
-  const ed=!!S.layoutEdit, ids=tableOrder(ch).filter(id=>ed||blocks[id]), label=id=>TBLK.find(b=>b[0]===id)[1];
+  const ed=!!S.layoutEdit, ids=tableOrder(ch).filter(id=>ed||blocks[id]), label=id=>blkLabel(ch,id);
   if(!ed) return `<div class="tblocks">${ids.map(id=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">${blocks[id]}</section>`).join("")}</div>
     <div class="tlayoutbar"><button class="btn small ghost" data-act="layoutEdit">Modifier la disposition</button></div>`;
   // Mode disposition : poignée et flèches sur chaque bloc ; le contenu est inactif pour éviter toute action par erreur.
-  return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
+  return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small" data-act="tpop" data-v="blkadd">Ajouter un bloc</button><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
   <div class="tblocks editing">${ids.map((id,n)=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">
-    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${TILE_CAT[id]?`<button class="btn small" data-act="tpop" data-v="tiles:${id}">Personnaliser</button>`:""}
+    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${TILE_CAT[id]||id.startsWith("c_")?`<button class="btn small" data-act="tpop" data-v="tiles:${id}">Personnaliser</button>`:""}
       <span class="row tblkmv"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc ${esc(label(id))}" ${n?"":"disabled"}>↑</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc ${esc(label(id))}" ${n<ids.length-1?"":"disabled"}>↓</button></span></div>
     <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section>`).join("")}</div>`;
 }

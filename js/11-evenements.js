@@ -17,6 +17,15 @@ document.addEventListener("click",e=>{
     case "tileDel": if(ch){ const arr=blockTiles(ch,t.dataset.blk); arr[+t.dataset.i]=""; setBlockTiles(ch,t.dataset.blk,arr); S.T.tileSlot=+t.dataset.i; render(); } break;
     case "tileMove": if(ch){ const arr=blockTiles(ch,t.dataset.blk), i=+t.dataset.i, j=i+(+t.dataset.d); if(j>=0&&j<arr.length){ [arr[i],arr[j]]=[arr[j],arr[i]]; setBlockTiles(ch,t.dataset.blk,arr); if(S.T.tileSlot===i) S.T.tileSlot=j; } render(); } break;
     case "tileReset": if(ch){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles); delete ch.layout.tiles[t.dataset.blk]; touch(S.cur); S.T.tileSlot=null; render(); } break;
+    case "blkCreate": if(ch){ const list=customCopy(ch); if(list.length>=20) break; const id="c_"+Math.random().toString(36).slice(2,10);
+      list.push({id,name:"Mon bloc "+(list.length+1),r:Math.min(4,Math.max(1,+t.dataset.r)),c:Math.min(4,Math.max(1,+t.dataset.c)),tiles:[]}); saveCustom(ch,list); saveTableOrder(ch,tableOrder(ch)); S.T.pop="tiles:"+id; render(); } break;
+    case "ctileAdd": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v); if(b&&customUsed(b)<b.r*b.c&&!b.tiles.some(x=>x.id===t.dataset.t)){ b.tiles.push({id:t.dataset.t,sz:"1"}); saveCustom(ch,list); } render(); } break;
+    case "ctileDel": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v); if(b){ b.tiles.splice(+t.dataset.i,1); saveCustom(ch,list); } render(); } break;
+    case "ctileMove": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v), i=+t.dataset.i, j=i+(+t.dataset.d); if(b&&j>=0&&j<b.tiles.length){ [b.tiles[i],b.tiles[j]]=[b.tiles[j],b.tiles[i]]; saveCustom(ch,list); } render(); } break;
+    case "ctileSize": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v), tl=b&&b.tiles[+t.dataset.i]; if(tl){ const old=tl.sz; tl.sz=t.dataset.z; if(customUsed(b)>b.r*b.c){ tl.sz=old; setBanner("Pas assez de place dans ce bloc pour agrandir la tuile."); } else saveCustom(ch,list); } render(); } break;
+    case "cblkDel": S.T.cdel=t.dataset.v; render(); break;
+    case "cblkDelNo": S.T.cdel=null; render(); break;
+    case "cblkDelYes": if(ch){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==t.dataset.v)); saveTableOrder(ch,tableOrder(ch)); S.T.cdel=null; S.T.pop=null; render(); } break;
     case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
     case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); break;
@@ -284,6 +293,7 @@ document.addEventListener("change",e=>{
   if(t.dataset.invfix!==undefined&&t.value){ const ch=cur(); const i=+t.dataset.invfix; if(ch.invocations&&ch.invocations[i]){ ch.invocations[i]=invId(ch.invocations[i])+"|"+t.value; touch(S.cur); render(); } return; }
   if(t.id==="hp-set"){ const ch=cur(); const D=derive(ch); ch.hp=ch.hp||{cur:0,temp:0}; const before=+ch.hp.cur||0; ch.hp.cur=Math.max(0,Math.min(D.hpMax,+t.value||0)); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0}; S.hpEdit=false; touch(S.cur); render(); return; }
   if(t.dataset.actChange==="tcost"){ const ch=cur(); ch.costs=ch.costs||{}; ch.costs[t.dataset.k]=t.value; S.unlockCost=false; touch(S.cur); render(); return; }
+  if(t.dataset.cname){ const ch=cur(); if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.cname); if(b){ b.name=t.value.trim().slice(0,40)||"Mon bloc"; saveCustom(ch,list); render(); } } return; }
   if(t.dataset.actChange==="tslot"){ S.T.slot=+t.value; render(); return; }
   if(t.dataset.actChange==="compType"){ S.comp.type=t.value; render(); return; }
   // Une seule validation : un jet physique complet (pavé validé ou saisie terminée) est enregistré et compte pour le tour.
