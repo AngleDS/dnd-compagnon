@@ -895,6 +895,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const b = document.querySelector('.tpopbody'); return b.scrollHeight > b.clientHeight || !b.classList.contains('more-b'); }), 'pas de fondu sur une popup qui tient');
   });
 
+  await test('Import d’un personnage : retour à la liste avec un message', async p => {
+    await open(p);
+    const pack = await p.evaluate(() => { const W=S.W=wNew(); Object.assign(W,{method:'std',std:{for:15,dex:14,con:13,int:12,sag:10,cha:8},name:'Ysolde',cls:'guerrier',bg:catRes('srd:soldat'),sp:catRes('srd:humain')}); wCreate();
+      const ch=JSON.parse(JSON.stringify(S.docs[S.cur])); return JSON.stringify({registre:1,dataVersion:DATA_VERSION,perso:ch,hb:[]}); });
+    await p.evaluate(() => { S.rv=null; renderModal(); S.view='list'; S.cur=null; render(); });
+    const n0 = await p.evaluate(() => persos().length);
+    await p.setInputFiles('#importFile', { name: 'Ysolde.json', mimeType: 'application/json', buffer: Buffer.from(pack) });
+    await p.waitForFunction(n => persos().length === n + 1, n0);
+    eq(await p.evaluate(() => [S.view, S.cur]), ['list', null], 'liste des personnages affichée');
+    ok((await p.innerText('#banner')).includes('Ysolde importé'), 'message de confirmation');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
