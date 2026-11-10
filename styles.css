@@ -244,6 +244,10 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
 .tipmeta{display:grid;gap:2px;font-size:var(--fs-sm)}
 .tiptext{font-size:var(--fs-md);max-width:none}
 .tname{min-width:0}
+/* Ligne d'« À la table » : toucher la ligne ouvre la carte ; seul le bouton i ouvre la règle. */
+.tinfo{position:relative;flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;color:var(--muted);font-size:var(--fs-sm);font-style:italic;font-weight:700;font-family:Georgia,serif;cursor:help}
+.tinfo::before{content:"";position:absolute;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-50%);border:1px solid var(--line);border-radius:50%;box-sizing:border-box}
+.tinfo:hover{color:var(--brass)}.tinfo:hover::before{border-color:var(--brass)}
 .tright{display:flex;gap:12px;align-items:baseline;flex-shrink:0;white-space:nowrap}
 .tk{display:inline-flex;align-items:baseline;gap:4px}
 .tkl{font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}

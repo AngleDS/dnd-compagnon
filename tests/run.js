@@ -752,6 +752,26 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+2,'pas de doublon pour la même saisie');
   });
 
+  await test('Ligne d’« À la table » : toucher le nom ouvre la carte, seul le bouton i ouvre la règle', async p => {
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+    try {
+      await diceTable(t);
+      await t.fill('#tq','second souffle');
+      ok(!await t.locator('#tres .trow [data-act="tip"]:not(.tinfo)').count(),'le nom n’est plus une cible de règle');
+      await t.click('#tres .trow .tname b');
+      eq(await t.evaluate(() => S.T.pop),'card','toucher le nom ouvre la carte');
+      await t.keyboard.press('Escape');
+      await t.fill('#tq','second souffle');
+      const box=await t.locator('#tres .trow .tinfo').first().boundingBox();
+      ok(box.width>=44&&box.height>=44,'bouton i de 44×44 au doigt');
+      await t.click('#tres .trow .tinfo');
+      ok(await t.isVisible('#tip'),'le bouton i ouvre la règle');
+      ok(await t.evaluate(() => S.T.pop!=='card'),'la règle ne sélectionne pas l’élément');
+      if (errs.length) throw new Error('Erreur JS : ' + errs.join(' | '));
+    } finally { await ctx.close(); }
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

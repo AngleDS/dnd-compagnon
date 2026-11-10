@@ -396,7 +396,7 @@ function tRow(i,first,inEco){
   }
   else if(i.mod!==undefined) right=`<b class="num tkv">${sg(i.mod)}</b>`;
   else if(i.cost&&!inEco) right=`<span class="badge">${ECO[i.cost]}</span>`;
-  return `<button class="trow ${first?"first":""}${(i.kind==="atk"||i.kind==="bagitem")&&i.held===false?" sheathed":""}" data-act="tsel" data-k="${esc(i.key)}"><span class="tname"><b class="tipl" data-act="tip" data-k="${esc(i.key)}">${esc(i.name)}</b>${(()=>{ const sub = inEco ? (i.kind==="spell" ? (i.sp.range||"") : (i.kind==="atk" ? (i.held===true?(i.pact?"arme de pacte":"en main"):i.held===false?"au fourreau":"") : i.sub)) : i.sub; return sub?`<span class="muted"> · ${esc(sub)}</span>`:""; })()}</span><span class="tright">${right}</span></button>`;
+  return `<button class="trow ${first?"first":""}${(i.kind==="atk"||i.kind==="bagitem")&&i.held===false?" sheathed":""}" data-act="tsel" data-k="${esc(i.key)}"><span class="tname"><b>${esc(i.name)}</b>${(()=>{ const sub = inEco ? (i.kind==="spell" ? (i.sp.range||"") : (i.kind==="atk" ? (i.held===true?(i.pact?"arme de pacte":"en main"):i.held===false?"au fourreau":"") : i.sub)) : i.sub; return sub?`<span class="muted"> · ${esc(sub)}</span>`:""; })()}</span><span class="tinfo" role="button" data-act="tip" data-k="${esc(i.key)}" aria-label="Règle : ${esc(i.name)}" title="Règle">i</span><span class="tright">${right}</span></button>`;
 }
 function tEco(ch,D){
   const T=S.T; if(!T.eco) return `<div class="muted" style="font-size:var(--fs-sm);padding:8px 0">Choisis un type d'action pour voir tout ce que ${esc(ch.name||"ton personnage")} peut faire avec.</div>`;
