@@ -35,8 +35,11 @@ Les deux fichiers HTML contiennent systématiquement les catalogues SRD et hors 
 ## Tester
 
 ```bash
-node tests/run.js dist/dnd-compagnon.html
+node tests/run.js dist/dnd-compagnon.html                      # toute la suite
+node tests/run.js dist/dnd-compagnon.html --only "Pavé"        # seulement les tests dont le nom contient « Pavé »
 ```
+
+`--only` est répétable et ignore les majuscules. Il sert pendant le travail ; toute la suite reste obligatoire une fois à la fin de chaque lot (règle dans `AGENTS.md`). Une sélection qui ne correspond à aucun test échoue au lieu d'afficher un faux succès.
 
 Ajouter ou adapter un test pour chaque correction fonctionnelle. Les tests créent leurs propres personnages temporaires et simulent les capacités Claude quand elles sont nécessaires.
 

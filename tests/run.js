@@ -1,16 +1,22 @@
 // Batterie de tests de l'appli D&D Compagnon (Playwright, fichier autonome local).
-// Usage : node tests/run.js [chemin/vers/dnd-compagnon.html]   (par défaut dist/dnd-compagnon.html)
+// Usage : node tests/run.js [chemin/vers/dnd-compagnon.html] [--only "texte" ...]   (par défaut dist/dnd-compagnon.html)
+//   --only : ne lance que les tests dont le nom contient ce texte (sans tenir compte des majuscules ; option répétable).
+//   Pendant le travail seulement : toute la suite reste obligatoire une fois par lot (voir AGENTS.md).
 // Aucune donnée réelle : les persos sont créés pendant les tests ; Claude et le navigateur de l'app sont simulés.
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
-const FILE = path.resolve(process.argv[2] || path.join(__dirname, '..', 'dist', 'dnd-compagnon.html'));
+const ARGS = process.argv.slice(2), ONLY = [], POS = [];
+for (let i = 0; i < ARGS.length; i++) { if (ARGS[i] === '--only') ONLY.push(String(ARGS[++i] || '').toLowerCase()); else POS.push(ARGS[i]); }
+const FILE = path.resolve(POS[0] || path.join(__dirname, '..', 'dist', 'dnd-compagnon.html'));
+let SKIPPED = 0;
 const HTML_SOURCE = fs.readFileSync(FILE, 'utf8');
  
 const results = [];
 // Un seul navigateur pour toute la suite ; chaque test a son propre contexte (stockage, cookies et pages isolés).
 let BROWSER = null;
 async function test(name, fn) {
+  if (ONLY.length && !ONLY.some(o => o && name.toLowerCase().includes(o))) { SKIPPED++; return; }
   BROWSER = BROWSER || await chromium.launch();
   const ctx = await BROWSER.newContext({ viewport: { width: 1200, height: 900 } }); const p = await ctx.newPage(); p.setDefaultTimeout(8000);
   const errors = []; p.on('pageerror', e => errors.push(e.message));
@@ -1077,6 +1083,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   if (BROWSER) await BROWSER.close();
   const ko = results.filter(r => !r[1]).length;
-  console.log(`\n${results.length - ko}/${results.length} tests réussis.`);
+  if (ONLY.length) {
+    if (!results.length) { console.log('\nAucun test ne correspond à --only : rien n’a été vérifié.'); process.exit(1); }
+    console.log(`\nSélection --only : ${results.length - ko}/${results.length} tests réussis (${SKIPPED} non lancés : ce n’est pas la suite complète).`);
+  } else console.log(`\n${results.length - ko}/${results.length} tests réussis.`);
   process.exit(ko ? 1 : 0);
 })();
