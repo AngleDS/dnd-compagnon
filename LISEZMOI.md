@@ -60,7 +60,7 @@ Le catalogue ne contient que les noms, livres, liens et données mécaniques pr�
 
 ## Dés virtuels (préférence globale)
 
-Les dés virtuels sont verrouillés par défaut. L’interrupteur de « À la table », à côté des notes et de l’historique, active tous les jets virtuels pour tous les personnages. Le choix est conservé uniquement dans ce navigateur sous la clé `registre-virtual-dice` (`1` / `0`), indépendamment des personnages et des imports. `js/03-démarrage.js` expose `virtualDiceEnabled()` et `setVirtualDice()` pour réutiliser ce réglage dans le futur menu « Réglages généraux », avec le thème et les autres préférences.
+Les dés virtuels sont verrouillés par défaut. L’interrupteur de « À la table », à côté des notes et de l’historique, active tous les jets virtuels pour tous les personnages. Le choix est conservé uniquement dans ce navigateur sous la clé `registre-virtual-dice` (`1` / `0`), indépendamment des personnages et des imports. `js/03-demarrage.js` expose `virtualDiceEnabled()` et `setVirtualDice()` pour réutiliser ce réglage dans le futur menu « Réglages généraux », avec le thème et les autres préférences.
 
 Tout nouveau contrôle aléatoire doit porter `data-virtual` et son action doit figurer dans `VIRTUAL_ACTIONS`. Les événements sont bloqués avant tout tirage ou dépense ; les fonctions de dés contrôlent également le verrou. Les modes sont exclusifs : en mode physique, seuls les champs et le pavé de saisie sont disponibles ; en mode virtuel, ces champs et leurs validations sont masqués et désactivés. Les bonus et la sélection automatique du dé sont appliqués dans les deux modes. Aucun curseur de saisie n’est utilisé.
 
