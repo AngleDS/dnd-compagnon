@@ -994,6 +994,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok((await p.evaluate(() => document.querySelector('.tblk[data-blk="res"]')?.textContent || '')).includes('Pacte'), 'emplacements de pacte dans le bloc Emplacements et états');
   });
 
+  await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
+    await diceTable(p);
+    const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : e.dataset.v));
+    eq(cells, ['skills','saves','cond','inv','equip','+'], 'six cases, la dernière libre');
+    for (const v of ['skills','saves','cond','inv','equip']) {
+      await p.click(`.tblk[data-blk="raccourcis"] [data-v="${v}"]`);
+      ok(await p.isVisible('.tpop'), 'popup ' + v); await p.keyboard.press('Escape');
+    }
+    ok((await p.evaluate(() => document.querySelector('.tblk[data-blk="raccourcis"] [data-v="cond"] .tpsub').textContent)).includes('Aucun'), 'information sous la tuile États');
+    eq(await p.evaluate(() => { const v = document.querySelector('.tblk[data-blk="reperes"] .rtile.vide'); return [v.textContent.trim(), getComputedStyle(v).borderStyle]; }), ['+', 'dashed'], 'case libre des Repères : « + » en pointillés');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

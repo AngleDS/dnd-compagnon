@@ -346,13 +346,14 @@ function viewTable(ch,D,banner=""){
       <div class="tturnb">${turnBtns}</div>
       <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div></div></div>`,
     raccourcis:`<div class="tgrid tb-solo"><div class="tside table-reference">
-      <div class="label" style="margin-bottom:12px">Jets et fiche</div>
+      <div class="label" style="margin-bottom:12px">Raccourcis</div>
       <div class="tpanels">
-        <button class="tpbtn" data-act="tpop" data-v="skills"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.3v9.4L12 21.5 3.5 16.7V7.3z"/><path d="M12 2.5 7.5 14h9zM3.5 7.3 7.5 14M20.5 7.3 16.5 14M7.5 14 12 21.5 16.5 14"/></svg>Tests de caractéristique</button>
-        <button class="tpbtn" data-act="tpop" data-v="saves"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.3 7.5 10 4.3-1.7 7.5-5.4 7.5-10v-6z"/><path d="M12 7v10M8 11h8"/></svg>Jets de sauvegarde</button>
-        <button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5a4.5 4.5 0 1 0 4.5 4.5"/><path d="M12 10.5a1.5 1.5 0 1 0 1.5 1.5"/></svg>États${(ch.conditions||[]).length||+ch.exhaustion?` <span class="tpn">${(ch.conditions||[]).length+(+ch.exhaustion?1:0)}</span>`:""}</button>
-        <button class="tpbtn" data-act="tpop" data-v="inv"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V4.5a3 3 0 0 1 6 0V6"/><path d="M5 6h14l-1.2 13.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 11h6"/></svg>Inventaire</button>
-        <button class="tpbtn wide" data-act="tpop" data-v="equip"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.6"/><path d="M8 9.5h8l1.5 6h-2.2L15 21h-6l-.3-5.5H6.5z"/></svg>Équipement</button>
+        <button class="tpbtn" data-act="tpop" data-v="skills"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.3v9.4L12 21.5 3.5 16.7V7.3z"/><path d="M12 2.5 7.5 14h9zM3.5 7.3 7.5 14M20.5 7.3 16.5 14M7.5 14 12 21.5 16.5 14"/></svg>Tests de caractéristique<small class="tpsub">Caractéristiques et compétences</small></button>
+        <button class="tpbtn" data-act="tpop" data-v="saves"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.3 7.5 10 4.3-1.7 7.5-5.4 7.5-10v-6z"/><path d="M12 7v10M8 11h8"/></svg>Jets de sauvegarde<small class="tpsub">6 jets</small></button>
+        <button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5a4.5 4.5 0 1 0 4.5 4.5"/><path d="M12 10.5a1.5 1.5 0 1 0 1.5 1.5"/></svg>États${(ch.conditions||[]).length||+ch.exhaustion?` <span class="tpn">${(ch.conditions||[]).length+(+ch.exhaustion?1:0)}</span>`:""}<small class="tpsub">${(ch.conditions||[]).length?(ch.conditions||[]).length+" actif"+((ch.conditions||[]).length>1?"s":""):"Aucun"}${+ch.exhaustion?" · épuisement "+ch.exhaustion:""}</small></button>
+        <button class="tpbtn" data-act="tpop" data-v="inv"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V4.5a3 3 0 0 1 6 0V6"/><path d="M5 6h14l-1.2 13.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 11h6"/></svg>Inventaire<small class="tpsub">${(ch.bag||[]).filter(b=>(+b.qty||0)>0).length} objet${(ch.bag||[]).filter(b=>(+b.qty||0)>0).length>1?"s":""}</small></button>
+        <button class="tpbtn" data-act="tpop" data-v="equip"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.6"/><path d="M8 9.5h8l1.5 6h-2.2L15 21h-6l-.3-5.5H6.5z"/></svg>Équipement<small class="tpsub">Mains, armure, harmonisation</small></button>
+        <span class="tpbtn tplus" role="img" aria-label="Case libre" title="Case libre : on pourra y ajouter une tuile">+</span>
       </div></div></div>`,
     notes:`<div class="tgrid tb-solo"><div class="tbottom">
       <div class="row" style="gap:8px"><button class="btn" data-act="tpop" data-v="notes">Notes de partie${(ch.sessionNotes||"").trim()?` <span class="muted num">(${(ch.sessionNotes||"").trim().split(/\n+/).length} l.)</span>`:""}</button>
@@ -376,7 +377,7 @@ function reperesTiles(ch,D,size){
     attaques:()=>t(D.atkN,"Attaques par action"),
     taille:()=>t(esc(String(size).split(" (")[0]),"Taille",String(size))
   };
-  return REPERES_DEFAUT.map(id=>T[id]()||`<span class="rtile vide" aria-hidden="true"></span>`).join("");
+  return REPERES_DEFAUT.map(id=>T[id]()||`<span class="rtile vide" role="img" aria-label="Case libre" title="Case libre : on pourra y ajouter une tuile">+</span>`).join("");
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
 const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","Emplacements et états"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];

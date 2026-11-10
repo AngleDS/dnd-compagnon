@@ -263,7 +263,9 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
 .rtile b{font-size:var(--fs-xl);line-height:1.1}
 .rtile .label{font-size:var(--fs-xs);line-height:1.2;letter-spacing:.02em;overflow-wrap:normal;word-break:normal;hyphens:none}
 button.rtile{border-color:var(--brass);cursor:pointer}
-.rtile.vide{border:0;background:none}
+/* Case libre : « + » dans un cadre en pointillés (idée d'Angle) */
+.rtile.vide,.tpbtn.tplus{border:1.5px dashed var(--line)!important;background:none!important;box-shadow:none!important;color:var(--muted);font-size:var(--fs-2xl);font-weight:300;line-height:1}
+.tpsub{display:block;font-size:var(--fs-xs);color:var(--muted);font-weight:400;line-height:1.2;text-align:center}
 /* Mode disposition */
 .tlayoutbar{display:flex;justify-content:center;margin:18px 0 6px}
 .tlayouttop{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;max-width:860px;margin:0 auto 12px;padding:10px 12px;border:1px solid var(--brass);border-radius:12px;background:var(--sheet);font-size:var(--fs-sm);box-shadow:0 6px 18px rgba(0,0,0,.35)}
