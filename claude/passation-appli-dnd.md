@@ -177,7 +177,7 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 
 ## 13. Questions ouvertes
 
-- **Recherche de « À la table »** : remplacer « Que fais-tu ? » par « Trouver un jet, une action, un sort… » (validé pour plus tard). Gérer les variantes purement mécaniques (attaque/attaquer/frapper, « JS Constitution », « save CON », pluriels, accents, abréviations, fautes simples) **sans jamais** convertir une intention narrative en jet.
+- **Recherche de « À la table »** : « Que fais-tu ? » remplacé par « Trouver un jet, une action, un sort… » (fait le 10 nov. 2026, testé). Gérer les variantes purement mécaniques (attaque/attaquer/frapper, « JS Constitution », « save CON », pluriels, accents, abréviations, fautes simples) **sans jamais** convertir une intention narrative en jet.
 - Recherche collante sur téléphone ; hiérarchie de l'en-tête sur téléphone (piste : PV, états et concentration, recherche, tour, CA/initiative/vitesse, perception passive et DD, taille) ; bouton « Ouvrir <test> » depuis une règle déjà ouverte qui cite un test.
 - Onglet Jeu : certains automatismes de « À la table » n'y sont pas appliqués (ex. désavantage d'Empoisonné). Connu, non prioritaire.
 - Historique des jets : lisibilité, rotation ou limite, distinction entre annulation du suivi et annulation d'une dépense.

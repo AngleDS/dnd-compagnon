@@ -176,6 +176,15 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => (S.Titems || []).length > 20 && !!document.querySelector('.tpanels')), 'tuiles et éléments');
     await p.click('.tpanels .tpbtn'); ok(await p.evaluate(() => !!document.querySelector('.tpop')), 'popup');
   });
+
+  await test('À la table : la recherche propose de trouver une mécanique, pas de décrire une intention', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
+    const r = await p.evaluate(() => { const i = document.querySelector('#tq'); return { ph: i && i.placeholder, label: i && i.getAttribute('aria-label') }; });
+    eq(r, { ph: 'Trouver un jet, une action, un sort…', label: 'Recherche rapide' }, 'texte de la recherche');
+    ok(await p.evaluate(() => !document.body.innerHTML.includes('Que fais-tu')), 'ancien texte absent');
+  });
  
   await test('Thème : sombre par défaut, bouton du Menu pour passer en clair et revenir', async p => {
     await open(p);
