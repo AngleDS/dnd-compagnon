@@ -201,7 +201,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
     const r = await p.evaluate(() => { const i = document.querySelector('#tq'); return { ph: i && i.placeholder, label: i && i.getAttribute('aria-label') }; });
-    eq(r, { ph: 'Trouver un jet, une action, un sort…', label: 'Recherche rapide' }, 'texte de la recherche');
+    eq(r, { ph: 'Jet, action, sort…', label: 'Recherche rapide' }, 'texte de la recherche');
     ok(await p.evaluate(() => !document.body.innerHTML.includes('Que fais-tu')), 'ancien texte absent');
   });
 
@@ -879,6 +879,20 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { setVirtualDice(true); render(); });
     await p.click('.vital .rollbtn[data-l="Initiative"]');
     eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+1,'en dés virtuels, le bouton lance le jet');
+  });
+
+  await test('iPhone : texte de recherche entier, fondu en bas d’une popup qui continue', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    const fits = await p.evaluate(() => { const i = document.getElementById('tq'), st = getComputedStyle(i), c = document.createElement('canvas').getContext('2d');
+      c.font = st.fontStyle + ' ' + st.fontWeight + ' ' + st.fontSize + ' ' + st.fontFamily;
+      return c.measureText(i.placeholder).width <= i.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight); });
+    ok(fits, 'le texte de la recherche tient dans le champ');
+    await p.evaluate(() => { S.T.pop = 'skills'; render(); });
+    ok(await p.evaluate(() => { const b = document.querySelector('.tpopbody'); return b.scrollHeight > b.clientHeight && b.classList.contains('more-b'); }), 'fondu en bas tant que la liste continue');
+    await p.evaluate(() => { const b = document.querySelector('.tpopbody'); b.scrollTop = b.scrollHeight; });
+    await p.waitForFunction(() => !document.querySelector('.tpopbody').classList.contains('more-b'));
+    await p.evaluate(() => { S.T.pop = 'saves'; render(); });
+    ok(await p.evaluate(() => { const b = document.querySelector('.tpopbody'); return b.scrollHeight > b.clientHeight || !b.classList.contains('more-b'); }), 'pas de fondu sur une popup qui tient');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
