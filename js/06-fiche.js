@@ -130,7 +130,7 @@ function tabJeu(ch,D){
     <div class="vital hp"><div class="row" style="justify-content:space-between;width:100%"><span class="label">Points de vie</span><span class="muted num">max ${D.hpMax}</span></div>
       <div class="hpbar"><i class="${pct<34?"low":""}" style="width:${pct}%"></i></div>
       <div class="row">${hpStepper(ch,D)}</div><div class="row">${tempStepper(ch)}</div></div>
-    <div class="vital"><span class="label">Classe d'armure</span><span class="v">${D.ac}</span><span class="muted" style="font-size:12px">${esc(D.acNote)}</span></div>
+    <div class="vital"><span class="label">Classe d'armure</span><span class="v">${D.ac}</span><span class="muted" style="font-size:var(--fs-sm)">${esc(D.acNote)}</span></div>
     <div class="vital"><span class="label">Initiative</span><button class="rollbtn big" data-virtual data-act="r20" data-l="Initiative" data-m="${D.init}">${sg(D.init)}</button></div>
     <div class="vital"><span class="label">Vitesse</span><span class="v">${String(D.speed).replace(".",",")} m</span></div>
     <div class="vital"><span class="label">Perception passive</span><span class="v">${D.passive}</span></div>
@@ -145,15 +145,15 @@ function tabJeu(ch,D){
     const ctl = r.id==="cls:rouerie-magique"
       ? pips("res:"+r.id,r.max,used,true,true) + (left>0
           ? `<button class="btn small primary" data-act="rouerie" title="Rite d'une minute">Utiliser</button>`
-          : `<span class="muted" style="font-size:13px">Utilisée, revient au repos long</span><button class="btn small ghost" data-act="rouerieUndo" title="Annuler l'utilisation">Annuler</button>`)
+          : `<span class="muted" style="font-size:var(--fs-sm)">Utilisée, revient au repos long</span><button class="btn small ghost" data-act="rouerieUndo" title="Annuler l'utilisation">Annuler</button>`)
       : r.pool
       ? `<span class="num"><b>${left}</b> / ${r.max} d${r.die}</span>
          <input type="number" min="1" max="${r.maxUse||left}" value="${Math.min(r.maxUse||left,left)||1}" id="pool-${r.id.replace(/[^a-z0-9]/g,"")}" aria-label="Dés à dépenser" style="width:56px">
          <button class="btn small" data-virtual data-act="pool" data-id="${esc(r.id)}">Lancer</button>`
       : (r.max<=10 ? pips("res:"+r.id,r.max,used,true) : `<span class="num"><b>${left}</b> / ${r.max}</span><input type="number" style="width:64px" id="resn-${r.id.replace(/[^a-z0-9]/g,"")}" aria-label="Quantité" placeholder="0"><button class="btn small" data-act="resuse" data-id="${esc(r.id)}">Dépenser</button>`);
-    return `<div class="res"><div><b class="tipl" data-act="tip" data-k="resid:${esc(r.id)}">${esc(r.name)}</b> <span class="muted" style="font-size:12px">${rechargeLabel(r.recharge)} · ${esc(r.origin)}</span>${r.maxUse?`<div class="muted" style="font-size:12px">${r.maxUse} dés max par utilisation</div>`:""}</div><div class="row">${ctl}</div></div>`;}).join("");
+    return `<div class="res"><div><b class="tipl" data-act="tip" data-k="resid:${esc(r.id)}">${esc(r.name)}</b> <span class="muted" style="font-size:var(--fs-sm)">${rechargeLabel(r.recharge)} · ${esc(r.origin)}</span>${r.maxUse?`<div class="muted" style="font-size:var(--fs-sm)">${r.maxUse} dés max par utilisation</div>`:""}</div><div class="row">${ctl}</div></div>`;}).join("");
   const slots=slotBlock(ch,D);
-  const cnts=(ch.counters||[]).map(c=>`<div class="res"><div><b class="tipl" data-act="tip" data-k="cnt:${esc(c.id)}">${esc(c.name)}</b> <span class="muted" style="font-size:12px">consommable</span></div><div class="row">${(+c.max||0)<=20?pips("cnt:"+c.id,+c.max||0,(+c.max||0)-(+c.cur||0),true):`<button class="btn small" data-act="cnt" data-id="${c.id}" data-v="-1" ${(+c.cur||0)<=0?"disabled":""} aria-label="Utiliser">−1</button><b class="num">${+c.cur||0} / ${+c.max||0}</b><button class="btn small ghost" data-act="cnt" data-id="${c.id}" data-v="1" aria-label="Ajouter">+1</button>`}<span class="muted num" style="font-size:12px">${+c.cur||0}/${+c.max||0}</span></div></div>`).join("");
+  const cnts=(ch.counters||[]).map(c=>`<div class="res"><div><b class="tipl" data-act="tip" data-k="cnt:${esc(c.id)}">${esc(c.name)}</b> <span class="muted" style="font-size:var(--fs-sm)">consommable</span></div><div class="row">${(+c.max||0)<=20?pips("cnt:"+c.id,+c.max||0,(+c.max||0)-(+c.cur||0),true):`<button class="btn small" data-act="cnt" data-id="${c.id}" data-v="-1" ${(+c.cur||0)<=0?"disabled":""} aria-label="Utiliser">−1</button><b class="num">${+c.cur||0} / ${+c.max||0}</b><button class="btn small ghost" data-act="cnt" data-id="${c.id}" data-v="1" aria-label="Ajouter">+1</button>`}<span class="muted num" style="font-size:var(--fs-sm)">${+c.cur||0}/${+c.max||0}</span></div></div>`).join("");
   const conds=CONDS.map(c=>`<button class="chip" aria-pressed="${(ch.conditions||[]).includes(c)}" data-act="cond" data-v="${esc(c)}" title="${esc((S.idx.cond[c]?.text||"").slice(0,300))}">${esc(c)}</button>`).join("");
   return vit+zero+`
     <div class="sect"><h2>Attaques</h2><button class="btn small" data-act="addAttack">Ajouter une attaque</button></div>
@@ -169,7 +169,7 @@ function tabJeu(ch,D){
       <button class="btn" data-virtual data-act="r20" data-l="JS de Concentration" data-m="${D.saves.con.val}">JS Concentration ${sg(D.saves.con.val)}</button></div>
     <div class="sect"><h2>Repos</h2></div>
     <div class="row">${confirmBtn("rest:court","Repos court","Confirmer le repos court")}${confirmBtn("rest:long","Repos long","Confirmer le repos long")}
-    <span class="muted" style="font-size:13px">Court : magie de pacte et ressources « court ». Long : tout revient, PV et dés de vie compris.</span></div>`;
+    <span class="muted" style="font-size:var(--fs-sm)">Court : magie de pacte et ressources « court ». Long : tout revient, PV et dés de vie compris.</span></div>`;
 }
 function confirmBtn(key,label,cl){ return S.confirm===key?`<button class="btn primary" data-act="${key.split(":")[0]}" data-v="${key.split(":")[1]}">${cl}</button>`:`<button class="btn" data-act="ask" data-v="${key}">${label}</button>`; }
 function rechargeLabel(r){ return {court:"repos court",long:"repos long",long_court1:"repos long (1 au repos court)",court_partiel:"repos long (1 au repos court)",long_court5:"repos long (court dès le niv. 5)"}[r]||"repos long"; }
@@ -183,7 +183,7 @@ function slotBlock(ch,D,head=true){
   let h=head?`<div class="sect"><h2>Magie</h2><div class="row"><span class="label">DD</span><b class="num">${D.cast.dc}</b><span class="label">Attaque de sort</span><button class="rollbtn" data-virtual data-act="r20" data-l="Attaque de sort" data-m="${D.cast.atk}">${sg(D.cast.atk)}</button></div></div>`:"";
   const locked=!S.unlockSlots;
   const lockBtn=`<button class="btn small ghost lock" data-act="lockSlots" aria-pressed="${!locked}" title="${locked?"Modifier les emplacements à la main":"Verrouiller les emplacements"}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>${locked?'<path d="M8 11V7a4 4 0 0 1 8 0v4"/>':'<path d="M8 11V7a4 4 0 0 1 7.5-2"/>'}</svg>${locked?"":"Modification manuelle"}</button>`;
-  if(D.cast.type==="pact") h+=`<div class="res"><div><b>Emplacements de pacte</b> <span class="muted" style="font-size:12px">niveau ${D.cast.pactLevel} · repos court</span></div><div class="row">${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,locked)}${lockBtn}</div></div>`;
+  if(D.cast.type==="pact") h+=`<div class="res"><div><b>Emplacements de pacte</b> <span class="muted" style="font-size:var(--fs-sm)">niveau ${D.cast.pactLevel} · repos court</span></div><div class="row">${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,locked)}${lockBtn}</div></div>`;
   else if(D.cast.slots){ D.cast.slots.forEach((n,i)=>{ h+=`<div class="res"><div><b>Niveau ${i+1}</b></div>${pips("slot:"+(i+1),n,+(ch.slotsUsed?.[i+1]||0),true,locked)}</div>`; }); h+=`<div class="row" style="justify-content:flex-end">${lockBtn}</div>`; }
   return h;
 }
@@ -207,9 +207,9 @@ function attackRows(ch,D){
   const rows=[];
   for(const a of ch.attacks||[]){
     const r=weaponAttack(a,ch,D);
-    rows.push(`<tr><td><b class="tipl" data-act="tip" data-k="atk:${esc(a.id)}">${esc(r.name)}</b>${a.pact?` <span class="badge">pacte</span>`:""}<div class="muted" style="font-size:12px">${esc([r.props,r.mastery?"Botte : "+r.mastery:""].filter(x=>x&&x!=="—").join(" · "))}</div></td>
+    rows.push(`<tr><td><b class="tipl" data-act="tip" data-k="atk:${esc(a.id)}">${esc(r.name)}</b>${a.pact?` <span class="badge">pacte</span>`:""}<div class="muted" style="font-size:var(--fs-sm)">${esc([r.props,r.mastery?"Botte : "+r.mastery:""].filter(x=>x&&x!=="—").join(" · "))}</div></td>
       <td><button class="rollbtn" data-virtual data-act="r20" data-l="${esc(r.name)} — toucher" data-m="${r.hit}">${sg(r.hit)}</button></td>
-      <td><button class="rollbtn" data-virtual data-act="dmg" data-l="${esc(r.name)} — dégâts ${esc(r.type)}" data-e="${esc(r.dmg)}">${esc(r.dmg)}</button> <span class="muted" style="font-size:12px">${esc(r.type)}</span></td>
+      <td><button class="rollbtn" data-virtual data-act="dmg" data-l="${esc(r.name)} — dégâts ${esc(r.type)}" data-e="${esc(r.dmg)}">${esc(r.dmg)}</button> <span class="muted" style="font-size:var(--fs-sm)">${esc(r.type)}</span></td>
       <td><button class="btn small ghost" data-virtual data-act="dmg" data-crit="1" data-l="${esc(r.name)} — dégâts ${esc(r.type)}" data-e="${esc(r.dmg)}">Critique</button>
       <button class="btn small ghost" data-act="editAttack" data-id="${a.id}">Modifier</button></td></tr>`);
   }
@@ -218,16 +218,16 @@ function attackRows(ch,D){
     let ab=e.carac||"sort"; if(ab==="sort") ab=D.cast?.ability||"cha";
     const hit=D.mods[ab]+(e.maitrise!==false?D.pb:0);
     const dmg=(e.des||"1d6")+(e.ajoutMod?sg(D.mods[ab]):"");
-    rows.push(`<tr><td><b>${esc(e.nom||e._src)}</b> <span class="badge perso">Hors SRD</span></td><td><button class="rollbtn" data-virtual data-act="r20" data-l="${esc(e.nom)} — toucher" data-m="${hit}">${sg(hit)}</button></td><td><button class="rollbtn" data-virtual data-act="dmg" data-l="${esc(e.nom)} — dégâts" data-e="${esc(dmg)}">${esc(dmg)}</button> <span class="muted" style="font-size:12px">${esc(e.type||"")}</span></td><td><button class="btn small ghost" data-virtual data-act="dmg" data-crit="1" data-l="${esc(e.nom)} — dégâts" data-e="${esc(dmg)}">Critique</button></td></tr>`);
+    rows.push(`<tr><td><b>${esc(e.nom||e._src)}</b> <span class="badge perso">Hors SRD</span></td><td><button class="rollbtn" data-virtual data-act="r20" data-l="${esc(e.nom)} — toucher" data-m="${hit}">${sg(hit)}</button></td><td><button class="rollbtn" data-virtual data-act="dmg" data-l="${esc(e.nom)} — dégâts" data-e="${esc(dmg)}">${esc(dmg)}</button> <span class="muted" style="font-size:var(--fs-sm)">${esc(e.type||"")}</span></td><td><button class="btn small ghost" data-virtual data-act="dmg" data-crit="1" data-l="${esc(e.nom)} — dégâts" data-e="${esc(dmg)}">Critique</button></td></tr>`);
   }
   // cantrip attacks
   for(const s of spellList(ch,D)) if(s.sp.level===0){
     const m=spellMech(s.sp); if(!m.dice) continue;
     const dmg=diceAt(m,s.sp,0,D);
     const beams=m.beams?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1;
-    const hitCell = m.attack?`<button class="rollbtn" data-virtual data-act="r20" data-l="${esc(s.sp.name)} — toucher" data-m="${D.cast.atk}">${sg(D.cast.atk)}</button>${beams>1?` <span class="muted" style="font-size:12px">×${beams} rayons</span>`:""}`:(m.save?`<span class="num">JS ${esc(m.save.slice(0,3))} DD ${D.cast.dc}</span>`:"");
-    rows.push(`<tr><td><b class="tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(s.sp.name)}</b> <span class="muted" style="font-size:12px">sort mineur · ${esc(s.sp.range||"")}</span></td><td>${hitCell}</td>
-      <td><button class="rollbtn" data-virtual data-act="dmg" data-l="${esc(s.sp.name)} — ${m.heal?"soins":"dégâts "+(m.dmgType||"")}" data-e="${esc(dmg)}">${esc(dmg)}</button> <span class="muted" style="font-size:12px">${esc(m.dmgType||"")}</span></td>
+    const hitCell = m.attack?`<button class="rollbtn" data-virtual data-act="r20" data-l="${esc(s.sp.name)} — toucher" data-m="${D.cast.atk}">${sg(D.cast.atk)}</button>${beams>1?` <span class="muted" style="font-size:var(--fs-sm)">×${beams} rayons</span>`:""}`:(m.save?`<span class="num">JS ${esc(m.save.slice(0,3))} DD ${D.cast.dc}</span>`:"");
+    rows.push(`<tr><td><b class="tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(s.sp.name)}</b> <span class="muted" style="font-size:var(--fs-sm)">sort mineur · ${esc(s.sp.range||"")}</span></td><td>${hitCell}</td>
+      <td><button class="rollbtn" data-virtual data-act="dmg" data-l="${esc(s.sp.name)} — ${m.heal?"soins":"dégâts "+(m.dmgType||"")}" data-e="${esc(dmg)}">${esc(dmg)}</button> <span class="muted" style="font-size:var(--fs-sm)">${esc(m.dmgType||"")}</span></td>
       <td>${m.attack?`<button class="btn small ghost" data-virtual data-act="dmg" data-crit="1" data-l="${esc(s.sp.name)} — dégâts" data-e="${esc(dmg)}">Critique</button>`:""}</td></tr>`);
   }
   // leveled spells: each click casts (spends a slot, rolls everything)
@@ -237,13 +237,13 @@ function attackRows(ch,D){
     const al=arcLevel(D,s.ref);
     const opts=al?[s.sp.level]:slotsAvail.filter(l=>l>=s.sp.level); if(!opts.length) continue;
     const sid="aslot-"+s.ref.replace(/[^a-z0-9]/gi,"");
-    const sel=opts.length>1?`<select id="${sid}" aria-label="Niveau d'emplacement">${opts.map(l=>`<option value="${l}">niv. ${l}</option>`).join("")}</select>`:`<input type="hidden" id="${sid}" value="${opts[0]}"><span class="muted" style="font-size:12px">empl. niv. ${opts[0]}</span>`;
+    const sel=opts.length>1?`<select id="${sid}" aria-label="Niveau d'emplacement">${opts.map(l=>`<option value="${l}">niv. ${l}</option>`).join("")}</select>`:`<input type="hidden" id="${sid}" value="${opts[0]}"><span class="muted" style="font-size:var(--fs-sm)">empl. niv. ${opts[0]}</span>`;
     const dmg=diceAt(m,s.sp,opts[0],D);
     const hitTxt = m.attack?sg(D.cast.atk):(m.save?"JS "+m.save.slice(0,3)+" DD "+D.cast.dc:"Lancer");
-    rows.push(`<tr><td><b class="tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(s.sp.name)}</b> <span class="muted" style="font-size:12px">sort niv. ${s.sp.level} · ${esc(s.sp.range||"")}</span><div>${sel}</div></td>
+    rows.push(`<tr><td><b class="tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(s.sp.name)}</b> <span class="muted" style="font-size:var(--fs-sm)">sort niv. ${s.sp.level} · ${esc(s.sp.range||"")}</span><div>${sel}</div></td>
       <td><button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${esc(hitTxt)}</button></td>
-      <td>${dmg?`<button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${esc(dmg)}</button> <span class="muted" style="font-size:12px">${esc(m.heal?"soins":(m.dmgType||""))}</span>`:""}</td>
-      <td><span class="muted" style="font-size:12px">1 clic = 1 emplacement</span></td></tr>`);
+      <td>${dmg?`<button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${esc(dmg)}</button> <span class="muted" style="font-size:var(--fs-sm)">${esc(m.heal?"soins":(m.dmgType||""))}</span>`:""}</td>
+      <td><span class="muted" style="font-size:var(--fs-sm)">1 clic = 1 emplacement</span></td></tr>`);
   }
   if(!rows.length) return "";
   return `<table class="tbl"><thead><tr><th>Arme ou sort</th><th>Toucher</th><th>Dégâts</th><th></th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
@@ -259,10 +259,10 @@ function tabComp(ch,D){
     return `<div class="skill"><span class="dot p${k.lv}" title="${["Non maîtrisée","Maîtrise","Expertise"][k.lv]}"></span><span><span class="tipl" data-act="tip" data-k="skill:${s.id}">${esc(s.name)}</span><span class="ab3">${ABS[s.ability]}</span></span>
       <button class="rollbtn" data-virtual data-act="r20" data-l="${esc(s.name)} (${ABS[s.ability]})" data-m="${k.val}">${sg(k.val)}</button></div>`;}).join("");
   return `<div class="grid2"><div>${rows}</div>
-    <div class="stack"><div class="panel"><div class="label">Perception passive</div><div style="font-size:28px;font-weight:700" class="num">${D.passive}</div></div>
+    <div class="stack"><div class="panel"><div class="label">Perception passive</div><div style="font-size:var(--fs-2xl);font-weight:700" class="num">${D.passive}</div></div>
     <label class="field"><span>Maîtrises d'outils</span><input id="f-tools" type="text" data-bind="tools" value="${esc(ch.tools||"")}"></label>
     <label class="field"><span>Langues</span><input id="f-lang" type="text" data-bind="languages" value="${esc(ch.languages||"")}"></label>
-    <div class="muted" style="font-size:13px">● maîtrise, <span style="color:var(--blood)">●</span> expertise. Les maîtrises se règlent dans l'onglet Construction.</div></div></div>`;
+    <div class="muted" style="font-size:var(--fs-sm)">● maîtrise, <span style="color:var(--blood)">●</span> expertise. Les maîtrises se règlent dans l'onglet Construction.</div></div></div>`;
 }
 function tabSorts(ch,D){
   if(!D.cast) return `<div class="empty">Ce personnage ne lance pas de sorts. Une classe de lanceur de sorts, ou un contenu perso qui accorde des sorts, active cet onglet.</div>`;
@@ -271,7 +271,7 @@ function tabSorts(ch,D){
   const slotsAvail = D.cast.type==="pact"?[D.cast.pactLevel]:(D.cast.slots||[]).map((n,i)=>i+1);
   let h=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="row">
     <span class="label">DD</span><b class="num">${D.cast.dc}</b><span class="label">Attaque</span><button class="rollbtn" data-virtual data-act="r20" data-l="Attaque de sort" data-m="${D.cast.atk}">${sg(D.cast.atk)}</button>
-    ${D.cast.cantrips!==undefined?`<span class="num" style="font-size:13px"><span class="${nC>D.cast.cantrips?"warntxt":"muted"}">Sorts mineurs ${nC}/${D.cast.cantrips}</span> · <span class="${nP>D.cast.prepared?"warntxt":"muted"}">Préparés ${nP}/${D.cast.prepared}</span></span>`:""}</div>
+    ${D.cast.cantrips!==undefined?`<span class="num" style="font-size:var(--fs-sm)"><span class="${nC>D.cast.cantrips?"warntxt":"muted"}">Sorts mineurs ${nC}/${D.cast.cantrips}</span> · <span class="${nP>D.cast.prepared?"warntxt":"muted"}">Préparés ${nP}/${D.cast.prepared}</span></span>`:""}</div>
     <button class="btn small" data-act="pickSpell">Ajouter des sorts</button></div>`;
   h+=slotBlock(ch,D,false);
   let lvl=-1;
@@ -281,7 +281,7 @@ function tabSorts(ch,D){
     const al=arcLevel(D,s.ref);
     const opts=al?[]:(sp.level===0?[]:slotsAvail.filter(l=>l>=sp.level));
     const sel=opts.length?`<select id="slot-${esc(s.ref.replace(/[^a-z0-9]/gi,""))}" aria-label="Niveau d'emplacement">${opts.map(l=>`<option value="${l}">empl. niv. ${l}</option>`).join("")}</select>`:"";
-    const useSlot = al ? (+(ch.resUsed?.["arc:"+al]||0)>=1?`<span class="muted" style="font-size:13px">Arcanum utilisé · revient au repos long</span>`:`<button class="btn small primary" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-arc="${al}" title="Arcanum mystique : 1 fois par repos long, sans emplacement">Lancer (Arcanum)</button>`) : (sp.level===0 || opts.length) ? `<button class="btn small primary" data-virtual data-act="cast" data-ref="${esc(s.ref)}" title="${sp.level?"Dépense un emplacement et lance les dés":"Lance les dés"}">Lancer</button>` : `<span class="muted" style="font-size:13px">Aucun emplacement assez haut</span>`;
+    const useSlot = al ? (+(ch.resUsed?.["arc:"+al]||0)>=1?`<span class="muted" style="font-size:var(--fs-sm)">Arcanum utilisé · revient au repos long</span>`:`<button class="btn small primary" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-arc="${al}" title="Arcanum mystique : 1 fois par repos long, sans emplacement">Lancer (Arcanum)</button>`) : (sp.level===0 || opts.length) ? `<button class="btn small primary" data-virtual data-act="cast" data-ref="${esc(s.ref)}" title="${sp.level?"Dépense un emplacement et lance les dés":"Lance les dés"}">Lancer</button>` : `<span class="muted" style="font-size:var(--fs-sm)">Aucun emplacement assez haut</span>`;
     const rit = sp.ritual && sp.level>0 ? `<button class="btn small" data-virtual data-act="cast" data-rit="1" data-ref="${esc(s.ref)}" title="Sans emplacement, 10 minutes de plus">En rituel</button>` : "";
     const atk = m.attack?`<button class="rollbtn" data-virtual data-act="r20" data-l="${esc(sp.name)} — toucher" data-m="${D.cast.atk}" title="Relancer l'attaque sans dépenser d'emplacement">${sg(D.cast.atk)}</button>`:"";
     const sv = m.save?`<span class="badge">JS ${esc(m.save)} DD ${D.cast.dc}</span>`:"";
@@ -289,9 +289,9 @@ function tabSorts(ch,D){
     h+=`<div class="spell"><div class="h"><span class="nm tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(sp.name)}</span>${badge(s.ref)}
       ${sp.concentration?`<span class="badge" title="Concentration">C</span>`:""}${sp.ritual?`<span class="badge" title="Rituel">R</span>`:""}
       ${s.always?`<span class="badge" title="Toujours préparé">${esc(s.always)}</span>`:(sp.level>0?`<button class="chip" aria-pressed="${s.prepared}" data-act="prep" data-ref="${esc(s.ref)}">Préparé</button>`:"")}
-      <span class="muted" style="font-size:13px">${esc([sp.casting_time,sp.range,sp.duration].filter(Boolean).join(" · "))}</span></div>
+      <span class="muted" style="font-size:var(--fs-sm)">${esc([sp.casting_time,sp.range,sp.duration].filter(Boolean).join(" · "))}</span></div>
       <div class="row">${sel}${useSlot}${rit}${sv}${atk}${dm}
-      <details style="flex-basis:100%"><summary class="muted" style="font-size:13px">Description ${esc(sp.components?"· "+sp.components:"")}</summary><div class="prose">${prose(sp.text)}</div>${isHb(s.ref)?hbFoot(hb(s.ref)):""}</details>
+      <details style="flex-basis:100%"><summary class="muted" style="font-size:var(--fs-sm)">Description ${esc(sp.components?"· "+sp.components:"")}</summary><div class="prose">${prose(sp.text)}</div>${isHb(s.ref)?hbFoot(hb(s.ref)):""}</details>
       ${s.always?"":`<button class="btn small ghost danger" data-act="rmSpell" data-ref="${esc(s.ref)}">Retirer</button>`}</div></div>`;
   }
   if(!list.length) h+=`<div class="empty">Aucun sort. « Ajouter des sorts » ouvre la liste de ta classe, avec tes sorts perso.</div>`;
@@ -313,7 +313,7 @@ function tabApt(ch,D){
     h+=`<div class="sect"><h2>${esc(g)}</h2></div>`;
     for(const f of items){
       const auto=(f.effects||[]).filter(e=>e.t!=="note").map(effLabel).join(" · ");
-      h+=`<details class="feat"><summary><span class="nm">${esc(f.name)}</span>${f.level?`<span class="lvl">niv. ${f.level}</span>`:""}${badge(f.ref)}${auto?`<span class="muted" style="font-size:12px">Automatisé : ${esc(auto)}</span>`:""}</summary><div class="prose">${prose(f.text)||`<p class="muted">Pas de texte saisi.</p>`}</div>${f.ref&&isHb(f.ref)?hbFoot(hb(f.ref)):""}</details>`;
+      h+=`<details class="feat"><summary><span class="nm">${esc(f.name)}</span>${f.level?`<span class="lvl">niv. ${f.level}</span>`:""}${badge(f.ref)}${auto?`<span class="muted" style="font-size:var(--fs-sm)">Automatisé : ${esc(auto)}</span>`:""}</summary><div class="prose">${prose(f.text)||`<p class="muted">Pas de texte saisi.</p>`}</div>${f.ref&&isHb(f.ref)?hbFoot(hb(f.ref)):""}</details>`;
     }
   }
   return h;
@@ -335,12 +335,12 @@ function tabInv(ch,D){
   const items=(ch.items||[]).map((it,i)=>{const h=hb(it.ref); if(!h) return ""; return `<div class="res"><div><b>${esc(h.name)}</b> <span class="badge perso">Hors SRD</span></div><div class="row"><button class="chip" aria-pressed="${!!it.equipped}" data-act="equip" data-i="${i}">Équipé</button><button class="btn small ghost danger" data-act="rmItem" data-i="${i}">Retirer</button></div></div>`;}).join("");
   const hbItems=hbs("objet");
   return `<div class="sect"><h2>Bourse</h2></div><div class="row">${["pp","po","pe","pa","pc"].map(k=>`<label class="field"><span>${k}</span><input id="f-g${k}" type="number" data-bind="gold.${k}" data-num value="${esc(g[k]||0)}"></label>`).join("")}</div>
-    <div class="sect"><h2>Objets à effets</h2>${hbItems.length?`<div class="row"><select id="addItemSel" aria-label="Objet perso">${hbItems.map(h=>`<option value="hb:${h._id}">${esc(h.name)}</option>`).join("")}</select><button class="btn small" data-act="addItem">Ajouter</button></div>`:`<span class="muted" style="font-size:13px">Crée un objet dans Contenu perso pour l'équiper ici.</span>`}</div>
+    <div class="sect"><h2>Objets à effets</h2>${hbItems.length?`<div class="row"><select id="addItemSel" aria-label="Objet perso">${hbItems.map(h=>`<option value="hb:${h._id}">${esc(h.name)}</option>`).join("")}</select><button class="btn small" data-act="addItem">Ajouter</button></div>`:`<span class="muted" style="font-size:var(--fs-sm)">Crée un objet dans Contenu perso pour l'équiper ici.</span>`}</div>
     ${items||`<div class="muted">Les objets équipés appliquent leurs effets à la fiche (bonus de CA, attaques…).</div>`}
-    <div class="sect"><h2>Compteurs</h2><span class="muted" style="font-size:13px">Trousse de soins, munitions, potions… affichés dans l'onglet Jeu.</span></div>
+    <div class="sect"><h2>Compteurs</h2><span class="muted" style="font-size:var(--fs-sm)">Trousse de soins, munitions, potions… affichés dans l'onglet Jeu.</span></div>
     ${(ch.counters||[]).map(c=>`<div class="res"><b>${esc(c.name)}</b><div class="row"><label class="row" style="gap:4px"><input id="cntc-${c.id}" type="number" min="0" data-cnt="${c.id}" data-bind="cur" data-num value="${esc(c.cur||0)}" aria-label="Quantité actuelle">/<input id="cntm-${c.id}" type="number" min="0" data-cnt="${c.id}" data-bind="max" data-num value="${esc(c.max||0)}" aria-label="Maximum"></label><button class="btn small ghost danger" data-act="cntRm" data-id="${c.id}">Retirer</button></div></div>`).join("")}
     <form class="row" data-form="cnt" style="margin-top:8px"><input id="cnt-name" type="text" placeholder="Nom (ex. Trousse de soins)" aria-label="Nom du compteur"><input id="cnt-max" type="number" min="1" placeholder="max" aria-label="Maximum"><button class="btn small" type="submit">Ajouter un compteur</button></form>
-    <div class="sect"><h2>Sac</h2><span class="muted num" style="font-size:13px">${bag.reduce((t,b)=>t+(+b.qty||0),0)} objet(s)</span></div>
+    <div class="sect"><h2>Sac</h2><span class="muted num" style="font-size:var(--fs-sm)">${bag.reduce((t,b)=>t+(+b.qty||0),0)} objet(s)</span></div>
     <div class="bag">${bag.map(b=>`<div class="bagrow">
       <span class="row" style="gap:4px;min-width:0;flex-wrap:nowrap"><input id="bag-n-${b.id}" type="text" data-bag="${b.id}" data-bind="name" value="${esc(b.name)}" aria-label="Objet" class="bagname" style="flex:1;min-width:0">${(()=>{ const ref=b.ref||matchItem(b.name); return ref?`<button class="btn small ghost infob" data-act="tip" data-k="${esc(ref)}" aria-label="Fiche de ${esc(b.name)}" title="Voir la fiche">${ref.startsWith("hb:")?"Perso":"SRD"}</button>`:`<button class="btn small ghost infob mk" data-act="mkItem" data-id="${b.id}" title="Créer la fiche de cet objet dans Contenu perso">Créer sa fiche</button>`; })()}</span>
       <span class="hpstep"><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="-1" aria-label="Retirer un">−</button><b class="num">${+b.qty||0}</b><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="1" aria-label="Ajouter un">+</button></span>
@@ -360,7 +360,7 @@ function tabBuild(ch,D){
   const bgOpts=[...S.C.backgrounds.map(s=>["srd:"+s.id,s.name]),...hbs("historique").map(h=>["hb:"+h._id,h.name+hbTag(h)]),...catOpts("historique")];
   const armOpts=[["none","Aucune armure"],["mage","Armure du mage (13 + Dex)"],...S.C.armors.filter(a=>a.category!=="bouclier").map(a=>["srd:"+a.id,a.name+" ("+a.ac+(a.dexMax===0?"":a.dexMax?" + Dex max "+a.dexMax:" + Dex")+")"]),["custom","Formule perso"]];
   const skillRows=S.C.skills.map(s=>{const v=+(ch.skills?.[s.id]||0); const fromEff=D.skills[s.id].lv>v;
-    return `<label class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:3px 0"><span>${esc(s.name)} <span class="muted" style="font-size:12px">${ABS[s.ability]}</span>${fromEff?` <span class="badge perso" title="Accordé par un contenu perso">auto</span>`:""}</span>
+    return `<label class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:3px 0"><span>${esc(s.name)} <span class="muted" style="font-size:var(--fs-sm)">${ABS[s.ability]}</span>${fromEff?` <span class="badge perso" title="Accordé par un contenu perso">auto</span>`:""}</span>
       <select id="sk-${s.id}" data-bind="skills.${s.id}" data-num>${[[0,"—"],[1,"Maîtrise"],[2,"Expertise"]].map(([k,l])=>`<option value="${k}" ${k===v?"selected":""}>${l}</option>`).join("")}</select></label>`;}).join("");
   const featOpts=[...S.C.feats.map(f=>["srd:"+f.id,f.name+" — "+f.category]),...hbs("don").map(h=>["hb:"+h._id,h.name+hbTag(h)]),...catOpts("don")];
   const feats=(ch.feats||[]).map((r,i)=>{const n=(hb(r)||srd("feats",r))?.name||"?"; return `<span class="chip">${esc(n)} ${badge(r)} <button class="btn small ghost" data-act="rmList" data-k="feats" data-i="${i}" aria-label="Retirer">×</button></span>`;}).join(" ");
@@ -370,7 +370,7 @@ function tabBuild(ch,D){
   const invAvail=invAvailFor(ch,D.L); const invSel=invAvail.some(i=>i.id===S.invSel)?S.invSel:(invAvail[0]||{}).id; const invOpts=invSel?invChoices(ch,invSel).filter(([v])=>!invTaken(ch.invocations,invSel).includes(v)):[];
   const invMax=cls&&cls.id==="occultiste"?cls.columns.find(c=>c.label.startsWith("Manifestations")).values[D.L-1]:0;
   const locked=!S.unlockEdit;
-  return `<div class="editbar ${locked?"":"on"}"><button class="btn lock" data-act="lockEdit" aria-pressed="${!locked}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>${locked?'<path d="M8 11V7a4 4 0 0 1 8 0v4"/>':'<path d="M8 11V7a4 4 0 0 1 7.5-2"/>'}</svg>${locked?"Modifier la fiche":"Verrouiller la fiche"}</button><span class="muted" style="font-size:13px">${locked?"La fiche est verrouillée pour éviter les modifications par erreur.":"Modification en cours : tout est enregistré automatiquement."}</span></div>
+  return `<div class="editbar ${locked?"":"on"}"><button class="btn lock" data-act="lockEdit" aria-pressed="${!locked}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>${locked?'<path d="M8 11V7a4 4 0 0 1 8 0v4"/>':'<path d="M8 11V7a4 4 0 0 1 7.5-2"/>'}</svg>${locked?"Modifier la fiche":"Verrouiller la fiche"}</button><span class="muted" style="font-size:var(--fs-sm)">${locked?"La fiche est verrouillée pour éviter les modifications par erreur.":"Modification en cours : tout est enregistré automatiquement."}</span></div>
   <fieldset class="bare" ${locked?"disabled":""}><div class="stack">
     <div class="grid2">
       <label class="field"><span>Nom du personnage</span><input id="b-name" type="text" data-bind="name" value="${esc(ch.name||"")}"></label>
@@ -381,9 +381,9 @@ function tabBuild(ch,D){
       <label class="field"><span>Espèce</span>${sel("b-species","species",spOpts,ch.species)}</label>
       <label class="field"><span>Historique</span>${sel("b-bg","background",bgOpts,ch.background)}</label>
     </div>
-    ${cls?`<div class="muted" style="font-size:13px">${esc(cls.name)} : dé de vie d${cls.hitDie}, sauvegardes ${cls.saves.map(a=>ABN[a]).join(" et ")}, ${cls.skillChoices.count} compétences parmi ${cls.skillChoices.from.length===18?"toutes":cls.skillChoices.from.map(id=>S.C.skills.find(s=>s.id===id).name).join(", ")}. Armes : ${esc(cls.weapons)}.</div>`:""}
-    <div class="sect"><h2>Valeurs de caractéristique</h2><span class="muted" style="font-size:13px">Saisis les valeurs finales, bonus d'historique compris.</span></div>
-    <div class="row">${AB.map(a=>`<label class="field"><span>${ABN[a]}</span><input id="b-${a}" type="number" min="1" max="30" data-bind="abilities.${a}" data-num value="${esc(ch.abilities?.[a]??10)}"></label>`).join("")}</div>${AB.some(a=>+(ch.abilities?.[a]??10)>20)?`<div class="muted warntxt" style="font-size:12px">Au-delà de 20, une valeur ne s'obtient qu'avec un objet ou une aptitude (Champion primitif, faveur épique). Maximum absolu : 30.</div>`:""}
+    ${cls?`<div class="muted" style="font-size:var(--fs-sm)">${esc(cls.name)} : dé de vie d${cls.hitDie}, sauvegardes ${cls.saves.map(a=>ABN[a]).join(" et ")}, ${cls.skillChoices.count} compétences parmi ${cls.skillChoices.from.length===18?"toutes":cls.skillChoices.from.map(id=>S.C.skills.find(s=>s.id===id).name).join(", ")}. Armes : ${esc(cls.weapons)}.</div>`:""}
+    <div class="sect"><h2>Valeurs de caractéristique</h2><span class="muted" style="font-size:var(--fs-sm)">Saisis les valeurs finales, bonus d'historique compris.</span></div>
+    <div class="row">${AB.map(a=>`<label class="field"><span>${ABN[a]}</span><input id="b-${a}" type="number" min="1" max="30" data-bind="abilities.${a}" data-num value="${esc(ch.abilities?.[a]??10)}"></label>`).join("")}</div>${AB.some(a=>+(ch.abilities?.[a]??10)>20)?`<div class="muted warntxt" style="font-size:var(--fs-sm)">Au-delà de 20, une valeur ne s'obtient qu'avec un objet ou une aptitude (Champion primitif, faveur épique). Maximum absolu : 30.</div>`:""}
     <div class="grid2">
       <div><div class="sect"><h2>Compétences</h2></div>${skillRows}</div>
       <div class="stack">
@@ -402,10 +402,10 @@ function tabBuild(ch,D){
           <div class="row" style="margin-top:6px">${sel("addFeatSel","",featOpts,"").replace('data-bind=""','')}<button class="btn small" data-act="addList" data-k="feats" data-src="addFeatSel">Ajouter</button></div></div>
         ${cls&&cls.id==="occultiste"?`<div><div class="sect"><h2>Manifestations occultes</h2><span class="num ${(ch.invocations||[]).length>invMax?"warntxt":"muted"}">${(ch.invocations||[]).length}/${invMax}${(ch.invocations||[]).length>invMax?" · une de trop":""}</span></div><div class="row">${invs||`<span class="muted">Aucune</span>`}</div>
           <div class="row" style="margin-top:6px"><select id="addInvSel" data-act-change="invsel" aria-label="Manifestation">${invAvail.map(i=>`<option value="${i.id}" ${i.id===invSel?"selected":""}>${esc(i.name)}${i.repeatable?" (répétable)":""}${i.prerequisite?" — "+esc(i.prerequisite):""}</option>`).join("")}</select>${invSel&&INV_CHOICE[invSel]?`<select id="addInvCh" aria-label="Cible de la manifestation">${invOpts.length?invOpts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join(""):`<option value="">${INV_CHOICE[invSel]==="feat"?"Aucun don":"Aucun sort mineur compatible"}</option>`}</select>`:""}<button class="btn small" data-act="addInv">Ajouter</button></div>
-          <div class="muted" style="font-size:12px;margin-top:4px">Automatisés : Armure d'ombres (choisis « Armure du mage »), Décharge déchirante (Cha aux dégâts du sort choisi), Décharge répulsive et Lance occulte (rappel dans la carte du sort), Enseignement des Premiers-Nés (le don choisi s'ajoute à la fiche), Pacte de la lame (option « arme de pacte »), Frappe occulte (dans la carte de l'arme de pacte).</div>
+          <div class="muted" style="font-size:var(--fs-sm);margin-top:4px">Automatisés : Armure d'ombres (choisis « Armure du mage »), Décharge déchirante (Cha aux dégâts du sort choisi), Décharge répulsive et Lance occulte (rappel dans la carte du sort), Enseignement des Premiers-Nés (le don choisi s'ajoute à la fiche), Pacte de la lame (option « arme de pacte »), Frappe occulte (dans la carte de l'arme de pacte).</div>
           ${Object.keys(D.arc||{}).length?`<div class="sect"><h2>Arcanum mystique</h2></div><div class="stack">${Object.entries(D.arc).map(([sl,r])=>`<label class="field"><span>Sort de niveau ${sl}</span><select data-arcsel="${sl}"><option value="">— Choisir —</option>${classSpells(D,+sl).map(x=>`<option value="${esc(x.ref)}" ${x.ref===r?"selected":""}>${esc(x.s.name)}</option>`).join("")}</select></label>`).join("")}</div>`:""}</div>`:""}
         <div><div class="sect"><h2>Aptitudes perso</h2></div><div class="row">${apts||`<span class="muted">Aucune</span>`}</div>
-          ${aptOpts.length?`<div class="row" style="margin-top:6px"><select id="addAptSel" aria-label="Aptitude perso">${aptOpts.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select><button class="btn small" data-act="addList" data-k="features" data-src="addAptSel">Ajouter</button></div>`:`<div class="muted" style="font-size:13px">Crée des aptitudes dans Contenu perso.</div>`}</div>
+          ${aptOpts.length?`<div class="row" style="margin-top:6px"><select id="addAptSel" aria-label="Aptitude perso">${aptOpts.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select><button class="btn small" data-act="addList" data-k="features" data-src="addAptSel">Ajouter</button></div>`:`<div class="muted" style="font-size:var(--fs-sm)">Crée des aptitudes dans Contenu perso.</div>`}</div>
       </div>
     </div></div></fieldset>`;
 }
@@ -415,7 +415,7 @@ function renderDice(){
   const el=document.getElementById("dice"); if(!el) return;
   el.innerHTML=`<div class="sect" style="margin-top:0"><h2>Jets</h2>${S.log.length?`<button class="btn small ghost" data-act="clearLog">Effacer</button>`:""}</div>
     <div class="adv" role="group" aria-label="Mode du prochain d20">${[["n","Normal"],["a","Avantage"],["d","Désavantage"]].map(([k,l])=>`<button aria-pressed="${S.adv===k}" data-act="adv" data-v="${k}">${l}</button>`).join("")}</div>
-    <div class="log">${S.log.map(e=>`<div class="roll ${e.crit?"crit":""} ${e.fumble?"fumble":""}"><span class="t"><b>${esc(e.label)}</b>${e.crit?" · 20 naturel":""}${e.fumble?" · 1 naturel":""}</span><span class="tot">${e.total}</span><span class="bd">${esc(e.bd)}</span></div>`).join("")||`<div class="muted" style="font-size:13px">${virtualDiceEnabled()?"Clique sur un bonus de la fiche pour lancer le dé. L’avantage s’applique au prochain d20 seulement.":"Dés virtuels désactivés. Utilise À la table pour saisir tes dés physiques."}</div>`}</div>
+    <div class="log">${S.log.map(e=>`<div class="roll ${e.crit?"crit":""} ${e.fumble?"fumble":""}"><span class="t"><b>${esc(e.label)}</b>${e.crit?" · 20 naturel":""}${e.fumble?" · 1 naturel":""}</span><span class="tot">${e.total}</span><span class="bd">${esc(e.bd)}</span></div>`).join("")||`<div class="muted" style="font-size:var(--fs-sm)">${virtualDiceEnabled()?"Clique sur un bonus de la fiche pour lancer le dé. L’avantage s’applique au prochain d20 seulement.":"Dés virtuels désactivés. Utilise À la table pour saisir tes dés physiques."}</div>`}</div>
     <form class="freeroll" data-form="free"><input id="freeExpr" type="text" placeholder="ex. 2d6+3" aria-label="Jet libre"><label>Total des dés physiques <input name="physical" type="number" inputmode="numeric" min="0" step="1"></label><button class="btn small" type="submit">Appliquer</button><button data-virtual class="btn small" type="submit" name="virtual" value="1">Lancer</button></form>`;
   syncDiceInputMode();
 }
@@ -428,7 +428,7 @@ function viewHb(){
     <div class="row"><select id="hbNewKind" aria-label="Type">${Object.entries(HB_KINDS).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select><button class="btn primary" data-act="hbNew">Créer</button><button class="btn" data-act="catPick">Depuis le catalogue</button></div></div>
     <div class="hb-layout"><div class="panel" style="padding:0">
       <div style="padding:8px"><select id="hbFilter" data-act-change="hbFilter" aria-label="Filtrer"><option value="">Tous les types</option>${Object.entries(HB_KINDS).map(([k,l])=>`<option value="${k}" ${S.hbFilter===k?"selected":""}>${l}</option>`).join("")}</select></div>
-      ${all.map(h=>`<button class="hb-item" data-act="hbSel" data-id="${h._id}" aria-current="${S.hbSel===h._id}"><span>${esc(h.name)}</span><span class="muted" style="font-size:12px">${HB_KINDS[h.kind]}${h.pending?" · à remplir":""}</span></button>`).join("")||`<div class="muted" style="padding:12px">Rien pour l'instant.</div>`}
+      ${all.map(h=>`<button class="hb-item" data-act="hbSel" data-id="${h._id}" aria-current="${S.hbSel===h._id}"><span>${esc(h.name)}</span><span class="muted" style="font-size:var(--fs-sm)">${HB_KINDS[h.kind]}${h.pending?" · à remplir":""}</span></button>`).join("")||`<div class="muted" style="padding:12px">Rien pour l'instant.</div>`}
     </div><div>${sel?hbEditor(sel):`<div class="empty">Choisis un élément à gauche, ou crée un sort, un don, une sous-classe, une espèce, un historique, une aptitude ou un objet. Les effets que tu ajoutes (bonus, maîtrises, ressources, attaques, sorts accordés) sont appliqués automatiquement sur la fiche.</div>`}</div></div>`;
 }
 function hbEditor(h){
@@ -448,7 +448,7 @@ function hbEditor(h){
       <label class="field"><span>Composantes</span><input id="hb-cp" type="text" ${b("components")} value="${esc(h.components||"")}"></label>
       <label class="field"><span>Durée</span><input id="hb-du" type="text" ${b("duration")} value="${esc(h.duration||"")}"></label></div>
       <div class="row"><label class="row"><input id="hb-conc" type="checkbox" ${b("concentration")} ${h.concentration?"checked":""}>Concentration</label><label class="row"><input id="hb-rit" type="checkbox" ${b("ritual")} ${h.ritual?"checked":""}>Rituel</label></div>
-      <div class="sect"><h2>Mécanique</h2><span class="muted" style="font-size:13px">Pour les boutons de jet de la fiche.</span></div>
+      <div class="sect"><h2>Mécanique</h2><span class="muted" style="font-size:var(--fs-sm)">Pour les boutons de jet de la fiche.</span></div>
       <div class="grid2">
       <label class="row"><input id="hb-matk" type="checkbox" ${b("mech.attack")} ${h.mech?.attack?"checked":""}>Attaque de sort</label>
       <label class="field"><span>Jet de sauvegarde</span><select id="hb-msave" ${b("mech.save")}><option value="">Aucun</option>${AB.map(a=>`<option value="${ABN[a]}" ${h.mech?.save===ABN[a]?"selected":""}>${ABN[a]}</option>`).join("")}</select></label>
@@ -468,7 +468,7 @@ function hbEditor(h){
   h1+=`<label class="field"><span>Description</span><textarea id="hb-text" ${b("text")}>${esc(h.text||"")}</textarea></label>`;
   if(h.kind==="classe") h1+=hbClassEditor(id,h);
   if(h.kind==="sous-classe"||h.kind==="classe"){
-    h1+=`<div class="sect"><h2>Aptitudes par niveau</h2><button class="btn small" data-act="hbAddFeat" data-id="${id}">Ajouter une aptitude</button></div>${h.kind==="classe"?`<div class="muted" style="font-size:12px">Les améliorations de caractéristique sont ajoutées automatiquement aux niveaux indiqués plus haut.</div>`:""}`;
+    h1+=`<div class="sect"><h2>Aptitudes par niveau</h2><button class="btn small" data-act="hbAddFeat" data-id="${id}">Ajouter une aptitude</button></div>${h.kind==="classe"?`<div class="muted" style="font-size:var(--fs-sm)">Les améliorations de caractéristique sont ajoutées automatiquement aux niveaux indiqués plus haut.</div>`:""}`;
     (h.features||[]).forEach((f,i)=>{
       h1+=`<div class="panel stack" style="background:var(--sheet2)"><div class="row"><label class="field" style="width:90px"><span>Niveau</span><input id="hbf-l-${i}" type="number" min="1" max="20" ${b("features."+i+".level")} data-num value="${esc(f.level||3)}"></label>
         <label class="field" style="flex:1;min-width:180px"><span>Nom</span><input id="hbf-n-${i}" type="text" ${b("features."+i+".name")} value="${esc(f.name||"")}"></label>
@@ -484,10 +484,10 @@ function bonusTargets(){ return [["ca","CA"],["ca_armure","CA en armure"],["init
 function effectsEditor(id,path,effs){
   const b=k=>`data-hb="${id}" data-bind="${path}.${k}"`;
   const o=(v,l,c)=>`<option value="${esc(v)}" ${v===c?"selected":""}>${esc(l)}</option>`;
-  let h=`<div class="sect"><h2 style="font-size:18px">Effets automatiques</h2><div class="row"><select id="eff-new-${path.replace(/\W/g,"")}" aria-label="Type d'effet">${Object.entries(EFF_TYPES).map(([k,l])=>o(k,l)).join("")}</select><button class="btn small" data-act="effAdd" data-id="${id}" data-path="${path}" data-src="eff-new-${path.replace(/\W/g,"")}">Ajouter</button></div></div>`;
+  let h=`<div class="sect"><h2 style="font-size:var(--fs-lg)">Effets automatiques</h2><div class="row"><select id="eff-new-${path.replace(/\W/g,"")}" aria-label="Type d'effet">${Object.entries(EFF_TYPES).map(([k,l])=>o(k,l)).join("")}</select><button class="btn small" data-act="effAdd" data-id="${id}" data-path="${path}" data-src="eff-new-${path.replace(/\W/g,"")}">Ajouter</button></div></div>`;
   effs.forEach((e,i)=>{
     const p=i+"";
-    let f=`<b style="font-size:13px">${EFF_TYPES[e.t]||e.t}</b>`;
+    let f=`<b style="font-size:var(--fs-sm)">${EFF_TYPES[e.t]||e.t}</b>`;
     if(e.t==="bonus") f+=`<select ${b(p+".cible")} aria-label="Cible">${bonusTargets().map(([v,l])=>o(v,l,e.cible)).join("")}</select><input type="text" ${b(p+".val")} value="${esc(e.val||"")}" placeholder="2, mb, niv…" aria-label="Valeur" style="width:90px">`;
     if(e.t==="maitrise") f+=`<select ${b(p+".cible")} aria-label="Cible">${[...S.C.skills.map(s=>["comp:"+s.id,s.name]),...AB.map(a=>["jds:"+a,"JS "+ABN[a]])].map(([v,l])=>o(v,l,e.cible)).join("")}</select><select ${b(p+".niveau")} data-num aria-label="Niveau">${o(1,"Maîtrise",+e.niveau||1)}${o(2,"Expertise",+e.niveau)}</select>`;
     if(e.t==="ressource") f+=`<input type="text" ${b(p+".nom")} value="${esc(e.nom||"")}" placeholder="Nom" aria-label="Nom"><input type="text" ${b(p+".max")} value="${esc(e.max||"")}" placeholder="max (ex. mb, cha, 2)" aria-label="Maximum" style="width:120px"><select ${b(p+".recharge")} aria-label="Recharge">${o("long","Repos long",e.recharge||"long")}${o("court","Repos court",e.recharge)}</select>`;
@@ -497,7 +497,7 @@ function effectsEditor(id,path,effs){
     f+=`<button class="btn small ghost danger" data-act="effRm" data-id="${id}" data-path="${path}" data-i="${i}" aria-label="Retirer l'effet">×</button>`;
     h+=`<div class="effect">${f}</div>`;
   });
-  return h+`<div class="muted" style="font-size:12px">Valeurs : un nombre, ou une formule avec niv (niveau), mb (bonus de maîtrise), for, dex, con, int, sag, cha (modificateurs). Exemple : niv+1.</div>`;
+  return h+`<div class="muted" style="font-size:var(--fs-sm)">Valeurs : un nombre, ou une formule avec niv (niveau), mb (bonus de maîtrise), for, dex, con, int, sag, cha (modificateurs). Exemple : niv+1.</div>`;
 }
  
 /* ----- compendium ----- */
@@ -518,8 +518,8 @@ function viewComp(){
   return `<div class="list-head"><div><h1>Grimoire</h1><div class="muted">Tout le SRD 5.2.1 en français, consultable et cherchable.</div></div></div>
     <div class="row" style="margin-bottom:12px"><select id="compType" data-act-change="compType" aria-label="Catégorie">${Object.entries(types).map(([k,l])=>`<option value="${k}" ${t===k?"selected":""}>${l}</option>`).join("")}</select>
     <form data-form="comp" class="row" style="flex:1"><input id="compQ" type="text" value="${esc(S.comp.q)}" placeholder="Chercher un nom, une classe, une école…" style="flex:1;min-width:180px" aria-label="Recherche"><button class="btn" type="submit">Chercher</button></form></div>
-    <div class="muted" style="font-size:13px;margin-bottom:6px">${items.length} résultat${items.length>1?"s":""}${items.length>120?" (120 affichés, affine ta recherche)":""}</div>
-    <div class="panel">${shown.map(i=>`<details class="feat"><summary><span class="nm">${esc(i.n)}</span><span class="muted" style="font-size:13px">${esc(i.sub)}</span></summary><div class="prose">${prose(i.txt)}</div></details>`).join("")||`<div class="muted">Aucun résultat.</div>`}</div>`;
+    <div class="muted" style="font-size:var(--fs-sm);margin-bottom:6px">${items.length} résultat${items.length>1?"s":""}${items.length>120?" (120 affichés, affine ta recherche)":""}</div>
+    <div class="panel">${shown.map(i=>`<details class="feat"><summary><span class="nm">${esc(i.n)}</span><span class="muted" style="font-size:var(--fs-sm)">${esc(i.sub)}</span></summary><div class="prose">${prose(i.txt)}</div></details>`).join("")||`<div class="muted">Aucun résultat.</div>`}</div>`;
 }
  
 /* ----- modal: spell picker & attack editor ----- */

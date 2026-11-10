@@ -298,6 +298,31 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq((await eqNow(p)).mainP, 'b1', 'appui long puis glisser : équipé');
     ok(await p.evaluate(() => !document.querySelector('.eqghost')), 'fantôme retiré');
   });
+
+  // Typographie : toute taille de texte visible appartient à l'échelle (11, 13, 16, 18, 22, 28 px) ou est un grand chiffre décoratif (32 px et plus).
+  const FS_SCALE = [11, 13, 16, 18, 22, 28];
+  const fsOutside = p => p.evaluate(scale => {
+    const bad = new Set();
+    const vis = el => { const r = el.getBoundingClientRect(); if (r.width < 1 || r.height < 1) return false; for (let e = el; e; e = e.parentElement) { const c = getComputedStyle(e); if (c.display === 'none' || c.visibility === 'hidden') return false; } return true; };
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) { if (!n.nodeValue.trim()) continue; const el = n.parentElement; if (!el || el.closest('script,style,.portrait-edit') || !vis(el)) continue;
+      const f = Math.round(parseFloat(getComputedStyle(el).fontSize) * 10) / 10; if (!scale.includes(f) && f < 32) bad.add(f + 'px ' + el.tagName.toLowerCase() + '.' + [...el.classList].join('.')); }
+    return [...bad];
+  }, FS_SCALE);
+
+  await test('Typographie : une seule échelle de tailles (fiche, À la table, popups, téléphone et ordinateur)', async p => {
+    for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
+      await p.setViewportSize(vp);
+      await open(p);
+      await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+      await p.evaluate(() => { S.rv = null; renderModal(); });
+      const bad = new Set();
+      for (const t of ['jeu', 'comp', 'sorts', 'apt', 'inv', 'notes', 'build', 'table']) { await p.evaluate(t => { S.tab = t; render(); }, t); (await fsOutside(p)).forEach(x => bad.add(t + ' : ' + x)); }
+      for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'rest']) { await p.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await fsOutside(p)).forEach(x => bad.add(k + ' : ' + x)); }
+      await p.evaluate(() => { S.T.pop = null; S.view = 'list'; render(); }); (await fsOutside(p)).forEach(x => bad.add('liste : ' + x));
+      eq([...bad], [], 'tailles hors échelle en ' + vp.width + ' px');
+    }
+  });
  
   await test('Thème : sombre par défaut, bouton du Menu pour passer en clair et revenir', async p => {
     await open(p);

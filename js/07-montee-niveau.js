@@ -38,13 +38,13 @@ function lvlModal(){
   let h="";
   // gains
   const gains=[p.pbTxt,p.slotTxt,p.dCantrips?`+${p.dCantrips} sort mineur`:"",p.dPrepared?`+${p.dPrepared} sort${p.dPrepared>1?"s":""} préparé${p.dPrepared>1?"s":""}`:"",p.dInv?`+${p.dInv} manifestation${p.dInv>1?"s":""}`:""].filter(Boolean);
-  h+=sec("Ce que tu gagnes",`${gains.length?`<ul class="lul">${gains.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`:""}${p.feats.length?p.feats.map(f=>`<details class="lufeat"><summary><b>${esc(f.name)}</b> <span class="muted">· ${esc(f.origin)}</span></summary><div class="prose">${prose(f.text||"")}</div></details>`).join(""):`<div class="muted" style="font-size:13px">Pas de nouvelle aptitude de classe à ce niveau.</div>`}`);
+  h+=sec("Ce que tu gagnes",`${gains.length?`<ul class="lul">${gains.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`:""}${p.feats.length?p.feats.map(f=>`<details class="lufeat"><summary><b>${esc(f.name)}</b> <span class="muted">· ${esc(f.origin)}</span></summary><div class="prose">${prose(f.text||"")}</div></details>`).join(""):`<div class="muted" style="font-size:var(--fs-sm)">Pas de nouvelle aptitude de classe à ce niveau.</div>`}`);
   // hp
   const manual=ch.hpMode==="manual";
   h+=sec("Points de vie",`<div class="row"><label class="row"><input type="radio" name="luhp" ${lu("hp")} value="avg" ${P.hp!=="roll"?"checked":""}> Moyenne : <b>+${p.hpAvg}</b></label>
     <label class="row"><input type="radio" name="luhp" ${lu("hp")} value="roll" ${P.hp==="roll"?"checked":""}> J'ai lancé le d${p.hd} :</label><input type="number" min="1" max="${p.hd}" ${lu("roll")} value="${esc(P.roll||"")}" style="width:70px" aria-label="Résultat du dé de vie" ${P.hp==="roll"?"":"disabled"}>
     ${P.hp==="roll"&&+P.roll?`<span class="muted">→ +${Math.max(1,+P.roll+D0.mods.con)+p.pvniv}</span>`:""}</div>
-    <div class="muted" style="font-size:12px">Con ${sg(D0.mods.con)} par niveau${p.pvniv?`, +${p.pvniv} d'un effet (ex. Robuste)`:""}.${!manual&&P.hp==="roll"?" Les PV passeront en saisie manuelle.":""}</div>`);
+    <div class="muted" style="font-size:var(--fs-sm)">Con ${sg(D0.mods.con)} par niveau${p.pvniv?`, +${p.pvniv} d'un effet (ex. Robuste)`:""}.${!manual&&P.hp==="roll"?" Les PV passeront en saisie manuelle.":""}</div>`);
   // subclass
   if(p.needSub){ const opts=[["","— Choisir —"],...p.cls.subclasses.map(s=>["srd:"+s.id,s.name]),...hbs("sous-classe").filter(h=>!h.classId||h.classId===p.cls.id).map(h=>["hb:"+h._id,h.name+hbTag(h)]),...catOpts("sous-classe",e=>catClassOk(e,p.cls))];
     h+=sec("Sous-classe",`<select ${lu("sub")}>${opts.map(([v,l])=>o(v,l,P.sub||"")).join("")}</select>`); }
@@ -54,13 +54,13 @@ function lvlModal(){
     const abSel=k=>`<select ${lu(k)}>${o("","—","")}${AB.map(a=>o(a,ABN[a]+" ("+(+ch.abilities?.[a]||10)+")",P[k]||"")).join("")}</select>`;
     h+=sec(p.epic?"Faveur épique":"Amélioration de caractéristique",
       (p.asi?`<div class="row"><label class="row"><input type="radio" name="luasi" ${lu("asi")} value="ab" ${P.asi!=="feat"?"checked":""}> Caractéristiques</label><label class="row"><input type="radio" name="luasi" ${lu("asi")} value="feat" ${P.asi==="feat"?"checked":""}> Un don</label></div>`:"")+
-      ((p.asi&&P.asi!=="feat")?`<div class="row">+1 ${abSel("ab1")} +1 ${abSel("ab2")}</div><div class="muted" style="font-size:12px">Choisis deux fois la même pour +2. Maximum 20.</div>`
+      ((p.asi&&P.asi!=="feat")?`<div class="row">+1 ${abSel("ab1")} +1 ${abSel("ab2")}</div><div class="muted" style="font-size:var(--fs-sm)">Choisis deux fois la même pour +2. Maximum 20.</div>`
         :`<select ${lu("feat")}>${featOpts.map(([v,l])=>o(v,l,P.feat||"")).join("")}</select>`));
   }
   if(p.style){ const opts=[["","— Choisir —"],...styleOpts(ch),...(p.styleAlt?[["alt",p.styleAlt.name+" (2 sorts mineurs de "+p.styleAlt.cls+")"]]:[])];
     let x=`<select ${lu("style")}>${opts.map(([v,l])=>o(v,l,P.style||"")).join("")}</select>`;
     if(P.style==="alt"){ const can=classSpells({cls:{name:p.styleAlt.cls}},0); x+=[0,1].map(i=>`<select ${lu("stc",i)}>${o("","— Sort mineur de "+p.styleAlt.cls+" —","")}${can.filter(c=>!(ch.spells||[]).some(s=>s.ref===c.ref)&&!(P.stc||[]).some((r,j)=>j!==i&&r===c.ref)).map(c=>o(c.ref,c.s.name,(P.stc||[])[i]||"")).join("")}</select>`).join(""); }
-    h+=sec("Style de combat",x+`<div class="muted" style="font-size:12px">Défense : +1 CA en armure. Archerie : +2 aux attaques à distance.</div>`); }
+    h+=sec("Style de combat",x+`<div class="muted" style="font-size:var(--fs-sm)">Défense : +1 CA en armure. Archerie : +2 aux attaques à distance.</div>`); }
   // invocations
   if(p.dInv){ const ex=(P.can||[]).filter(Boolean); const av=invAvailFor(ch,p.to,ex);
     h+=sec(`Manifestations (${p.dInv} à choisir)`,Array.from({length:p.dInv},(_,i)=>{ const v=(P.inv||[])[i]||"", ck=INV_CHOICE[v];
@@ -70,12 +70,12 @@ function lvlModal(){
   const have=new Set((ch.spells||[]).map(s=>s.ref).concat(Object.keys(D0.always)));
   if(p.dCantrips){ const l=classSpells(D0,0).filter(x=>!have.has(x.ref)); h+=sec(`Sorts mineurs (${p.dCantrips})`,Array.from({length:p.dCantrips},(_,i)=>`<select ${lu("can",i)}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,(P.can||[])[i]||"")).join("")}</select>`).join("")); }
   if(p.dPrepared&&p.maxSpell){ const l=classSpells(D0,null,p.maxSpell).filter(x=>!have.has(x.ref)); h+=sec(`Sorts (${p.dPrepared}, jusqu'au niveau ${p.maxSpell})`,Array.from({length:p.dPrepared},(_,i)=>`<select ${lu("spl",i)}>${o("","— Choisir (ou plus tard) —","")}${l.map(x=>o(x.ref,"niv. "+x.s.level+" · "+x.s.name,(P.spl||[])[i]||"")).join("")}</select>`).join("")); }
-  if(p.arc){ const l=classSpells(D0,p.arc).filter(x=>!have.has(x.ref)); h+=sec(`Arcanum mystique (sort de niveau ${p.arc})`,`<select ${lu("arc")}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,P.arc||"")).join("")}</select><div class="muted" style="font-size:12px">Lançable une fois par repos long, sans emplacement.</div>`); }
+  if(p.arc){ const l=classSpells(D0,p.arc).filter(x=>!have.has(x.ref)); h+=sec(`Arcanum mystique (sort de niveau ${p.arc})`,`<select ${lu("arc")}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,P.arc||"")).join("")}</select><div class="muted" style="font-size:var(--fs-sm)">Lançable une fois par repos long, sans emplacement.</div>`); }
   const chain=S.lvlTarget&&S.lvlTarget.id===S.cur&&p.from<S.lvlTarget.to?S.lvlTarget:null;
   const foot=chain&&P.stop?`<div class="panel stack" style="border-color:var(--blood)"><div>Arrêter la création ici ? ${esc(ch.name||"Le personnage")} restera au <b>niveau ${p.from}</b> au lieu du niveau ${chain.to}. Tu pourras continuer plus tard avec le bouton « Niveau ${p.to} ↑ » en haut de la fiche.</div><div class="row" style="justify-content:flex-end;gap:6px"><button class="btn" data-act="lvlStopNo">Reprendre la montée</button><button class="btn danger" data-act="lvlStopYes">Arrêter au niveau ${p.from}</button></div></div>`
-    :`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:12px">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
+    :`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:var(--fs-sm)">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
   return `<div class="picker" data-act="${chain?"noop":"closeModal"}"><div class="box" role="dialog" aria-label="Monter de niveau" style="grid-template-rows:auto 1fr auto">
-    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2>${chain?`<div class="muted" style="font-size:13px">Création du personnage · niveau ${p.to} sur ${chain.to}</div>`:""}</div>${chain?`<button class="btn small ghost" data-act="lvlStop">Arrêter ici</button>`:`<button class="btn small ghost" data-act="closeModal">Annuler</button>`}</div>
+    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2>${chain?`<div class="muted" style="font-size:var(--fs-sm)">Création du personnage · niveau ${p.to} sur ${chain.to}</div>`:""}</div>${chain?`<button class="btn small ghost" data-act="lvlStop">Arrêter ici</button>`:`<button class="btn small ghost" data-act="closeModal">Annuler</button>`}</div>
     <div class="stack" style="overflow-y:auto;min-height:0">${h}</div>
     ${foot}</div></div>`;
 }
@@ -89,14 +89,14 @@ function ccPop(ch,D,anim){
   const dd=Math.max(10,Math.floor((+c.dmg||0)/2)), mod=D.saves.con.val-2*(+ch.exhaustion||0);
   let res="";
   if(c.res){ const ok=c.res.total>=dd;
-    res=`<div class="ccres ${ok?"ok":"ko"}"><div class="num" style="font-size:34px;font-weight:700">${c.res.total}</div><div><b>${ok?"Concentration maintenue":"Concentration perdue"}</b><div class="muted" style="font-size:13px">${esc(c.res.bd)} contre DD ${dd}${ok?"":` · ${esc(c.res.spell)} prend fin`}</div></div></div>
+    res=`<div class="ccres ${ok?"ok":"ko"}"><div class="num" style="font-size:34px;font-weight:700">${c.res.total}</div><div><b>${ok?"Concentration maintenue":"Concentration perdue"}</b><div class="muted" style="font-size:var(--fs-sm)">${esc(c.res.bd)} contre DD ${dd}${ok?"":` · ${esc(c.res.spell)} prend fin`}</div></div></div>
       <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn primary" data-act="ccclose">Continuer</button></div>`; }
-  const body=`<div class="muted" style="font-size:13px">Tu as subi des dégâts en te concentrant sur <b>${esc(ch.conc||(c.res&&c.res.spell)||"")}</b> : jet de sauvegarde de Constitution obligatoire.</div>
+  const body=`<div class="muted" style="font-size:var(--fs-sm)">Tu as subi des dégâts en te concentrant sur <b>${esc(ch.conc||(c.res&&c.res.spell)||"")}</b> : jet de sauvegarde de Constitution obligatoire.</div>
     <div class="row" style="gap:18px;margin:10px 0;align-items:flex-end">
       <label class="field"><span>Dégâts subis</span><input id="cc-dmg" type="number" min="0" value="${esc(String(c.dmg||0))}" style="width:80px" ${c.res?"disabled":""}></label>
-      <div><div class="label">DD</div><b class="num" style="font-size:26px">${dd}</b></div>
-      <div><div class="label">Ton bonus</div><b class="num" style="font-size:26px">${sg(mod)}</b></div></div>
-    <div class="muted" style="font-size:12px">DD 10, ou la moitié des dégâts si c'est plus (max 30).</div>
+      <div><div class="label">DD</div><b class="num" style="font-size:var(--fs-2xl)">${dd}</b></div>
+      <div><div class="label">Ton bonus</div><b class="num" style="font-size:var(--fs-2xl)">${sg(mod)}</b></div></div>
+    <div class="muted" style="font-size:var(--fs-sm)">DD 10, ou la moitié des dégâts si c'est plus (max 30).</div>
     ${c.res?res:`<div class="adv" role="group" style="margin-top:10px">${[["n","Normal"],["a","Avantage"],["d","Désavantage"]].map(([k,l])=>`<button aria-pressed="${c.mode===k}" data-act="ccmode" data-v="${k}">${l}</button>`).join("")}</div>
     <form class="row tin" data-form="cc" style="margin-top:8px"><label class="field"><span>${c.mode==="n"?"Ton d20":"1er d20"}</span><input id="cc-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(c.d1)}"></label>
       ${c.mode!=="n"?`<label class="field"><span>2e d20</span><input id="cc-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(c.d2)}"></label>`:""}
@@ -169,10 +169,10 @@ function renderModal(){
   if(S.pending.type==="hp"){ const P=S.pending, dmg=P.mode==="dmg", hp=ch.hp||{cur:D.hpMax,temp:0};
     m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box hpbox" role="dialog" aria-label="${dmg?"Dégâts":"Soins"}" style="grid-template-rows:auto auto auto;max-width:420px">
       <div class="row" style="justify-content:space-between"><h2 style="color:${dmg?"#9b2f2f":"#3f6b4a"}">${dmg?"Dégâts subis":"Soins reçus"}</h2><button class="btn small ghost" data-act="closeModal">Annuler</button></div>
-      <form class="stack" data-form="hpamt"><div class="row" style="gap:10px;align-items:flex-end"><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="0" style="width:110px;font-size:24px" autofocus></label>
+      <form class="stack" data-form="hpamt"><div class="row" style="gap:10px;align-items:flex-end"><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="0" style="width:110px;font-size:var(--fs-xl)" autofocus></label>
         <button class="btn primary ${dmg?"hpdmgb":"hphealb"}" type="submit" style="height:46px">${dmg?"Appliquer les dégâts":"Appliquer les soins"}</button></div>
-        ${dmg?`<label class="row" style="gap:6px;font-size:13px"><input type="checkbox" id="hp-crit"> Coup critique (compte deux échecs si tu es à 0 PV)</label>`:""}
-        <div class="muted" style="font-size:12px">PV ${+hp.cur||0} / ${D.hpMax}${+hp.temp?` · ${+hp.temp} PV temporaires${dmg?" (perdus en premier)":""}`:""}${dmg&&ch.conc?` · concentration sur ${esc(ch.conc)} : un jet sera demandé`:""}</div></form>
+        ${dmg?`<label class="row" style="gap:6px;font-size:var(--fs-sm)"><input type="checkbox" id="hp-crit"> Coup critique (compte deux échecs si tu es à 0 PV)</label>`:""}
+        <div class="muted" style="font-size:var(--fs-sm)">PV ${+hp.cur||0} / ${D.hpMax}${+hp.temp?` · ${+hp.temp} PV temporaires${dmg?" (perdus en premier)":""}`:""}${dmg&&ch.conc?` · concentration sur ${esc(ch.conc)} : un jet sera demandé`:""}</div></form>
       <div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,3,4,5,6,8,10,12].map(n=>`<button class="btn small" data-act="hpquick" data-v="${n}">${dmg?"−":"+"}${n}</button>`).join("")}</div></div></div>`;
     setTimeout(()=>{ const i=document.getElementById("hp-amt"); if(i) i.focus(); },0); return; }
   if(S.pending.type==="chg"){ const b=(ch.bag||[]).find(x=>x.id===S.pending.id); const c=b&&itemCharges(ch,b)||{max:"",when:"long",rec:""};
@@ -183,7 +183,7 @@ function renderModal(){
         <label class="field"><span>Récupération</span><select id="chg-when"><option value="long" ${c.when!=="court"&&c.when!=="aucune"?"selected":""}>Au repos long (ou à l'aube)</option><option value="court" ${c.when==="court"?"selected":""}>Au repos court et long</option><option value="aucune" ${c.when==="aucune"?"selected":""}>Jamais (consommable)</option></select></label>
         <label class="field"><span>Quantité récupérée (vide = tout, ou formule comme 1d6+1)</span><input id="chg-rec" type="text" value="${esc(c.rec==="full"?"":c.rec||"")}" placeholder="tout" style="width:140px"></label>
         <label class="field"><span>Utilisation en jeu</span><select id="chg-cost">${[["auto","Automatique (d'après la description)"],["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["autre","Autre"],["none","Pas dans les actions"]].map(([v,l])=>`<option value="${v}" ${(c.cost||"auto")===v?"selected":""}>${l}</option>`).join("")}</select></label>
-        ${c.auto?`<div class="muted" style="font-size:12px">Valeurs lues dans la description de l'objet.</div>`:""}
+        ${c.auto?`<div class="muted" style="font-size:var(--fs-sm)">Valeurs lues dans la description de l'objet.</div>`:""}
       </div>
       <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="chgSave">Enregistrer</button></div></div></div>`; return; }
   if(S.pending.type==="spell"){
@@ -197,8 +197,8 @@ function renderModal(){
       <div class="row" style="justify-content:space-between"><h2>Ajouter des sorts</h2><button class="btn small ghost" data-act="closeModal">Fermer</button></div>
       <div class="row"><form data-form="spellq" class="row" style="flex:1"><input id="spellQ" type="text" value="${esc(S.pending.q||"")}" placeholder="Chercher un sort" style="flex:1" aria-label="Chercher un sort"><button class="btn small" type="submit">Chercher</button></form>
       <label class="row"><input id="spellAll" type="checkbox" data-act="spellAll" ${all?"checked":""}>Tous les sorts</label></div>
-      <div class="res-list">${list.slice(0,150).map(x=>`<div class="pick-row"><div><b>${esc(x.s.name)}</b> ${badge(x.ref)} <span class="muted" style="font-size:12px">${x.s.level?"niv. "+x.s.level:"mineur"} · ${esc(x.s.school||"")}</span></div>${have.has(x.ref)?`<span class="muted" style="font-size:13px">Déjà sur la fiche</span>`:`<button class="btn small" data-act="addSpell" data-ref="${esc(x.ref)}">Ajouter</button>`}</div>`).join("")||`<div class="muted">Aucun sort.</div>`}</div>
-      <div class="muted" style="font-size:12px">${all?"Tous les sorts du SRD et tes sorts perso.":"Sorts de "+esc(cls||"ta classe")+" jusqu'au niveau "+maxL+", plus tes sorts perso."}</div></div></div>`;
+      <div class="res-list">${list.slice(0,150).map(x=>`<div class="pick-row"><div><b>${esc(x.s.name)}</b> ${badge(x.ref)} <span class="muted" style="font-size:var(--fs-sm)">${x.s.level?"niv. "+x.s.level:"mineur"} · ${esc(x.s.school||"")}</span></div>${have.has(x.ref)?`<span class="muted" style="font-size:var(--fs-sm)">Déjà sur la fiche</span>`:`<button class="btn small" data-act="addSpell" data-ref="${esc(x.ref)}">Ajouter</button>`}</div>`).join("")||`<div class="muted">Aucun sort.</div>`}</div>
+      <div class="muted" style="font-size:var(--fs-sm)">${all?"Tous les sorts du SRD et tes sorts perso.":"Sorts de "+esc(cls||"ta classe")+" jusqu'au niveau "+maxL+", plus tes sorts perso."}</div></div></div>`;
   }
   if(S.pending.type==="attack"){
     const a=(ch.attacks||[]).find(x=>x.id===S.pending.id); if(!a){ S.pending=null; m.innerHTML=""; return; }

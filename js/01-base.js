@@ -20,7 +20,7 @@ function aideGuess(h){ const sl=aideSlug(h.name);
   return AIDE+"/"; }
 const safeUrl = u => /^https?:\/\/[^\s"'<>]+$/i.test(String(u||"").trim())?String(u).trim():"";
 function hbBook(h){ const l=String(h&&h.label||"").trim(); return l&&!/^(hors srd|mon livre|perso)$/i.test(l)?l:"Personnalisée"; }
-function hbFoot(h){ if(!h) return ""; const lk=linkHtml(h); const more=(Array.isArray(h.links)?h.links:[]).filter(l=>safeUrl(l.url)&&l.url!==h.link); return `<div class="hbfoot muted" style="font-size:13px;margin-top:8px">Source : ${esc(hbBook(h))}${lk?" · "+lk:""}${more.length?` · Références : ${more.map(l=>`<a class="aidelink" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(hostOf(l.url))} ↗</a>`).join(" · ")}`:""}</div>`; }
+function hbFoot(h){ if(!h) return ""; const lk=linkHtml(h); const more=(Array.isArray(h.links)?h.links:[]).filter(l=>safeUrl(l.url)&&l.url!==h.link); return `<div class="hbfoot muted" style="font-size:var(--fs-sm);margin-top:8px">Source : ${esc(hbBook(h))}${lk?" · "+lk:""}${more.length?` · Références : ${more.map(l=>`<a class="aidelink" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(hostOf(l.url))} ↗</a>`).join(" · ")}`:""}</div>`; }
 const hostOf=u=>{ try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return u; } };
 function linkHtml(h){ const u=h&&safeUrl(h.link); return u?`<a class="aidelink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">Voir sur ${/aidedd\.org/i.test(u)?"AideDD":hostOf(u)} ↗</a>`:""; }
 const CONDS = ["À terre","Agrippé","Assourdi","Aveuglé","Charmé","Effrayé","Empoisonné","Entravé","Étourdi","Inconscient","Invisible","Neutralisé","Paralysé","Pétrifié"];
@@ -65,4 +65,4 @@ function hbClassEditor(id,h){ const b=k=>`data-hb="${id}" data-bind="${k}"`; con
   <label class="field"><span>Liste de sorts</span><select ${b("spellList")}>${o("","Tous les sorts",h.spellList)}${S.C.classes.filter(c=>c.casting).map(c=>o(c.name,"Sorts de "+c.name,h.spellList)).join("")}</select></label>
   <label class="field"><span>Sorts mineurs (20 valeurs, niveaux 1→20)</span><input type="text" ${b("cantrips")} value="${esc(h.cantrips||"")}" placeholder="2,2,2,3,3,3,3,3,3,4,…"></label>
   <label class="field"><span>Sorts préparés (20 valeurs)</span><input type="text" ${b("prepared")} value="${esc(h.prepared||"")}" placeholder="vide = table standard du type"></label>`:""}</div>
-  ${h.castType?`<div class="muted" style="font-size:12px">Emplacements : table du ${h.castType==="pact"?"Occultiste":h.castType==="half"?"Paladin":"Magicien"}.</div>`:""}`; }
+  ${h.castType?`<div class="muted" style="font-size:var(--fs-sm)">Emplacements : table du ${h.castType==="pact"?"Occultiste":h.castType==="half"?"Paladin":"Magicien"}.</div>`:""}`; }

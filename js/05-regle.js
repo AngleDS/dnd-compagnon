@@ -353,6 +353,6 @@ function rollDmg(label, expr, crit){
 let toastT=null;
 function showToast(e){
   const t=document.getElementById("toast");
-  t.innerHTML=`<span class="tot">${e.total}</span><span><b>${esc(e.label)}</b><br><span style="opacity:.75;font-size:12px">${esc(e.bd)}</span></span>`;
+  t.innerHTML=`<span class="tot">${e.total}</span><span><b>${esc(e.label)}</b><br><span style="opacity:.75;font-size:var(--fs-sm)">${esc(e.bd)}</span></span>`;
   t.classList.toggle("rolls",!!document.getElementById("dice")); t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,4000);
 }

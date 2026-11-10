@@ -19,11 +19,11 @@ function wNhPanel(W){ const n=W.nh, K={historique:"historique",espece:"espèce",
     <label class="field"><span>Outil</span><input type="text" data-w="nh.tools" value="${esc(n.tools||"")}"></label>`;
   if(n.kind==="classe") x+=`<div class="grid2"><label class="field"><span>Dé de vie</span>${wSel("nh.hitDie",[6,8,10,12].map(v=>[v,"d"+v]),n.hitDie||8,"—")}</label><label class="field"><span>Caractéristique principale</span>${wSel("nh.primary1",AB.map(a=>[a,ABN[a]]),n.primary1)}</label>
     <div class="field"><span>Jets de sauvegarde</span><div class="row" style="gap:6px">${wSel("nh.save1",AB.map(a=>[a,ABN[a]]),n.save1)}${wSel("nh.save2",AB.map(a=>[a,ABN[a]]),n.save2)}</div></div><label class="field"><span>Incantation</span>${wSel("nh.castType",CAST_TYPES.slice(1),n.castType||"","Aucune")}</label></div>
-    <div class="muted" style="font-size:12px">Le reste (compétences, armures, aptitudes par niveau…) se complète dans Contenu perso.</div>`;
+    <div class="muted" style="font-size:var(--fs-sm)">Le reste (compétences, armures, aptitudes par niveau…) se complète dans Contenu perso.</div>`;
   if(n.kind==="espece") x+=`<label class="field"><span>Vitesse (m)</span><input type="number" step="1.5" min="0" data-w="nh.speed" value="${esc(n.speed||9)}"></label>`;
   x+=`<label class="field"><span>Description${n.kind==="espece"?" et traits":""}</span><textarea data-w="nh.text" style="min-height:90px">${esc(n.text||"")}</textarea></label>
     <div class="row" style="justify-content:space-between;gap:6px;flex-wrap:wrap">${afBtn('data-mode="nh"')}<span class="row" style="gap:6px;margin-left:auto"><button class="btn small ghost" data-act="wnhCancel">Annuler</button><button class="btn small primary" data-act="wnhSave">Créer et choisir</button></span></div>
-    <div class="muted" style="font-size:12px">Il sera rangé dans Contenu perso pour tous tes personnages. Tu pourras y ajouter des effets automatisés et un lien AideDD.</div></div>`;
+    <div class="muted" style="font-size:var(--fs-sm)">Il sera rangé dans Contenu perso pour tous tes personnages. Tu pourras y ajouter des effets automatisés et un lien AideDD.</div></div>`;
   return x; }
 function wCls(W){ return clsOf(W.cls); }
 function wBg(W){ return srd("backgrounds",W.bg)||hb(W.bg); }
@@ -69,13 +69,13 @@ function viewWizard(){
   let h="";
   if(st==="Classe"){
     h+=`<p class="muted">La classe définit ton rôle : dé de vie, maîtrises, sorts et aptitudes.</p>`+wCards([...S.C.classes.map(x=>[x.id,x.name,`d${x.hitDie} · ${x.primary.map(a=>ABN[a]).join(" ou ")}${x.casting?" · sorts":""}`]),...hbs("classe").map(x=>["hb:"+x._id,x.name,"hors SRD · d"+(+x.hitDie||8)+(x.pending?" · à remplir":"")]),...catAll().filter(e=>e.k==="classe"&&!catHb(e)).map(e=>["cat:"+e.id,e.n,"hors SRD · "+catShort(e.b)+" · à remplir"])],W.cls,"cls")+wNhBtn(W,"classe","cls","Nouvelle classe hors SRD");
-    if(c) h+=`<div class="panel stack" style="margin-top:12px"><b>${esc(c.name)}</b><div class="muted" style="font-size:13px">Dé de vie d${c.hitDie} · Sauvegardes : ${c.saves.map(a=>ABN[a]).join(", ")} · Armures : ${esc((c.armor||[]).join(", ")||"aucune")} · Armes : ${esc(c.weapons||"")}${c.tools?" · Outils : "+esc(c.tools):""}</div></div>`;
+    if(c) h+=`<div class="panel stack" style="margin-top:12px"><b>${esc(c.name)}</b><div class="muted" style="font-size:var(--fs-sm)">Dé de vie d${c.hitDie} · Sauvegardes : ${c.saves.map(a=>ABN[a]).join(", ")} · Armures : ${esc((c.armor||[]).join(", ")||"aucune")} · Armes : ${esc(c.weapons||"")}${c.tools?" · Outils : "+esc(c.tools):""}</div></div>`;
   }
   if(st==="Historique"){
     const list=[...S.C.backgrounds.map(b=>["srd:"+b.id,b.name,b.abilities.map(a=>ABS[a]).join(", ")+" · "+b.feat]),...hbs("historique").map(x=>["hb:"+x._id,x.name,x.pending?"hors SRD · à remplir":"hors SRD"]),...catAll().filter(e=>e.k==="historique"&&!catHb(e)).map(e=>["cat:"+e.id,e.n,"hors SRD · "+catShort(e.b)+" · à remplir"])];
     h+=`<p class="muted">L'historique donne des bonus de caractéristiques, un don d'origine, 2 compétences et un outil.</p>`+wCards(list,W.bg,"bg")+wNhBtn(W,"historique","bg","Nouvel historique hors SRD");
     if(W.bg){ const abs=wBgAbs(W), b=srd("backgrounds",W.bg), x=hb(W.bg);
-      h+=`<div class="panel stack" style="margin-top:12px">${b?`<div class="muted" style="font-size:13px">Don : ${esc(b.feat)} · Compétences : ${b.skills.map(s=>(S.C.skills.find(k=>k.id===s)||{}).name).join(", ")} · Outil : ${esc(b.tools||"")}</div>`:`<div class="muted" style="font-size:13px">${esc(x&&x.text||"")}</div>`}
+      h+=`<div class="panel stack" style="margin-top:12px">${b?`<div class="muted" style="font-size:var(--fs-sm)">Don : ${esc(b.feat)} · Compétences : ${b.skills.map(s=>(S.C.skills.find(k=>k.id===s)||{}).name).join(", ")} · Outil : ${esc(b.tools||"")}</div>`:`<div class="muted" style="font-size:var(--fs-sm)">${esc(x&&x.text||"")}</div>`}
         <div class="label">Bonus de caractéristiques</div>
         <div class="adv" role="group"><button aria-pressed="${W.asiMode==="21"}" data-act="wpick" data-k="asiMode" data-v="21">+2 et +1</button><button aria-pressed="${W.asiMode==="111"}" data-act="wpick" data-k="asiMode" data-v="111">+1 / +1 / +1</button></div>
         ${W.asiMode==="21"?`<div class="row">+2 ${wSel("asi2",abs.map(a=>[a,ABN[a]]),W.asi2)} +1 ${wSel("asi1",abs.filter(a=>a!==W.asi2).map(a=>[a,ABN[a]]),W.asi1)}</div>`:(abs.length===3?`<div class="muted">+1 en ${abs.map(a=>ABN[a]).join(", ")}</div>`:`<div class="row">${[0,1,2].map(i=>wSel("asiT."+i,AB.map(a=>[a,ABN[a]]),W.asiT[i])).join(" ")}</div>`)}
@@ -88,17 +88,17 @@ function viewWizard(){
     const s=srd("species",W.sp);
     if(s) h+=`<div class="panel stack" style="margin-top:12px">${s.traits.map(t=>`<details class="feat"><summary><span class="nm">${esc(t.name)}</span></summary><div class="prose">${prose(t.text)}</div></details>`).join("")}
       ${wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(),W.hFeat)}</label>${wNhBtn(W,"don","hFeat","Nouveau don hors SRD")}`:""}
-      ${/Choisissez/i.test(s.traits.map(t=>t.text).join(" "))&&!wIsHuman(W)?`<div class="muted" style="font-size:13px">Certains traits demandent un choix (lignage, ascendance…) : note-le dans la fiche après la création.</div>`:""}</div>`;
+      ${/Choisissez/i.test(s.traits.map(t=>t.text).join(" "))&&!wIsHuman(W)?`<div class="muted" style="font-size:var(--fs-sm)">Certains traits demandent un choix (lignage, ascendance…) : note-le dans la fiche après la création.</div>`:""}</div>`;
   }
   if(st==="Caractéristiques"){
     const b=wBase(W), x=wBonus(W), fin=wAbilities(W);
     h+=`<div class="adv" role="group">${[["std","Tableau standard"],["pts","Achat de points"],["dice","Dés (4d6)"]].map(([k,l])=>`<button aria-pressed="${W.method===k}" data-act="wpick" data-k="method" data-v="${k}">${l}</button>`).join("")}</div>`;
-    if(W.method==="std"){ const used=AB.map(a=>W.std[a]).filter(Boolean).map(Number); h+=`<p class="muted" style="font-size:13px">Répartis 15, 14, 13, 12, 10 et 8. Restent : ${STD_ARRAY.filter((v,i)=>used.filter(u=>u===v).length<1).join(", ")||"—"}</p>`; }
-    if(W.method==="pts"){ const spent=AB.reduce((t,a)=>t+PT_COST[+W.pts[a]],0), left=27-spent; h+=`<div class="wpts"><span class="label">Points dépensés</span><b class="num">${spent} / 27</b><span class="${left<0?"warntxt":"muted"}">${left>0?"reste "+left:left===0?"tout est dépensé":"dépassement de "+(-left)}</span></div><p class="muted" style="font-size:13px">Chaque caractéristique va de 8 à 15 (avant les bonus d'historique). Coût : 9 à 13 = 1 point par cran, 14 = 7, 15 = 9.</p>`; }
+    if(W.method==="std"){ const used=AB.map(a=>W.std[a]).filter(Boolean).map(Number); h+=`<p class="muted" style="font-size:var(--fs-sm)">Répartis 15, 14, 13, 12, 10 et 8. Restent : ${STD_ARRAY.filter((v,i)=>used.filter(u=>u===v).length<1).join(", ")||"—"}</p>`; }
+    if(W.method==="pts"){ const spent=AB.reduce((t,a)=>t+PT_COST[+W.pts[a]],0), left=27-spent; h+=`<div class="wpts"><span class="label">Points dépensés</span><b class="num">${spent} / 27</b><span class="${left<0?"warntxt":"muted"}">${left>0?"reste "+left:left===0?"tout est dépensé":"dépassement de "+(-left)}</span></div><p class="muted" style="font-size:var(--fs-sm)">Chaque caractéristique va de 8 à 15 (avant les bonus d'historique). Coût : 9 à 13 = 1 point par cran, 14 = 7, 15 = 9.</p>`; }
     if(W.method==="dice"){ const usedI=AB.map(a=>W.diceAs[a]).filter(x=>x!==undefined&&x!=="").map(Number);
-      h+=`<p class="muted" style="font-size:13px">Six jets de 4d6 (on garde les 3 meilleurs dés), puis répartis les résultats. Les jets virtuels ne se lancent qu'une fois ; avec de vrais dés, saisis tes 6 résultats (3 à 18).</p>
+      h+=`<p class="muted" style="font-size:var(--fs-sm)">Six jets de 4d6 (on garde les 3 meilleurs dés), puis répartis les résultats. Les jets virtuels ne se lancent qu'une fois ; avec de vrais dés, saisis tes 6 résultats (3 à 18).</p>
       <div class="row" style="gap:6px;flex-wrap:wrap">${W.dice.map((v,i)=>`<input type="number" min="3" max="18" data-w="dice.${i}" value="${esc(v)}" ${W.rolled?"readonly":""} style="width:58px" aria-label="Résultat ${i+1}"${usedI.includes(i)?' class="used"':""}>`).join("")}
-      ${W.rolled?`<span class="muted" style="font-size:12px">Lancés : ${esc(W.rollBd||"")}</span>`:(W.dice.some(v=>v!=="")?"":`<button class="btn small vroll" data-virtual data-act="wroll">Lancer les 6 jets</button>`)}</div>`;
+      ${W.rolled?`<span class="muted" style="font-size:var(--fs-sm)">Lancés : ${esc(W.rollBd||"")}</span>`:(W.dice.some(v=>v!=="")?"":`<button class="btn small vroll" data-virtual data-act="wroll">Lancer les 6 jets</button>`)}</div>`;
       const filled=W.dice.filter(v=>v!==""); if(filled.length){ const eq=filled.reduce((t,v)=>t+(PT_EXT[+v]??0),0);
         h+=`<div class="wpts"><span class="label">Équivalent en achat de points</span><b class="num">${eq} / 27</b><span class="${eq>27?"warntxt":"muted"}">${filled.length<6?"("+filled.length+"/6 jets) ":""}${eq>27?"au-delà des 27 points : tirage plus fort que la normale":eq<27?"en dessous des 27 points":"pile dans la norme"}</span></div>`; } }
     const cp=c?c.primary:[];
@@ -110,7 +110,7 @@ function viewWizard(){
   }
   if(st==="Compétences"){ const have=new Set(wBgSkills(W)); const n=c.skillChoices.count;
     h+=`<p class="muted">Choisis ${n} compétences de ${esc(c.name)} (${W.skills.length}/${n}). Celles de ton historique sont déjà acquises.</p><div class="row" style="flex-wrap:wrap;gap:6px">${c.skillChoices.from.map(s=>{ const k=S.C.skills.find(x=>x.id===s); const bg=have.has(s); return `<button class="chip" aria-pressed="${bg||W.skills.includes(s)}" ${bg?"disabled title=\"Déjà acquise par l'historique\"":""} data-act="wskill" data-v="${s}">${esc(k?k.name:s)}${bg?" · historique":""}</button>`; }).join("")}</div>`;
-    if(wStyle1(W)) h+=`<label class="field" style="margin-top:12px"><span>Style de combat</span>${wSel("style",styleOpts({feats:[]}),W.style||"")}</label><div class="muted" style="font-size:12px">Défense : +1 CA en armure (recommandé). Archerie : +2 aux attaques à distance.</div>`;
+    if(wStyle1(W)) h+=`<label class="field" style="margin-top:12px"><span>Style de combat</span>${wSel("style",styleOpts({feats:[]}),W.style||"")}</label><div class="muted" style="font-size:var(--fs-sm)">Défense : +1 CA en armure (recommandé). Archerie : +2 aux attaques à distance.</div>`;
     if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")) h+=`<label class="field" style="margin-top:12px"><span>Humain · Compétent : une compétence en plus</span>${wSel("extraSkill",S.C.skills.filter(s=>!have.has(s.id)&&!W.skills.includes(s.id)).map(s=>[s.id,s.name]),W.extraSkill)}</label>`;
   }
   if(st==="Sorts"){ const cast=wCast(W), nc=cast?(cast.cantrips||[])[0]||0:0, np=cast?(cast.prepared||[])[0]||0:0, Dt={cls:c};
@@ -123,24 +123,24 @@ function viewWizard(){
     const block=(title,txt,key)=>{ const opts=eqOptions(txt); if(!opts.length) return `<div class="panel"><b>${esc(title)}</b><div class="muted">${esc(txt||"Rien à choisir.")}</div></div>`; const cur=opts.find(o=>o.k===W[key])||opts[0];
       return `<div class="panel stack"><b>${esc(title)}</b><div class="adv" role="group">${opts.map(o=>`<button aria-pressed="${o.k===cur.k}" data-act="wpick" data-k="${key}" data-v="${o.k}">Option ${o.k}${o.items.length?"":" · "+o.gold+" po"}</button>`).join("")}</div>
         ${cur.items.length?`<div class="stack" style="gap:2px">${cur.items.map((it,ix)=>{ const id=key+cur.k+ix; return `<label class="row" style="gap:8px"><input type="checkbox" data-act="weq" data-v="${id}" ${W.eqOff[id]?"":"checked"}>${it.qty>1?it.qty+" × ":""}${esc(it.name)}</label>`; }).join("")}</div>`:""}
-        <div class="muted" style="font-size:13px">${cur.gold} po</div></div>`; };
+        <div class="muted" style="font-size:var(--fs-sm)">${cur.gold} po</div></div>`; };
     h+=`<p class="muted">Suggestion des règles : prends l'un des lots ou l'or à la place. Décoche ce que tu ne veux pas, tout reste modifiable dans l'inventaire.</p>`+block("Classe · "+c.name,c.equipment,"eqC")+(bgS?block("Historique · "+bgS.name,bgS.equipment,"eqB"):`<div class="panel muted">Historique hors SRD : ajoute son équipement dans l'inventaire après la création.</div>`);
   }
   if(st==="Identité"){
     h+=`<div class="grid2"><label class="field"><span>Nom</span><input type="text" data-w="name" value="${esc(W.name)}"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label>
-      <div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:12px">${esc(wAlign(W))}</span>`:""}</div><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
+      <div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:var(--fs-sm)">${esc(wAlign(W))}</span>`:""}</div><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
       <label class="field"><span>Notes (apparence, personnalité, histoire)</span><textarea data-w="notes" style="min-height:120px">${esc(W.notes)}</textarea></label>
-      ${+W.level>1?`<div class="muted" style="font-size:13px">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${+W.level}.</div>`:""}`;
+      ${+W.level>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${+W.level}.</div>`:""}`;
   }
   const err=wCheck(W,W.step); let pv="";
-  if(c){ try{ const d=wDoc(W), D=derive(d); pv=`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:13px">${esc([(srd("species",W.sp)||hb(W.sp)||{}).name,c.name+" 1",(wBg(W)||{}).name].filter(Boolean).join(" · "))}</div>
+  if(c){ try{ const d=wDoc(W), D=derive(d); pv=`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:var(--fs-sm)">${esc([(srd("species",W.sp)||hb(W.sp)||{}).name,c.name+" 1",(wBg(W)||{}).name].filter(Boolean).join(" · "))}</div>
     <div class="wstats"><span><small class="label">PV</small><b class="num">${D.hpMax}</b></span><span><small class="label">CA</small><b class="num">${D.ac}</b></span><span><small class="label">Init.</small><b class="num">${sg(D.init)}</b></span><span><small class="label">Perc. passive</small><b class="num">${D.passive}</b></span></div>
     <div class="wabmini">${AB.map(a=>`<span><small>${ABS[a]}</small><b class="num">${D.abEff[a]}</b><small class="num">${sg(D.mods[a])}</small></span>`).join("")}</div>
-    <div class="muted" style="font-size:12px">Sauvegardes : ${AB.filter(a=>D.saves[a].prof).map(a=>ABN[a]).join(", ")}</div></div>`; }catch(e){ pv=""; } }
+    <div class="muted" style="font-size:var(--fs-sm)">Sauvegardes : ${AB.filter(a=>D.saves[a].prof).map(a=>ABN[a]).join(", ")}</div></div>`; }catch(e){ pv=""; } }
   return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Étape ${W.step+1} sur ${steps.length} · ${esc(st)}</div></div><button class="btn ghost" data-act="wcancel">Annuler</button></div>
     <div class="wsteps">${steps.map((s,i)=>`<button class="wstep${i===W.step?" on":""}${i<W.step?" done":""}" data-act="wgo" data-v="${i}" ${i>W.step&&steps.slice(0,i).some((_,j)=>wCheck(W,j))?"disabled":""}>${i+1}. ${esc(s)}</button>`).join("")}</div>
     <div class="wz"><section class="stack" style="min-width:0">${h}
-      <div class="row wnav">${W.step?`<button class="btn" data-act="wgo" data-v="${W.step-1}">← Précédent</button>`:""}<span class="muted warntxt" style="font-size:13px;flex:1;text-align:right">${esc(err)}</span>
+      <div class="row wnav">${W.step?`<button class="btn" data-act="wgo" data-v="${W.step-1}">← Précédent</button>`:""}<span class="muted warntxt" style="font-size:var(--fs-sm);flex:1;text-align:right">${esc(err)}</span>
       ${W.step<steps.length-1?`<button class="btn primary" data-act="wgo" data-v="${W.step+1}" ${err?"disabled":""}>Suivant →</button>`:`<button class="btn primary" data-act="wcreate" ${steps.some((_,j)=>wCheck(W,j))?"disabled":""}>Créer le personnage</button>`}</div></section>${pv}</div>`;
 }
 function wCreate(){

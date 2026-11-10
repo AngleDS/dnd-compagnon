@@ -57,6 +57,7 @@ Règle unique pour tout agent qui travaille sur ce dossier (Claude, ChatGPT/Code
 - Contenu en français, interface épurée.
 - Popups ou cartes contextuelles plutôt que listes qui se déplient ; clics qui sélectionnent, pas d'info-bulle gênante.
 - « À la table » est l'expérience principale ; vérifier aussi la largeur iPhone.
+- Tailles de texte : uniquement l'échelle `--fs-xs` 11, `--fs-sm` 13, `--fs-md` 16, `--fs-lg` 18, `--fs-xl` 22, `--fs-2xl` 28 px (définie dans `styles.css`) ; jamais de `font-size` en px ailleurs, sauf grands chiffres décoratifs (32 px et plus). Un test le vérifie.
 
 ## Livraison
 

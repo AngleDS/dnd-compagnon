@@ -10,9 +10,9 @@ function matchItem(name){
 }
 function itemTipHtml(ref){
   if(ref.startsWith("hb:")){ const h=hb(ref); if(!h) return "";
-    return `<div class="tiphead"><b class="tipname">${esc(h.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:13px">Objet hors SRD</div>${hbFoot(h)}${h.dice?`<div class="tipmeta"><div><span class="tkl">Dégâts</span> ${esc(h.dice+" "+(h.dmgType||""))}</div>${h.properties?`<div><span class="tkl">Propriétés</span> ${esc(h.properties)}</div>`:""}</div>`:""}<div class="prose tiptext">${prose(h.text)||`<p class="muted">Pas encore de description.</p>`}</div>`; }
+    return `<div class="tiphead"><b class="tipname">${esc(h.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">Objet hors SRD</div>${hbFoot(h)}${h.dice?`<div class="tipmeta"><div><span class="tkl">Dégâts</span> ${esc(h.dice+" "+(h.dmgType||""))}</div>${h.properties?`<div><span class="tkl">Propriétés</span> ${esc(h.properties)}</div>`:""}</div>`:""}<div class="prose tiptext">${prose(h.text)||`<p class="muted">Pas encore de description.</p>`}</div>`; }
   const [,kind,id]=ref.split(":");
-  let h=""; const head=(n,sub)=>`<div class="tiphead"><b class="tipname">${esc(n)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:13px">${esc(sub)}</div>`;
+  let h=""; const head=(n,sub)=>`<div class="tiphead"><b class="tipname">${esc(n)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">${esc(sub)}</div>`;
   if(kind==="arme"){ const w=S.idx.weapons[id]; if(!w) return "";
     h=head(w.name,"Arme "+(w.category==="courante"?"courante":"de guerre")+(w.kind==="dist"?" à distance":" de corps à corps"));
     h+=`<div class="tipmeta"><div><span class="tkl">Dégâts</span> ${esc(w.damage+" "+w.damageType)}</div><div><span class="tkl">Propriétés</span> ${esc(w.properties)}</div><div><span class="tkl">Botte d'arme</span> ${esc(w.mastery)}</div><div><span class="tkl">Poids</span> ${esc(w.weight)} · <span class="tkl">Prix</span> ${esc(w.cost)}</div></div>`; return h; }
@@ -31,26 +31,26 @@ function tipHtml(i,ch,D){
   let h=`<div class="tiphead"><b class="tipname">${esc(i.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div>`;
   if(i.kind==="spell"){
     const sp=i.sp;
-    h+=`<div class="muted" style="font-size:13px">${esc(sp.level?(sp.school+" du "+sp.level+(sp.level===1?"er":"e")+" niveau"):(sp.school+" · sort mineur"))}</div>`;
+    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(sp.level?(sp.school+" du "+sp.level+(sp.level===1?"er":"e")+" niveau"):(sp.school+" · sort mineur"))}</div>`;
     h+=`<div class="tipmeta">${[["Incantation",sp.casting_time],["Portée",sp.range],["Composantes",sp.components],["Durée",sp.duration]].filter(x=>x[1]).map(([l,v])=>`<div><span class="tkl">${l}</span> ${esc(v)}</div>`).join("")}</div>`;
     const vals=(i.roll? (i.roll.startsWith("DD")?kv("DD",i.roll.slice(3)):kv("Toucher",i.roll)) : "")+(i.dice?kv(i.heal?"Soins":"Dégâts",i.dice):"");
     if(vals) h+=`<div class="row" style="gap:14px">${vals}</div>`;
     h+=`<div class="prose tiptext">${prose(sp.text)}</div>`;
   } else if(i.kind==="atk"){
     h+=`<div class="row" style="gap:14px">${kv("Toucher",sg(i.mod))}${kv("Dégâts",i.dmg)}</div>`;
-    if(i.dtype) h+=`<div class="muted" style="font-size:13px">Dégâts ${esc(i.dtype)}</div>`;
+    if(i.dtype) h+=`<div class="muted" style="font-size:var(--fs-sm)">Dégâts ${esc(i.dtype)}</div>`;
     h+=`<div class="tipmeta">${i.sub?`<div>${esc(i.sub)}</div>`:""}${i.mastery?`<div><span class="tkl">Botte d'arme</span> ${esc(i.mastery)}</div>`:""}</div>`;
     const g=i.mastery&&S.C.glossary.find(x=>norm(x.name)===norm(i.mastery)); if(g) h+=`<div class="prose tiptext">${prose(g.text)}</div>`;
   } else if(["skill","save","abil","init"].includes(i.kind)){
-    h+=`<div class="muted" style="font-size:13px">${esc(i.sub||"")}</div>`;
+    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(i.sub||"")}</div>`;
     h+=`<div class="row" style="gap:14px">${kv("Bonus",sg(i.mod))}</div>`;
     h+=`<div class="tparts">${(i.parts||[]).map(p=>`<span>${esc(p.l)} <b class="num">${sg(p.v)}</b></span>`).join("")}</div>`;
     if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); const lv=D.skills[sk.id].lv;
-      h+=`<div style="font-size:13px">${["Non maîtrisée","Maîtrisée","Expertise"][lv]}</div>`;
+      h+=`<div style="font-size:var(--fs-sm)">${["Non maîtrisée","Maîtrisée","Expertise"][lv]}</div>`;
       if(sk.examples) h+=`<div class="prose tiptext"><p><b>Exemples d'application.</b> ${esc(sk.examples)}</p></div>`; }
   } else {
-    h+=`<div class="muted" style="font-size:13px">${esc(i.sub||"")}</div>`;
-    if(i.res){ const r=i.res, used=+(ch.resUsed?.[r.id]||0); h+=`<div class="row" style="gap:14px">${kv("Reste",(r.max-used)+" / "+r.max+(r.pool?" d"+r.die:""))}<span class="muted" style="font-size:12px">${esc(rechargeLabel(r.recharge))}</span></div>`; }
+    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(i.sub||"")}</div>`;
+    if(i.res){ const r=i.res, used=+(ch.resUsed?.[r.id]||0); h+=`<div class="row" style="gap:14px">${kv("Reste",(r.max-used)+" / "+r.max+(r.pool?" d"+r.die:""))}<span class="muted" style="font-size:var(--fs-sm)">${esc(rechargeLabel(r.recharge))}</span></div>`; }
     if(i.counter) h+=`<div class="row">${kv("Reste",(+i.counter.cur||0)+" / "+(+i.counter.max||0))}</div>`;
     if(i.text) h+=`<div class="prose tiptext">${prose(i.text)}</div>`;
   }
@@ -64,7 +64,7 @@ function openTip(key,anchor){
   if(key.startsWith("bag:")){ const ch=cur(); const b=ch&&(ch.bag||[]).find(x=>x.id===key.slice(4)); if(!b) return; const ref=bagTipRef(ch,b); const tip=document.getElementById("tip");
     let html=ref?itemTipHtml(ref):"";
     if(ref&&ref.startsWith("item:arme:")&&!(b.ref||matchItem(b.name))) html=html.replace(/<b class="tipname">[^<]*<\/b>/,`<b class="tipname">${esc(b.name)}</b>`);
-    if(!html) html=`<div class="tiphead"><b class="tipname">${esc(b.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:13px">${b.note?esc(b.note)+"<br>":""}Pas encore de description pour cet objet.</div><div style="margin-top:8px"><button class="btn small" data-act="mkItem" data-id="${esc(b.id)}">Créer sa fiche</button></div>`;
+    if(!html) html=`<div class="tiphead"><b class="tipname">${esc(b.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">${b.note?esc(b.note)+"<br>":""}Pas encore de description pour cet objet.</div><div style="margin-top:8px"><button class="btn small" data-act="mkItem" data-id="${esc(b.id)}">Créer sa fiche</button></div>`;
     tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; }
   if(key.startsWith("item:")||key.startsWith("hb:")){ const tip=document.getElementById("tip"); const html=itemTipHtml(key); if(!html) return; tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; }
   const ch=cur(); if(!ch) return; const D=derive(ch);
