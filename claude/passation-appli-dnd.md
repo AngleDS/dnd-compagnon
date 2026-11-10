@@ -222,6 +222,7 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 **Idées notées par Angle (10 nov. 2026), à planifier** :
 - **« À la table » : accès rapide aux jets et actions les plus utilisés.** Existe déjà en partie : `T.recent` (6 derniers éléments ouverts, `js/08-table.js`), mais par récence, pour la session seulement, non enregistré. Piste : classement par fréquence tiré de l'historique des jets (`rollLog`) et des cartes ouvertes, enregistré dans la fiche. Information factuelle, sans deviner d'intention.
 - **« À la table » : plusieurs notes horodatées** au lieu de la zone unique « Notes de partie » (`sessionNotes`) : ajouter, lire, supprimer ; date et heure automatiques. Migration : l'ancienne note devient la première.
+- **Interface en blocs à disposer soi-même** (plus tard, au-delà des tuiles) : chaque joueur place la barre de recherche, les blocs de tuiles et les autres blocs d'« À la table » où il le souhaite, à la manière de widgets.
 - **Menu : générer un PDF propre de la fiche** (mise en page soignée, lisible à l'impression). Voisin du chantier « Feuille » (section 16), qui peut servir de base. Choix technique à faire (feuille de style d'impression ou génération directe).
 
 **Ensuite** (ordre à revoir au moment voulu) :
@@ -242,6 +243,8 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 ## 15. Chantier à venir : tuiles personnalisables d'« À la table »
 
 Idée d'Angle (10 nov. 2026). **Rien n'est codé ; tout ce qui n'est pas marqué « décidé » reste à valider avec Angle avant de développer.**
+
+**Référentiel des tuiles : `claude/referentiel-tuiles.md`** (10 nov. 2026, décidé avec Angle) : liste exhaustive à partir des règles 2024 ; **tuiles maîtresses** pour les jets (une tuile ouvre la popup des jets qui en dépendent), **Initiative** seule tuile de jet individuelle, Concentration et santé dans la carte PV. Les tuiles obligatoires, le défaut par classe et le quota ci-dessous sont **mis de côté pour le moment** (décision d'Angle) ; le catalogue proposé ci-dessous est remplacé par le référentiel.
 
 Décidé par Angle :
 - Le bandeau d'« À la table » devient un ensemble de tuiles choisies **par perso** (réglage enregistré dans la fiche, il suit l'export).
