@@ -104,7 +104,7 @@ function viewSheet(){
       <button class="rollbtn" data-virtual data-act="r20" data-l="JS de ${ABN[a]}" data-m="${D.saves[a].val}">${sg(D.saves[a].val)}</button>
     </div>`).join("");
   let body="";
-  if(S.tab==="table") body=viewTable(ch,D);
+  if(S.tab==="table") body="";
   else if(S.tab==="jeu") body=tabJeu(ch,D);
   else if(S.tab==="comp") body=tabComp(ch,D);
   else if(S.tab==="sorts") body=tabSorts(ch,D);
@@ -113,7 +113,7 @@ function viewSheet(){
   else if(S.tab==="notes") body=`<label class="field"><span>Notes, historique, personnalité</span><textarea id="f-notes" data-bind="notes" style="min-height:320px">${esc(ch.notes||"")}</textarea></label>`;
   else body=tabBuild(ch,D);
   const portrait=typeof ch.portrait==="string"&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(ch.portrait)?ch.portrait:"";
-  return `<div class="sheet-head character-banner">
+  const banner=`<div class="sheet-head character-banner">
       <button class="character-portrait" data-act="portrait" aria-label="${portrait?"Changer":"Ajouter"} le portrait de ${esc(ch.name||"ce personnage")}" title="${portrait?"Changer":"Ajouter"} le portrait">
         ${portrait?`<img src="${esc(portrait)}" alt="Portrait de ${esc(ch.name||"ce personnage")}">`:`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="23" r="11"/><path d="M12 57c0-13 8-21 20-21s20 8 20 21"/></svg>`}
         <span class="portrait-edit" aria-hidden="true">+</span>
@@ -127,9 +127,10 @@ function viewSheet(){
         </div>${ch.alignment?`<div class="meta">${esc(ch.alignment)}</div>`:""}
       </div>
       ${S.tab==="table"?"":`<div class="row" style="margin-left:auto"><span class="label">Bonus de maîtrise</span><b class="num">${sg(D.pb)}</b>${D.cls&&D.L<20?`<button class="btn small" data-act="lvlUp" title="Assistant de montée de niveau">Niveau ${D.L+1} ↑</button>`:""}</div>`}
-    </div>
+    </div>`;
+  return `${S.tab==="table"?"":banner}
     ${S.tab==="table"?"":`<div class="tabs sheettabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}</div>`}
-    ${S.tab==="table"?body:S.tab==="jeu"?`<div class="sheet">
+    ${S.tab==="table"?viewTable(ch,D,banner):S.tab==="jeu"?`<div class="sheet">
       <aside class="abil">${abil}</aside>
       <section style="min-width:0">
         ${body}

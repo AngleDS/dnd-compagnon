@@ -249,6 +249,14 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
 .tipmeta{display:grid;gap:2px;font-size:var(--fs-sm)}
 .tiptext{font-size:var(--fs-md);max-width:none}
 .tname{min-width:0}
+/* « À la table » en blocs : une colonne, dans l'ordre choisi pour le perso. */
+.tblocks{display:flex;flex-direction:column;gap:14px;max-width:860px;margin:0 auto}
+.tblk{min-width:0}
+.tblk .table-overview.tb-solo{grid-template-columns:minmax(0,1fr)!important;margin:0!important}
+.tblk .tgrid.tb-solo{grid-template-columns:minmax(0,1fr)!important;max-width:none!important;margin:0!important;gap:0!important}
+.tblk .tgrid.tb-solo>*{grid-column:1!important;grid-row:auto!important;position:static!important}
+.tblk .tbottom{margin-top:0;padding-top:0;border-top:0}
+.tblk .character-banner{margin:0}
 /* Ligne d'« À la table » : toucher la ligne ouvre la carte ; seul le bouton i ouvre la règle. */
 .tinfo{position:relative;flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;color:var(--muted);font-size:var(--fs-sm);font-style:italic;font-weight:700;font-family:Georgia,serif;cursor:help}
 .tinfo::before{content:"";position:absolute;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-50%);border:1px solid var(--line);border-radius:50%;box-sizing:border-box}

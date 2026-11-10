@@ -301,7 +301,7 @@ function tPop(ch,D){
   if(!B) return "";
   return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop" role="dialog" aria-modal="true" aria-label="${B[0]}" data-act="noop"><div class="tpophead"><b>${B[0]}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${B[1]}</div></div></div>`;
 }
-function viewTable(ch,D){
+function viewTable(ch,D,banner=""){
   ensureBag(ch);
   const T=S.T||(S.T={q:"",sel:null,eco:null,mode:"n",d1:"",d2:"",dmg:"",recent:[]});
   const items=tableItems(ch,D); S.Titems=items; S.Tderived=D;
@@ -314,8 +314,9 @@ function viewTable(ch,D){
   const conds=(ch.conditions||[]).map(c=>`<button class="chip" aria-pressed="true" data-act="tsel" data-k="rule:${esc(S.idx.cond[c]?.id||"")}">${esc(c)}</button>`).join("");
   const overviewSpecies=srd("species",ch.species)||hb(ch.species);
   const overviewSize=String(ch.size||overviewSpecies?.size||"—");
-  const bar=`<div class="table-overview">
-    <div class="overview-stats"><span class="tstat table-defense panel" aria-label="Classe d’armure : ${D.ac}"><span class="ac-shield"><svg viewBox="0 0 48 56" aria-hidden="true"><path d="M24 3 44 10v15c0 13-9 22-20 28C13 47 4 38 4 25V10Z"/><path class="ac-rim" d="M24 8 39 14v11c0 10-6 18-15 23-9-5-15-13-15-23V14Z"/></svg><b class="num">${D.ac}</b></span><span class="label">CA</span></span><div class="overview-stat-grid"><button class="tstat tinit overview-stat panel btn" data-act="tsel" data-k="init" title="Jet d'initiative"><span class="label">Initiative</span><b class="num big">${sg(D.init)}</b></button><span class="tstat overview-stat panel"><span class="label">Vitesse</span><b class="num">${String(D.speed).replace(".",",")} m</b></span><span class="tstat overview-stat panel" title="${esc(overviewSize)}"><b class="num big">${esc(overviewSize.split(" (")[0])}</b><span class="label">Taille</span></span><span class="tstat overview-stat panel" title="Perception passive : 10 + ton modificateur de Perception"><span class="label">Perception passive</span><b class="num">${D.passive}</b></span>${D.cast?`<span class="tstat overview-stat panel" title="Degré de difficulté de tes sorts : le résultat que la cible doit atteindre à son jet de sauvegarde"><span class="label">Degré de difficulté des sorts</span><b class="num">${D.cast.dc}</b></span>`:""}${pactTile}</div></div>
+  const statsBlk=`<div class="table-overview tb-solo">
+    <div class="overview-stats"><span class="tstat table-defense panel" aria-label="Classe d’armure : ${D.ac}"><span class="ac-shield"><svg viewBox="0 0 48 56" aria-hidden="true"><path d="M24 3 44 10v15c0 13-9 22-20 28C13 47 4 38 4 25V10Z"/><path class="ac-rim" d="M24 8 39 14v11c0 10-6 18-15 23-9-5-15-13-15-23V14Z"/></svg><b class="num">${D.ac}</b></span><span class="label">CA</span></span><div class="overview-stat-grid"><button class="tstat tinit overview-stat panel btn" data-act="tsel" data-k="init" title="Jet d'initiative"><span class="label">Initiative</span><b class="num big">${sg(D.init)}</b></button><span class="tstat overview-stat panel"><span class="label">Vitesse</span><b class="num">${String(D.speed).replace(".",",")} m</b></span><span class="tstat overview-stat panel" title="${esc(overviewSize)}"><b class="num big">${esc(overviewSize.split(" (")[0])}</b><span class="label">Taille</span></span><span class="tstat overview-stat panel" title="Perception passive : 10 + ton modificateur de Perception"><span class="label">Perception passive</span><b class="num">${D.passive}</b></span>${D.cast?`<span class="tstat overview-stat panel" title="Degré de difficulté de tes sorts : le résultat que la cible doit atteindre à son jet de sauvegarde"><span class="label">Degré de difficulté des sorts</span><b class="num">${D.cast.dc}</b></span>`:""}${pactTile}</div></div></div>`;
+  const healthBlk=`<div class="table-overview tb-solo">
     <section class="health-card" aria-label="Santé du personnage">
     <div class="health-main">${hpStepper(ch,D)}</div>
     <div class="health-details">
@@ -323,8 +324,8 @@ function viewTable(ch,D){
       <button class="health-detail health-adjust" data-act="tpop" data-v="hpmax" title="Modifier les PV maximum"><span class="label">PV max ±</span><b class="num">${D.hpBonus?sg(D.hpBonus):0}</b></button>
       <div class="health-detail health-dice" title="Dés de vie restants : à dépenser pendant un repos court (bouton Repos)"><span class="label">Dés de vie</span><span><b class="num">${Math.max(0,D.L-(+ch.hdUsed||0))} / ${D.L}</b> <small>d${D.hd}</small></span></div>
     </div>
-  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span><button class="chip insp overview-inspiration" aria-pressed="${!!ch.inspiration}" data-act="insp" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg><span>Inspiration héroïque${ch.inspiration?" ✓":""}</span></button><button class="chip overview-inspiration overview-rest" data-act="restOpen" data-v="" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg><span>Repos</span></button></div></section>
-  </div>${otherSlots||conds?`<div class="tbar overview-resources">${otherSlots}${conds}</div>`:""}`;
+  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span><button class="chip insp overview-inspiration" aria-pressed="${!!ch.inspiration}" data-act="insp" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg><span>Inspiration héroïque${ch.inspiration?" ✓":""}</span></button><button class="chip overview-inspiration overview-rest" data-act="restOpen" data-v="" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg><span>Repos</span></button></div></section></div>`;
+  const resBlk=otherSlots||conds?`<div class="tbar overview-resources">${otherSlots}${conds}</div>`:"";
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
@@ -333,28 +334,20 @@ function viewTable(ch,D){
     return `<button class="tturnbtn${k==="autre"?" wide":""}" aria-pressed="${used}" data-act="${k==="move"?"tturn":"tpop"}" data-v="${k==="move"?"move":"eco:"+k}" title="${k==="move"?(used?"Annuler":"Marquer le mouvement terminé"):"Options disponibles"}"><span>${label}</span>${used&&k==="move"?`<span class="tused">Annuler</span>`:""}</button>`; }).join("");
   const ecoBtns=Object.entries(ECO).map(([k,l])=>`<button class="teco" aria-pressed="${T.eco===k}" data-act="teco" data-v="${k}">${l}<span class="muted num">${items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length}</span></button>`).join("");
   const recent=T.recent.map(k=>items.find(i=>i.key===k)).filter(Boolean).map(i=>`<button class="chip" data-act="tsel" data-k="${esc(i.key)}">${esc(i.name)}</button>`).join("");
-  return `${bar}${tPop(ch,D)}
-  <div class="tgrid">
-    <div class="tmain">
-      ${(+hp.cur||0)<=0?`<div class="tdeath"><div class="row" style="justify-content:space-between"><b>À 0 PV : jets contre la mort</b><span class="muted" style="font-size:var(--fs-sm)">10 ou plus : réussite · 1 : deux échecs · 20 : tu reviens à 1 PV</span></div>
+  const blocks={
+    perso:banner,
+    reperes:statsBlk,
+    pv:`${(+hp.cur||0)<=0?`<div class="tdeath"><div class="row" style="justify-content:space-between"><b>À 0 PV : jets contre la mort</b><span class="muted" style="font-size:var(--fs-sm)">10 ou plus : réussite · 1 : deux échecs · 20 : tu reviens à 1 PV</span></div>
         <div class="row" style="gap:16px"><span class="row" style="gap:6px"><span class="label">Réussites</span>${pips("death.s",3,ch.death?.s||0)}</span><span class="row" style="gap:6px"><span class="label">Échecs</span>${pips("death.f",3,ch.death?.f||0)}</span></div>
-        ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}
-      <form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form>
-      <div id="tres">${tResults()}</div>
- 
-    </div>
-    <div class="tbottom">
-      <div class="row" style="gap:8px"><button class="btn" data-act="tpop" data-v="notes">Notes de partie${(ch.sessionNotes||"").trim()?` <span class="muted num">(${(ch.sessionNotes||"").trim().split(/\n+/).length} l.)</span>`:""}</button>
-      <button class="btn" data-act="tpop" data-v="hist">Historique des jets${(ch.rollLog||[]).length?` <span class="muted num">(${ch.rollLog.length})</span>`:""}</button>
-      <button class="btn" data-act="virtualDice" role="switch" aria-checked="${virtualDiceEnabled()}">Dés virtuels : ${virtualDiceEnabled()?"activés":"désactivés"}</button></div>
-      ${chargeRecoveryForms(ch)}
-    </div>
-    <div class="tside table-turn">
+        ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
+    res:resBlk,
+    recherche:`<div class="tgrid tb-solo"><div class="tmain"><form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form>
+      <div id="tres">${tResults()}</div></div></div>`,
+    tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
       <div class="row" style="justify-content:space-between"><span class="label">Ce tour</span><button class="btn small" data-act="tnewturn">Nouveau tour</button></div>
       <div class="tturnb">${turnBtns}</div>
-      <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div>
-    </div>
-    <div class="tside table-reference">
+      <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div></div></div>`,
+    raccourcis:`<div class="tgrid tb-solo"><div class="tside table-reference">
       <div class="label" style="margin-bottom:12px">Jets et fiche</div>
       <div class="tpanels">
         <button class="tpbtn" data-act="tpop" data-v="skills"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.3v9.4L12 21.5 3.5 16.7V7.3z"/><path d="M12 2.5 7.5 14h9zM3.5 7.3 7.5 14M20.5 7.3 16.5 14M7.5 14 12 21.5 16.5 14"/></svg>Tests de caractéristique</button>
@@ -362,9 +355,20 @@ function viewTable(ch,D){
         <button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5a4.5 4.5 0 1 0 4.5 4.5"/><path d="M12 10.5a1.5 1.5 0 1 0 1.5 1.5"/></svg>États${(ch.conditions||[]).length||+ch.exhaustion?` <span class="tpn">${(ch.conditions||[]).length+(+ch.exhaustion?1:0)}</span>`:""}</button>
         <button class="tpbtn" data-act="tpop" data-v="inv"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V4.5a3 3 0 0 1 6 0V6"/><path d="M5 6h14l-1.2 13.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 11h6"/></svg>Inventaire</button>
         <button class="tpbtn wide" data-act="tpop" data-v="equip"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.6"/><path d="M8 9.5h8l1.5 6h-2.2L15 21h-6l-.3-5.5H6.5z"/></svg>Équipement</button>
-      </div>
-    </div>
-  </div>`;
+      </div></div></div>`,
+    notes:`<div class="tgrid tb-solo"><div class="tbottom">
+      <div class="row" style="gap:8px"><button class="btn" data-act="tpop" data-v="notes">Notes de partie${(ch.sessionNotes||"").trim()?` <span class="muted num">(${(ch.sessionNotes||"").trim().split(/\n+/).length} l.)</span>`:""}</button>
+      <button class="btn" data-act="tpop" data-v="hist">Historique des jets${(ch.rollLog||[]).length?` <span class="muted num">(${ch.rollLog.length})</span>`:""}</button>
+      <button class="btn" data-act="virtualDice" role="switch" aria-checked="${virtualDiceEnabled()}">Dés virtuels : ${virtualDiceEnabled()?"activés":"désactivés"}</button></div>
+      ${chargeRecoveryForms(ch)}</div></div>`
+  };
+  return `${tPop(ch,D)}${tableBlocks(ch,blocks)}`;
+}
+/* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
+const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","Emplacements et états"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
+function tableOrder(ch){ const ids=TBLK.map(b=>b[0]); const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[]; return [...new Set([...saved,...ids])]; }
+function tableBlocks(ch,blocks){
+  return `<div class="tblocks">${tableOrder(ch).filter(id=>blocks[id]).map(id=>`<section class="tblk" data-blk="${id}" aria-label="${esc(TBLK.find(b=>b[0]===id)[1])}">${blocks[id]}</section>`).join("")}</div>`;
 }
 function hpStepper(ch,D){
   const hp=ch.hp||{cur:D.hpMax,temp:0}, ed=S.hpEdit;

@@ -918,6 +918,23 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(old, [], 'aucun ancien nom dans l’interface');
   });
 
+  await test('À la table en blocs : ordre par défaut, ordre du perso, ordre abîmé ignoré, import', async p => {
+    await diceTable(p);
+    const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
+    eq(await order(), ['perso','reperes','pv','recherche','tour','raccourcis','notes'], 'ordre par défaut (bloc Emplacements et états vide : masqué)');
+    ok(await p.isVisible('.tblk[data-blk="perso"] .character-banner') && await p.isVisible('.tblk[data-blk="recherche"] #tq') && await p.isVisible('.tblk[data-blk="tour"] .tturnb'), 'contenu dans les bons blocs');
+    await p.evaluate(() => { cur().layout = { order: ['tour','inconnu','recherche'] }; render(); });
+    eq(await order(), ['tour','recherche','perso','reperes','pv','raccourcis','notes'], 'ordre du perso, bloc inconnu ignoré, blocs manquants à la suite');
+    await p.evaluate(() => { cur().layout = { order: 'abîmé' }; render(); });
+    eq((await order())[0], 'perso', 'ordre illisible : ordre par défaut');
+    const res = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); ch.layout = { order: ['notes','perso'] };
+      const id = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
+      try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { order: [1, 2] } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
+      return [S.docs[id].layout.order, bad]; });
+    eq(res[0], ['notes','perso'], 'l’ordre suit l’export');
+    ok(/disposition/.test(res[1]), 'disposition invalide refusée à l’import : ' + res[1]);
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
