@@ -313,7 +313,7 @@ document.addEventListener("input",e=>{
   if(!S.T) return;
   if(t.dataset.bind==="sessionNotes"){ const ch=cur(); if(ch){ ch.sessionNotes=t.value; touch(S.cur); } return; }
   if(t.id==="tq"){ S.T.q=t.value; const r=document.getElementById("tres"); if(r) r.innerHTML=tResults(); const c=document.querySelector(".tqclear"); if(c) c.hidden=!t.value; return; }
-  if(t.dataset.tin){ S.T[t.dataset.tin]=t.value; if(t.dataset.tin==="dmg") S.T.dmgBd=""; const tt=document.getElementById("t-tot"); if(tt) tt.innerHTML=totalHtml(+tt.dataset.mod);
+  if(t.dataset.tin){ S.T[t.dataset.tin]=t.value; S.T.logSig=""; if(t.dataset.tin==="dmg") S.T.dmgBd=""; const tt=document.getElementById("t-tot"); if(tt) tt.innerHTML=totalHtml(+tt.dataset.mod);
     const dt=document.getElementById("t-dtot"); if(dt&&t.dataset.tin==="dmg"){ const f=+dt.dataset.flat; dt.innerHTML=damageTotalHtml(t.value,f); } }
 });
 document.addEventListener("submit",e=>{

@@ -737,6 +737,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.isVisible('.tpop'),'carte toujours ouverte');
   });
 
+  await test('Jet physique : pavé puis « Valider le jet » ne journalise qu’une fois', async p => {
+    await diceTable(p);
+    await p.evaluate(() => tSelect('save:sag'));
+    const n0=await p.evaluate(() => (cur().rollLog||[]).length);
+    await p.click('#t-d1'); await padNumber(p,12);
+    if(await p.locator('[data-act="tvalidate"][data-kind="d20"]').count()) await p.click('[data-act="tvalidate"][data-kind="d20"]');
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+1,'une seule ligne pour un jet');
+    await p.click('#t-d1'); await padNumber(p,12);
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+2,'nouvelle saisie au pavé, même valeur : nouveau jet');
+    if(await p.locator('[data-act="tvalidate"][data-kind="d20"]').count()) await p.click('[data-act="tvalidate"][data-kind="d20"]');
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+2,'pas de doublon au second jet');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

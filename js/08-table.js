@@ -559,10 +559,14 @@ function smiteBlock(ch,D,i){
   return `<section class="tsec"><h3 class="tsech">Frappe occulte</h3>${x}</section>`;
 }
 function selName(){ const i=(S.Titems||[]).find(x=>x.key===S.T.sel); return i?i.name:"Jet"; }
+// Un jet physique déjà journalisé (même carte, mêmes dés) ne l'est pas une seconde fois ; une nouvelle saisie efface la marque.
+function physLogged(phys,sig){ const T=S.T; if(!phys) return false; if(T.logSig===sig) return true; T.logSig=sig; return false; }
 function logD20(phys){ if(phys&&virtualDiceEnabled()) return; const T=S.T, tt=document.getElementById("t-tot"); if(!tt) return; const mod=+tt.dataset.mod, a=parseInt(T.d1), b=parseInt(T.d2); if(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))) return;
+  if(physLogged(phys,["d20",S.cur,T.sel,T.mode,T.d1,T.mode==="n"?"":T.d2].join("|"))) return;
   const d=T.mode==="n"?a:(T.mode==="a"?Math.max(a,b):Math.min(a,b));
   addLog({label:tt.dataset.label||selName(),total:d+mod,bd:(T.mode==="n"?"d20 "+a:(T.mode==="a"?"avantage ":"désavantage ")+a+" / "+b)+" "+sg(mod)+(phys?" · dés physiques":""),crit:d===20,fumble:d===1,quiet:true}); return true; }
 function logDmg(phys){ if(phys&&virtualDiceEnabled()) return; const T=S.T, dt=document.getElementById("t-dtot"); if(!validDiceTotal(T.dmg)) return; const f=dt?+dt.dataset.flat:0;
+  if(physLogged(phys,["dmg",S.cur,T.sel,T.dmg].join("|"))) return;
   const sit=(S.Titems||[]).find(x=>x.key===T.sel); const isHeal=(sit&&sit.kind==="spell"&&sit.m&&sit.m.heal)||(T.poolKey&&T.poolKey===T.sel);
   addLog({label:selName()+(isHeal?" · soins":" · dégâts"),total:(+T.dmg)+f,bd:(T.dmgBd||"dés "+T.dmg)+(f?" "+sg(f):"")+(phys?" · dés physiques":""),quiet:true}); return true; }
 function totalHtml(mod){
@@ -575,7 +579,7 @@ function totalHtml(mod){
   return `<span class="tcalculation">${T.mode==="n"?"Dé : "+a:(T.mode==="a"?"Avantage":"Désavantage")+" : "+a+" et "+b+" → "+d+" retenu"}<br>Bonus : ${sg(mod)}<br>Total : <b class="num tot">${d+mod}</b>${nat}</span>`;
 }
 function tSelect(key){
-  const T=S.T; T.pop="card"; T.sel=key; T.itemN=1; T.itemSp=0; T.smiteBd=""; T.d1=""; T.d2=""; T.dmg=""; T.dmgBd=""; T.slot=null; T.castDone=null; T.itemUseReceipt=null;
+  const T=S.T; T.pop="card"; T.sel=key; T.logSig=""; T.itemN=1; T.itemSp=0; T.smiteBd=""; T.d1=""; T.d2=""; T.dmg=""; T.dmgBd=""; T.slot=null; T.castDone=null; T.itemUseReceipt=null;
   const i=S.Titems.find(x=>x.key===key);
   if(i&&i.costs&&T.eco&&i.use&&i.use.spells){ const k=i.use.spells.findIndex(z=>(costOfSpell(z.sp)||"action")===T.eco); if(k>=0) T.itemSp=k; }
   if(i){ const adv=condAdvice(cur(),i.kind==="atk"?"atk":i.kind,i.ab); T.mode = adv.mode&&adv.mode!=="f"?adv.mode:"n";
