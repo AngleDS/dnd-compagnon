@@ -149,8 +149,8 @@ Après comparaison avec Le Compagnon (le-compagnon-dnd.fr : fiche 5E française 
 
 ## 10. Suivi du tour
 
-- Ouvrir une carte, consulter les bonus, changer avantage/désavantage, saisir un dé au pavé ou fermer sans valider : **rien n'est consommé**.
-- Le lancer virtuel ou la validation physique du **jet principal** consomme le coût (Action, Action bonus ou Réaction). Les dégâts, critiques et relances ne consomment rien de plus. (Une variante « consommer aux dégâts » a été essayée puis annulée.)
+- Ouvrir une carte, consulter les bonus, changer avantage/désavantage, saisir un seul des deux d20, annuler le pavé ou fermer sans saisir : **rien n'est consommé**.
+- Le lancer virtuel ou le jet physique complet du **jet principal** consomme le coût (Action, Action bonus ou Réaction). **Une seule validation** (décision d'Angle, 10 nov. 2026) : le Valider du pavé enregistre le jet dès que tous les dés sont saisis ; les boutons « Valider le jet » et « Valider les dégâts » ont été retirés. Formulaires (concentration, dés de vie, mort, charges, Frappe occulte, jet libre) : le Valider du pavé les applique aussi, Appliquer reste pour le clavier. Un jet physique n'est jamais journalisé deux fois pour la même saisie (`physLogged`). Les dégâts, critiques et relances ne consomment rien de plus. (Une variante « consommer aux dégâts » a été essayée puis annulée.)
 - La carte Détails reste ouverte, le résultat visible, avec « ✓ Action consommée pour ce tour » et « Annuler la consommation ».
 - L'annulation restaure **seulement** le suivi du tour : ni résultat, ni historique, ni emplacement, charge ou ressource rendus. Le libellé doit rester clair sur ce point.
 - Actions sans jet : bouton explicite, consommation au clic.

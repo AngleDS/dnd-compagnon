@@ -437,7 +437,7 @@ function tCard(ch,D){
       <div class="row tin"><label class="field"><span>${mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>
       ${mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}
       <div class="ttotal" id="t-tot" data-mod="${mod-exh}" data-label="${esc(label)}">${totalHtml(mod-exh)}</div>
-      <button class="btn small" data-physical data-act="tvalidate" data-kind="d20">Valider le jet</button><button class="btn small vroll" data-virtual data-act="tvroll" title="Lance ${mode==="n"?"un d20":"deux d20"} à ta place">Lancer ${mode==="n"?"le d20":"les 2 d20"}</button></div>`;
+      <button class="btn small vroll" data-virtual data-act="tvroll" title="Lance ${mode==="n"?"un d20":"deux d20"} à ta place">Lancer ${mode==="n"?"le d20":"les 2 d20"}</button></div>`;
   };
   const dmgBlock=(expr,type,label,crit=true,noBig)=>{
     if(!expr) return "";
@@ -447,7 +447,7 @@ function tCard(ch,D){
       ${crit?`<div class="muted" style="font-size:var(--fs-sm)">Critique : lance ${esc(doubleDice(dice))}${flat?" "+sg(flat):""}</div>`:""}
       <div class="row tin"><label class="field"><span>Total de tes dés</span><input id="t-dmg" type="number" min="0" step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label>
       <div class="ttotal" id="t-dtot" data-flat="${flat}">${damageTotalHtml(T.dmg,flat)}</div>
-      <button class="btn small" data-physical data-act="tvalidate" data-kind="dmg">Valider les dégâts</button><button class="btn small vroll" data-virtual data-act="tvdmg" data-e="${esc(dice)}"${r1} title="Lance ${esc(dice)} à ta place">Lancer ${esc(dice)}</button>
+      <button class="btn small vroll" data-virtual data-act="tvdmg" data-e="${esc(dice)}"${r1} title="Lance ${esc(dice)} à ta place">Lancer ${esc(dice)}</button>
       ${crit?`<button class="btn small ghost vroll" data-virtual data-act="tvdmg" data-e="${esc(doubleDice(dice))}" data-crit="1" title="Lance ${esc(doubleDice(dice))} à ta place">Critique</button>`:""}</div>
       ${re1?`<div class="muted" style="font-size:var(--fs-sm)">Guérisseur : un dé de soins qui fait 1 est relancé une fois (automatique au lancer virtuel).</div>`:""}
       ${T.dmgBd?`<div class="muted num" style="font-size:var(--fs-sm)">${esc(T.dmgBd)}</div>`:""}</div>`;
@@ -607,6 +607,7 @@ function applyChargeRecovery(ch,id,total,virtual=false){
 
 /* Pavé de saisie des dés physiques, commun aux deux modes de dés. */
 const DICE_INPUTS='input[data-tin],#cc-d1,#cc-d2,#t-hd,#t-death,input[data-w^="dice."],input[data-lu="roll"],[data-form="smitePhysical"] input[name="total"],[data-form="chargeRecovery"] input[name="total"],[data-form="free"] input[name="physical"]';
+const PAD_SUBMIT_FORMS=["cc","hdroll","death","chargeRecovery","smitePhysical","free"];
 let dicePad=null;
 function closeDicePad(restore=true){
   const target=dicePad?.target; dicePad=null;
@@ -641,6 +642,10 @@ function dicePadKey(key){
     target.value=String(value);
     target.dispatchEvent(new Event('input',{bubbles:true}));
     target.dispatchEvent(new Event('change',{bubbles:true}));
+    // Une seule validation : le Valider du pavé applique aussi la saisie dès que tous les dés du formulaire sont remplis.
+    const form=target.isConnected&&target.closest('form[data-form]');
+    if(form&&PAD_SUBMIT_FORMS.includes(form.dataset.form)&&[...form.querySelectorAll(DICE_INPUTS)].every(x=>x.value!=="")){
+      form.requestSubmit(form.querySelector('button[type="submit"]:not([data-virtual])')||undefined); return; }
     if(target.isConnected) target.focus({preventScroll:true});
     return;
   }

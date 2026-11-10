@@ -510,6 +510,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
  
 
+  // Saisie physique terminée sans le pavé (clavier) : le jet est appliqué au changement de valeur.
+  async function physType(p, sel, value) { await p.fill(sel, value); await p.dispatchEvent(sel, 'change'); }
   async function diceTable(p, cls = 'guerrier') {
     await open(p);
     await newWizardChar(p, { cls, bg: 'srd:soldat', sp: 'srd:humain' });
@@ -611,7 +613,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Dés : attaques, dégâts physiques, critique virtuel et reverrouillage immédiat', async p => {
     await diceTable(p);
     await p.evaluate(() => tSelect(S.Titems.find(i=>i.kind==='atk').key));
-    await p.fill('#t-dmg','9'); await p.locator('#t-dmg').blur(); await p.click('[data-act="tvalidate"][data-kind="dmg"]');
+    await physType(p,'#t-dmg','9');
     const flat=await p.evaluate(() => +document.getElementById('t-dtot').dataset.flat);
     ok((await p.innerText('#t-dtot')).includes('Total : '+(9+flat)),'dés et bonus séparés');
     eq(await p.evaluate(() => cur().rollLog[0].total),9+flat,'dégâts physiques');
@@ -737,17 +739,17 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.isVisible('.tpop'),'carte toujours ouverte');
   });
 
-  await test('Jet physique : pavé puis « Valider le jet » ne journalise qu’une fois', async p => {
+  await test('Jet physique : une seule validation au pavé, une seule ligne par jet', async p => {
     await diceTable(p);
     await p.evaluate(() => tSelect('save:sag'));
     const n0=await p.evaluate(() => (cur().rollLog||[]).length);
     await p.click('#t-d1'); await padNumber(p,12);
-    if(await p.locator('[data-act="tvalidate"][data-kind="d20"]').count()) await p.click('[data-act="tvalidate"][data-kind="d20"]');
-    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+1,'une seule ligne pour un jet');
+    ok(!await p.locator('[data-act="tvalidate"]').count(),'plus de second bouton de validation');
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+1,'jet enregistré dès le Valider du pavé, une seule ligne');
     await p.click('#t-d1'); await padNumber(p,12);
     eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+2,'nouvelle saisie au pavé, même valeur : nouveau jet');
-    if(await p.locator('[data-act="tvalidate"][data-kind="d20"]').count()) await p.click('[data-act="tvalidate"][data-kind="d20"]');
-    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+2,'pas de doublon au second jet');
+    await p.dispatchEvent('#t-d1','change');
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+2,'pas de doublon pour la même saisie');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
@@ -771,7 +773,6 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.keyboard.type('19'); await p.keyboard.press('Backspace'); await p.keyboard.type('2');
     eq(await p.innerText('#dice-pad-value'),'12','correction au clavier');
     await p.keyboard.press('Enter');
-    await p.click('[data-act="tvalidate"][data-kind="dmg"]');
     const flat=await p.evaluate(() => +document.getElementById('t-dtot').dataset.flat);
     eq(await p.inputValue('#t-dmg'),'12','dégâts validés');
     eq(await p.evaluate(() => cur().rollLog[0].total),12+flat,'bonus aux dégâts');
@@ -779,17 +780,31 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(!await p.locator('#dice-pad').count()&&await p.isVisible('.tpop'),'Échap ferme uniquement le pavé');
   });
 
+  await test('Pavé numérique : jet libre et jet contre la mort appliqués dès le Valider du pavé', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { S.tab='jeu'; render(); renderDice(); });
+    const n0=await p.evaluate(() => S.log.length);
+    await p.fill('#freeExpr','2d6+4'); await p.click('[data-form="free"] [name="physical"]'); await padNumber(p,7);
+    eq(await p.evaluate(() => S.log[0].total),11,'jet libre enregistré sans Appliquer');
+    eq(await p.inputValue('[data-form="free"] [name="physical"]'),'','champ vidé après enregistrement');
+    await p.click('[data-form="free"] button:not([data-virtual])');
+    eq(await p.evaluate(() => S.log.length),n0+1,'Appliquer ensuite ne crée pas de doublon');
+    await p.evaluate(() => { cur().hp.cur=0; cur().death={s:0,f:0}; S.tab='table'; render(); });
+    await p.click('#t-death'); await padNumber(p,15);
+    eq(await p.evaluate(() => cur().death),{s:1,f:0},'jet contre la mort appliqué sans Appliquer');
+  });
+
   await test('Pavé numérique : concentration et dé de vie physiques', async p => {
     await diceTable(p);
     await p.evaluate(() => { cur().conc='Sort test'; S.T.cc={dmg:10,mode:'n',d1:'',d2:'',res:null}; S.T.pop='concchk'; render(); });
     await p.click('#cc-d1'); await padNumber(p,18);
-    await p.click('[data-form="cc"] button[type="submit"]');
-    ok(await p.evaluate(() => !!S.T.cc.res),'concentration résolue');
+    ok(await p.evaluate(() => !!S.T.cc.res),'concentration résolue dès le Valider du pavé');
     await p.click('[data-act="ccclose"]');
     await p.evaluate(() => { cur().hp.cur=1; S.T.pop='rest'; S.T.restKind='court'; render(); });
     await p.click('#t-hd'); await padNumber(p,6);
-    await p.click('[data-form="hdroll"] button[type="submit"]');
-    eq(await p.evaluate(() => cur().hdUsed),1,'dé de vie dépensé après saisie au pavé');
+    eq(await p.evaluate(() => cur().hdUsed),1,'dé de vie dépensé dès le Valider du pavé');
+    await p.click('[data-form="hdroll"] button[type="submit"]').catch(()=>{});
+    eq(await p.evaluate(() => cur().hdUsed),1,'Appliquer ensuite ne dépense pas un second dé');
   });
 
 
@@ -830,11 +845,11 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   }
   async function commitAttack(p,virtual,value='12') {
     if(virtual) await p.click('[data-act="tvroll"]');
-    else { await p.fill('#t-d1',value); if(await p.locator('#t-d2').count()) await p.fill('#t-d2','5'); await p.click('[data-act="tvalidate"][data-kind="d20"]'); }
+    else { if(await p.locator('#t-d2').count()){ await p.fill('#t-d1',value); await physType(p,'#t-d2','5'); } else await physType(p,'#t-d1',value); }
   }
   async function commitDamage(p,virtual,crit=false) {
     if(virtual) await p.click('[data-act="tvdmg"]'+(crit?'[data-crit="1"]':':not([data-crit])'));
-    else { await p.fill('#t-dmg','7'); await p.click('[data-act="tvalidate"][data-kind="dmg"]'); }
+    else await physType(p,'#t-dmg','7');
   }
 
   for(const virtual of [false,true]) await test('Tour : attaque '+(virtual?'virtuelle':'physique')+', résultat conservé, relances, dégâts et annulation',async p=>{
@@ -843,8 +858,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="tmode"][data-v="d"]');
     eq(await p.evaluate(()=>cur().turn||{}),{},'changer le mode ne consomme rien');
     if(!virtual){
-      await p.fill('#t-d1','12'); await p.fill('#t-d2','5'); await p.locator('#t-d2').blur();
-      eq(await p.evaluate(()=>cur().turn||{}),{},'saisir sans valider ne consomme rien');
+      await physType(p,'#t-d1','12');
+      eq(await p.evaluate(()=>cur().turn||{}),{},'un seul des deux d20 saisi ne consomme rien');
     }
     await commitAttack(p,virtual);
     eq(await p.evaluate(()=>cur().turn),{action:true},'une Action uniquement');
@@ -867,20 +882,23 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(()=>S.T.pop),'card','carte toujours ouverte');
   });
 
-  await test('Tour : saisie au pavé sans validation du jet et fermeture sans consommation',async p=>{
-    await turnAttack(p,false);
-    await p.click('#t-d1'); await padNumber(p,14);
-    eq(await p.evaluate(()=>cur().turn||{}),{},'valider un champ ne valide pas le jet');
+  await test('Tour : le Valider du pavé valide le jet ; fermer sans saisir ne consomme rien',async p=>{
+    const key=await turnAttack(p,false);
+    await p.click('#t-d1'); await p.click('[data-pad="1"]'); await p.click('[data-pad="cancel"]');
     await p.click('.tpophead [data-act="tpopclose"]');
-    eq(await p.evaluate(()=>cur().turn||{}),{},'fermer sans lancer ne consomme rien');
+    eq(await p.evaluate(()=>cur().turn||{}),{},'pavé annulé puis carte fermée : rien de consommé');
+    await p.evaluate(k=>tSelect(k),key);
+    await p.click('#t-d1'); await padNumber(p,14);
+    eq(await p.evaluate(()=>cur().turn),{action:true},'Valider du pavé : Action consommée');
+    ok((await p.innerText('#t-action-state')).includes('✓ Action consommée'),'confirmation dans la carte');
   });
 
   await test('Tour : résultat physique incomplet ou invalide ne consomme rien',async p=>{
     await turnAttack(p,false);
     await p.click('[data-act="tmode"][data-v="a"]');
-    await p.fill('#t-d1','12'); await p.click('[data-act="tvalidate"][data-kind="d20"]');
+    await physType(p,'#t-d1','12');
     eq(await p.evaluate(()=>cur().turn||{}),{},'second dé absent');
-    await p.fill('#t-d2','21'); await p.click('[data-act="tvalidate"][data-kind="d20"]');
+    await physType(p,'#t-d2','21');
     eq(await p.evaluate(()=>cur().turn||{}),{},'second dé hors bornes');
   });
 

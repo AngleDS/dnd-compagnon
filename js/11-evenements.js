@@ -9,14 +9,6 @@ document.addEventListener("click",e=>{
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;
   if(a!=="ask"&&S.confirm&&!["del","hbDel","rest"].includes(a)) S.confirm=null;
   switch(a){
-    case "tvalidate": {
-      if(virtualDiceEnabled()) break;
-      const kind=t.dataset.kind, T=S.T;
-      if(kind==="d20"?(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))):!validDiceTotal(T.dmg)) break;
-      if(!ensureTableRollUse()) break;
-      if(kind==="d20"?logD20(true):logDmg(true)) tableRollCommitted(kind);
-      render(); break;
-    }
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
     case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); break;
     case "nav": if(t.dataset.v==="hb"||t.dataset.v==="comp"){ if(S.view==="sheet") S.navFrom="perso"; else if(S.view==="list") S.navFrom="menu"; }
@@ -285,7 +277,11 @@ document.addEventListener("change",e=>{
   if(t.dataset.actChange==="tcost"){ const ch=cur(); ch.costs=ch.costs||{}; ch.costs[t.dataset.k]=t.value; S.unlockCost=false; touch(S.cur); render(); return; }
   if(t.dataset.actChange==="tslot"){ S.T.slot=+t.value; render(); return; }
   if(t.dataset.actChange==="compType"){ S.comp.type=t.value; render(); return; }
-  if(t.dataset.tin&&S.T){ if(["atk","spell","bagitem"].includes(tableSelected()?.kind)) return; if(t.dataset.tin==="dmg") logDmg(true); else logD20(true); return; }
+  // Une seule validation : un jet physique complet (pavé validé ou saisie terminée) est enregistré et compte pour le tour.
+  if(t.dataset.tin&&S.T){ if(virtualDiceEnabled()) return; const T=S.T, kind=t.dataset.tin==="dmg"?"dmg":"d20";
+    if(kind==="d20"?(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))):!validDiceTotal(T.dmg)) return;
+    if(ensureTableRollUse()&&(kind==="d20"?logD20(true):logDmg(true))) tableRollCommitted(kind);
+    render(); return; }
   if(!t.dataset.bind) return;
   let v = t.type==="checkbox"?t.checked:t.value;
   if("num" in t.dataset) v = v===""?0:+v;
@@ -330,6 +326,7 @@ document.addEventListener("submit",e=>{
       const value=f.elements.physical.value; if(!validDiceTotal(value)) return;
       const flat=expressionBonus(v);
       addLog({label:"Jet libre "+v,total:+value+flat,bd:"Dés physiques : "+value+" · Bonus : "+sg(flat)+" · Total : "+(+value+flat)});
+      f.elements.physical.value="";
     }
     return;
   }
