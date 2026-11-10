@@ -118,7 +118,7 @@ async function flush(id){
   try{ if(d) await col().doc(id).set(clone(d)); else await col().doc(id).delete(); }
   catch(e){
     if(e&&e.code==="unavailable"){ await new Promise(r=>setTimeout(r,800+Math.random()*800)); try{ if(d) await col().doc(id).set(clone(d)); }catch(_){} }
-    else if(e&&e.code==="quota_exceeded"){ setBanner("Le registre est plein : supprime des personnages ou du contenu perso inutilisés pour continuer."); }
+    else if(e&&e.code==="quota_exceeded"){ setBanner("Le registre est plein : supprime des personnages ou des éléments inutilisés de « Mes contenus » pour continuer."); }
     else if(e&&e.code==="invalid_argument"){ setBanner("Tu n'as pas le droit d'écrire ici. Demande au propriétaire de t'inviter en tant que Contributeur."); }
   } finally { delete inflight[id]; }
 }

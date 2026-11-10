@@ -907,6 +907,17 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok((await p.innerText('#banner')).includes('Ysolde importé'), 'message de confirmation');
   });
 
+  await test('Noms : « Catalogue » et « Mes contenus » partout dans l’appli', async p => {
+    await open(p); await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv=null; renderModal(); S.tab='jeu'; render(); });
+    const nav = await p.evaluate(() => [...document.querySelectorAll('#nav button')].map(b => b.innerText.trim()));
+    ok(nav.includes('Mes contenus') && nav.includes('Catalogue'), 'navigation : ' + JSON.stringify(nav));
+    await p.evaluate(() => { S.view='hb'; render(); }); eq((await p.innerText('#app h1')).trim(), 'Mes contenus', 'titre de la page');
+    await p.evaluate(() => { S.view='comp'; render(); }); eq((await p.innerText('#app h1')).trim(), 'Catalogue', 'titre du catalogue SRD');
+    const old = HTML_SOURCE.replace(/<script type="application\/json"[\s\S]*?<\/script>/g, '').match(/Grimoire|Contenu perso|contenus? perso\b/g) || [];
+    eq(old, [], 'aucun ancien nom dans l’interface');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

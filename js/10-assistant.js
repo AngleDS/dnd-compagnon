@@ -19,11 +19,11 @@ function wNhPanel(W){ const n=W.nh, K={historique:"historique",espece:"espèce",
     <label class="field"><span>Outil</span><input type="text" data-w="nh.tools" value="${esc(n.tools||"")}"></label>`;
   if(n.kind==="classe") x+=`<div class="grid2"><label class="field"><span>Dé de vie</span>${wSel("nh.hitDie",[6,8,10,12].map(v=>[v,"d"+v]),n.hitDie||8,"—")}</label><label class="field"><span>Caractéristique principale</span>${wSel("nh.primary1",AB.map(a=>[a,ABN[a]]),n.primary1)}</label>
     <div class="field"><span>Jets de sauvegarde</span><div class="row" style="gap:6px">${wSel("nh.save1",AB.map(a=>[a,ABN[a]]),n.save1)}${wSel("nh.save2",AB.map(a=>[a,ABN[a]]),n.save2)}</div></div><label class="field"><span>Incantation</span>${wSel("nh.castType",CAST_TYPES.slice(1),n.castType||"","Aucune")}</label></div>
-    <div class="muted" style="font-size:var(--fs-sm)">Le reste (compétences, armures, aptitudes par niveau…) se complète dans Contenu perso.</div>`;
+    <div class="muted" style="font-size:var(--fs-sm)">Le reste (compétences, armures, aptitudes par niveau…) se complète dans « Mes contenus ».</div>`;
   if(n.kind==="espece") x+=`<label class="field"><span>Vitesse (m)</span><input type="number" step="1.5" min="0" data-w="nh.speed" value="${esc(n.speed||9)}"></label>`;
   x+=`<label class="field"><span>Description${n.kind==="espece"?" et traits":""}</span><textarea data-w="nh.text" style="min-height:90px">${esc(n.text||"")}</textarea></label>
     <div class="row" style="justify-content:space-between;gap:6px;flex-wrap:wrap">${afBtn('data-mode="nh"')}<span class="row" style="gap:6px;margin-left:auto"><button class="btn small ghost" data-act="wnhCancel">Annuler</button><button class="btn small primary" data-act="wnhSave">Créer et choisir</button></span></div>
-    <div class="muted" style="font-size:var(--fs-sm)">Il sera rangé dans Contenu perso pour tous tes personnages. Tu pourras y ajouter des effets automatisés et un lien AideDD.</div></div>`;
+    <div class="muted" style="font-size:var(--fs-sm)">Il sera rangé dans « Mes contenus » pour tous tes personnages. Tu pourras y ajouter des effets automatisés et un lien AideDD.</div></div>`;
   return x; }
 function wCls(W){ return clsOf(W.cls); }
 function wBg(W){ return srd("backgrounds",W.bg)||hb(W.bg); }

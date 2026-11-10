@@ -19,7 +19,7 @@ function renderNav(){
   const onList=S.view==="list";
   const inPerso=S.view==="sheet"||((S.view==="hb"||S.view==="comp")&&S.navFrom!=="menu");
   if(m&&inPerso){ items.push(["table","À la table",onTable]); items.push(["main","Fiche de personnage",onMain]); }
-  items.push(["hb","Contenu perso",S.view==="hb"],["comp","Grimoire",S.view==="comp"]);
+  items.push(["hb","Mes contenus",S.view==="hb"],["comp","Catalogue",S.view==="comp"]);
   document.getElementById("nav").innerHTML=items.map(([k,l,on])=>`<button data-act="nav" data-v="${k}" ${on?'aria-current="page"':""}>${esc(l)}</button>`).join("");
   const shown = !inPerso ? null : (S.view==="sheet"&&S.cur&&S.docs[S.cur] ? S.docs[S.cur] : (m?S.docs[m]:null));
   document.getElementById("hmenu").innerHTML=`<button class="hmenu" data-act="nav" data-v="list" ${S.view==="list"||(S.view==="sheet"&&!onMine)?'aria-current="page"':""}>Menu</button>`;
@@ -84,7 +84,7 @@ function viewList(){
       ${S.confirm==="del:"+p._id?`<button class="btn small danger" data-act="del" data-id="${p._id}">Confirmer la suppression</button>`:`<button class="btn small ghost danger" data-act="askdel" data-id="${p._id}">Supprimer</button>`}</div>
     </article>`;}).join("");
   return `<div class="list-head"><div><h1>Liste des personnages</h1><div class="muted">Chaque joueur voit uniquement ses propres fiches.</div></div>
-    <div class="row"><button class="btn" data-act="saveApp" title="Crée un fichier personnel contenant les personnages, portraits, notes et contenus perso visibles ici">Télécharger ma copie personnelle</button><label class="btn" for="importFile">Importer un personnage</label><input id="importFile" type="file" accept=".json,application/json" hidden>
+    <div class="row"><button class="btn" data-act="saveApp" title="Crée un fichier personnel contenant les personnages, portraits, notes et éléments de Mes contenus visibles ici">Télécharger ma copie personnelle</button><label class="btn" for="importFile">Importer un personnage</label><input id="importFile" type="file" accept=".json,application/json" hidden>
     <button class="btn" data-act="new" title="Fiche vide à remplir à la main">Fiche vide</button><button class="btn primary" data-act="wizard">Créer un personnage</button></div></div>
     <div class="muted" style="margin:8px 0 14px">L'application distribuée est vierge. « Télécharger ma copie personnelle » crée un autre fichier qui contient tes personnages, portraits, notes et contenus personnalisés : ne le partage pas sans le vouloir.</div>
     ${loading?`<div class="empty">Chargement de tes personnages…</div>`:(cards?`<div class="cards">${cards}</div>`:`<div class="empty">Aucun personnage pour l'instant. Crée le premier avec « Créer un personnage » : tu choisiras sa classe, son espèce et ses caractéristiques, et la fiche se calcule toute seule.</div>`)}`;
@@ -279,7 +279,7 @@ function tabComp(ch,D){
     <div class="muted" style="font-size:var(--fs-sm)">● maîtrise, <span style="color:var(--blood)">●</span> expertise. Les maîtrises se règlent dans l'onglet Construction.</div></div></div>`;
 }
 function tabSorts(ch,D){
-  if(!D.cast) return `<div class="empty">Ce personnage ne lance pas de sorts. Une classe de lanceur de sorts, ou un contenu perso qui accorde des sorts, active cet onglet.</div>`;
+  if(!D.cast) return `<div class="empty">Ce personnage ne lance pas de sorts. Une classe de lanceur de sorts, ou un élément de « Mes contenus » qui accorde des sorts, active cet onglet.</div>`;
   const list=spellList(ch,D);
   const nC=list.filter(s=>s.sp.level===0&&!s.always).length, nP=list.filter(s=>s.sp.level>0&&!s.always&&s.prepared).length;
   const slotsAvail = D.cast.type==="pact"?[D.cast.pactLevel]:(D.cast.slots||[]).map((n,i)=>i+1);
@@ -349,14 +349,14 @@ function tabInv(ch,D){
   const items=(ch.items||[]).map((it,i)=>{const h=hb(it.ref); if(!h) return ""; return `<div class="res"><div><b>${esc(h.name)}</b> <span class="badge perso">Hors SRD</span></div><div class="row"><button class="chip" aria-pressed="${!!it.equipped}" data-act="equip" data-i="${i}">Équipé</button><button class="btn small ghost danger" data-act="rmItem" data-i="${i}">Retirer</button></div></div>`;}).join("");
   const hbItems=hbs("objet");
   return `<div class="sect"><h2>Bourse</h2></div><div class="row">${["pp","po","pe","pa","pc"].map(k=>`<label class="field"><span>${k}</span><input id="f-g${k}" type="number" data-bind="gold.${k}" data-num value="${esc(g[k]||0)}"></label>`).join("")}</div>
-    <div class="sect"><h2>Objets à effets</h2>${hbItems.length?`<div class="row"><select id="addItemSel" aria-label="Objet perso">${hbItems.map(h=>`<option value="hb:${h._id}">${esc(h.name)}</option>`).join("")}</select><button class="btn small" data-act="addItem">Ajouter</button></div>`:`<span class="muted" style="font-size:var(--fs-sm)">Crée un objet dans Contenu perso pour l'équiper ici.</span>`}</div>
+    <div class="sect"><h2>Objets à effets</h2>${hbItems.length?`<div class="row"><select id="addItemSel" aria-label="Objet perso">${hbItems.map(h=>`<option value="hb:${h._id}">${esc(h.name)}</option>`).join("")}</select><button class="btn small" data-act="addItem">Ajouter</button></div>`:`<span class="muted" style="font-size:var(--fs-sm)">Crée un objet dans « Mes contenus » pour l'équiper ici.</span>`}</div>
     ${items||`<div class="muted">Les objets équipés appliquent leurs effets à la fiche (bonus de CA, attaques…).</div>`}
     <div class="sect"><h2>Compteurs</h2><span class="muted" style="font-size:var(--fs-sm)">Trousse de soins, munitions, potions… affichés dans l'onglet Jeu.</span></div>
     ${(ch.counters||[]).map(c=>`<div class="res"><b>${esc(c.name)}</b><div class="row"><label class="row" style="gap:4px"><input id="cntc-${c.id}" type="number" min="0" data-cnt="${c.id}" data-bind="cur" data-num value="${esc(c.cur||0)}" aria-label="Quantité actuelle">/<input id="cntm-${c.id}" type="number" min="0" data-cnt="${c.id}" data-bind="max" data-num value="${esc(c.max||0)}" aria-label="Maximum"></label><button class="btn small ghost danger" data-act="cntRm" data-id="${c.id}">Retirer</button></div></div>`).join("")}
     <form class="row" data-form="cnt" style="margin-top:8px"><input id="cnt-name" type="text" placeholder="Nom (ex. Trousse de soins)" aria-label="Nom du compteur"><input id="cnt-max" type="number" min="1" placeholder="max" aria-label="Maximum"><button class="btn small" type="submit">Ajouter un compteur</button></form>
     <div class="sect"><h2>Sac</h2><span class="muted num" style="font-size:var(--fs-sm)">${bag.reduce((t,b)=>t+(+b.qty||0),0)} objet(s)</span></div>
     <div class="bag">${bag.map(b=>`<div class="bagrow">
-      <span class="row" style="gap:4px;min-width:0;flex-wrap:nowrap"><input id="bag-n-${b.id}" type="text" data-bag="${b.id}" data-bind="name" value="${esc(b.name)}" aria-label="Objet" class="bagname" style="flex:1;min-width:0">${(()=>{ const ref=b.ref||matchItem(b.name); return ref?`<button class="btn small ghost infob" data-act="tip" data-k="${esc(ref)}" aria-label="Fiche de ${esc(b.name)}" title="Voir la fiche">${ref.startsWith("hb:")?"Perso":"SRD"}</button>`:`<button class="btn small ghost infob mk" data-act="mkItem" data-id="${b.id}" title="Créer la fiche de cet objet dans Contenu perso">Créer sa fiche</button>`; })()}</span>
+      <span class="row" style="gap:4px;min-width:0;flex-wrap:nowrap"><input id="bag-n-${b.id}" type="text" data-bag="${b.id}" data-bind="name" value="${esc(b.name)}" aria-label="Objet" class="bagname" style="flex:1;min-width:0">${(()=>{ const ref=b.ref||matchItem(b.name); return ref?`<button class="btn small ghost infob" data-act="tip" data-k="${esc(ref)}" aria-label="Fiche de ${esc(b.name)}" title="Voir la fiche">${ref.startsWith("hb:")?"Perso":"SRD"}</button>`:`<button class="btn small ghost infob mk" data-act="mkItem" data-id="${b.id}" title="Créer la fiche de cet objet dans Mes contenus">Créer sa fiche</button>`; })()}</span>
       <span class="hpstep"><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="-1" aria-label="Retirer un">−</button><b class="num">${+b.qty||0}</b><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="1" aria-label="Ajouter un">+</button></span>
       <input id="bag-o-${b.id}" type="text" data-bag="${b.id}" data-bind="note" value="${esc(b.note||"")}" placeholder="Note" aria-label="Note" class="bagnote">
       <button class="btn small ghost danger btndel" data-act="bagrm" data-id="${b.id}" aria-label="Supprimer ${esc(b.name)}">${ICON_TRASH}</button>
@@ -374,7 +374,7 @@ function tabBuild(ch,D){
   const bgOpts=[...S.C.backgrounds.map(s=>["srd:"+s.id,s.name]),...hbs("historique").map(h=>["hb:"+h._id,h.name+hbTag(h)]),...catOpts("historique")];
   const armOpts=[["none","Aucune armure"],["mage","Armure du mage (13 + Dex)"],...S.C.armors.filter(a=>a.category!=="bouclier").map(a=>["srd:"+a.id,a.name+" ("+a.ac+(a.dexMax===0?"":a.dexMax?" + Dex max "+a.dexMax:" + Dex")+")"]),["custom","Formule perso"]];
   const skillRows=S.C.skills.map(s=>{const v=+(ch.skills?.[s.id]||0); const fromEff=D.skills[s.id].lv>v;
-    return `<label class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:3px 0"><span>${esc(s.name)} <span class="muted" style="font-size:var(--fs-sm)">${ABS[s.ability]}</span>${fromEff?` <span class="badge perso" title="Accordé par un contenu perso">auto</span>`:""}</span>
+    return `<label class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:3px 0"><span>${esc(s.name)} <span class="muted" style="font-size:var(--fs-sm)">${ABS[s.ability]}</span>${fromEff?` <span class="badge perso" title="Accordé par un élément de Mes contenus">auto</span>`:""}</span>
       <select id="sk-${s.id}" data-bind="skills.${s.id}" data-num>${[[0,"—"],[1,"Maîtrise"],[2,"Expertise"]].map(([k,l])=>`<option value="${k}" ${k===v?"selected":""}>${l}</option>`).join("")}</select></label>`;}).join("");
   const featOpts=[...S.C.feats.map(f=>["srd:"+f.id,f.name+" — "+f.category]),...hbs("don").map(h=>["hb:"+h._id,h.name+hbTag(h)]),...catOpts("don")];
   const feats=(ch.feats||[]).map((r,i)=>{const n=(hb(r)||srd("feats",r))?.name||"?"; return `<span class="chip">${esc(n)} ${badge(r)} <button class="btn small ghost btndel" data-act="rmList" data-k="feats" data-i="${i}" aria-label="Retirer">${ICON_TRASH}</button></span>`;}).join(" ");
@@ -419,7 +419,7 @@ function tabBuild(ch,D){
           <div class="muted" style="font-size:var(--fs-sm);margin-top:4px">Automatisés : Armure d'ombres (choisis « Armure du mage »), Décharge déchirante (Cha aux dégâts du sort choisi), Décharge répulsive et Lance occulte (rappel dans la carte du sort), Enseignement des Premiers-Nés (le don choisi s'ajoute à la fiche), Pacte de la lame (option « arme de pacte »), Frappe occulte (dans la carte de l'arme de pacte).</div>
           ${Object.keys(D.arc||{}).length?`<div class="sect"><h2>Arcanum mystique</h2></div><div class="stack">${Object.entries(D.arc).map(([sl,r])=>`<label class="field"><span>Sort de niveau ${sl}</span><select data-arcsel="${sl}"><option value="">— Choisir —</option>${classSpells(D,+sl).map(x=>`<option value="${esc(x.ref)}" ${x.ref===r?"selected":""}>${esc(x.s.name)}</option>`).join("")}</select></label>`).join("")}</div>`:""}</div>`:""}
         <div><div class="sect"><h2>Aptitudes perso</h2></div><div class="row">${apts||`<span class="muted">Aucune</span>`}</div>
-          ${aptOpts.length?`<div class="row" style="margin-top:6px"><select id="addAptSel" aria-label="Aptitude perso">${aptOpts.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select><button class="btn small" data-act="addList" data-k="features" data-src="addAptSel">Ajouter</button></div>`:`<div class="muted" style="font-size:var(--fs-sm)">Crée des aptitudes dans Contenu perso.</div>`}</div>
+          ${aptOpts.length?`<div class="row" style="margin-top:6px"><select id="addAptSel" aria-label="Aptitude perso">${aptOpts.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select><button class="btn small" data-act="addList" data-k="features" data-src="addAptSel">Ajouter</button></div>`:`<div class="muted" style="font-size:var(--fs-sm)">Crée des aptitudes dans « Mes contenus ».</div>`}</div>
       </div>
     </div></div></fieldset>`;
 }
@@ -438,7 +438,7 @@ function renderDice(){
 function viewHb(){
   const all=hbs().filter(h=>!S.hbFilter||h.kind===S.hbFilter);
   const sel=S.hbSel&&S.docs[S.hbSel]?Object.assign({_id:S.hbSel},S.docs[S.hbSel]):null;
-  return `<div class="list-head"><div><h1>Contenu perso</h1><div class="muted">Ton homebrew et ce que tu saisis depuis tes livres. Chaque élément sert à tous tes personnages.</div></div>
+  return `<div class="list-head"><div><h1>Mes contenus</h1><div class="muted">Ton homebrew et ce que tu saisis depuis tes livres. Chaque élément sert à tous tes personnages.</div></div>
     <div class="row"><select id="hbNewKind" aria-label="Type">${Object.entries(HB_KINDS).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select><button class="btn primary" data-act="hbNew">Créer</button><button class="btn" data-act="catPick">Depuis le catalogue</button></div></div>
     <div class="hb-layout"><div class="panel" style="padding:0">
       <div style="padding:8px"><select id="hbFilter" data-act-change="hbFilter" aria-label="Filtrer"><option value="">Tous les types</option>${Object.entries(HB_KINDS).map(([k,l])=>`<option value="${k}" ${S.hbFilter===k?"selected":""}>${l}</option>`).join("")}</select></div>
@@ -529,7 +529,7 @@ function viewComp(){
   if(t==="armes") items=[...S.C.weapons.map(w=>({n:w.name,sub:"Arme "+w.category+" · "+w.damage+" "+w.damageType,txt:"Propriétés : "+w.properties+"\nBotte : "+w.mastery+"\nPoids : "+w.weight+" · Prix : "+w.cost})),...S.C.armors.map(a=>({n:a.name,sub:"Armure "+a.category,txt:"CA "+a.ac+(a.dexMax===0?"":a.dexMax?" + Dex (max "+a.dexMax+")":" + Dex")+(a.strength?"\nForce "+a.strength:"")+(a.stealthDisadvantage?"\nDésavantage en Discrétion":"")+"\nPoids : "+a.weight+" · Prix : "+a.cost}))];
   if(q) items=items.filter(i=>norm(i.n).includes(q)||norm(i.sub).includes(q));
   const shown=items.slice(0,120);
-  return `<div class="list-head"><div><h1>Grimoire</h1><div class="muted">Tout le SRD 5.2.1 en français, consultable et cherchable.</div></div></div>
+  return `<div class="list-head"><div><h1>Catalogue</h1><div class="muted">Tout le SRD 5.2.1 en français, consultable et cherchable.</div></div></div>
     <div class="row" style="margin-bottom:12px"><select id="compType" data-act-change="compType" aria-label="Catégorie">${Object.entries(types).map(([k,l])=>`<option value="${k}" ${t===k?"selected":""}>${l}</option>`).join("")}</select>
     <form data-form="comp" class="row" style="flex:1"><input id="compQ" type="text" value="${esc(S.comp.q)}" placeholder="Chercher un nom, une classe, une école…" style="flex:1;min-width:180px" aria-label="Recherche"><button class="btn" type="submit">Chercher</button></form></div>
     <div class="muted" style="font-size:var(--fs-sm);margin-bottom:6px">${items.length} résultat${items.length>1?"s":""}${items.length>120?" (120 affichés, affine ta recherche)":""}</div>
