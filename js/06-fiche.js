@@ -42,7 +42,20 @@ function render(){
   renderModal();
   syncDiceInputMode();
   window.scrollTo(0,y);
+  scrollHints(true);
 }
+/* Indices de défilement : fondu sur le bord d'une zone qui continue (onglets de la fiche).
+   Au rendu, l'onglet actif est ramené dans la partie visible de la barre. */
+function scrollHints(reveal){
+  document.querySelectorAll(".tabs").forEach(t=>{
+    if(reveal){ const a=t.querySelector('[aria-selected="true"]');
+      if(a){ if(a.offsetLeft<t.scrollLeft) t.scrollLeft=a.offsetLeft; else if(a.offsetLeft+a.offsetWidth>t.scrollLeft+t.clientWidth) t.scrollLeft=a.offsetLeft+a.offsetWidth-t.clientWidth; } }
+    const max=t.scrollWidth-t.clientWidth;
+    t.classList.toggle("more-l",t.scrollLeft>2); t.classList.toggle("more-r",t.scrollLeft<max-2);
+  });
+}
+document.addEventListener("scroll",e=>{ if(e.target.classList&&e.target.classList.contains("tabs")) scrollHints(false); },true);
+window.addEventListener("resize",()=>scrollHints(false));
 function prose(t){
   return String(t||"").split("\n").filter(Boolean).map(p=>{
     let h=esc(p).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");

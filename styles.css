@@ -129,7 +129,12 @@ details>summary::-webkit-details-marker{display:none}
 .save-mark.on{color:var(--brass)}
  
 .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;margin-bottom:12px}
-.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;color:var(--muted);white-space:nowrap}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;color:var(--muted);white-space:nowrap;flex:0 0 auto}
+/* La barre défile au doigt au lieu de tasser les onglets ; un fondu signale qu'elle continue. */
+.tabs{scrollbar-width:none;overscroll-behavior-x:contain}.tabs::-webkit-scrollbar{display:none}
+.tabs.more-r{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent)}
+.tabs.more-l{-webkit-mask-image:linear-gradient(90deg,transparent,#000 40px);mask-image:linear-gradient(90deg,transparent,#000 40px)}
+.tabs.more-l.more-r{-webkit-mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
 .tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--brass)}
  
 .vitals{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}

@@ -353,7 +353,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       if (el.matches('input[type=checkbox],input[type=radio]')) { const l = el.closest('label'); if (l && l.getBoundingClientRect().height >= 43.5) return; }
       const r = el.getBoundingClientRect();
       if (el.matches('.tipl')) { if (r.height < 43.5) bad.add('terme ' + el.textContent.trim().slice(0, 15) + ' h' + Math.round(r.height)); return; } // mot d'aide dans le texte : hauteur seulement
-      if (r.right > innerWidth + 1 || r.left < -1) bad.add('hors écran ' + el.tagName.toLowerCase() + '[' + (el.dataset.act || '') + '] ' + (el.getAttribute('aria-label') || el.textContent).trim().slice(0, 20));
+      const inScroller = !!el.parentElement && (() => { for (let a = el.parentElement; a; a = a.parentElement) if (/(auto|scroll)/.test(getComputedStyle(a).overflowX) && a.scrollWidth > a.clientWidth) return true; return false; })(); // atteignable en faisant défiler sa zone (barre d'onglets)
+      if (!inScroller && (r.right > innerWidth + 1 || r.left < -1)) bad.add('hors écran ' + el.tagName.toLowerCase() + '[' + (el.dataset.act || '') + '] ' + (el.getAttribute('aria-label') || el.textContent).trim().slice(0, 20));
       if (r.width < 43.5 || r.height < 43.5) bad.add(el.tagName.toLowerCase() + '.' + [...el.classList].join('.') + '[' + (el.dataset.act || '') + '] ' + Math.round(r.width) + '×' + Math.round(r.height));
     });
     return [...bad];
@@ -830,6 +831,39 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.locator('#t-d1').evaluate(e => e.blur());
     eq(await p.inputValue('#t-d1'),'','valeur inchangée');
     eq(await p.evaluate(() => (cur().rollLog||[]).length),n0,'aucun jet enregistré');
+  });
+
+  // Paires d'éléments cliquables visibles qui se recouvrent (hors éléments imbriqués et champs avec bouton intégré).
+  const overlaps = t => t.evaluate(() => {
+    const els = [...document.querySelectorAll('button,[data-act],[role=tab],[role=button],a[href]')].filter(e => { const r = e.getBoundingClientRect(); const st = getComputedStyle(e); return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && e.offsetParent; });
+    const clip = e => { let r = e.getBoundingClientRect(); for (let a = e.parentElement; a; a = a.parentElement) { if (/(auto|scroll|hidden)/.test(getComputedStyle(a).overflowX)) { const c = a.getBoundingClientRect(); r = { left: Math.max(r.left, c.left), right: Math.min(r.right, c.right), top: r.top, bottom: r.bottom }; } } return r; };
+    const out = [];
+    for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) {
+      const a = els[i], b = els[j]; if (a.contains(b) || b.contains(a)) continue;
+      const r1 = clip(a), r2 = clip(b), w = Math.min(r1.right, r2.right) - Math.max(r1.left, r2.left), h = Math.min(r1.bottom, r2.bottom) - Math.max(r1.top, r2.top);
+      if (w > 4 && h > 4) out.push((a.innerText || a.getAttribute('aria-label') || a.dataset.act || '').trim().slice(0, 20) + ' / ' + (b.innerText || b.getAttribute('aria-label') || b.dataset.act || '').trim().slice(0, 20));
+    }
+    return out;
+  });
+
+  await test('iPhone : onglets de la fiche lisibles et défilants, aucun bouton qui en recouvre un autre', async p => {
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+    try {
+      await open(t); await newWizardChar(t, { cls: 'paladin', bg: 'srd:soldat', sp: 'srd:humain' });
+      await t.evaluate(() => { S.rv = null; renderModal(); S.tab = 'jeu'; render(); });
+      const tabs = await t.evaluate(() => [...document.querySelectorAll('.sheettabs [role=tab]')].map(b => b.scrollWidth <= b.clientWidth + 1));
+      ok(tabs.length >= 7 && tabs.every(Boolean), 'chaque onglet garde la largeur de son texte');
+      ok(await t.evaluate(() => document.querySelector('.sheettabs').classList.contains('more-r')), 'fondu à droite : la barre continue');
+      const bad = [];
+      for (const tab of ['jeu', 'comp', 'sorts', 'apt', 'inv', 'notes', 'build', 'table']) {
+        await t.evaluate(tab => { S.tab = tab; render(); }, tab);
+        if (tab === 'build') ok(await t.evaluate(() => { const b = document.querySelector('.sheettabs'), a = b.querySelector('[aria-selected="true"]'); return a.offsetLeft >= b.scrollLeft && a.offsetLeft + a.offsetWidth <= b.scrollLeft + b.clientWidth + 1; }), 'onglet actif ramené dans la partie visible');
+        (await overlaps(t)).forEach(x => bad.push(tab + ' : ' + x));
+      }
+      eq(bad, [], 'éléments cliquables superposés');
+      if (errs.length) throw new Error('Erreur JS : ' + errs.join(' | '));
+    } finally { await ctx.close(); }
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {

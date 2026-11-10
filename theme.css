@@ -306,6 +306,7 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
   summary{padding-top:12px!important;padding-bottom:12px!important;min-height:44px;box-sizing:border-box}
   a.aidelink{display:inline-flex;align-items:center;min-height:44px}
   .tipl{padding-top:12px;padding-bottom:12px}
+  .skill{min-height:44px;box-sizing:border-box} /* la zone agrandie du nom ne déborde plus sur la ligne voisine */
   input[type=checkbox],input[type=radio]{width:22px;height:22px}
   label:has(> input[type=checkbox]),label:has(> input[type=radio]){min-height:44px;display:inline-flex;align-items:center}
   .tqclear{width:44px!important;height:44px!important;right:4px}
