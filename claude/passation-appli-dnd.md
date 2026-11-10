@@ -65,7 +65,7 @@ L'ordre de concaténation est inchangé ; le fichier construit est identique oct
 - un module contient `</script` ;
 - le JavaScript assemblé échoue à `node --check`.
 
-Tests : `node tests/run.js dist/dnd-compagnon.html` (Playwright ; persos temporaires ; Claude et navigateur simulés). Playwright n'est pas installé sur le Mac : Claude lance la suite dans son espace de travail, sur le `dist/dnd-compagnon.html` construit par le Mac.
+Tests : `node tests/run.js dist/dnd-compagnon.html` (Playwright ; persos temporaires ; Claude et navigateur simulés). Un seul navigateur pour toute la suite, un contexte isolé par test (vérifié par les tests « Isolation »). Durée dans l'espace de Claude : environ 55 s pour 78 tests (81 s avant le 10 nov. 2026). Sans carte graphique, chaque mouvement de souris simulé coûte une image (environ 80 ms) : limiter les `steps` des glisser et ne jamais laisser un clic attendre un élément absent (8 s perdues par attente). Playwright n'est pas installé sur le Mac : Claude lance la suite dans son espace de travail, sur le `dist/dnd-compagnon.html` construit par le Mac.
 
 ## 4. Architecture
 

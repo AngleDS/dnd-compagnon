@@ -8,13 +8,16 @@ const FILE = path.resolve(process.argv[2] || path.join(__dirname, '..', 'dist', 
 const HTML_SOURCE = fs.readFileSync(FILE, 'utf8');
  
 const results = [];
+// Un seul navigateur pour toute la suite ; chaque test a son propre contexte (stockage, cookies et pages isolés).
+let BROWSER = null;
 async function test(name, fn) {
-  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1200, height: 900 } }); const p = await ctx.newPage(); p.setDefaultTimeout(8000);
+  BROWSER = BROWSER || await chromium.launch();
+  const ctx = await BROWSER.newContext({ viewport: { width: 1200, height: 900 } }); const p = await ctx.newPage(); p.setDefaultTimeout(8000);
   const errors = []; p.on('pageerror', e => errors.push(e.message));
   await p.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
   try { await fn(p, errors); if (errors.length) throw new Error('Erreur JS : ' + errors.join(' | ')); results.push([name, true]); console.log('✓', name); }
   catch (e) { results.push([name, false]); console.log('✗', name, '\n   ', e.message); }
-  finally { await b.close(); }
+  finally { await ctx.close(); }
 }
 function ok(cond, msg) { if (!cond) throw new Error(msg); }
 function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg} : obtenu ${JSON.stringify(a)}, attendu ${JSON.stringify(b)}`); }
@@ -43,6 +46,16 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await open(p);
     const r = await p.evaluate(() => ({ cls: S.C.classes.length, spells: S.C.spells.length, cat: S.CAT.length, ids: new Set(S.CAT.map(e => e.id)).size }));
     eq(r.cls, 12, 'classes SRD'); ok(r.spells > 300, 'sorts SRD'); ok(r.cat > 400, 'catalogue'); eq(r.ids, r.cat, 'identifiants du catalogue uniques');
+  });
+
+  await test('Isolation (1/2) : un test écrit dans le stockage du navigateur', async p => {
+    await open(p); await p.evaluate(() => { localStorage.setItem('isolation-test','1'); setVirtualDice(true); });
+    eq(await p.evaluate(() => localStorage.getItem('isolation-test')),'1','écriture faite');
+  });
+
+  await test('Isolation (2/2) : le test suivant repart d’un navigateur vierge', async p => {
+    await open(p);
+    eq(await p.evaluate(() => [localStorage.getItem('isolation-test'), virtualDiceEnabled()]),[null,false],'aucune trace du test précédent');
   });
 
   await test('Mode local pur : aucun besoin de Claude, catalogues SRD et hors SRD embarqués', async p => {
@@ -251,7 +264,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   const center = async (p, sel) => { const b = await p.locator(sel).first().boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; };
   async function mouseDrag(p, from, to, during) {
     const [x0, y0] = await center(p, from), [x1, y1] = await center(p, to);
-    await p.mouse.move(x0, y0); await p.mouse.down(); await p.mouse.move(x0 + 12, y0 + 12, { steps: 3 }); await p.mouse.move(x1, y1, { steps: 8 });
+    // Trois mouvements suffisent (seuil de 6 px, survol, dépôt) ; sans carte graphique, chaque mouvement coûte une image.
+    await p.mouse.move(x0, y0); await p.mouse.down(); await p.mouse.move(x0 + 12, y0 + 12); await p.mouse.move(x1, y1, { steps: 2 });
     if (during) await during();
     await p.mouse.up(); await p.waitForTimeout(30);
   }
@@ -848,7 +862,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { cur().hp.cur=1; S.T.pop='rest'; S.T.restKind='court'; render(); });
     await p.click('#t-hd'); await padNumber(p,6);
     eq(await p.evaluate(() => cur().hdUsed),1,'dé de vie dépensé dès le Valider du pavé');
-    await p.click('[data-form="hdroll"] button[type="submit"]').catch(()=>{});
+    // Le formulaire peut avoir disparu (PV au maximum) : ne cliquer que s'il est encore là, sans attendre.
+    if(await p.locator('[data-form="hdroll"] button[type="submit"]').isVisible()) await p.click('[data-form="hdroll"] button[type="submit"]');
     eq(await p.evaluate(() => cur().hdUsed),1,'Appliquer ensuite ne dépense pas un second dé');
   });
 
@@ -1060,6 +1075,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
 
 
+  if (BROWSER) await BROWSER.close();
   const ko = results.filter(r => !r[1]).length;
   console.log(`\n${results.length - ko}/${results.length} tests réussis.`);
   process.exit(ko ? 1 : 0);
