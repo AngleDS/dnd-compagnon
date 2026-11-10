@@ -180,7 +180,7 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 
 - **Recherche de « À la table »** : « Que fais-tu ? » remplacé par « Trouver un jet, une action, un sort… » (fait le 10 nov. 2026, testé). **Décision d'Angle (10 nov. 2026) : pas de recherche par variantes de vocabulaire** (attaquer/frapper, « save CON »…) : l'appli aide à chercher, elle ne devine pas une intention.
 - **Reporté (décision d'Angle, 10 nov. 2026)** : recherche collante sur téléphone ; hiérarchie de l'en-tête sur téléphone (piste : PV, états et concentration, recherche, tour, CA/initiative/vitesse, perception passive et DD, taille) ; bouton « Ouvrir <test> » depuis une règle déjà ouverte qui cite un test.
-- **Tuiles personnalisables du bandeau d'« À la table »** (idée d'Angle, 10 nov. 2026, pas commencée). Décisions : réglage **par perso** (enregistré dans la fiche, il suit l'export) ; **nombre de tuiles limité** (place sur iPhone) ; comportement **selon la tuile** (simple affichage, ou ouverture du jet ou du compteur correspondant ; jamais de décision à la place du MJ). Interface envisagée : bouton « Personnaliser » → popup pour cocher et ordonner. Bandeau actuel par défaut : CA, Initiative, Vitesse, Taille, Perception passive, DD des sorts. **À faire d'abord : définir le catalogue des tuiles possibles** avec Angle. Premier jet (non validé) : Défense et mouvement (CA, Vitesse, Taille, Initiative → jet) ; Perceptions passives (Perception, Investigation, Intuition) ; Magie (DD, attaque de sort → jet, emplacements ou pacte → compteur) ; Jets au choix (une caractéristique, une sauvegarde, une compétence → jet) ; Ressources (chaque ressource de classe ou d'aptitude → compteur, dés de vie restants, épuisement) ; Divers (bonus de maîtrise, or, charges d'un objet → compteur).
+- **Tuiles personnalisables du bandeau d'« À la table »** (idée d'Angle, 10 nov. 2026, pas commencée ; détail dans la section 15).
 - Onglet Jeu : certains automatismes de « À la table » n'y sont pas appliqués (ex. désavantage d'Empoisonné). Connu, non prioritaire.
 - Historique des jets : lisibilité **faite le 10 nov. 2026** (un jour à la fois avec pastilles « dim. 8 nov. (124) », jour le plus récent par défaut ; toucher + dégâts/soins du même nom à moins de 10 minutes regroupés sur une ligne, supprimés ensemble ; lignes compactes avec détail des dés en petit ; 30 lignes puis « Voir plus »). Croix de suppression par ligne conservées telles quelles et filtres par type refusés pour le moment (décisions d'Angle). Restent : rotation ou limite (aujourd'hui 200 jets par perso), distinction entre annulation du suivi et annulation d'une dépense.
 - Menu « Réglages généraux » : dés virtuels, thème, futures préférences ; emplacement, persistance de chaque préférence (navigateur, copie personnelle, synchronisation) ; raccourci des dés à garder dans « À la table ».
@@ -199,3 +199,59 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 8. Essai réel du catalogue et du remplissage dans l'app Claude sur ordinateur.
 9. Vérification des classes une à une (`claude/plan-tests-classes.md`) : Garrant (vérification en jeu : Imposition des mains, Conduit divin, Arme sacrée, Châtiment divin ; Style de combat à choisir), puis Baudoin (Gnome Roublard), Mara (Humaine Paladin), Yarjerit Dragnir (Drakéide Moine).
 10. Publication (PWA, iPhone, iPad, éventuellement App Store) : seulement après stabilisation et accord explicite.
+
+## 15. Chantier à venir : tuiles personnalisables d'« À la table »
+
+Idée d'Angle (10 nov. 2026). **Rien n'est codé ; tout ce qui n'est pas marqué « décidé » reste à valider avec Angle avant de développer.**
+
+Décidé par Angle :
+- Le bandeau d'« À la table » devient un ensemble de tuiles choisies **par perso** (réglage enregistré dans la fiche, il suit l'export).
+- Le **nombre de tuiles est limité** par la place sur téléphone.
+- Les **tuiles obligatoires comptent dans ce quota** (pas de tuile hors quota).
+- Certaines tuiles sont **obligatoires selon la classe** ; ensuite, un **défaut confortable** est pré-coché par classe et reste modifiable.
+- Le comportement **dépend de la tuile** : simple affichage, ou ouverture du jet ou du compteur correspondant. Jamais de décision à la place du MJ.
+- Il faut d'abord **définir le catalogue** de toutes les tuiles possibles.
+
+Interface envisagée : bouton « Personnaliser » sur le bandeau → popup pour cocher et ordonner ; tuiles obligatoires grisées (déplaçables, pas retirables). Bandeau actuel (défaut de départ) : CA, Initiative, Vitesse, Taille, Perception passive, DD des sorts. PV, Concentration et Inspiration restent dans la carte santé, hors tuiles.
+
+Catalogue proposé (non validé) :
+
+| Famille | Tuiles | Au toucher |
+|---|---|---|
+| Défense et mouvement | CA, Vitesse, Taille | affichage |
+| | Initiative | ouvre le jet |
+| Perceptions passives | Perception, Investigation, Intuition | affichage |
+| Magie | DD des sorts | affichage |
+| | Attaque de sort | ouvre le jet |
+| | Emplacements ou pacte | compteur |
+| Jets au choix | une caractéristique, une sauvegarde, une compétence | ouvre le jet |
+| Ressources | chaque ressource de classe ou d'aptitude | compteur |
+| | Dés de vie restants, Épuisement | affichage |
+| Divers | Bonus de maîtrise, Or | affichage |
+| | Charges d'un objet | compteur |
+
+Obligatoires proposées (non validées) : pour tous CA, Initiative, Vitesse (demandées ou utilisées à presque chaque tour) ; pour les lanceurs de sorts DD et emplacements ; plus la ressource sans laquelle la classe ne se joue pas. Perception passive et Taille restent au choix (la passive est surtout utilisée par le MJ, la taille rarement).
+
+| Classe | Obligatoires de classe | Défaut confortable |
+|---|---|---|
+| Barbare | Rage | Athlétisme, Perception passive, Dés de vie |
+| Barde | DD, emplacements, Inspiration bardique | Persuasion, Perception passive, Intuition passive |
+| Clerc | DD, emplacements, Conduit divin | Perception passive, Intuition passive, Médecine |
+| Druide | DD, emplacements, Forme sauvage | Perception passive, Nature, Survie |
+| Ensorceleur | DD, emplacements, Points de sorcellerie | Perception passive, Persuasion, Arcanes |
+| Guerrier | Second souffle, Sursaut d'action | Athlétisme, Perception passive, Dés de vie |
+| Magicien | DD, emplacements | Arcanes, Investigation passive, Restauration arcanique |
+| Moine | Points de Focus | Acrobaties, Discrétion, Perception passive |
+| Occultiste | DD, pacte | Rouerie magique, Perception passive, Arcanes |
+| Paladin | DD, emplacements, Imposition des mains | Conduit divin, Perception passive, Athlétisme |
+| Rôdeur | DD, emplacements | Ennemi juré, Discrétion, Perception passive |
+| Roublard | (aucune) | Attaque sournoise, Discrétion, Perception passive |
+
+Libellés à reprendre exactement de l'appli au moment du développement. Multiclasse : obligatoires additionnées (DD et emplacements une seule fois), défaut de la classe principale. Classes hors SRD : obligatoires communes + DD et emplacements si lanceur, défaut tiré de leurs ressources.
+
+**Problème ouvert : le quota.** Avec 6 tuiles (2 rangées de 3 sur iPhone), Paladin, Clerc, Druide, Barde et Ensorceleur auraient déjà 6 obligatoires et aucune place libre. Pistes (à trancher avec une maquette en largeur iPhone) :
+1. Tuile **« Magie » combinée** (DD + pastilles d'emplacements) : 5 obligatoires au plus, au moins 1 place libre. Piste préférée par Claude.
+2. Tuiles compactes (4 par rangée sur iPhone pour les valeurs courtes : 8 tuiles sur 2 rangées).
+3. Retirer la Vitesse des obligatoires (moins bonne option).
+
+Avec la piste 1 et un quota de 6 : Roublard 3 obligatoires / 3 libres ; Magicien, Occultiste, Rôdeur 4 / 2 ; Barbare, Moine 4 / 2 ; Guerrier 5 / 1 ; Paladin, Clerc, Druide, Barde, Ensorceleur 5 / 1.
