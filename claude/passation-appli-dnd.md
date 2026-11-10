@@ -197,24 +197,41 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 - **Glisser-déposer de l'équipement** (fait le 10 nov. 2026, décisions d'Angle) : dans la popup « Équipement », on glisse un objet d'un emplacement à l'autre, depuis la nouvelle zone « Sac » (objets équipables non portés) vers un emplacement, ou d'un emplacement vers le Sac pour le retirer. Emplacement occupé : échange si chaque objet convient à sa nouvelle place, sinon refus ; depuis le Sac, l'ancien objet retourne au Sac. Mains : mêmes règles que la liste d'un emplacement (tout objet sauf armure ; **bouclier seulement en main secondaire**, décision d'Angle). Cibles valides allumées pendant le glisser. Souris : glisser direct ; doigt : appui long (350 ms) puis glisser, un glisser rapide reste un défilement. Toucher un emplacement ouvre toujours la liste. Code : `eqDropFits`, `eqMoveOk`, `eqMove` (08-table, s'appuient sur `eqSet`) et bloc « glisser-déposer » en fin de 11-evenements (événements de pointeur, pas de glisser-déposer natif, peu fiable au doigt sur iPhone). À essayer en vrai sur iPhone.
 - **Cohérence de l'interface** (audit du 10 nov. 2026 à la demande d'Angle). Typographie **faite** : 27 tailles différentes ramenées à une échelle unique de 6 (variables `--fs-*` dans `styles.css`, 11 / 13 / 16 / 18 / 22 / 28 px ; grands chiffres décoratifs de 32 px et plus inchangés ; `<small>` rattaché à l'échelle) ; texte courant 15 → 16 px ; test automatique. Zones tactiles et croix : **faites** (même jour) : sur écran tactile seulement (`@media (pointer:coarse)` en fin de `theme.css`, prioritaire sur les hauteurs du thème), toutes les cibles font au moins 44×44 (boutons, listes, champs, sections dépliables, cases à cocher via leur étiquette, pastilles de charges avec le même dessin au centre, mots d'aide agrandis en hauteur) ; l'ordinateur garde sa densité (décision d'Angle). Croix de fermeture identiques partout (popups, bulles, pavé numérique, bannière : 44×44, 28 px). Boutons de suppression : icône corbeille (`ICON_TRASH`, classe `btndel`, décision d'Angle). Corrigés au passage : champ « Jet libre » écrasé à 18 px de large dans l'onglet Jeu (défaut antérieur) ; lignes de l'inventaire qui sortaient de la popup. Sur téléphone, un objet à beaucoup de charges (10 pour la Trousse de soins) affiche ses pastilles sur plusieurs rangées : piste future, un compteur compact au-delà de 6 charges. Tests automatiques : typographie, cibles tactiles, rien hors écran, croix, corbeilles, densité sur ordinateur.
 - **Audit « deux clics » d'« À la table »** (10 nov. 2026, iPhone 390×844, Paladin 5 de test). Trouver un jet, un sort, une ressource ou encaisser des dégâts : 1 à 2 touchers. Corrigé le jour même avec l'accord d'Angle : double ligne dans l'historique pour les tests et sauvegardes physiques (`f3f37a7`) ; **une seule validation** des vrais dés (`4361fc4`, un toucher de moins par jet : sauvegarde physique à 6 touchers au lieu de 7 pour un résultat à deux chiffres ; le message de ce commit indique à tort 5) ; ligne = carte, bouton i = règle (`f45682a`) ; états et repos dans la recherche, règle d'un état depuis la popup États, pastille d'un état actif réparée (`cb41c35`). **Reste à réfléchir avec Angle** : la recherche est sous le pli (870 px pour un écran de 844) ; au-dessus : navigation (Contenu perso, Grimoire, Mode clair), bloc identité (classe, espèce, historique, joueur), tuiles, carte PV ; rien du tour ni des jets visible sans défiler. Pistes notées, non décidées : en-tête compact, identité sur une ligne, navigation dans le Menu, recherche en haut ou collante, texte d'aide sous le suivi du tour à retirer, Taille et Perception passive vers les tuiles (section 15).
-- Onglet Jeu : certains automatismes de « À la table » n'y sont pas appliqués (ex. désavantage d'Empoisonné). Connu, non prioritaire.
+- Onglet Jeu : certains automatismes de « À la table » n'y sont pas appliqués (ex. désavantage d'Empoisonné). Réglé par le futur onglet « Feuille » (section 16), qui affichera ces effets sans permettre de jouer.
 - Historique des jets : lisibilité **faite le 10 nov. 2026** (un jour à la fois avec pastilles « dim. 8 nov. (124) », jour le plus récent par défaut ; toucher + dégâts/soins du même nom à moins de 10 minutes regroupés sur une ligne, supprimés ensemble ; lignes compactes avec détail des dés en petit ; 30 lignes puis « Voir plus »). Croix de suppression par ligne conservées telles quelles et filtres par type refusés pour le moment (décisions d'Angle). Restent : rotation ou limite (aujourd'hui 200 jets par perso), distinction entre annulation du suivi et annulation d'une dépense.
 - Menu « Réglages généraux » : dés virtuels, thème, futures préférences ; emplacement, persistance de chaque préférence (navigateur, copie personnelle, synchronisation) ; raccourci des dés à garder dans « À la table ».
 - Reliquats Claude (section 5).
 - Stratégie de sauvegarde entre appareils (navigateur, iPhone, iPad, copie personnelle, synchronisation, restauration, confidentialité) : à concevoir avant d'implémenter.
 
-## 14. À faire (ordre proposé, à valider avec Angle)
+## 14. À faire (ordre validé par Angle le 10 nov. 2026, sauf mention)
 
-1. v119 publiée. Reste à faire à la main dans l'artefact (app Claude) : tests manuels : mode physique et virtuel, attaque, dégâts, sort, Action bonus, Réaction, annulation, Mouvement, Autre, Nouveau tour.
-2. Finitions de « À la table » (section 13), d'abord l'en-tête et la place de la recherche sur téléphone (audit « deux clics », à réfléchir avec Angle).
-3. Menu « Réglages généraux ».
-4. Assistant de création (section 12), dont les choix de traits d'espèce.
-5. Décision sur les reliquats Claude.
-6. Sauvegarde entre appareils.
-7. Pack de table (exporter le contenu hors SRD validé pour les autres joueurs) ; bottes d'arme limitées aux armes maîtrisées ; choix de l'outil de l'historique ; « page la plus proche » sans pages SRD pour un élément hors SRD.
-8. Essai réel du catalogue et du remplissage dans l'app Claude sur ordinateur.
-9. Vérification des classes une à une (`claude/plan-tests-classes.md`) : Garrant (vérification en jeu : Imposition des mains, Conduit divin, Arme sacrée, Châtiment divin ; Style de combat à choisir), puis Baudoin (Gnome Roublard), Mara (Humaine Paladin), Yarjerit Dragnir (Drakéide Moine).
-10. Publication (PWA, iPhone, iPad, éventuellement App Store) : seulement après stabilisation et accord explicite.
+**Lot 1 — Corrections sans décision** (relevées par l'audit « deux clics », la revue UX de ChatGPT et Angle ; feu vert d'Angle à attendre avant de commencer) :
+1. Onglets de la fiche qui se chevauchent sur iPhone (« CompétenSorts… ») : barre d'onglets défilante horizontalement, onglets à largeur naturelle, indice visible qu'elle continue. Ajouter un test qui détecte les chevauchements d'éléments (les tests de largeur actuels ne vérifient que le débordement de la page).
+2. Popups longues (« Tests de caractéristique »…) : indice visible que le contenu continue plus bas.
+3. Texte de la recherche tronqué sur téléphone : le raccourcir (piste : « Jet, action, sort… »).
+4. Tuile Initiative vide dans l'onglet Jeu (future « Feuille ») sur téléphone : vérifier et corriger.
+5. Import d'un personnage : revenir à la liste des personnages (avec un message « <nom> importé ») au lieu d'ouvrir l'onglet Jeu (aujourd'hui `S.view="sheet"; S.tab="jeu"` dans le gestionnaire d'import de `js/11-evenements.js`).
+
+**Lot 2 — En-tête d'« À la table » sur téléphone** (à redéfinir avec Angle avant tout code). « À la table » est le seul écran de jeu (section 16) : son en-tête est pensé uniquement pour jouer. Constat de l'audit : recherche à 870 px pour un écran de 844, rien du tour ni des jets visible sans défiler. Maquettes A (actuel), B (compact) et C (recherche collante) proposées le 10 nov. : **Angle n'est pas convaincu**. Point de départ suivant : ce qu'Angle veut voir en premier en ouvrant l'appli en pleine partie. Pistes plus franches à proposer : commandes en bas de l'écran, sous le pouce ; écran de jeu sans défilement, le reste en popups.
+
+**Lot 3 — Tuiles personnalisables** (section 15), à concevoir avec l'en-tête du lot 2.
+
+**Lot 4 — Onglet « Feuille »** (chantier prévu plus tard par Angle ; section 16).
+
+**Ensuite** (ordre à revoir au moment voulu) :
+- Menu « Réglages généraux » (thème, dés virtuels, futures préférences ; il accueille aussi « Mode clair », « Contenu perso », « Grimoire » si l'en-tête est allégé).
+- Assistant de création (section 12), dont les choix de traits d'espèce.
+- Accueil plus léger sur téléphone (revue UX de ChatGPT, priorité moyenne) : « Créer un personnage » comme action principale, import et sauvegarde regroupés dans un bloc secondaire.
+- Décision sur les reliquats Claude.
+- Sauvegarde entre appareils.
+- Pack de table (exporter le contenu hors SRD validé pour les autres joueurs) ; bottes d'arme limitées aux armes maîtrisées ; choix de l'outil de l'historique ; « page la plus proche » sans pages SRD pour un élément hors SRD.
+- Essai réel du catalogue et du remplissage dans l'app Claude sur ordinateur.
+- Vérification des classes une à une (`claude/plan-tests-classes.md`) : Garrant (vérification en jeu : Imposition des mains, Conduit divin, Arme sacrée, Châtiment divin ; Style de combat à choisir), puis Baudoin (Gnome Roublard), Mara (Humaine Paladin), Yarjerit Dragnir (Drakéide Moine).
+- Publication (PWA, iPhone, iPad, éventuellement App Store) : seulement après stabilisation et accord explicite.
+
+**À essayer à la main dans l'artefact (v122)** : attaque et sort en vrais dés au pavé (une seule validation, Action consommée, une ligne d'historique), bouton i au doigt, recherche « empois » et « repos », mode virtuel, Action bonus, Réaction, annulation, Mouvement, Autre, Nouveau tour.
+
+**Outillage (facultatif)** : si Codex travaille sur le Mac, installer Playwright sur macOS pour qu'il lance `tests/run.js` lui-même (commandes dans la conversation du 10 nov.) ; son navigateur intégré refuse `file://`, passer par `python3 -m http.server 8765` et `http://localhost:8765/dist/dnd-compagnon.html`.
 
 ## 15. Chantier à venir : tuiles personnalisables d'« À la table »
 
@@ -271,3 +288,15 @@ Libellés à reprendre exactement de l'appli au moment du développement. Multic
 3. Retirer la Vitesse des obligatoires (moins bonne option).
 
 Avec la piste 1 et un quota de 6 : Roublard 3 obligatoires / 3 libres ; Magicien, Occultiste, Rôdeur 4 / 2 ; Barbare, Moine 4 / 2 ; Guerrier 5 / 1 ; Paladin, Clerc, Druide, Barde, Ensorceleur 5 / 1.
+
+## 16. Chantier à venir : onglet « Feuille » (ex-onglet « Jeu »)
+
+Décisions d'Angle (10 nov. 2026). Chantier prévu plus tard ; rien n'est codé.
+
+- **Un seul écran de jeu : « À la table ».** L'onglet « Jeu » ne sert plus à jouer. Il devient **« Feuille »** : toute la fiche de personnage au même endroit, comme une feuille de perso papier ou la plupart des applis.
+- **Lecture seule.** On retire tout ce qui agit : Dégâts, Soins, +/− des PV temporaires, lancers de dés, dépenses de ressources.
+- **Tout ce qui informe reste** : bulles de règles, descriptions, liens AideDD.
+- **Valeurs exactes en temps réel** : PV, emplacements et ressources restants, états, concentration. Les effets des états sont **signalés** (ex. « désavantage aux jets d'attaque et aux tests (Empoisonné) »), avec la même logique que « À la table » (`condAdvice`).
+- **Les modifications restent dans « Construction »** (inchangé).
+- Conséquence pour le lot 2 : l'en-tête d'« À la table » n'a pas à reprendre la fiche ; il est pensé uniquement pour jouer.
+
