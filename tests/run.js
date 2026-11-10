@@ -284,7 +284,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await mouseDrag(p, bagItem('b2'), slot('mainS')); eq((await eqNow(p)).mainS, 'b2', 'dague du sac vers la main secondaire');
     await mouseDrag(p, slot('mainP'), slot('mainS')); const sw = await eqNow(p); eq([sw.mainP, sw.mainS], ['b2', 'b1'], 'échange des deux mains');
     await mouseDrag(p, bagItem('b3'), slot('mainP'), async () => {
-      const c = await p.evaluate(() => ({ ghost: !!document.querySelector('.eqghost'), mainP: document.querySelector('.eqcard[data-v="mainP"]').className, mainS: document.querySelector('.eqcard[data-v="mainS"]').className, corps: document.querySelector('.eqcard[data-v="corps"]').className }));
+      const c = await p.evaluate(() => ({ ghost: !!document.querySelector('.eqghost') && /Bouclier/i.test(document.querySelector('.eqghost').textContent) && +getComputedStyle(document.querySelector('.eqghost')).opacity < 1, mainP: document.querySelector('.eqcard[data-v="mainP"]').className, mainS: document.querySelector('.eqcard[data-v="mainS"]').className, corps: document.querySelector('.eqcard[data-v="corps"]').className }));
       ok(c.ghost && /eqno/.test(c.mainP) && /eqok/.test(c.mainS) && /eqno/.test(c.corps), 'cibles valides allumées : ' + JSON.stringify(c));
     });
     eq((await eqNow(p)).mainP, 'b2', 'bouclier refusé en main principale');
@@ -960,6 +960,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(!await p.locator('[data-blkgrip]').count() && (await order())[0] === 'pv', 'Terminé : verrouillé, ordre conservé');
     await p.click('[data-act="layoutEdit"]'); await p.click('[data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
     eq((await order())[0], 'perso', 'ordre par défaut rétabli');
+  });
+
+  await test('Glisser un bloc : copie transparente qui suit la souris, emplacement d’arrivée, rien ne reste', async p => {
+    await p.setViewportSize({ width: 1200, height: 2200 }); await diceTable(p); await p.click('[data-act="layoutEdit"]');
+    const grip = await p.locator('.tblk[data-blk="notes"] [data-blkgrip]').boundingBox(), top = await p.locator('.tblk[data-blk="pv"]').boundingBox();
+    await p.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await p.mouse.down();
+    await p.mouse.move(grip.x + 30, top.y + 5, { steps: 3 });
+    const st = await p.evaluate(y => { const g = document.querySelector('.dragghost.blkghost'), ph = document.querySelector('.tblocks .tblk.blkph'), r = g.getBoundingClientRect();
+      return { op: +getComputedStyle(g).opacity, txt: g.textContent.includes('Notes'), follow: Math.abs(r.top + 30 - y) < 40, ph: ph?.dataset.blk, phH: Math.round(ph.getBoundingClientRect().height), ids: g.querySelectorAll('[id],[data-act]').length,
+        dup: document.querySelectorAll('.tblk[data-blk="notes"]').length }; }, top.y + 5);
+    ok(st.op > 0.5 && st.op < 1 && st.txt && st.follow, 'copie semi-transparente sous la souris : ' + JSON.stringify(st));
+    eq([st.ph, st.phH, st.ids, st.dup], ['notes', 64, 0, 1], 'emplacement d’arrivée en pointillés ; copie sans identifiants ni actions');
+    ok(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].findIndex(b => b.dataset.blk === 'notes') < [...document.querySelectorAll('.tblocks > .tblk')].findIndex(b => b.dataset.blk === 'pv')), 'l’emplacement suit la souris');
+    await p.mouse.up();
+    eq(await p.evaluate(() => [!!document.querySelector('.dragghost,.blkph'), document.body.classList.contains('blkdragging'), cur().layout.order.indexOf('notes') < cur().layout.order.indexOf('pv')]), [false, false, true], 'lâché : bloc posé, copie retirée');
   });
 
   await test('Mode disposition au doigt (iPhone) : glisser un bloc vers le haut, sous le bandeau collé', async p => {

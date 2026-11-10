@@ -411,24 +411,45 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('wheel',e=>{ if(e.target.matches?.(DICE_INPUTS)&&document.activeElement===e.target) e.target.blur(); },{passive:true});
 
 /* ---------- « À la table » : glisser un bloc par sa poignée (mode disposition seulement) ---------- */
+/* Copie semi-transparente qui suit le doigt ou la souris pendant un glisser (blocs, équipement). */
+function dragGhost(el,cls){ const r=el.getBoundingClientRect(), g=document.createElement("div"), c=el.cloneNode(true);
+  [c,...c.querySelectorAll("*")].forEach(n=>{ n.removeAttribute("id"); n.removeAttribute("name"); n.removeAttribute("for"); [...n.attributes].filter(a=>a.name.startsWith("data-")).forEach(a=>n.removeAttribute(a.name)); });
+  c.classList.remove("dragging","blkph","eqsrc","eqok","eqno","eqover"); c.style.cssText="position:static;inset:auto;transform:none;width:100%;height:100%;margin:0;box-sizing:border-box";
+  g.className="dragghost "+(cls||""); g.setAttribute("aria-hidden","true"); g.style.width=r.width+"px"; g.style.height=r.height+"px"; g.appendChild(c); document.body.appendChild(g); return {g,r}; }
+const reduceMotion=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+/* Déplacement animé des autres blocs (technique FLIP) : ils glissent vers leur nouvelle place au lieu de sauter. */
+function flipMove(box,mutate){ const els=[...box.children], before=new Map(els.map(b=>[b,b.getBoundingClientRect().top])); mutate();
+  if(reduceMotion()) return;
+  els.forEach(b=>{ const dy=before.get(b)-b.getBoundingClientRect().top; if(!dy) return; b.style.transition="none"; b.style.transform=`translateY(${dy}px)`; b.offsetHeight; b.style.transition="transform .16s ease-out"; b.style.transform=""; }); }
+const layoutTop=b=>(b.offsetParent?b.offsetParent.getBoundingClientRect().top+b.offsetParent.clientTop:0)+b.offsetTop; // place sans l'animation en cours
 let BLKD=null;
+function blkPlace(){ if(!BLKD) return; const el=BLKD.el, box=el.parentElement; if(!box) return;
+  const others=[...box.querySelectorAll(":scope > .tblk")].filter(b=>b!==el);
+  const next=others.find(b=>BLKD.y<layoutTop(b)+b.offsetHeight/2)||null;
+  if(el.nextElementSibling!==next) flipMove(box,()=>box.insertBefore(el,next)); }
+function blkGhostAt(){ if(BLKD&&BLKD.ghost){ BLKD.ghost.style.left=(BLKD.x-BLKD.dx)+"px"; BLKD.ghost.style.top=(BLKD.y-BLKD.dy)+"px"; } }
+function blkLoop(){ if(!BLKD) return; // défilement automatique près des bords, même sans bouger le doigt
+  const top=(document.querySelector(".tlayouttop")?.getBoundingClientRect().bottom||0)+50;
+  const v=BLKD.y<top?-Math.min(18,(top-BLKD.y)/3+4):BLKD.y>innerHeight-60?Math.min(18,(BLKD.y-innerHeight+60)/3+4):0;
+  if(v){ const s0=scrollY; window.scrollBy(0,v); if(scrollY!==s0) blkPlace(); }
+  BLKD.raf=requestAnimationFrame(blkLoop); }
 document.addEventListener("pointerdown",e=>{
   // Au doigt : la poignée seule (la page doit pouvoir défiler) ; à la souris : tout le bloc, sauf ses boutons.
   if(!S.layoutEdit||!e.target.closest||(e.pointerType==="mouse"&&e.button!==0)) return;
   const g=e.target.closest("[data-blkgrip]")||(e.pointerType==="mouse"&&!e.target.closest("button")?e.target.closest(".tblocks.editing > .tblk"):null); if(!g) return;
   const el=g.closest(".tblk"); if(!el) return; e.preventDefault();
-  BLKD={el,id:e.pointerId}; el.classList.add("dragging"); try{ g.setPointerCapture(e.pointerId); }catch(err){}
+  const {g:ghost,r}=dragGhost(el,"blkghost");
+  BLKD={el,id:e.pointerId,ghost,x:e.clientX,y:e.clientY,dx:Math.min(e.clientX-r.left,r.width-20),dy:Math.min(e.clientY-r.top,60)};
+  blkGhostAt(); el.classList.add("dragging","blkph"); document.body.classList.add("blkdragging");
+  try{ g.setPointerCapture(e.pointerId); }catch(err){}
+  BLKD.raf=requestAnimationFrame(blkLoop);
 });
 document.addEventListener("pointermove",e=>{
   if(!BLKD||e.pointerId!==BLKD.id) return; e.preventDefault();
-  // Place d'après la hauteur du doigt : le bloc passe avant le premier bloc dont le milieu est plus bas (le bandeau collé ne gêne pas).
-  const el=BLKD.el, box=el.parentElement, others=[...box.querySelectorAll(":scope > .tblk")].filter(b=>b!==el);
-  const next=others.find(b=>{ const r=b.getBoundingClientRect(); return e.clientY<r.top+r.height/2; })||null;
-  if(el.nextElementSibling!==next) box.insertBefore(el,next);
-  const top=(document.querySelector(".tlayouttop")?.getBoundingClientRect().bottom||0)+50;
-  if(e.clientY<top) window.scrollBy(0,-14); else if(e.clientY>innerHeight-60) window.scrollBy(0,14);
+  BLKD.x=e.clientX; BLKD.y=e.clientY; blkGhostAt(); blkPlace();
 });
-function blkDragEnd(e){ if(!BLKD||e.pointerId!==BLKD.id) return; const box=BLKD.el.parentElement; BLKD.el.classList.remove("dragging"); BLKD=null;
+function blkDragEnd(e){ if(!BLKD||e.pointerId!==BLKD.id) return; const D0=BLKD, box=D0.el.parentElement; BLKD=null;
+  cancelAnimationFrame(D0.raf); D0.ghost.remove(); D0.el.classList.remove("dragging","blkph"); document.body.classList.remove("blkdragging");
   const ch=cur(); if(ch&&box) saveTableOrder(ch,[...box.querySelectorAll(":scope > .tblk")].map(b=>b.dataset.blk)); render(); }
 document.addEventListener("pointerup",blkDragEnd);
 document.addEventListener("pointercancel",blkDragEnd);
@@ -438,10 +459,11 @@ let EQD=null, eqdEnd=0;
 const eqdSrc=el=>el.dataset.v?{slot:el.dataset.v}:{bag:el.dataset.id};
 const eqdDst=el=>el.dataset.eqdrop==="sac"?{sac:true}:{slot:el.dataset.v};
 function eqdStart(){ const ch=cur(); if(!ch||!EQD) return; EQD.active=true; EQD.el.classList.add("eqsrc");
-  const g=document.createElement("div"); g.className="eqghost"; g.textContent=EQD.name; document.body.appendChild(g); EQD.ghost=g;
+  const {g,r}=dragGhost(EQD.el,"eqghost"); EQD.ghost=g; EQD.gw=r.width; EQD.gh=r.height; EQD.dx=EQD.x0-r.left; EQD.dy=EQD.y0-r.top;
   document.querySelectorAll("[data-eqdrop]").forEach(t=>t.classList.add(eqMoveOk(ch,EQD.src,eqdDst(t))?"eqok":"eqno"));
   document.body.classList.add("eqdragging"); eqdMove(EQD.x,EQD.y); }
-function eqdMove(x,y){ if(EQD&&EQD.ghost){ EQD.ghost.style.left=x+"px"; EQD.ghost.style.top=y+"px"; }
+function eqdMove(x,y){ if(EQD&&EQD.ghost){ // au doigt, la copie passe au-dessus du doigt pour rester visible
+    const gx=EQD.touch?x-EQD.gw/2:x-EQD.dx, gy=EQD.touch?y-EQD.gh-18:y-EQD.dy; EQD.ghost.style.left=gx+"px"; EQD.ghost.style.top=gy+"px"; }
   document.querySelectorAll(".eqover").forEach(e=>e.classList.remove("eqover"));
   const t=document.elementFromPoint(x,y), d=t&&t.closest("[data-eqdrop]"); if(d&&d.classList.contains("eqok")) d.classList.add("eqover"); }
 function eqdStop(drop){ const D0=EQD; EQD=null; if(!D0) return; clearTimeout(D0.timer); if(!D0.active) return;
