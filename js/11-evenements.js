@@ -374,6 +374,8 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
   if(!dicePad){
     if((e.key==='Enter'||e.key===' ')&&e.target.matches(DICE_INPUTS)){ e.preventDefault(); e.stopImmediatePropagation(); openDicePad(e.target); }
+    // Pas de flèches : ↑/↓ modifieraient la valeur, donc enregistreraient un faux jet.
+    else if((e.key==='ArrowUp'||e.key==='ArrowDown')&&e.target.matches(DICE_INPUTS)) e.preventDefault();
     return;
   }
   if(e.key==='Tab'){
@@ -385,6 +387,9 @@ document.addEventListener('keydown',e=>{
   const key=/^\d$/.test(e.key)?e.key:({Enter:'ok',Escape:'cancel',Backspace:'back',Delete:'clear'})[e.key];
   if(key){ e.preventDefault(); e.stopImmediatePropagation(); dicePadKey(key); }
 },true);
+
+// Molette sur un champ de dés : la page défile, la valeur ne change pas.
+document.addEventListener('wheel',e=>{ if(e.target.matches?.(DICE_INPUTS)&&document.activeElement===e.target) e.target.blur(); },{passive:true});
 
 /* ---------- Équipement : glisser-déposer (souris ; au doigt, appui long puis glisser) ---------- */
 let EQD=null, eqdEnd=0;

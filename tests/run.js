@@ -817,6 +817,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => cur().conditions),['Empoisonné'],'lire la règle ne coche pas l’état');
   });
 
+  await test('Champs de dés : sans flèches, ni ↑/↓ ni molette ne créent de jet', async p => {
+    await diceTable(p);
+    await p.evaluate(() => tSelect('save:sag'));
+    const st=await p.evaluate(() => { const i=document.getElementById('t-d1');
+      const rule=[...document.styleSheets].flatMap(sh=>{ try{ return [...sh.cssRules]; }catch(e){ return []; } }).find(r=>r.selectorText&&r.selectorText.includes('input[data-tin]::-webkit-inner-spin-button'));
+      return [getComputedStyle(i).appearance, rule?rule.style.getPropertyValue('appearance'):null]; });
+    eq(st,['textfield','none'],'flèches haut/bas masquées');
+    const n0=await p.evaluate(() => (cur().rollLog||[]).length);
+    await p.focus('#t-d1'); await p.keyboard.press('ArrowUp'); await p.keyboard.press('ArrowUp');
+    const box=await p.locator('#t-d1').boundingBox(); await p.mouse.move(box.x+box.width/2,box.y+box.height/2); await p.mouse.wheel(0,-200); await p.waitForTimeout(100);
+    await p.locator('#t-d1').evaluate(e => e.blur());
+    eq(await p.inputValue('#t-d1'),'','valeur inchangée');
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0,'aucun jet enregistré');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
