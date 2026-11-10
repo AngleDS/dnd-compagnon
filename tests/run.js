@@ -1028,10 +1028,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:raccourcis', 5], 'le « + » ouvre Personnaliser sur sa case');
     await p.click('.tpop [data-act="tileAdd"][data-v="rest"]');
     eq((await racc())[5], 'restOpen', 'tuile Repos ajoutée dans la case libre');
-    await p.click('.tpop [data-act="tileDel"][data-i="0"]');
+    await p.click('.tpop [data-act="tileCell"][data-i="0"]'); await p.click('.tpop [data-act="tileDel"][data-i="0"]');
     eq((await racc())[0], '+', 'case vidée');
-    await p.click('.tpop [data-act="tileMove"][data-i="1"][data-d="-1"]');
-    eq((await racc()).slice(0, 2), ['saves', '+'], 'tuile montée');
+    await p.click('.tpop [data-act="tileCell"][data-i="1"]'); await p.click('.tpop [data-act="tileCell"][data-i="0"]');
+    eq((await racc()).slice(0, 2), ['saves', '+'], 'tuile déplacée en touchant sa case puis la case visée');
     eq(await p.evaluate(() => cur().layout.tiles.raccourcis), ['saves','','cond','inv','equip','rest'], 'choix enregistré dans la fiche');
     await p.keyboard.press('Escape');
     await p.click('[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] [data-v="tiles:reperes"]');
@@ -1080,6 +1080,29 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => cur().layout.custom.length === 1), 'demande de confirmation avant suppression');
     await p.click('.tpop [data-act="cblkDelYes"]');
     eq(await p.evaluate(id => [cur().layout.custom.length, cur().layout.order.includes(id), !!document.querySelector(`.tblk[data-blk="${id}"]`), S.T.pop], id), [0, false, false, null], 'bloc supprimé');
+  });
+
+  await test('Personnaliser au glisser : crayon sur le bloc, réserve → case, case → case, hors du bloc', async p => {
+    await diceTable(p);
+    ok(await p.isVisible('.tblk[data-blk="reperes"] .tbpen') && await p.isVisible('.tblk[data-blk="raccourcis"] .tbpen'), 'crayon visible hors du mode disposition');
+    await p.click('.tblk[data-blk="raccourcis"] .tbpen');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .tpgrid .tcell').length, document.querySelectorAll('.tpop .tres .tcell').length]), ['tiles:raccourcis', 6, 3], 'popup : 6 cases et une réserve de 3 tuiles');
+    ok(await p.evaluate(() => !!document.querySelector('.tpop .tpgrid .tcell[data-i="0"] svg') && !document.querySelector('.tpop [data-act="tileMove"]')), 'cases avec icône, plus de flèches');
+    const drag = async (from, to, mid) => { const a = await p.locator(from).boundingBox(), b = to ? await p.locator(to).boundingBox() : { x: 2, y: 2, width: 0, height: 0 };
+      await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 3 }); if (mid) await mid(); await p.mouse.up(); };
+    const arr = () => p.evaluate(() => blockTiles(cur(), 'raccourcis'));
+    await drag('.tpop .tres [data-v="rest"]', '.tpop .tpgrid [data-i="5"]', async () => {
+      const st = await p.evaluate(() => [!!document.querySelector('.dragghost.tghost'), document.querySelector('.tpop .tpgrid [data-i="5"]').classList.contains('tover')]);
+      eq(st, [true, true], 'copie qui suit la souris, case visée allumée'); });
+    eq((await arr())[5], 'rest', 'réserve → case libre');
+    await drag('.tpop .tpgrid [data-i="5"]', '.tpop .tpgrid [data-i="0"]');
+    eq((await arr()).slice(0, 1).concat((await arr())[5]), ['rest', 'skills'], 'case → case : échange');
+    await drag('.tpop .tpgrid [data-i="1"]', '.tpop .tres');
+    eq((await arr())[1], '', 'case → réserve : tuile retirée');
+    await drag('.tpop .tpgrid [data-i="2"]', null);
+    eq(await p.evaluate(() => [blockTiles(cur(), 'raccourcis')[2], S.T.pop, !!document.querySelector('.dragghost,.tdsrc,.tover')]), ['', 'tiles:raccourcis', false], 'hors du bloc : retirée, popup ouverte, rien ne reste');
+    await drag('.tpop .tres [data-v="hist"]', '.tpop .tpgrid [data-i="0"]');
+    eq((await arr())[0], 'hist', 'réserve → case pleine : remplacée');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
