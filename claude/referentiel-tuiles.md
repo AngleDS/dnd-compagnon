@@ -4,6 +4,13 @@
 
 Ce référentiel liste **toutes les tuiles possibles**, à partir des règles D&D 2024 et de ce qu'affichent les autres applis (D&D Beyond, Le Compagnon). Les questions de tuiles obligatoires par classe, de défaut par classe et de nombre maximal de tuiles sont **mises de côté pour le moment** (décision d'Angle).
 
+## Blocs et tailles (décidé avec Angle, 10 nov. 2026)
+
+- **Repères** : 8 tuiles de valeurs, 2 rangées de 4.
+- **Raccourcis** : 6 tuiles, 3 lignes de 2 ; tuiles larges avec une information sous le nom.
+- **Bloc personnalisé** : créé et nommé par l'utilisateur, absent par défaut ; une ligne pleine largeur où il glisse la tuile de son choix (ex. Emplacements pour un lanceur de sorts).
+- Tous les blocs se réordonnent ; ordre enregistré par perso.
+
 ## Principes décidés
 
 - **Tuiles maîtresses** pour les jets : une tuile ouvre une popup avec tous les jets ou éléments qui en dépendent. Pas de raccourci individuel vers un jet, un sort ou une attaque (doublon avec la recherche et les futurs « plus utilisés »).

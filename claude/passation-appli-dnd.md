@@ -246,6 +246,17 @@ Idée d'Angle (10 nov. 2026). **Rien n'est codé ; tout ce qui n'est pas marqué
 
 **Organisation de l'écran en blocs (décisions d'Angle, 10 nov. 2026)** : « À la table » est découpé en blocs que le joueur peut monter ou descendre par glisser-déposer (appui long au doigt) ; **ordre enregistré par perso** (il suit l'export). Blocs : 1) Bandeau personnage ; 2) **Repères** (2×4 tuiles de valeurs) ; 3) PV (carte santé) ; 4) Barre de recherche ; 5) **Ce tour** (bloc à part entière) ; 6) **Raccourcis** (2×6 tuiles : tuiles maîtresses, ressources, objets) ; 7) pied de page (notes, historique). **Un seul design responsive** (une colonne sur iPhone, deux sur iPad et ordinateur), pas d'interfaces séparées. **Emplacements de sorts en tuile** ; pour les lanceurs, piste d'Angle : tuiles ou blocs de tailles différentes (grille à définir), par exemple une « ligne » pleine largeur pour les emplacements.
 
+**Maquette validée (10 nov. 2026, iPhone)** : Repères = 8 tuiles de valeurs (2 rangées de 4) ; **Raccourcis = 6 tuiles, 3 lignes de 2** (tuiles larges avec une information sous le nom, ex. « DD 13 · attaque +5 ») ; **bloc personnalisé** créé et nommé par l'utilisateur (absent par défaut), une ligne pleine largeur où il glisse la tuile de son choix, qui prend alors toute la largeur (ex. « Mes emplacements » avec la tuile Emplacements). Sur iPad, la carte PV écrasée en demi-colonne est **à revoir plus tard** (cause probable : la disposition en deux colonnes).
+
+**Étapes proposées (à valider avec Angle avant de coder)** :
+1. Découper « À la table » en blocs (Personnage compact, Repères, PV, Recherche, Ce tour, Raccourcis, Notes et historique), sans changer les fonctions ; ordre enregistré dans la fiche du perso.
+2. Réordonner les blocs : glisser-déposer (appui long au doigt, glisser direct à la souris, même mécanique que l'équipement) et, en secours, une popup « Disposition » avec monter / descendre.
+3. Bloc Repères : tuiles de valeurs du référentiel (Initiative ouvre le jet).
+4. Bloc Raccourcis : tuiles maîtresses et leurs popups (Tests, Sauvegardes, États, Inventaire, Équipement existent ; Attaques, Sorts, Ressources à créer).
+5. « Personnaliser » : choisir les tuiles de chaque bloc dans le référentiel.
+6. Blocs personnalisés : créer, nommer, supprimer ; tuile en pleine largeur.
+7. Plus tard : iPad et ordinateur en deux colonnes, carte PV adaptée.
+
 **Référentiel des tuiles : `claude/referentiel-tuiles.md`** (10 nov. 2026, décidé avec Angle) : liste exhaustive à partir des règles 2024 ; **tuiles maîtresses** pour les jets (une tuile ouvre la popup des jets qui en dépendent), **Initiative** seule tuile de jet individuelle, Concentration et santé dans la carte PV. Les tuiles obligatoires, le défaut par classe et le quota ci-dessous sont **mis de côté pour le moment** (décision d'Angle) ; le catalogue proposé ci-dessous est remplacé par le référentiel.
 
 Décidé par Angle :
