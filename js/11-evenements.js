@@ -388,3 +388,39 @@ document.addEventListener('keydown',e=>{
   const key=/^\d$/.test(e.key)?e.key:({Enter:'ok',Escape:'cancel',Backspace:'back',Delete:'clear'})[e.key];
   if(key){ e.preventDefault(); e.stopImmediatePropagation(); dicePadKey(key); }
 },true);
+
+/* ---------- Équipement : glisser-déposer (souris ; au doigt, appui long puis glisser) ---------- */
+let EQD=null, eqdEnd=0;
+const eqdSrc=el=>el.dataset.v?{slot:el.dataset.v}:{bag:el.dataset.id};
+const eqdDst=el=>el.dataset.eqdrop==="sac"?{sac:true}:{slot:el.dataset.v};
+function eqdStart(){ const ch=cur(); if(!ch||!EQD) return; EQD.active=true; EQD.el.classList.add("eqsrc");
+  const g=document.createElement("div"); g.className="eqghost"; g.textContent=EQD.name; document.body.appendChild(g); EQD.ghost=g;
+  document.querySelectorAll("[data-eqdrop]").forEach(t=>t.classList.add(eqMoveOk(ch,EQD.src,eqdDst(t))?"eqok":"eqno"));
+  document.body.classList.add("eqdragging"); eqdMove(EQD.x,EQD.y); }
+function eqdMove(x,y){ if(EQD&&EQD.ghost){ EQD.ghost.style.left=x+"px"; EQD.ghost.style.top=y+"px"; }
+  document.querySelectorAll(".eqover").forEach(e=>e.classList.remove("eqover"));
+  const t=document.elementFromPoint(x,y), d=t&&t.closest("[data-eqdrop]"); if(d&&d.classList.contains("eqok")) d.classList.add("eqover"); }
+function eqdStop(drop){ const D0=EQD; EQD=null; if(!D0) return; clearTimeout(D0.timer); if(!D0.active) return;
+  eqdEnd=Date.now(); if(D0.ghost) D0.ghost.remove(); document.body.classList.remove("eqdragging");
+  document.querySelectorAll(".eqok,.eqno,.eqover,.eqsrc").forEach(e=>e.classList.remove("eqok","eqno","eqover","eqsrc"));
+  if(!drop) return; const t=document.elementFromPoint(drop.x,drop.y), d=t&&t.closest("[data-eqdrop]"), ch=cur();
+  if(d&&ch&&eqMove(ch,D0.src,eqdDst(d))){ touch(S.cur); render(); } }
+document.addEventListener("pointerdown",e=>{
+  eqdEnd=0; // un nouvel appui est un vrai toucher : ne plus bloquer le clic
+  const el=e.target.closest&&e.target.closest("[data-eqdrag]"); if(!el||(e.pointerType==="mouse"&&e.button!==0)) return;
+  if(EQD) eqdStop(null);
+  EQD={el,src:eqdSrc(el),name:el.dataset.name||el.textContent.trim(),x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,touch:e.pointerType!=="mouse",active:false,id:e.pointerId};
+  if(EQD.touch) EQD.timer=setTimeout(()=>{ if(EQD&&!EQD.active) eqdStart(); },350);
+});
+document.addEventListener("pointermove",e=>{
+  if(!EQD||e.pointerId!==EQD.id) return; EQD.x=e.clientX; EQD.y=e.clientY;
+  const far=Math.hypot(e.clientX-EQD.x0,e.clientY-EQD.y0);
+  if(!EQD.active){ if(EQD.touch){ if(far>8){ clearTimeout(EQD.timer); EQD=null; } return; } if(far<=6) return; eqdStart(); }
+  e.preventDefault(); eqdMove(e.clientX,e.clientY);
+});
+document.addEventListener("pointerup",e=>{ if(EQD&&e.pointerId===EQD.id) eqdStop({x:e.clientX,y:e.clientY}); });
+document.addEventListener("pointercancel",e=>{ if(EQD&&e.pointerId===EQD.id) eqdStop(null); });
+document.addEventListener("touchmove",e=>{ if(EQD&&EQD.active) e.preventDefault(); },{passive:false});
+document.addEventListener("contextmenu",e=>{ if(EQD) e.preventDefault(); });
+// Le clic qui suit un glisser ne doit pas ouvrir la liste de l'emplacement.
+document.addEventListener("click",e=>{ if(Date.now()-eqdEnd<400){ e.stopPropagation(); e.preventDefault(); } },true);

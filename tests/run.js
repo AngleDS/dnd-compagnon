@@ -235,6 +235,69 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="histDay"][data-v="2026-11-07"]'); await p.click('[data-act="histDay"][data-v="2026-11-08"]');
     eq((await histRowsShown(p)).length, 30, 'retour à 30 lignes');
   });
+
+  // Équipement : glisser-déposer. Sac fabriqué pour le test.
+  async function eqDragSetup(p) {
+    await p.setViewportSize({ width: 1200, height: 1500 });
+    await open(p);
+    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
+    await p.evaluate(() => {
+      const ch = cur(); ch.equip = {}; ch.shield = false; ch.armor = 'none'; ch.attuned = [];
+      ch.bag = [['b1', 'Épée longue'], ['b2', 'Dague'], ['b3', 'Bouclier'], ['b4', 'Anneau de protection'], ['b5', 'Cotte de mailles'], ['b6', 'Potion de soins']].map(([id, name]) => ({ id, name, qty: 1 }));
+      S.rv = null; renderModal(); S.tab = 'table'; render(); S.T.pop = 'equip'; S.T.eqSlot = null; render();
+    });
+  }
+  const eqNow = p => p.evaluate(() => JSON.parse(JSON.stringify(cur().equip || {})));
+  const center = async (p, sel) => { const b = await p.locator(sel).first().boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; };
+  async function mouseDrag(p, from, to, during) {
+    const [x0, y0] = await center(p, from), [x1, y1] = await center(p, to);
+    await p.mouse.move(x0, y0); await p.mouse.down(); await p.mouse.move(x0 + 12, y0 + 12, { steps: 3 }); await p.mouse.move(x1, y1, { steps: 8 });
+    if (during) await during();
+    await p.mouse.up(); await p.waitForTimeout(30);
+  }
+  const slot = k => `.eqcard[data-v="${k}"]`, bagItem = id => `.eqbag[data-id="${id}"]`;
+
+  await test('Équipement : glisser-déposer à la souris (sac, échange, refus, retrait)', async p => {
+    await eqDragSetup(p);
+    eq(await p.evaluate(() => [...document.querySelectorAll('.eqbag')].map(e => e.dataset.id)), ['b1', 'b2', 'b3', 'b4', 'b5'], 'sac : objets équipables seulement');
+    await mouseDrag(p, bagItem('b1'), slot('mainP')); eq((await eqNow(p)).mainP, 'b1', 'épée du sac vers la main principale');
+    await mouseDrag(p, bagItem('b2'), slot('mainS')); eq((await eqNow(p)).mainS, 'b2', 'dague du sac vers la main secondaire');
+    await mouseDrag(p, slot('mainP'), slot('mainS')); const sw = await eqNow(p); eq([sw.mainP, sw.mainS], ['b2', 'b1'], 'échange des deux mains');
+    await mouseDrag(p, bagItem('b3'), slot('mainP'), async () => {
+      const c = await p.evaluate(() => ({ ghost: !!document.querySelector('.eqghost'), mainP: document.querySelector('.eqcard[data-v="mainP"]').className, mainS: document.querySelector('.eqcard[data-v="mainS"]').className, corps: document.querySelector('.eqcard[data-v="corps"]').className }));
+      ok(c.ghost && /eqno/.test(c.mainP) && /eqok/.test(c.mainS) && /eqno/.test(c.corps), 'cibles valides allumées : ' + JSON.stringify(c));
+    });
+    eq((await eqNow(p)).mainP, 'b2', 'bouclier refusé en main principale');
+    await mouseDrag(p, bagItem('b3'), slot('mainS'));
+    eq(await p.evaluate(() => [cur().equip.mainS, cur().shield, !!document.querySelector('.eqbag[data-id="b1"]')]), ['b3', true, true], 'bouclier en main secondaire, l’épée retourne au sac');
+    await mouseDrag(p, slot('mainP'), slot('mainS')); eq((await eqNow(p)).mainP, 'b2', 'échange refusé : le bouclier ne va pas en main principale');
+    await mouseDrag(p, bagItem('b5'), slot('corps')); eq(await p.evaluate(() => [cur().equip.corps, cur().armor]), ['b5', 'srd:cotte-de-mailles'], 'armure');
+    await mouseDrag(p, bagItem('b4'), slot('anneau1')); await mouseDrag(p, slot('anneau1'), slot('anneau2'));
+    eq(await p.evaluate(() => [cur().equip.anneau1 || null, cur().equip.anneau2]), [null, 'b4'], 'anneau déplacé');
+    await mouseDrag(p, slot('mainS'), '.eqsac');
+    eq(await p.evaluate(() => [cur().equip.mainS || null, cur().shield]), [null, false], 'bouclier retiré en le glissant vers le sac');
+    eq(await p.evaluate(() => [S.T.eqSlot || null, !!document.querySelector('.eqghost,.eqok,.eqno,.eqsrc')]), [null, false], 'aucune liste ouverte, aucun reste du glisser');
+    await p.evaluate(() => { eqSet(cur(), 'mainP', 'b6'); eqSet(cur(), 'mainS', 'b1'); render(); });
+    await mouseDrag(p, slot('mainS'), slot('mainP')); const tr = await eqNow(p); eq([tr.mainP, tr.mainS], ['b1', 'b6'], 'échange avec un objet quelconque tenu en main (comme la liste)');
+    await p.click(slot('mainP')); eq(await p.evaluate(() => S.T.eqSlot), 'mainP', 'toucher un emplacement ouvre toujours la liste');
+  });
+
+  await test('Équipement : au doigt, appui long pour glisser, glisser rapide ignoré', async p => {
+    await eqDragSetup(p);
+    const touchDrag = (from, to, wait) => p.evaluate(async ([from, to, wait]) => {
+      const c = el => { const r = el.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; };
+      const fire = (type, x, y, t) => t.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, button: 0 }));
+      const a = document.querySelector(from), [x0, y0] = c(a), [x1, y1] = c(document.querySelector(to));
+      fire('pointerdown', x0, y0, a); await new Promise(r => setTimeout(r, wait));
+      for (let i = 1; i <= 6; i++) fire('pointermove', x0 + (x1 - x0) * i / 6, y0 + (y1 - y0) * i / 6, document);
+      fire('pointerup', x1, y1, document); await new Promise(r => setTimeout(r, 50));
+    }, [from, to, wait]);
+    await touchDrag(bagItem('b1'), slot('mainP'), 80);
+    eq((await eqNow(p)).mainP || null, null, 'glisser rapide = défilement, aucun changement');
+    await touchDrag(bagItem('b1'), slot('mainP'), 450);
+    eq((await eqNow(p)).mainP, 'b1', 'appui long puis glisser : équipé');
+    ok(await p.evaluate(() => !document.querySelector('.eqghost')), 'fantôme retiré');
+  });
  
   await test('Thème : sombre par défaut, bouton du Menu pour passer en clair et revenir', async p => {
     await open(p);

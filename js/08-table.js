@@ -168,6 +168,31 @@ function eqSet(ch,slot,bagId){
   else { if(b) ch.equip[slot]=bagId; else delete ch.equip[slot]; }
   ch.attuned=(ch.attuned||[]).filter(id=>bag.some(x=>x.id===id));
 }
+// Glisser-déposer : src = {slot} (emplacement) ou {bag} (objet du sac) ; dst = {slot} ou {sac:true} (retirer).
+// D'un emplacement à un autre occupé : échange, seulement si chaque objet convient à sa nouvelle place.
+// Du sac vers un emplacement occupé : l'ancien objet retourne dans le sac.
+// Mains : mêmes règles que la liste d'un emplacement (tout objet sauf armure ; pas de bouclier en main principale).
+function eqDropFits(slot,b){ const t=eqInfo(b).type;
+  if(slot==="mainP") return t!=="armor"&&t!=="shield";
+  if(slot==="mainS") return t!=="armor";
+  return eqFits(slot,b); }
+function eqMoveOk(ch,src,dst){
+  const st=eqState(ch), X=src.slot?st[src.slot]:(ch.bag||[]).find(b=>b.id===src.bag&&(+b.qty||0)>0);
+  if(!X) return false;
+  if(dst.sac) return !!src.slot;
+  if(!dst.slot||dst.slot===src.slot||!eqDropFits(dst.slot,X)) return false;
+  if(src.slot){ const Y=st[dst.slot]; if(Y&&!eqDropFits(src.slot,Y)) return false; }
+  return true;
+}
+function eqMove(ch,src,dst){
+  if(!eqMoveOk(ch,src,dst)) return false;
+  const st=eqState(ch), X=src.slot?st[src.slot]:(ch.bag||[]).find(b=>b.id===src.bag);
+  if(dst.sac){ eqSet(ch,src.slot,null); return true; }
+  const Y=src.slot?st[dst.slot]:null;
+  eqSet(ch,dst.slot,X.id);
+  if(Y) eqSet(ch,src.slot,Y.id);
+  return true;
+}
 function eqSilhouette(){ return `<svg class="eqfig" viewBox="0 0 120 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><circle cx="60" cy="24" r="16"/><path d="M33 58c6-8 16-12 27-12s21 4 27 12l10 52c1 5-2 8-6 8-3 0-5-2-6-5l-7-36v42l6 88c0 5-3 8-8 8-4 0-7-3-8-7l-8-70-8 70c-1 4-4 7-8 7-5 0-8-3-8-8l6-88V77l-7 36c-1 3-3 5-6 5-4 0-7-3-6-8z"/></svg>`; }
 // positions : [colonne, haut %, point x %, point y %] sur la scène
 // [colonne, haut de la carte %, point x, point y dans la silhouette (viewBox 120×220)]
@@ -210,21 +235,23 @@ function eqPop(ch,D){
       ${other.length?`<details class="tdesc"><summary class="label">Autres objets du sac</summary><div class="eqlist">${other.map(row).join("")}</div></details>`:""}`;
   }
   const card=k=>{ const d=eqSlotData(ch,D,k,st,att), p=EQ_POS[k];
-    return `<button class="eqcard ${({L:"l",R:"r",T:"c",B:"c"})[p[0]]}${d.val?" full":""}${d.warn?" warn":""}${d.cls}" style="--td:${p[1]}%;--tm:${p[2]}%" data-act="eqslot" data-v="${k}" title="${esc(d.sub||d.label)}"><span class="label">${esc(d.label)}</span><b>${d.val?esc(d.val):`<span class="muted">vide</span>`}</b>${d.att?`<span class="eqdia${d.on?" on":""}">${d.on?"◆":"◇"}</span>`:""}${d.warn?`<span class="eqbang">!</span>`:""}</button>`; };
+    return `<button class="eqcard ${({L:"l",R:"r",T:"c",B:"c"})[p[0]]}${d.val?" full":""}${d.warn?" warn":""}${d.cls}" style="--td:${p[1]}%;--tm:${p[2]}%" data-act="eqslot" data-v="${k}" data-eqdrop="slot"${d.b?` data-eqdrag="1" data-name="${esc(d.b.name)}"`:""} title="${esc(d.sub||d.label)}"><span class="label">${esc(d.label)}</span><b>${d.val?esc(d.val):`<span class="muted">vide</span>`}</b>${d.att?`<span class="eqdia${d.on?" on":""}">${d.on?"◆":"◇"}</span>`:""}${d.warn?`<span class="eqbang">!</span>`:""}</button>`; };
   const svgFor=(mode)=>{ const g=EQ_GEO[mode]; let l="",d="";
     for(const [k,p] of Object.entries(EQ_POS)){ if(p.length<5) continue; const full=!!eqSlotData(ch,D,k,st,att).val; const [x2,y2]=eqPt(p[3],p[4],g); const x1=p[0]==="L"?g.cw:100-g.cw, y1=(mode==="desk"?p[1]:p[2])+(mode==="desk"?6.5:8.5);
       l+=`<line x1="${x1}" y1="${y1}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="${full?"on":""}"/>`; d+=`<circle cx="${x2.toFixed(2)}" cy="${y2.toFixed(2)}" r="${mode==="desk"?0.7:1.1}" class="${full?"on":""}"/>`; }
     const fw=g.fh*120/220/g.ar;
     return `<div class="eqfigbox ${mode}" style="left:${(100-fw)/2}%;width:${fw}%;top:${g.ft}%;height:${g.fh}%">${eqSilhouette()}</div><svg class="eqlines ${mode}" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${l}${d}</svg>`; };
   const pP=st.mainP&&eqInfo(st.mainP), pS=st.mainS&&eqInfo(st.mainS);
+  const eqIds=new Set(Object.values(ch.equip||{})), sac=(ch.bag||[]).filter(b=>(+b.qty||0)>0&&!eqIds.has(b.id)&&EQ.some(([k])=>eqFits(k,b)));
   const twoW=pP&&pS&&pP.type==="weapon"&&pS.type==="weapon"&&/légère/i.test(pP.w.properties||"")&&/légère/i.test(pS.w.properties||"");
   const bcard=k=>{ const d=eqSlotData(ch,D,k,st,att);
-    return `<button class="eqcard flat${d.val?" full":""}${d.warn?" warn":""}${d.cls}" data-act="eqslot" data-v="${k}" title="${esc(d.sub||d.label)}"><span class="label">${esc(d.label)}</span><b>${d.val?esc(d.val):`<span class="muted">vide</span>`}</b>${d.att?`<span class="eqdia${d.on?" on":""}">${d.on?"◆":"◇"}</span>`:""}</button>`; };
+    return `<button class="eqcard flat${d.val?" full":""}${d.warn?" warn":""}${d.cls}" data-act="eqslot" data-v="${k}" data-eqdrop="slot"${d.b?` data-eqdrag="1" data-name="${esc(d.b.name)}"`:""} title="${esc(d.sub||d.label)}"><span class="label">${esc(d.label)}</span><b>${d.val?esc(d.val):`<span class="muted">vide</span>`}</b>${d.att?`<span class="eqdia${d.on?" on":""}">${d.on?"◆":"◇"}</span>`:""}</button>`; };
   return `<div class="eqstage">${svgFor("desk")}${svgFor("mob")}${Object.keys(EQ_POS).map(card).join("")}</div>
     <div class="label" style="margin:12px 0 6px">Accessoires</div><div class="eqbottom">${EQ_BOTTOM.map(bcard).join("")}</div>
+    <div class="label" style="margin:12px 0 6px">Sac</div><div class="eqsac" data-eqdrop="sac">${sac.length?sac.map(b=>`<span class="eqbag" data-eqdrag="1" data-id="${b.id}" data-name="${esc(b.name)}">${esc(b.name)}${(+b.qty||0)>1?` <small class="muted">×${+b.qty}</small>`:""}</span>`).join(""):`<span class="muted" style="font-size:13px">Aucun objet à équiper dans le sac. Glisse un objet porté ici pour le retirer.</span>`}</div>
     <div class="row" style="justify-content:space-between;margin-top:8px"><span class="eqatt-count ${att.length>3?"over":""}">Harmonisation <b class="num">${att.length}/3</b></span></div>
     ${twoW?`<div class="tnotes">Deux armes légères : après avoir attaqué avec ta main principale, tu peux attaquer avec la main secondaire par une action Bonus (sans ton modificateur aux dégâts s'il est positif).</div>`:""}
-    <div class="muted" style="font-size:12px;margin-top:6px">Touche un emplacement pour y mettre un objet de ton sac. ◇ = harmonisation (3 objets maximum). Changer d'arme est gratuit pendant une attaque (une arme par attaque).</div>`;
+    <div class="muted" style="font-size:12px;margin-top:6px">Touche un emplacement pour y mettre un objet de ton sac, ou fais glisser un objet vers un emplacement ou vers le sac (au doigt : appui long, puis glisser). ◇ = harmonisation (3 objets maximum). Changer d'arme est gratuit pendant une attaque (une arme par attaque).</div>`;
 }
 function tPop(ch,D){
   const T=S.T, k=T.pop; if(!k){ S.lastPop=null; return ""; }
