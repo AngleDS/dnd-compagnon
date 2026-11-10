@@ -406,6 +406,8 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
  
 /* No random-producing control is exposed before global opt-in. */
 html:not([data-virtual-dice="on"]) [data-virtual]{display:none!important}
+/* Fiche : en dés physiques, les valeurs écrites dans les boutons de lancer restent visibles, comme du texte non cliquable. */
+html:not([data-virtual-dice="on"]) .rollbtn[data-virtual]{display:inline-block!important;pointer-events:none;cursor:default;background:none!important;border-color:transparent!important;box-shadow:none!important}
 .tbottom > .row{flex-wrap:wrap}
 .tcalculation{display:block;font-size:var(--fs-sm);line-height:1.5}
 .tin input[type="number"]{font-size:var(--fs-lg);min-width:64px}

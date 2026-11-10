@@ -866,6 +866,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     } finally { await ctx.close(); }
   });
 
+  await test('Fiche en dés physiques : valeurs visibles (initiative, caractéristiques, sauvegardes), rien ne se lance', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { cur().abilities.dex=16; S.tab='jeu'; render(); });
+    eq(await p.evaluate(() => virtualDiceEnabled()),false,'dés physiques');
+    ok(await p.isVisible('.vital .rollbtn[data-l="Initiative"]'),'tuile Initiative avec sa valeur');
+    eq((await p.innerText('.vital .rollbtn[data-l="Initiative"]')).trim(),'+3','valeur d’initiative');
+    ok(await p.isVisible('.rollbtn[data-l="Test de Dextérité"]')&&await p.isVisible('.rollbtn[data-l="JS de Dextérité"]'),'modificateur et sauvegarde visibles');
+    const n0=await p.evaluate(() => (cur().rollLog||[]).length);
+    await p.click('.vital .rollbtn[data-l="Initiative"]',{force:true});
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0,'aucun jet lancé en dés physiques');
+    await p.evaluate(() => { setVirtualDice(true); render(); });
+    await p.click('.vital .rollbtn[data-l="Initiative"]');
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),n0+1,'en dés virtuels, le bouton lance le jet');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
