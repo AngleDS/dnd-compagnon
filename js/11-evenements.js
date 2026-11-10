@@ -9,6 +9,10 @@ document.addEventListener("click",e=>{
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;
   if(a!=="ask"&&S.confirm&&!["del","hbDel","rest"].includes(a)) S.confirm=null;
   switch(a){
+    case "layoutEdit": S.layoutEdit=true; render(); break;
+    case "layoutDone": S.layoutEdit=false; render(); break;
+    case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } render(); break;
+    case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
     case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); break;
     case "nav": if(t.dataset.v==="hb"||t.dataset.v==="comp"){ if(S.view==="sheet") S.navFrom="perso"; else if(S.view==="list") S.navFrom="menu"; }
@@ -390,6 +394,27 @@ document.addEventListener('keydown',e=>{
 
 // Molette sur un champ de dés : la page défile, la valeur ne change pas.
 document.addEventListener('wheel',e=>{ if(e.target.matches?.(DICE_INPUTS)&&document.activeElement===e.target) e.target.blur(); },{passive:true});
+
+/* ---------- « À la table » : glisser un bloc par sa poignée (mode disposition seulement) ---------- */
+let BLKD=null;
+document.addEventListener("pointerdown",e=>{
+  const g=e.target.closest&&e.target.closest("[data-blkgrip]"); if(!g||!S.layoutEdit||(e.pointerType==="mouse"&&e.button!==0)) return;
+  const el=g.closest(".tblk"); if(!el) return; e.preventDefault();
+  BLKD={el,id:e.pointerId}; el.classList.add("dragging"); try{ g.setPointerCapture(e.pointerId); }catch(err){}
+});
+document.addEventListener("pointermove",e=>{
+  if(!BLKD||e.pointerId!==BLKD.id) return; e.preventDefault();
+  // Place d'après la hauteur du doigt : le bloc passe avant le premier bloc dont le milieu est plus bas (le bandeau collé ne gêne pas).
+  const el=BLKD.el, box=el.parentElement, others=[...box.querySelectorAll(":scope > .tblk")].filter(b=>b!==el);
+  const next=others.find(b=>{ const r=b.getBoundingClientRect(); return e.clientY<r.top+r.height/2; })||null;
+  if(el.nextElementSibling!==next) box.insertBefore(el,next);
+  const top=(document.querySelector(".tlayouttop")?.getBoundingClientRect().bottom||0)+50;
+  if(e.clientY<top) window.scrollBy(0,-14); else if(e.clientY>innerHeight-60) window.scrollBy(0,14);
+});
+function blkDragEnd(e){ if(!BLKD||e.pointerId!==BLKD.id) return; const box=BLKD.el.parentElement; BLKD.el.classList.remove("dragging"); BLKD=null;
+  const ch=cur(); if(ch&&box) saveTableOrder(ch,[...box.querySelectorAll(":scope > .tblk")].map(b=>b.dataset.blk)); render(); }
+document.addEventListener("pointerup",blkDragEnd);
+document.addEventListener("pointercancel",blkDragEnd);
 
 /* ---------- Équipement : glisser-déposer (souris ; au doigt, appui long puis glisser) ---------- */
 let EQD=null, eqdEnd=0;

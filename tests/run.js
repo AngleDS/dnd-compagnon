@@ -935,6 +935,46 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(/disposition/.test(res[1]), 'disposition invalide refusée à l’import : ' + res[1]);
   });
 
+  await test('Mode disposition : verrouillé par défaut, flèches, glisser par la poignée, ordre par défaut', async p => {
+    await p.setViewportSize({ width: 1200, height: 2200 }); await diceTable(p);
+    const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
+    ok(!await p.locator('[data-blkgrip],[data-act="blkMove"]').count(), 'verrouillé : ni poignée ni flèche');
+    await p.click('[data-act="layoutEdit"]');
+    eq(await order(), ['perso','reperes','pv','res','recherche','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
+    ok(await p.evaluate(() => [...document.querySelectorAll('.tblkc')].every(c => c.inert)), 'contenu des blocs inactif');
+    ok(await p.locator('.tblk[data-blk="perso"] [data-act="blkMove"][data-d="-1"]').isDisabled(), 'premier bloc : pas de flèche vers le haut');
+    await p.click('.tblk[data-blk="perso"] [data-act="blkMove"][data-d="1"]');
+    eq((await order()).slice(0, 2), ['reperes','perso'], 'flèche vers le bas');
+    eq(await p.evaluate(() => cur().layout.order.slice(0, 2)), ['reperes','perso'], 'ordre enregistré dans la fiche');
+    const grip = await p.locator('.tblk[data-blk="notes"] [data-blkgrip]').boundingBox(), top = await p.locator('.tblk[data-blk="reperes"]').boundingBox();
+    await p.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await p.mouse.down();
+    await p.mouse.move(top.x + 40, top.y + 10, { steps: 3 }); await p.mouse.up();
+    eq((await order())[0], 'notes', 'bloc glissé tout en haut par sa poignée');
+    eq(await p.evaluate(() => cur().layout.order[0]), 'notes', 'ordre glissé enregistré');
+    await p.click('[data-act="layoutDone"]');
+    ok(!await p.locator('[data-blkgrip]').count() && (await order())[0] === 'notes', 'Terminé : verrouillé, ordre conservé');
+    await p.click('[data-act="layoutEdit"]'); await p.click('[data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
+    eq((await order())[0], 'perso', 'ordre par défaut rétabli');
+  });
+
+  await test('Mode disposition au doigt (iPhone) : glisser un bloc vers le haut, sous le bandeau collé', async p => {
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+    try {
+      await diceTable(t);
+      await t.evaluate(() => { S.layoutEdit = true; render(); window.scrollTo(0, 0); });
+      const order = await t.evaluate(async () => {
+        const g = document.querySelector('.tblk[data-blk="tour"] [data-blkgrip]'); g.scrollIntoView({ block: 'center' });
+        const fire = (type, x, y, el) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 9, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, button: 0 }));
+        const r0 = g.getBoundingClientRect(); const x = r0.x + r0.width / 2; let y = r0.y + r0.height / 2; fire('pointerdown', x, y, g);
+        for (let i = 0; i < 60; i++) { const r = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(); y = Math.max(5, r.top + 8); fire('pointermove', x, y, document); await new Promise(z => setTimeout(z, 10));
+          if (document.querySelector('.tblocks').children[1]?.dataset.blk === 'tour') break; }
+        fire('pointerup', x, y, document); return cur().layout.order.slice(0, 3); });
+      eq(order, ['perso','tour','reperes'], 'bloc remonté au doigt, ordre enregistré');
+      if (errs.length) throw new Error('Erreur JS : ' + errs.join(' | '));
+    } finally { await ctx.close(); }
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

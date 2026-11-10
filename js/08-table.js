@@ -368,8 +368,18 @@ function viewTable(ch,D,banner=""){
 const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","Emplacements et états"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
 function tableOrder(ch){ const ids=TBLK.map(b=>b[0]); const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[]; return [...new Set([...saved,...ids])]; }
 function tableBlocks(ch,blocks){
-  return `<div class="tblocks">${tableOrder(ch).filter(id=>blocks[id]).map(id=>`<section class="tblk" data-blk="${id}" aria-label="${esc(TBLK.find(b=>b[0]===id)[1])}">${blocks[id]}</section>`).join("")}</div>`;
+  const ed=!!S.layoutEdit, ids=tableOrder(ch).filter(id=>ed||blocks[id]), label=id=>TBLK.find(b=>b[0]===id)[1];
+  if(!ed) return `<div class="tblocks">${ids.map(id=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">${blocks[id]}</section>`).join("")}</div>
+    <div class="tlayoutbar"><button class="btn small ghost" data-act="layoutEdit">Modifier la disposition</button></div>`;
+  // Mode disposition : poignée et flèches sur chaque bloc ; le contenu est inactif pour éviter toute action par erreur.
+  return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
+  <div class="tblocks editing">${ids.map((id,n)=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">
+    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>
+      <span class="row tblkmv"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc ${esc(label(id))}" ${n?"":"disabled"}>↑</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc ${esc(label(id))}" ${n<ids.length-1?"":"disabled"}>↓</button></span></div>
+    <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section>`).join("")}</div>`;
 }
+function saveTableOrder(ch,order){ ch.layout=Object.assign({},ch.layout,{order}); touch(S.cur); }
+function moveTableBlock(ch,id,d){ const o=tableOrder(ch), i=o.indexOf(id), j=i+d; if(i<0||j<0||j>=o.length) return; [o[i],o[j]]=[o[j],o[i]]; saveTableOrder(ch,o); }
 function hpStepper(ch,D){
   const hp=ch.hp||{cur:D.hpMax,temp:0}, ed=S.hpEdit;
   const val = ed ? `<input id="hp-set" type="number" inputmode="numeric" value="${+hp.cur||0}" aria-label="PV actuels" style="width:70px;font-size:var(--fs-lg)">` : `<button class="hpval" data-act="hpedit" title="Toucher pour saisir une valeur"><b class="num">${+hp.cur||0}</b></button>`;

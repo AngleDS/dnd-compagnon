@@ -257,6 +257,14 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
 .tblk .tgrid.tb-solo>*{grid-column:1!important;grid-row:auto!important;position:static!important}
 .tblk .tbottom{margin-top:0;padding-top:0;border-top:0}
 .tblk .character-banner{margin:0}
+/* Mode disposition */
+.tlayoutbar{display:flex;justify-content:center;margin:18px 0 6px}
+.tlayouttop{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;max-width:860px;margin:0 auto 12px;padding:10px 12px;border:1px solid var(--brass);border-radius:12px;background:var(--sheet);font-size:var(--fs-sm);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.tblocks.editing .tblk{border:1.5px dashed var(--brass);border-radius:12px;padding:8px 10px;background:var(--sheet)}
+.tblkh{display:flex;align-items:center;gap:8px;margin-bottom:6px}.tblkh b{flex:1;min-width:0}
+.tblkgrip{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;color:var(--brass);font-size:var(--fs-lg);letter-spacing:-3px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.tblkc[inert]{opacity:.55;max-height:180px;overflow:hidden}
+.tblk.dragging{box-shadow:0 12px 30px rgba(0,0,0,.5);outline:2px solid var(--brass);cursor:grabbing}
 /* Ligne d'« À la table » : toucher la ligne ouvre la carte ; seul le bouton i ouvre la règle. */
 .tinfo{position:relative;flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;color:var(--muted);font-size:var(--fs-sm);font-style:italic;font-weight:700;font-family:Georgia,serif;cursor:help}
 .tinfo::before{content:"";position:absolute;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-50%);border:1px solid var(--line);border-radius:50%;box-sizing:border-box}
