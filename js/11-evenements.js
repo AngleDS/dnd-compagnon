@@ -20,16 +20,15 @@ document.addEventListener("click",e=>{
     case "tileReset": if(ch){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles); delete ch.layout.tiles[t.dataset.blk]; touch(S.cur); S.T.tileSlot=null; render(); } break;
     case "blkCreate": if(ch){ const list=customCopy(ch); if(list.length>=20) break; const id="c_"+Math.random().toString(36).slice(2,10);
       list.push({id,name:"Mon bloc "+(list.length+1),r:Math.min(4,Math.max(1,+t.dataset.r)),c:Math.min(4,Math.max(1,+t.dataset.c)),tiles:[]}); saveCustom(ch,list); saveTableOrder(ch,tableOrder(ch)); S.T.tileSlot=null; S.T.ctile=null; S.T.pop="tiles:"+id; render(); } break;
-    case "ctileAdd": if(ch){ const id=t.dataset.v, b=blockObj(ch,id); if(b){ const {occ}=cGrid(b), cells=occ.flat(), sel=S.T.tileSlot, n=Number.isInteger(sel)&&cells[sel]<0?sel:cells.indexOf(-1);
+    case "ctileAdd": if(ch){ const id=t.dataset.v, b=customBlocks(ch).find(x=>x.id===id); if(b){ const {occ}=cGrid(b), cells=occ.flat(), sel=S.T.tileSlot, n=Number.isInteger(sel)&&cells[sel]<0?sel:cells.indexOf(-1);
         if(n<0) setBanner("Bloc plein : retire d’abord une tuile."); else if(cUpdate(ch,id,bb=>cMove(bb,{id:t.dataset.t},{r:Math.floor(n/b.c),c:n%b.c}))){ S.T.tileSlot=null; S.T.ctile=null; } } render(); } break;
     case "ctileSel": { const i=+t.dataset.i; S.T.ctile=S.T.ctile===i?null:i; S.T.tileSlot=null; render(); } break; // toucher une tuile la sélectionne (tailles, retirer, puis case libre pour la déplacer)
     case "ctileCell": { const n=+t.dataset.cell, j=S.T.ctile; // une tuile sélectionnée puis une case libre : déplacer
-      if(ch&&Number.isInteger(j)){ const b=blockObj(ch,t.dataset.v);
+      if(ch&&Number.isInteger(j)){ const b=customBlocks(ch).find(x=>x.id===t.dataset.v);
         if(b&&cUpdate(ch,b.id,bb=>cMove(bb,{i:j},{r:Math.floor(n/b.c),c:n%b.c}))) S.T.ctile=null; else setBanner("Pas la place ici."); S.T.tileSlot=null; }
       else S.T.tileSlot=S.T.tileSlot===n?null:n; render(); } break;
     case "ctileDel": if(ch){ cUpdate(ch,t.dataset.v,b=>{ const l=cGrid(b).tiles; l.splice(+t.dataset.i,1); return l; }); S.T.ctile=null; render(); } break;
     case "ctileSize": if(ch){ if(!cUpdate(ch,t.dataset.v,b=>cResize(b,+t.dataset.i,t.dataset.z))) setBanner("Pas assez de place dans ce bloc pour agrandir la tuile ici."); render(); } break;
-    case "resReset": if(ch){ const l=Object.assign({},ch.layout); delete l.res; ch.layout=l; touch(S.cur); S.T.ctile=null; S.T.tileSlot=null; render(); } break;
     case "cblkDel": S.T.cdel=t.dataset.v; render(); break;
     case "cblkDelNo": S.T.cdel=null; render(); break;
     case "cblkDelYes": if(ch){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==t.dataset.v)); saveTableOrder(ch,tableOrder(ch)); S.T.cdel=null; S.T.pop=null; render(); } break;

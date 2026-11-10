@@ -261,7 +261,7 @@ function tPop(ch,D){
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const anim=S.lastPop!==k; S.lastPop=k;
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
-  if(k.startsWith("tiles:c_")||k==="tiles:res") return customPop(ch,D,k.slice(6),wrap);
+  if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
   if(k==="blkadd") return wrap("Ajouter un bloc",`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Choisis la taille du bloc (lignes × colonnes) ; tu y placeras ensuite les tuiles de ton choix.</div><div class="ctpls">${[1,2,3,4].flatMap(r=>[1,2,3,4].map(c=>`<button class="ctpl" data-act="blkCreate" data-r="${r}" data-c="${c}" aria-label="Bloc de ${r} ligne${r>1?"s":""} et ${c} colonne${c>1?"s":""}"><span class="ctplg" style="grid-template-columns:repeat(${c},1fr)">${"<i></i>".repeat(r*c)}</span><small>${r}×${c}</small></button>`)).join("")}</div>`);
   if(k.startsWith("tiles:")){ const blk=k.slice(6), cat=TILE_CAT[blk]; if(!cat){ T.pop=null; return ""; }
     const arr=blockTiles(ch,blk), free=arr.indexOf(""), unused=Object.keys(cat).filter(x=>!arr.includes(x)&&tileAvailable(ch,blk,x)), sel=Number.isInteger(T.tileSlot)?T.tileSlot:-1;
@@ -336,9 +336,7 @@ function viewTable(ch,D,banner=""){
       <div class="health-detail health-dice" title="Dés de vie restants : à dépenser pendant un repos court (bouton Repos)"><span class="label">Dés de vie</span><span><b class="num">${Math.max(0,D.L-(+ch.hdUsed||0))} / ${D.L}</b> <small>d${D.hd}</small></span></div>
     </div>
   <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span><button class="chip insp overview-inspiration" aria-pressed="${!!ch.inspiration}" data-act="insp" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg><span>Inspiration héroïque${ch.inspiration?" ✓":""}</span></button><button class="chip overview-inspiration overview-rest" data-act="restOpen" data-v="" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg><span>Repos</span></button></div></section></div>`;
-  // Bloc « Emplacements et états » : bloc à tuiles (par défaut Emplacements et États actifs en lignes) ; caché quand il n'a rien à montrer
-  const rb=blockObj(ch,"res",D), rIds=cGrid(rb).tiles.map(t=>t.id);
-  const resBlk=rIds.some(x=>x!=="slots"&&x!=="etats")||(rIds.includes("slots")&&otherSlots)||(rIds.includes("etats")&&conds)?customBlockHtml(ch,D,rb,{slots:otherSlots,conds,size:overviewSize}):"";
+  const resBlk=otherSlots||conds?`<div class="tbar overview-resources">${otherSlots}${conds}</div>`:"";
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
@@ -397,7 +395,6 @@ const PEN_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9
 const tbHead=(blk,label)=>`<div class="tbhead"><span class="label">${esc(label)}</span><button class="tbpen" data-act="tpop" data-v="tiles:${blk}" aria-label="Personnaliser les tuiles : ${esc(label)}" title="Personnaliser les tuiles">${PEN_SVG}</button></div>`;
 /* Visuel réduit d'une tuile (popup Personnaliser) : l'icône des Raccourcis ou la valeur des Repères. */
 function tileFace(ch,D,blk,id){
-  if(id==="etats") return `<svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5a4.5 4.5 0 1 0 4.5 4.5"/><path d="M12 10.5a1.5 1.5 0 1 0 1.5 1.5"/></svg>`;
   if(id==="slots") return `<svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="18" cy="12" r="3"/></svg>`;
   if(TILE_CAT.raccourcis[id]){ const h=racTileMap(ch,D)[id]?.()||""; return (h.match(/<svg[\s\S]*?<\/svg>/)||[""])[0]; }
   const size=String(ch.size||(srd("species",ch.species)||hb(ch.species))?.size||"—");
@@ -437,17 +434,7 @@ function repTileMap(ch,D,size){
 function reperesTiles(ch,D,size){ const T=repTileMap(ch,D,size); return blockTiles(ch,"reperes").map((id,i)=>(id&&T[id]())||plusTile("reperes",i,"rtile vide")).join(""); }
 /* Blocs personnalisés (étape 6) : ch.layout.custom = [{id,name,r,c,tiles:[{id,sz}]}] ; taille d'une tuile : "1" (1×1), "2" (2×2), "l" (ligne entière).
    Placement automatique dans l'ordre (les tuiles comblent les trous) ; les cases restantes affichent « + ». */
-function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,{slots:"Emplacements de sorts",etats:"États actifs"}); }
-/* Bloc « Emplacements et états » (id "res") : même grille que les blocs personnalisés, enregistrée dans ch.layout.res ; taille fixe. */
-const RES_NAME="Emplacements et états";
-const resDefault=D=>D.cast?{r:2,c:4,tiles:[{id:"slots",sz:"l",r:0,c:0},{id:"etats",sz:"l",r:1,c:0}]}:{r:1,c:4,tiles:[{id:"etats",sz:"l",r:0,c:0}]};
-function blockObj(ch,id,D){
-  if(id==="res"){ const v=ch.layout?.res, ok=v&&typeof v==="object"&&v.r>=1&&v.r<=4&&v.c>=1&&v.c<=4&&Array.isArray(v.tiles), d=ok?v:resDefault(D||derive(ch));
-    return {id:"res",name:RES_NAME,r:d.r,c:d.c,tiles:d.tiles.map(t=>Object.assign({},t))}; }
-  return customCopy(ch).find(b=>b.id===id); }
-function saveBlockObj(ch,b){
-  if(b.id==="res"){ ch.layout=Object.assign({},ch.layout,{res:{r:b.r,c:b.c,tiles:b.tiles}}); touch(S.cur); return; }
-  const list=customCopy(ch), k=list.findIndex(x=>x.id===b.id); if(k>=0){ list[k]=b; saveCustom(ch,list); } }
+function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,{slots:"Emplacements de sorts"}); }
 function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4):[]; }
 function customCopy(ch){ return customBlocks(ch).map(b=>Object.assign({},b,{tiles:(Array.isArray(b.tiles)?b.tiles:[]).map(t=>Object.assign({},t))})); }
 function saveCustom(ch,list){ ch.layout=Object.assign({},ch.layout,{custom:list}); touch(S.cur); }
@@ -478,20 +465,19 @@ function cMove(b,src,dst){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.
 function cResize(b,i,sz){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.assign({},t)), t=list[i]; if(!t) return null;
   const [h,w]=tileSpan(sz,R,C), n=Object.assign({},t,{sz,r:Math.min(t.r,R-h),c:sz==="l"?0:Math.min(t.c,C-w)});
   if(list.some((y,k)=>k!==i&&tilesHit(n,y,R,C))) return null; list[i]=n; return list; }
-function cUpdate(ch,id,fn){ const b=blockObj(ch,id); if(!b) return false; const tiles=fn(b); if(!tiles) return false;
-  b.tiles=tiles.map(t=>({id:t.id,sz:t.sz||"1",r:t.r,c:t.c})); saveBlockObj(ch,b); return true; }
+function cUpdate(ch,id,fn){ const list=customCopy(ch), b=list.find(x=>x.id===id); if(!b) return false; const tiles=fn(b); if(!tiles) return false;
+  b.tiles=tiles.map(t=>({id:t.id,sz:t.sz||"1",r:t.r,c:t.c})); saveCustom(ch,list); return true; }
 const cellStyle=(t,R,C)=>{ const [h,w]=tileSpan(t.sz,R,C); return `grid-row:${t.r+1}/span ${h};grid-column:${t.c+1}/span ${w}`; };
 function customBlockHtml(ch,D,b,ctx){
   const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b);
-  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`
-      :t.id==="etats"?`<div class="rtile rslots retats">${ctx.conds||`<span class="muted">Aucun état</span>`}<span class="label">États actifs</span></div>`:((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||"");
+  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||"");
     return h?`<div class="ccell" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
   let html=tiles.map(one).join("");
   occ.forEach((row,r)=>row.forEach((k,c)=>{ if(k<0) html+=`<div class="ccell" style="grid-row:${r+1};grid-column:${c+1}">${plusTile(b.id,r*b.c+c,"rtile vide")}</div>`; }));
   return `${tbHead(b.id,b.name)}<div class="cgrid" style="grid-template-columns:repeat(${b.c},minmax(0,1fr));grid-template-rows:repeat(${b.r},minmax(68px,auto))">${html}</div>`;
 }
 function customPop(ch,D,id,wrap){
-  const b=blockObj(ch,id,D); if(!b){ S.T.pop=null; return ""; } const isRes=id==="res";
+  const b=customBlocks(ch).find(x=>x.id===id); if(!b){ S.T.pop=null; return ""; }
   const cat=customCat(), {tiles,occ}=cGrid(b), R=b.r, C=b.c, selT=Number.isInteger(S.T.ctile)&&tiles[S.T.ctile]?S.T.ctile:-1, selC=Number.isInteger(S.T.tileSlot)?S.T.tileSlot:-1;
   const face=x=>`<span class="tface">${tileFace(ch,D,"",x)}</span><span class="tname">${esc(cat[x]||x)}</span>`;
   let cells=tiles.map((t,i)=>`<button class="tcell${selT===i?" on":""}" style="${cellStyle(t,R,C)}" data-act="ctileSel" data-v="${id}" data-i="${i}" data-tslot="" data-tdrag="ctile" data-cblk="${id}" aria-pressed="${selT===i}" aria-label="${esc(cat[t.id]||t.id)}">${face(t.id)}</button>`).join("");
@@ -502,11 +488,11 @@ function customPop(ch,D,id,wrap){
   const t=tiles[selT], sizes=t?[["1","1×1"],["2","2×2"],["l","Ligne"]].filter(([z])=>z!=="2"||(R>=2&&C>=2)).filter(([z])=>z!=="l"||C>1):[];
   const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
   const del=S.T.cdel===id?`<span class="row" style="gap:6px"><span>Supprimer ce bloc ?</span><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span>`:`<button class="btn small ghost" data-act="cblkDel" data-v="${id}">Supprimer le bloc</button>`;
-  return wrap("Personnaliser : "+b.name,`${isRes?"":`<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>`}
+  return wrap("Personnaliser : "+b.name,`<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
     <div class="muted" style="font-size:var(--fs-sm);margin:10px 0">Glisse une tuile de la réserve vers une case, ou d’une case à l’autre ; hors du bloc pour la retirer. Touche une tuile posée pour changer sa taille.</div>
     <div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},minmax(60px,auto))">${cells}</div>${selBar}
     <div class="label" style="margin:14px 0 6px">Réserve${!free&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${id}">${res}</div>
-    <div class="row" style="justify-content:flex-end;margin-top:14px">${isRes?`<button class="btn small ghost" data-act="resReset">Tuiles par défaut</button>`:del}</div>`);
+    <div class="row" style="justify-content:flex-end;margin-top:14px">${del}</div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
 const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","Emplacements et états"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
@@ -519,7 +505,7 @@ function tableBlocks(ch,blocks){
   // Mode disposition : poignée et flèches sur chaque bloc ; le contenu est inactif pour éviter toute action par erreur.
   return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small" data-act="tpop" data-v="blkadd">Ajouter un bloc</button><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
   <div class="tblocks editing">${ids.map((id,n)=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">
-    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${TILE_CAT[id]||id==="res"||id.startsWith("c_")?`<button class="btn small" data-act="tpop" data-v="tiles:${id}">Personnaliser</button>`:""}
+    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${TILE_CAT[id]||id.startsWith("c_")?`<button class="btn small" data-act="tpop" data-v="tiles:${id}">Personnaliser</button>`:""}
       <span class="row tblkmv"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc ${esc(label(id))}" ${n?"":"disabled"}>↑</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc ${esc(label(id))}" ${n<ids.length-1?"":"disabled"}>↓</button></span></div>
     <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section>`).join("")}</div>`;
 }
