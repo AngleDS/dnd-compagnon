@@ -250,11 +250,11 @@ Idée d'Angle (10 nov. 2026). **Rien n'est codé ; tout ce qui n'est pas marqué
 
 **Étapes proposées (à valider avec Angle avant de coder)** :
 1. Découper « À la table » en blocs (Personnage compact, Repères, PV, Recherche, Ce tour, Raccourcis, Notes et historique), sans changer les fonctions ; ordre enregistré dans la fiche du perso.
-2. Réordonner les blocs : glisser-déposer (appui long au doigt, glisser direct à la souris, même mécanique que l'équipement) et, en secours, une popup « Disposition » avec monter / descendre.
+2. **Mode disposition verrouillé par défaut** (décision d'Angle, contre les fausses manipulations) : bouton « Modifier la disposition » (même principe que le cadenas de Construction) ; déverrouillé, les blocs montrent poignées et flèches monter / descendre, glisser-déposer (appui long au doigt, glisser direct à la souris, mécanique de l'équipement), ajout, suppression et choix des tuiles ; « Terminé » reverrouille. Verrouillé, rien ne bouge.
 3. Bloc Repères : tuiles de valeurs du référentiel (Initiative ouvre le jet).
 4. Bloc Raccourcis : tuiles maîtresses et leurs popups (Tests, Sauvegardes, États, Inventaire, Équipement existent ; Attaques, Sorts, Ressources à créer).
 5. « Personnaliser » : choisir les tuiles de chaque bloc dans le référentiel.
-6. Blocs personnalisés : créer, nommer, supprimer ; tuile en pleine largeur.
+6. Blocs personnalisés : créer, nommer, supprimer ; **toutes les tailles de 1×1 à 4×4** (lignes × colonnes ; 1×4 = ligne pleine largeur). **Grille où une tuile peut occuper plusieurs cases** (décision d'Angle, option « c » ; ex. dans un bloc 2×4, Emplacements sur une ligne entière et quatre petites tuiles dessous). Repères (2×4) et Raccourcis (3×2) sont deux blocs livrés par défaut du même système. Propositions à valider : tailles de tuile proposées 1×1, 1×2, 2×2 et ligne entière ; placement automatique dans l'ordre choisi (les tuiles se rangent d'elles-mêmes en comblant les trous), plutôt qu'un placement libre case par case, plus délicat au doigt.
 7. Plus tard : iPad et ordinateur en deux colonnes, carte PV adaptée.
 
 **Référentiel des tuiles : `claude/referentiel-tuiles.md`** (10 nov. 2026, décidé avec Angle) : liste exhaustive à partir des règles 2024 ; **tuiles maîtresses** pour les jets (une tuile ouvre la popup des jets qui en dépendent), **Initiative** seule tuile de jet individuelle, Concentration et santé dans la carte PV. Les tuiles obligatoires, le défaut par classe et le quota ci-dessous sont **mis de côté pour le moment** (décision d'Angle) ; le catalogue proposé ci-dessous est remplacé par le référentiel.
