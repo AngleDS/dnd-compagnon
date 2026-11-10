@@ -1121,6 +1121,33 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq((await arr())[0], 'hist', 'réserve → case pleine : remplacée');
   });
 
+  await test('Bloc Emplacements et états : bloc à tuiles, caché si vide, crayon, tuiles, défaut, import', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    const shown = () => p.evaluate(() => !!document.querySelector('.tblk[data-blk="res"]'));
+    eq(await shown(), false, 'sans sorts ni état : bloc caché');
+    await p.evaluate(() => { cur().conditions = ['Empoisonné']; render(); });
+    eq(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="res"]'); return [b.querySelector('.tbhead .label').textContent, !!b.querySelector('.retats [data-k="rule:empoisonne"]'), b.querySelectorAll('.ccell').length]; }),
+      ['Emplacements et états', true, 1], 'un état actif : bloc visible, tuile États actifs sur une ligne');
+    await p.click('.tblk[data-blk="res"] .tbpen');
+    eq(await p.evaluate(() => [S.T.pop, !!document.querySelector('.tpop input[data-cname]'), !!document.querySelector('.tpop [data-act="resReset"]'), !!document.querySelector('.tpop [data-act="cblkDel"]'), document.querySelector('.tpop [data-cgrid]').dataset.r + '×' + document.querySelector('.tpop [data-cgrid]').dataset.c]),
+      ['tiles:res', false, true, false, '1×4'], 'popup : ni nom ni suppression, « Tuiles par défaut », grille 1×4 sans sorts');
+    await p.click('.tpop [data-act="ctileSel"][data-i="0"]'); await p.click('.tpop [data-act="ctileSize"][data-z="1"]');
+    await p.click('.tpop [data-act="ctileAdd"][data-t="ca"]');
+    eq(await p.evaluate(() => cur().layout.res.tiles.map(t => `${t.id}@${t.r},${t.c}`)), ['etats@0,0', 'ca@0,1'], 'tuiles enregistrées dans la fiche');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { cur().conditions = []; render(); });
+    eq(await shown(), true, 'une autre tuile : le bloc reste visible sans état');
+    const r = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); const nid = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
+      try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { res: { tiles: 'x' } } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
+      return [S.docs[nid].layout.res.tiles.length, bad]; });
+    eq(r[0], 2, 'bloc suit l’export'); ok(/Emplacements et états/.test(r[1]), 'bloc invalide refusé');
+    await p.click('[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="res"] .tblkh [data-v="tiles:res"]'); await p.click('.tpop [data-act="resReset"]');
+    eq(await p.evaluate(() => cur().layout.res), undefined, 'tuiles par défaut');
+    await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
+    await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="res"] .ccell > .rtile > .label')].map(e => e.textContent)), ['Emplacements', 'États actifs'], 'lanceur de sorts : Emplacements puis États actifs');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
