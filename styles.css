@@ -264,6 +264,7 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
 .tblkh{display:flex;align-items:center;gap:8px;margin-bottom:6px}.tblkh b{flex:1;min-width:0}
 .tblkgrip{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;color:var(--brass);font-size:var(--fs-lg);letter-spacing:-3px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .tblkc[inert]{opacity:.55;max-height:180px;overflow:hidden}
+@media (hover:hover) and (pointer:fine){.tblocks.editing .tblk{cursor:grab}.tblocks.editing .tblk button{cursor:pointer}}
 .tblk.dragging{box-shadow:0 12px 30px rgba(0,0,0,.5);outline:2px solid var(--brass);cursor:grabbing}
 /* Ligne d'« À la table » : toucher la ligne ouvre la carte ; seul le bouton i ouvre la règle. */
 .tinfo{position:relative;flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;color:var(--muted);font-size:var(--fs-sm);font-style:italic;font-weight:700;font-family:Georgia,serif;cursor:help}

@@ -951,8 +951,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.mouse.move(top.x + 40, top.y + 10, { steps: 3 }); await p.mouse.up();
     eq((await order())[0], 'notes', 'bloc glissé tout en haut par sa poignée');
     eq(await p.evaluate(() => cur().layout.order[0]), 'notes', 'ordre glissé enregistré');
+    const title = await p.locator('.tblk[data-blk="pv"] .tblkh b').boundingBox(), first = await p.locator('.tblk[data-blk="notes"]').boundingBox();
+    await p.mouse.move(title.x + 10, title.y + title.height / 2); await p.mouse.down();
+    for (let i = 1; i <= 20; i++) await p.mouse.move(title.x + 10, title.y + title.height / 2 + (first.y + 5 - title.y - title.height / 2) * i / 20);
+    await p.mouse.up();
+    eq((await order())[0], 'pv', 'à la souris, le bloc s’attrape aussi par son titre');
     await p.click('[data-act="layoutDone"]');
-    ok(!await p.locator('[data-blkgrip]').count() && (await order())[0] === 'notes', 'Terminé : verrouillé, ordre conservé');
+    ok(!await p.locator('[data-blkgrip]').count() && (await order())[0] === 'pv', 'Terminé : verrouillé, ordre conservé');
     await p.click('[data-act="layoutEdit"]'); await p.click('[data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
     eq((await order())[0], 'perso', 'ordre par défaut rétabli');
   });

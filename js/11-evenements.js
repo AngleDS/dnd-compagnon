@@ -398,7 +398,9 @@ document.addEventListener('wheel',e=>{ if(e.target.matches?.(DICE_INPUTS)&&docum
 /* ---------- « À la table » : glisser un bloc par sa poignée (mode disposition seulement) ---------- */
 let BLKD=null;
 document.addEventListener("pointerdown",e=>{
-  const g=e.target.closest&&e.target.closest("[data-blkgrip]"); if(!g||!S.layoutEdit||(e.pointerType==="mouse"&&e.button!==0)) return;
+  // Au doigt : la poignée seule (la page doit pouvoir défiler) ; à la souris : tout le bloc, sauf ses boutons.
+  if(!S.layoutEdit||!e.target.closest||(e.pointerType==="mouse"&&e.button!==0)) return;
+  const g=e.target.closest("[data-blkgrip]")||(e.pointerType==="mouse"&&!e.target.closest("button")?e.target.closest(".tblocks.editing > .tblk"):null); if(!g) return;
   const el=g.closest(".tblk"); if(!el) return; e.preventDefault();
   BLKD={el,id:e.pointerId}; el.classList.add("dragging"); try{ g.setPointerCapture(e.pointerId); }catch(err){}
 });
