@@ -220,7 +220,7 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 
 **Idées notées par Angle (10 nov. 2026), à planifier** :
 - **Renommer « Grimoire » en « Catalogue »** (navigation, titre de la page, mentions dans l'appli).
-- **Renommer « Contenu perso »** : nom à choisir par Angle. La page contient le homebrew **et** les éléments saisis depuis les livres officiels hors SRD (Manuel des joueurs 2024…), donc « Homebrew » seul serait inexact. Pistes proposées : « Mes contenus », « Bibliothèque », « Contenu maison », « Atelier ».
+- **Renommer « Contenu perso » en « Mes contenus »** (décision d'Angle, 10 nov. 2026 ; navigation, titre de la page et mentions dans l'appli, dont l'assistant de création). « Homebrew » écarté : la page contient aussi les éléments saisis depuis les livres officiels hors SRD.
 - **« À la table » : accès rapide aux jets et actions les plus utilisés.** Existe déjà en partie : `T.recent` (6 derniers éléments ouverts, `js/08-table.js`), mais par récence, pour la session seulement, non enregistré. Piste : classement par fréquence tiré de l'historique des jets (`rollLog`) et des cartes ouvertes, enregistré dans la fiche. Information factuelle, sans deviner d'intention.
 - **« À la table » : plusieurs notes horodatées** au lieu de la zone unique « Notes de partie » (`sessionNotes`) : ajouter, lire, supprimer ; date et heure automatiques. Migration : l'ancienne note devient la première.
 - **Menu : générer un PDF propre de la fiche** (mise en page soignée, lisible à l'impression). Voisin du chantier « Feuille » (section 16), qui peut servir de base. Choix technique à faire (feuille de style d'impression ou génération directe).
