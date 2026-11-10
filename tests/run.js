@@ -1047,7 +1047,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(r[0], 'rest', 'tuiles suivent l’export'); ok(/tuiles/.test(r[1]), 'tuiles invalides refusées à l’import');
   });
 
-  await test('Bloc personnalisé : modèle, nom, tuiles et tailles, place, suppression, import', async p => {
+  await test('Bloc personnalisé : modèle, nom, tuiles à leur place exacte, tailles, glisser, ancien format, suppression, import', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.click('[data-act="layoutEdit"]'); await p.click('[data-act="tpop"][data-v="blkadd"]');
     eq(await p.evaluate(() => document.querySelectorAll('.tpop .ctpl').length), 16, '16 modèles de 1×1 à 4×4');
@@ -1057,21 +1057,37 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.T.pop, cur().layout.custom[0].name, cur().layout.order.at(-1)]), ['tiles:' + id, 'Mon bloc 1', id], 'bloc créé, nommé, placé en bas, Personnaliser ouvert');
     await p.fill(`.tpop input[data-cname="${id}"]`, 'Combat'); await p.press(`.tpop input[data-cname="${id}"]`, 'Tab');
     eq(await p.evaluate(() => cur().layout.custom[0].name), 'Combat', 'bloc renommé');
-    for (const v of ['ca', 'init', 'skills']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
-    await p.click('.tpop [data-act="ctileSize"][data-i="0"][data-z="l"]');
-    eq(await p.evaluate(() => customUsed(cur().layout.custom[0])), 5, 'CA en ligne entière : 5 cases sur 6');
-    await p.click('.tpop [data-act="ctileSize"][data-i="1"][data-z="2"]');
-    eq(await p.evaluate(() => cur().layout.custom[0].tiles[1].sz), '1', '2×2 refusé faute de place');
-    ok(await p.evaluate(() => document.querySelector('.tpop [data-act="ctileAdd"][data-t="pp"]').disabled === false), 'encore une case libre');
-    await p.click('.tpop [data-act="ctileMove"][data-i="2"][data-d="-1"]');
-    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => t.id)), ['ca', 'skills', 'init'], 'tuile montée');
+    const pos = () => p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`).sort());
+    for (const v of ['ca', 'init']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
+    eq(await pos(), ['ca:1@0,0', 'init:1@0,1'], 'toucher la réserve : premières cases libres');
+    await p.click('.tpop [data-act="ctileSel"][data-i="0"]'); await p.click('.tpop [data-act="ctileSize"][data-z="l"]');
+    eq((await pos())[0], 'ca:1@0,0', 'ligne refusée : la case voisine est occupée');
+    await p.click('.tpop [data-act="ctileSel"][data-i="1"]'); await p.click('.tpop [data-act="ctileCell"][data-cell="3"]');
+    eq(await pos(), ['ca:1@0,0', 'init:1@1,0'], 'tuile sélectionnée puis case libre : déplacée exactement');
+    await p.click('.tpop [data-act="ctileSel"][data-i="0"]'); await p.click('.tpop [data-act="ctileSize"][data-z="l"]');
+    eq((await pos())[0], 'ca:l@0,0', 'CA en ligne entière');
+    const cellXY = (r, c) => p.evaluate(([r, c]) => { const b = document.querySelector('.tpop [data-cgrid]').getBoundingClientRect(); return { x: b.left + b.width * (c + .5) / 3, y: b.top + b.height * (r + .5) / 2 }; }, [r, c]);
+    const drag = async (from, to) => { const a = await p.locator(from).boundingBox(); await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down(); await p.mouse.move(to.x, to.y, { steps: 3 }); await p.mouse.up(); };
+    await drag('.tpop .tres [data-t="skills"]', await cellXY(1, 2));
+    eq(await pos(), ['ca:l@0,0', 'init:1@1,0', 'skills:1@1,2'], 'réserve glissée sur la case visée (ligne 2, colonne 3)');
+    await drag('.tpop [data-act="ctileSel"][aria-label="Initiative"]', await cellXY(1, 2));
+    eq(await pos(), ['ca:l@0,0', 'init:1@1,2', 'skills:1@1,0'], 'tuile glissée sur une autre : échange');
+    await p.click('.tpop [data-act="ctileSel"][aria-label="Tests de caractéristique"]'); await p.click('.tpop [data-act="ctileSize"][data-z="2"]');
+    eq((await pos()).includes('skills:1@1,0'), true, '2×2 refusé faute de place');
     await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
     const g = await p.evaluate(id => { const b = document.querySelector(`.tblk[data-blk="${id}"]`); const c = [...b.querySelectorAll('.ccell')].map(e => e.getBoundingClientRect());
-      return { name: b.querySelector('.label').textContent, n: c.length, full: Math.round(c[0].width) > Math.round(c[1].width) * 2, plus: b.querySelectorAll('.rtile.vide').length, ov: document.documentElement.scrollWidth <= innerWidth }; }, id);
-    eq(g, { name: 'Combat', n: 4, full: true, plus: 1, ov: true }, 'rendu : CA sur toute la ligne, une case « + », pas de débordement');
+      return { name: b.querySelector('.tbhead .label').textContent, n: c.length, full: Math.round(c[0].width) > Math.round(c[1].width) * 2, plus: b.querySelectorAll('.rtile.vide').length, ov: document.documentElement.scrollWidth <= innerWidth, pen: !!b.querySelector('.tbpen') }; }, id);
+    eq(g, { name: 'Combat', n: 4, full: true, plus: 1, ov: true, pen: true }, 'rendu : CA sur toute la ligne, une case « + », crayon, pas de débordement');
+    eq(await p.evaluate(id => { const b = document.querySelector(`.tblk[data-blk="${id}"] .cgrid`); const v = b.querySelector('.rtile.vide').getBoundingClientRect(), r = b.getBoundingClientRect(); return [Math.round((v.left - r.left) / r.width * 3), Math.round((v.top - r.top) / r.height * 2)]; }, id), [1, 1], 'case libre au milieu de la 2e ligne');
     await p.click(`.tblk[data-blk="${id}"] .rtile.vide`);
-    eq(await p.evaluate(() => S.T.pop), 'tiles:' + id, '« + » ouvre Personnaliser du bloc');
+    eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:' + id, 4], '« + » ouvre Personnaliser sur sa case');
+    await p.click('.tpop [data-act="ctileAdd"][data-t="pp"]');
+    ok((await pos()).includes('pp:1@1,1'), 'tuile posée dans la case du « + »');
+    await drag('.tpop [data-act="ctileSel"][aria-label="Perception passive"]', { x: 2, y: 2 });
+    ok(!(await pos()).some(x => x.startsWith('pp')), 'glissée hors du bloc : retirée');
     await p.keyboard.press('Escape');
+    eq(await p.evaluate(() => { const b = { id: 'c_ancien', name: 'Ancien', r: 2, c: 2, tiles: [{ id: 'ca', sz: 'l' }, { id: 'init', sz: '1' }, { id: 'pp', sz: '1' }, { id: 'dv', sz: '1' }] };
+      return cGrid(b).tiles.map(t => `${t.id}@${t.r},${t.c}`); }), ['ca@0,0', 'init@1,0', 'pp@1,1'], 'ancien bloc (v128) converti dans l’ordre ; la tuile sans place est écartée');
     const r = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); const nid = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
       try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { custom: 'x' } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
       return [S.docs[nid].layout.custom[0].name, bad]; });

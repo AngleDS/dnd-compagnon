@@ -12,18 +12,23 @@ document.addEventListener("click",e=>{
     case "layoutEdit": S.layoutEdit=true; render(); break;
     case "layoutDone": S.layoutEdit=false; render(); break;
     case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } render(); break;
-    case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.pop="tiles:"+t.dataset.blk; render(); break; }
+    case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.ctile=null; S.T.pop="tiles:"+t.dataset.blk; render(); break; }
     case "tileAdd": if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=Number.isInteger(S.T.tileSlot)&&S.T.tileSlot<arr.length?S.T.tileSlot:arr.indexOf(""); if(i>=0){ arr[i]=t.dataset.v; setBlockTiles(ch,blk,arr); S.T.tileSlot=null; } else setBanner("Bloc plein : retire d’abord une tuile."); render(); } break;
     case "tileCell": if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=+t.dataset.i, j=S.T.tileSlot; // toucher une case la sélectionne ; une case pleine sélectionnée puis une autre case = déplacer ou échanger
       if(Number.isInteger(j)&&j!==i&&arr[j]){ [arr[i],arr[j]]=[arr[j],arr[i]]; setBlockTiles(ch,blk,arr); S.T.tileSlot=null; } else S.T.tileSlot=j===i?null:i; render(); } break;
     case "tileDel": if(ch){ const arr=blockTiles(ch,t.dataset.blk); arr[+t.dataset.i]=""; setBlockTiles(ch,t.dataset.blk,arr); S.T.tileSlot=null; render(); } break;
     case "tileReset": if(ch){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles); delete ch.layout.tiles[t.dataset.blk]; touch(S.cur); S.T.tileSlot=null; render(); } break;
     case "blkCreate": if(ch){ const list=customCopy(ch); if(list.length>=20) break; const id="c_"+Math.random().toString(36).slice(2,10);
-      list.push({id,name:"Mon bloc "+(list.length+1),r:Math.min(4,Math.max(1,+t.dataset.r)),c:Math.min(4,Math.max(1,+t.dataset.c)),tiles:[]}); saveCustom(ch,list); saveTableOrder(ch,tableOrder(ch)); S.T.pop="tiles:"+id; render(); } break;
-    case "ctileAdd": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v); if(b&&customUsed(b)<b.r*b.c&&!b.tiles.some(x=>x.id===t.dataset.t)){ b.tiles.push({id:t.dataset.t,sz:"1"}); saveCustom(ch,list); } render(); } break;
-    case "ctileDel": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v); if(b){ b.tiles.splice(+t.dataset.i,1); saveCustom(ch,list); } render(); } break;
-    case "ctileMove": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v), i=+t.dataset.i, j=i+(+t.dataset.d); if(b&&j>=0&&j<b.tiles.length){ [b.tiles[i],b.tiles[j]]=[b.tiles[j],b.tiles[i]]; saveCustom(ch,list); } render(); } break;
-    case "ctileSize": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v), tl=b&&b.tiles[+t.dataset.i]; if(tl){ const old=tl.sz; tl.sz=t.dataset.z; if(customUsed(b)>b.r*b.c){ tl.sz=old; setBanner("Pas assez de place dans ce bloc pour agrandir la tuile."); } else saveCustom(ch,list); } render(); } break;
+      list.push({id,name:"Mon bloc "+(list.length+1),r:Math.min(4,Math.max(1,+t.dataset.r)),c:Math.min(4,Math.max(1,+t.dataset.c)),tiles:[]}); saveCustom(ch,list); saveTableOrder(ch,tableOrder(ch)); S.T.tileSlot=null; S.T.ctile=null; S.T.pop="tiles:"+id; render(); } break;
+    case "ctileAdd": if(ch){ const id=t.dataset.v, b=customBlocks(ch).find(x=>x.id===id); if(b){ const {occ}=cGrid(b), cells=occ.flat(), sel=S.T.tileSlot, n=Number.isInteger(sel)&&cells[sel]<0?sel:cells.indexOf(-1);
+        if(n<0) setBanner("Bloc plein : retire d’abord une tuile."); else if(cUpdate(ch,id,bb=>cMove(bb,{id:t.dataset.t},{r:Math.floor(n/b.c),c:n%b.c}))){ S.T.tileSlot=null; S.T.ctile=null; } } render(); } break;
+    case "ctileSel": { const i=+t.dataset.i; S.T.ctile=S.T.ctile===i?null:i; S.T.tileSlot=null; render(); } break; // toucher une tuile la sélectionne (tailles, retirer, puis case libre pour la déplacer)
+    case "ctileCell": { const n=+t.dataset.cell, j=S.T.ctile; // une tuile sélectionnée puis une case libre : déplacer
+      if(ch&&Number.isInteger(j)){ const b=customBlocks(ch).find(x=>x.id===t.dataset.v);
+        if(b&&cUpdate(ch,b.id,bb=>cMove(bb,{i:j},{r:Math.floor(n/b.c),c:n%b.c}))) S.T.ctile=null; else setBanner("Pas la place ici."); S.T.tileSlot=null; }
+      else S.T.tileSlot=S.T.tileSlot===n?null:n; render(); } break;
+    case "ctileDel": if(ch){ cUpdate(ch,t.dataset.v,b=>{ const l=cGrid(b).tiles; l.splice(+t.dataset.i,1); return l; }); S.T.ctile=null; render(); } break;
+    case "ctileSize": if(ch){ if(!cUpdate(ch,t.dataset.v,b=>cResize(b,+t.dataset.i,t.dataset.z))) setBanner("Pas assez de place dans ce bloc pour agrandir la tuile ici."); render(); } break;
     case "cblkDel": S.T.cdel=t.dataset.v; render(); break;
     case "cblkDelNo": S.T.cdel=null; render(); break;
     case "cblkDelYes": if(ch){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==t.dataset.v)); saveTableOrder(ch,tableOrder(ch)); S.T.cdel=null; S.T.pop=null; render(); } break;
@@ -139,7 +144,7 @@ document.addEventListener("click",e=>{
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
     case "restLong": applyRest("long"); S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": applyRest("court"); S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
-    case "tpop": S.T.eqSlot=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
+    case "tpop": S.T.eqSlot=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
     case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="card") S.T.q=""; S.T.pop=null; render(); } break;
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
@@ -457,6 +462,12 @@ document.addEventListener("pointercancel",blkDragEnd);
 
 /* ---------- Personnaliser : glisser les tuiles (réserve → case, case → case, case → hors du bloc) ; départ dès que le doigt bouge ---------- */
 let TDG=null, tdgEnd=0;
+/* Case (ligne, colonne) d'une grille sous le pointeur, d'après ses pistes (une tuile de 2×2 peut ainsi glisser d'une case). */
+function gridCellAt(g,x,y){ const cs=getComputedStyle(g), b=g.getBoundingClientRect(), R=+g.dataset.r, C=+g.dataset.c;
+  if(x<b.left||x>b.right||y<b.top||y>b.bottom) return null;
+  const pick=(sizes,gap,v)=>{ let k=0; for(;k<sizes.length-1&&v>sizes[k]+gap/2;k++) v-=sizes[k]+gap; return k; };
+  const rows=cs.gridTemplateRows.split(" ").map(parseFloat), cols=cs.gridTemplateColumns.split(" ").map(parseFloat);
+  return {r:Math.min(R-1,pick(rows,parseFloat(cs.rowGap)||0,y-b.top)),c:Math.min(C-1,pick(cols,parseFloat(cs.columnGap)||0,x-b.left))}; }
 function tdgTarget(x,y){ const t=document.elementFromPoint(x,y); if(!t||!t.closest(".tpop")) return {out:true};
   const c=t.closest("[data-tslot]"); if(c) return {slot:+c.dataset.tslot,el:c}; const r=t.closest("[data-tres]"); return r?{res:true,el:r}:{out:true}; }
 function tdgMove(x,y){ if(!TDG) return; const g=TDG.ghost; if(g){ g.style.left=(TDG.touch?x-TDG.gw/2:x-TDG.dx)+"px"; g.style.top=(TDG.touch?y-TDG.gh-14:y-TDG.dy)+"px"; }
@@ -464,13 +475,19 @@ function tdgMove(x,y){ if(!TDG) return; const g=TDG.ghost; if(g){ g.style.left=(
   if(d.el&&(d.slot!==undefined||TDG.cell!==undefined)) d.el.classList.add("tover"); }
 function tdgStop(drop){ const D0=TDG; TDG=null; if(!D0||!D0.active) return; tdgEnd=Date.now();
   D0.ghost.remove(); document.body.classList.remove("tdragging"); document.querySelectorAll(".tover,.tdsrc").forEach(e=>e.classList.remove("tover","tdsrc"));
-  const ch=cur(); if(!drop||!ch) { render(); return; } const d=tdgTarget(drop.x,drop.y), arr=blockTiles(ch,D0.blk);
+  const ch=cur(); if(!drop||!ch) { render(); return; }
+  if(D0.cblk){ const g=document.querySelector(`.tpop [data-cgrid="${D0.cblk}"]`), cell=g&&gridCellAt(g,drop.x,drop.y), d=tdgTarget(drop.x,drop.y), src=D0.ctile!==undefined?{i:D0.ctile}:{id:D0.id};
+    if(cell){ if(!cUpdate(ch,D0.cblk,b=>cMove(b,src,cell))) setBanner("Pas la place ici."); }
+    else if(D0.ctile!==undefined&&(d.res||d.out)) cUpdate(ch,D0.cblk,b=>{ const l=cGrid(b).tiles; l.splice(D0.ctile,1); return l; });
+    S.T.ctile=null; S.T.tileSlot=null; render(); return; }
+  const d=tdgTarget(drop.x,drop.y), arr=blockTiles(ch,D0.blk);
   if(d.slot!==undefined){ if(D0.cell!==undefined){ if(d.slot!==D0.cell) [arr[d.slot],arr[D0.cell]]=[arr[D0.cell],arr[d.slot]]; } else arr[d.slot]=D0.id; }
   else if(D0.cell!==undefined) arr[D0.cell]=""; else { render(); return; }
   setBlockTiles(ch,D0.blk,arr); S.T.tileSlot=null; render(); }
 document.addEventListener("pointerdown",e=>{
+  tdgEnd=0; // un nouvel appui est un vrai toucher : ne plus bloquer le clic
   const el=e.target.closest&&e.target.closest(".tpop [data-tdrag]"); if(!el||(e.pointerType==="mouse"&&e.button!==0)) return;
-  tdgEnd=0; TDG={el,blk:el.dataset.blk,cell:el.dataset.tdrag==="cell"?+el.dataset.i:undefined,id:el.dataset.v,x0:e.clientX,y0:e.clientY,touch:e.pointerType!=="mouse",pid:e.pointerId,active:false};
+  TDG={el,blk:el.dataset.blk,cblk:el.dataset.cblk,ctile:el.dataset.tdrag==="ctile"?+el.dataset.i:undefined,cell:el.dataset.tdrag==="cell"||el.dataset.tdrag==="ctile"?+el.dataset.i:undefined,id:el.dataset.tdrag==="cres"?el.dataset.t:el.dataset.v,x0:e.clientX,y0:e.clientY,touch:e.pointerType!=="mouse",pid:e.pointerId,active:false};
 });
 document.addEventListener("pointermove",e=>{ if(!TDG||e.pointerId!==TDG.pid) return;
   if(!TDG.active){ if(Math.hypot(e.clientX-TDG.x0,e.clientY-TDG.y0)<=6) return;

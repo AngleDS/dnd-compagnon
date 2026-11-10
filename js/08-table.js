@@ -395,7 +395,8 @@ const PEN_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9
 const tbHead=(blk,label)=>`<div class="tbhead"><span class="label">${esc(label)}</span><button class="tbpen" data-act="tpop" data-v="tiles:${blk}" aria-label="Personnaliser les tuiles : ${esc(label)}" title="Personnaliser les tuiles">${PEN_SVG}</button></div>`;
 /* Visuel réduit d'une tuile (popup Personnaliser) : l'icône des Raccourcis ou la valeur des Repères. */
 function tileFace(ch,D,blk,id){
-  if(blk==="raccourcis"){ const h=racTileMap(ch,D)[id]?.()||""; return (h.match(/<svg[\s\S]*?<\/svg>/)||[""])[0]; }
+  if(id==="slots") return `<svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="18" cy="12" r="3"/></svg>`;
+  if(TILE_CAT.raccourcis[id]){ const h=racTileMap(ch,D)[id]?.()||""; return (h.match(/<svg[\s\S]*?<\/svg>/)||[""])[0]; }
   const size=String(ch.size||(srd("species",ch.species)||hb(ch.species))?.size||"—");
   const h=repTileMap(ch,D,size)[id]?.()||"", m=h.match(/<b class="num">([\s\S]*?)<\/b>/); return m?`<b class="num">${m[1]}</b>`:"";
 }
@@ -437,25 +438,60 @@ function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourc
 function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4):[]; }
 function customCopy(ch){ return customBlocks(ch).map(b=>Object.assign({},b,{tiles:(Array.isArray(b.tiles)?b.tiles:[]).map(t=>Object.assign({},t))})); }
 function saveCustom(ch,list){ ch.layout=Object.assign({},ch.layout,{custom:list}); touch(S.cur); }
-const tileCells=(sz,c)=>sz==="l"?c:(sz==="2"&&c>=2?4:1);
-const customUsed=b=>(b.tiles||[]).reduce((n,t)=>n+tileCells(t.sz,b.c),0);
+/* Position exacte des tuiles : {id,sz,r,c} (ligne et colonne de la case en haut à gauche). Taille : [hauteur, largeur] en cases. */
+const tileSpan=(sz,R,C)=>sz==="l"?[1,C]:(sz==="2"&&R>=2&&C>=2?[2,2]:[1,1]);
+const tilesHit=(a,b,R,C)=>{ const [ha,wa]=tileSpan(a.sz,R,C),[hb,wb]=tileSpan(b.sz,R,C); return a.r<b.r+hb&&b.r<a.r+ha&&a.c<b.c+wb&&b.c<a.c+wa; };
+/* Tuiles posées d'un bloc : les positions enregistrées d'abord, puis (anciens blocs v128 ou position invalide) au premier trou, dans l'ordre ; une tuile sans place est écartée. */
+function cGrid(b){ const R=b.r,C=b.c, out=[], seen=new Set();
+  const fits=t=>{ const [h,w]=tileSpan(t.sz,R,C); return t.r>=0&&t.c>=0&&t.r+h<=R&&t.c+w<=C&&!out.some(o=>tilesHit(o,t,R,C)); };
+  const src=(Array.isArray(b.tiles)?b.tiles:[]).filter(t=>t&&typeof t.id==="string"&&!seen.has(t.id)&&seen.add(t.id)).map(t=>({id:t.id,sz:["1","2","l"].includes(t.sz)?t.sz:"1",r:t.r,c:t.c}));
+  src.forEach(t=>{ if(t.sz==="l") t.c=0; if(Number.isInteger(t.r)&&Number.isInteger(t.c)&&fits(t)){ out.push(t); t.ok=1; } });
+  src.forEach(t=>{ if(t.ok) return; for(let r=0;r<R;r++) for(let c=0;c<C;c++){ const n={id:t.id,sz:t.sz,r,c}; if(fits(n)){ out.push(n); return; } } });
+  const occ=Array.from({length:R},()=>Array(C).fill(-1));
+  out.forEach((t,k)=>{ const [h,w]=tileSpan(t.sz,R,C); for(let i=t.r;i<t.r+h;i++) for(let j=t.c;j<t.c+w;j++) occ[i][j]=k; });
+  return {tiles:out,occ}; }
+/* Poser une tuile (src {i} déjà posée ou {id} venue de la réserve) sur la case {r,c} ; renvoie la nouvelle liste, ou null s'il n'y a pas la place.
+   Une tuile de la réserve remplace ce qu'elle recouvre ; une tuile déplacée sur une autre l'échange si l'autre tient à son ancienne place. */
+function cMove(b,src,dst){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.assign({},t)); let t, old=null;
+  if(src.id!==undefined){ if(list.some(x=>x.id===src.id)) return null; t={id:src.id,sz:"1"}; } else { t=list[src.i]; if(!t) return null; old={r:t.r,c:t.c}; list.splice(src.i,1); }
+  const [h,w]=tileSpan(t.sz,R,C); t=Object.assign({},t,{r:Math.max(0,Math.min(dst.r,R-h)),c:t.sz==="l"?0:Math.max(0,Math.min(dst.c,C-w))});
+  const conf=list.filter(x=>tilesHit(x,t,R,C));
+  if(conf.length){
+    if(!old) conf.forEach(x=>list.splice(list.indexOf(x),1));
+    else if(conf.length===1){ const x=conf[0], [hx,wx]=tileSpan(x.sz,R,C), nx=Object.assign({},x,{r:Math.min(old.r,R-hx),c:x.sz==="l"?0:Math.min(old.c,C-wx)});
+      if(tilesHit(nx,t,R,C)||list.some(y=>y!==x&&tilesHit(nx,y,R,C))) return null; Object.assign(x,nx); }
+    else return null; }
+  if(old) list.splice(src.i,0,t); else list.push(t); return list; }
+function cResize(b,i,sz){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.assign({},t)), t=list[i]; if(!t) return null;
+  const [h,w]=tileSpan(sz,R,C), n=Object.assign({},t,{sz,r:Math.min(t.r,R-h),c:sz==="l"?0:Math.min(t.c,C-w)});
+  if(list.some((y,k)=>k!==i&&tilesHit(n,y,R,C))) return null; list[i]=n; return list; }
+function cUpdate(ch,id,fn){ const list=customCopy(ch), b=list.find(x=>x.id===id); if(!b) return false; const tiles=fn(b); if(!tiles) return false;
+  b.tiles=tiles.map(t=>({id:t.id,sz:t.sz||"1",r:t.r,c:t.c})); saveCustom(ch,list); return true; }
+const cellStyle=(t,R,C)=>{ const [h,w]=tileSpan(t.sz,R,C); return `grid-row:${t.r+1}/span ${h};grid-column:${t.c+1}/span ${w}`; };
 function customBlockHtml(ch,D,b,ctx){
-  const R=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), cap=b.r*b.c;
-  const one=(t,i)=>{ let h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:((T[t.id]&&T[t.id]())||(R[t.id]&&R[t.id]())||"");
-    if(!h) h=plusTile(b.id,i,"rtile vide");
-    return `<div class="ccell" style="${t.sz==="l"?"grid-column:1/-1":t.sz==="2"&&b.c>=2?"grid-column:span 2;grid-row:span 2":""}">${h}</div>`; };
-  let html=(b.tiles||[]).map(one).join(""); for(let k=customUsed(b);k<cap;k++) html+=`<div class="ccell">${plusTile(b.id,k,"rtile vide")}</div>`;
-  return `${tbHead(b.id,b.name)}<div class="cgrid" style="grid-template-columns:repeat(${b.c},minmax(0,1fr))">${html}</div>`;
+  const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b);
+  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||"");
+    return h?`<div class="ccell" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
+  let html=tiles.map(one).join("");
+  occ.forEach((row,r)=>row.forEach((k,c)=>{ if(k<0) html+=`<div class="ccell" style="grid-row:${r+1};grid-column:${c+1}">${plusTile(b.id,r*b.c+c,"rtile vide")}</div>`; }));
+  return `${tbHead(b.id,b.name)}<div class="cgrid" style="grid-template-columns:repeat(${b.c},minmax(0,1fr));grid-template-rows:repeat(${b.r},minmax(68px,auto))">${html}</div>`;
 }
 function customPop(ch,D,id,wrap){
   const b=customBlocks(ch).find(x=>x.id===id); if(!b){ S.T.pop=null; return ""; }
-  const cat=customCat(), cap=b.r*b.c, used=customUsed(b), tiles=b.tiles||[];
-  const rows=tiles.map((t,i)=>`<div class="cpick"><span class="num muted">${i+1}</span><b>${esc(cat[t.id]||t.id)}</b><span class="row" style="gap:4px">${[["1","1×1"],["2","2×2"],["l","Ligne"]].filter(([z])=>z!=="2"||b.c>=2).map(([z,l])=>`<button class="chip" aria-pressed="${(t.sz||"1")===z}" data-act="ctileSize" data-v="${id}" data-i="${i}" data-z="${z}">${l}</button>`).join("")}</span><span class="row" style="gap:2px"><button class="btn small ghost" data-act="ctileMove" data-v="${id}" data-i="${i}" data-d="-1" aria-label="Monter" ${i?"":"disabled"}>↑</button><button class="btn small ghost" data-act="ctileMove" data-v="${id}" data-i="${i}" data-d="1" aria-label="Descendre" ${i<tiles.length-1?"":"disabled"}>↓</button><button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${i}" aria-label="Retirer la tuile">×</button></span></div>`).join("")||`<div class="muted">Aucune tuile pour l’instant.</div>`;
-  const add=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&(x==="slots"?!!D.cast:tileAvailable(ch,"reperes",x))).map(x=>`<button class="chip" data-act="ctileAdd" data-v="${id}" data-t="${x}" ${used>=cap?"disabled":""}>+ ${esc(cat[x])}</button>`).join("");
+  const cat=customCat(), {tiles,occ}=cGrid(b), R=b.r, C=b.c, selT=Number.isInteger(S.T.ctile)&&tiles[S.T.ctile]?S.T.ctile:-1, selC=Number.isInteger(S.T.tileSlot)?S.T.tileSlot:-1;
+  const face=x=>`<span class="tface">${tileFace(ch,D,"",x)}</span><span class="tname">${esc(cat[x]||x)}</span>`;
+  let cells=tiles.map((t,i)=>`<button class="tcell${selT===i?" on":""}" style="${cellStyle(t,R,C)}" data-act="ctileSel" data-v="${id}" data-i="${i}" data-tslot="" data-tdrag="ctile" data-cblk="${id}" aria-pressed="${selT===i}" aria-label="${esc(cat[t.id]||t.id)}">${face(t.id)}</button>`).join("");
+  occ.forEach((row,r)=>row.forEach((k,c)=>{ const n=r*C+c; if(k<0) cells+=`<button class="tcell libre${selC===n?" on":""}" style="grid-row:${r+1};grid-column:${c+1}" data-act="ctileCell" data-v="${id}" data-cell="${n}" data-tslot="" aria-pressed="${selC===n}" aria-label="Case libre, ligne ${r+1}, colonne ${c+1}">+</button>`; }));
+  const free=occ.flat().some(k=>k<0);
+  const unused=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&(x==="slots"?!!D.cast:tileAvailable(ch,"reperes",x)));
+  const res=unused.length?unused.map(x=>`<button class="tcell tmini" data-act="ctileAdd" data-v="${id}" data-t="${x}" data-tdrag="cres" data-cblk="${id}" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
+  const t=tiles[selT], sizes=t?[["1","1×1"],["2","2×2"],["l","Ligne"]].filter(([z])=>z!=="2"||(R>=2&&C>=2)).filter(([z])=>z!=="l"||C>1):[];
+  const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
   const del=S.T.cdel===id?`<span class="row" style="gap:6px"><span>Supprimer ce bloc ?</span><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span>`:`<button class="btn small ghost" data-act="cblkDel" data-v="${id}">Supprimer le bloc</button>`;
   return wrap("Personnaliser : "+b.name,`<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
-    <div class="muted" style="font-size:var(--fs-sm);margin:8px 0">Bloc ${b.r}×${b.c} · ${used}/${cap} cases occupées</div><div class="tpicks">${rows}</div>
-    <div class="label" style="margin:14px 0 6px">Ajouter une tuile${used>=cap?" (bloc plein)":""}</div><div class="row" style="flex-wrap:wrap;gap:6px">${add}</div>
+    <div class="muted" style="font-size:var(--fs-sm);margin:10px 0">Glisse une tuile de la réserve vers une case, ou d’une case à l’autre ; hors du bloc pour la retirer. Touche une tuile posée pour changer sa taille.</div>
+    <div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},minmax(60px,auto))">${cells}</div>${selBar}
+    <div class="label" style="margin:14px 0 6px">Réserve${!free&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${id}">${res}</div>
     <div class="row" style="justify-content:flex-end;margin-top:14px">${del}</div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
