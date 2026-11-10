@@ -1,0 +1,1100 @@
+{
+  "feats": [
+    {
+      "s": "adepte-elementaire",
+      "n": "Adepte élémentaire",
+      "vo": "Elemental Adept",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, capacité Sorts ou Magie de pacte",
+      "rep": true,
+      "br": false
+    },
+    {
+      "s": "affinite-feerique",
+      "n": "Affinité féerique",
+      "vo": "Fey-Touched",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "affinite-ombreuse",
+      "n": "Affinité ombreuse",
+      "vo": "Shadow-Touched",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "arme-de-lancer",
+      "n": "Arme de lancer",
+      "vo": "Thrown Weapon Fighting",
+      "cat": "Don de Style de combat",
+      "pre": "Capacité Style de combat",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "athlete",
+      "n": "Athlète",
+      "vo": "Athlete",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Force ou Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "bagarreur-de-tavernes",
+      "n": "Bagarreur de tavernes",
+      "vo": "Tavern Brawler",
+      "cat": "Don d'origines",
+      "pre": "-",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "broyeur",
+      "n": "Broyeur",
+      "vo": "Crusher",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "chanceux",
+      "n": "Chanceux",
+      "vo": "Lucky",
+      "cat": "Don d'origines",
+      "pre": "-",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "chef-cuisinier",
+      "n": "Chef cuisinier",
+      "vo": "Chef",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "combat-a-mains-nues",
+      "n": "Combat à mains nues",
+      "vo": "Unarmed Fighting",
+      "cat": "Don de Style de combat",
+      "pre": "Capacité Style de combat",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "combat-en-aveugle",
+      "n": "Combat en aveugle",
+      "vo": "Blind Fighting",
+      "cat": "Don de Style de combat",
+      "pre": "Capacité Style de combat",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "combattant-a-deux-armes",
+      "n": "Combattant à deux armes",
+      "vo": "Dual Wielder",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Force ou Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "combattant-monte",
+      "n": "Combattant monté",
+      "vo": "Mounted Combatant",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "comedien",
+      "n": "Comédien",
+      "vo": "Actor",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Charisme 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "discret",
+      "n": "Discret",
+      "vo": "Skulker",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "duel",
+      "n": "Duel",
+      "vo": "Dueling",
+      "cat": "Don de Style de combat",
+      "pre": "Capacité Style de combat",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "duelliste-defensif",
+      "n": "Duelliste défensif",
+      "vo": "Defensive Duelist",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "empaleur-perforateur",
+      "n": "Empaleur|Perforateur",
+      "vo": "Piercer",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "empoisonneur",
+      "n": "Empoisonneur",
+      "vo": "Poisoner",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "esprit-affute",
+      "n": "Esprit affûté",
+      "vo": "Keen Mind",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Intelligence 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "expert",
+      "n": "Expert",
+      "vo": "Skill Expert",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "expert-de-la-charge",
+      "n": "Expert de la charge",
+      "vo": "Charger",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Force ou Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "faconneur",
+      "n": "Façonneur",
+      "vo": "Crafter",
+      "cat": "Don d'origines",
+      "pre": "-",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "faveur-de-competence",
+      "n": "Faveur de compétence",
+      "vo": "Boon of Skill",
+      "cat": "Don de faveur épique",
+      "pre": "Niveau 19 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "faveur-de-recuperation",
+      "n": "Faveur de récupération",
+      "vo": "Boon of Recovery",
+      "cat": "Don de faveur épique",
+      "pre": "Niveau 19 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "faveur-de-resistance-aux-energies",
+      "n": "Faveur de résistance aux énergies",
+      "vo": "Boon of Energy Resistance",
+      "cat": "Don de faveur épique",
+      "pre": "Niveau 19 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "faveur-de-vigueur",
+      "n": "Faveur de vigueur",
+      "vo": "Boon of Fortitude",
+      "cat": "Don de faveur épique",
+      "pre": "Niveau 19 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "faveur-de-vitesse",
+      "n": "Faveur de vitesse",
+      "vo": "Boon of Speed",
+      "cat": "Don de faveur épique",
+      "pre": "Niveau 19 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "figure-de-proue",
+      "n": "Figure de proue",
+      "vo": "Inspiring Leader",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Sagesse ou Charisme 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "formation-aux-armes-de-guerre",
+      "n": "Formation aux armes de guerre",
+      "vo": "Martial Weapon Training",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "gaillard",
+      "n": "Gaillard",
+      "vo": "Durable",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "guerisseur",
+      "n": "Guérisseur",
+      "vo": "Healer",
+      "cat": "Don d'origines",
+      "pre": "-",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "incantateur-d-elite",
+      "n": "Incantateur d'élite",
+      "vo": "Spell Sniper",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, capacité Sorts ou Magie de pacte",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "interception",
+      "n": "Interception",
+      "vo": "Interception",
+      "cat": "Don de Style de combat",
+      "pre": "Capacité Style de combat",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "mage-de-guerre",
+      "n": "Mage de guerre",
+      "vo": "War Caster",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, capacité Sorts ou Magie de pacte",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "magie-rituelle",
+      "n": "Magie rituelle",
+      "vo": "Ritual Caster",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Intelligence, Sagesse ou Charisme 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "maitre-d-armes",
+      "n": "Maître d'armes",
+      "vo": "Weapon Master",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "maitre-d-hast",
+      "n": "Maître d'hast",
+      "vo": "Polearm Master",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Force ou Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "maitre-des-armes-lourdes-cogneur-lourd",
+      "n": "Maître des armes lourdes|Cogneur lourd",
+      "vo": "Great Weapon Master",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Force 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "maitre-des-armures-intermediaires",
+      "n": "Maître des armures intermédiaires",
+      "vo": "Medium Armor Master",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, formation aux armures intermédiaires",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "maitre-des-armures-lourdes",
+      "n": "Maître des armures lourdes",
+      "vo": "Heavy Armor Master",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, formation aux armures lourdes",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "maitre-des-boucliers",
+      "n": "Maître des boucliers",
+      "vo": "Shield Master",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, formation aux boucliers",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "maitre-arbaletrier",
+      "n": "Maître-arbalétrier",
+      "vo": "Crossbow Expert",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "mobile",
+      "n": "Mobile",
+      "vo": "Speedy",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Dextérité ou Constitution 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "musicien",
+      "n": "Musicien",
+      "vo": "Musician",
+      "cat": "Don d'origines",
+      "pre": "-",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "observateur",
+      "n": "Observateur",
+      "vo": "Observant",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Intelligence ou Sagesse 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "protection",
+      "n": "Protection",
+      "vo": "Protection",
+      "cat": "Don de Style de combat",
+      "pre": "Capacité Style de combat",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "protection-intermediaire",
+      "n": "Protection intermédiaire",
+      "vo": "Moderately Armored",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, formation aux armures légères",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "protection-legere",
+      "n": "Protection légère",
+      "vo": "Lightly Armored",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "protection-lourde",
+      "n": "Protection lourde",
+      "vo": "Heavily Armored",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, formation aux armures intermédiaires",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "resilient",
+      "n": "Résilient",
+      "vo": "Resilient",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "robuste",
+      "n": "Robuste",
+      "vo": "Tough",
+      "cat": "Don d'origines",
+      "pre": "-",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "sentinelle",
+      "n": "Sentinelle",
+      "vo": "Sentinel",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Force ou Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "telekinesiste",
+      "n": "Télékinésiste",
+      "vo": "Telekinetic",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "telepathe",
+      "n": "Télépathe",
+      "vo": "Telepathic",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "tireur-d-elite",
+      "n": "Tireur d'élite",
+      "vo": "Sharpshooter",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur, Dextérité 13 ou plus",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "trancheur",
+      "n": "Trancheur",
+      "vo": "Slasher",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    },
+    {
+      "s": "tueur-de-mages",
+      "n": "Tueur de mages",
+      "vo": "Mage Slayer",
+      "cat": "Don général",
+      "pre": "Niveau 4 ou supérieur",
+      "rep": false,
+      "br": false
+    }
+  ],
+  "spells": [
+    {
+      "s": "amis-faux-amis",
+      "n": "Amis|Faux amis",
+      "vo": "Friends",
+      "lv": 0,
+      "ec": "Enchantement",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Barde, Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "arme-elementaire",
+      "n": "Arme élémentaire",
+      "vo": "Elemental Weapon",
+      "lv": 3,
+      "ec": "Transmutation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Druide, Paladin, Rôdeur"
+    },
+    {
+      "s": "armure-d-agathys",
+      "n": "Armure d'Agathys",
+      "vo": "Armor of Agathys",
+      "lv": 1,
+      "ec": "Abjuration",
+      "ct": "Action bonus",
+      "c": false,
+      "ri": false,
+      "cl": "Occultiste"
+    },
+    {
+      "s": "aura-de-purete",
+      "n": "Aura de pureté",
+      "vo": "Aura of Purity",
+      "lv": 4,
+      "ec": "Abjuration",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Clerc, Paladin"
+    },
+    {
+      "s": "aura-de-vitalite",
+      "n": "Aura de vitalité",
+      "vo": "Aura of Vitality",
+      "lv": 3,
+      "ec": "Abjuration",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Clerc, Druide, Paladin"
+    },
+    {
+      "s": "aura-du-croise",
+      "n": "Aura du croisé",
+      "vo": "Crusader's Mantle",
+      "lv": 3,
+      "ec": "Évocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Paladin"
+    },
+    {
+      "s": "cercle-de-pouvoir",
+      "n": "Cercle de pouvoir",
+      "vo": "Circle of Power",
+      "lv": 5,
+      "ec": "Abjuration",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Clerc, Paladin, Magicien"
+    },
+    {
+      "s": "chatiment-de-cecite",
+      "n": "Châtiment de cécité",
+      "vo": "Blinding Smite",
+      "lv": 3,
+      "ec": "Évocation",
+      "ct": "Action bonus",
+      "c": false,
+      "ri": false,
+      "cl": "Paladin"
+    },
+    {
+      "s": "chatiment-de-courroux",
+      "n": "Châtiment de courroux",
+      "vo": "Wrathful Smite",
+      "lv": 1,
+      "ec": "Nécromancie",
+      "ct": "Action bonus",
+      "c": false,
+      "ri": false,
+      "cl": "Paladin"
+    },
+    {
+      "s": "chatiment-de-stupeur",
+      "n": "Châtiment de stupeur",
+      "vo": "Staggering Smite",
+      "lv": 4,
+      "ec": "Enchantement",
+      "ct": "Action bonus",
+      "c": false,
+      "ri": false,
+      "cl": "Paladin"
+    },
+    {
+      "s": "chatiment-de-tonnerre",
+      "n": "Châtiment de tonnerre",
+      "vo": "Thunderous Smite",
+      "lv": 1,
+      "ec": "Évocation",
+      "ct": "Action bonus",
+      "c": false,
+      "ri": false,
+      "cl": "Paladin"
+    },
+    {
+      "s": "chatiment-du-ban",
+      "n": "Châtiment du ban",
+      "vo": "Banishing Smite",
+      "lv": 5,
+      "ec": "Invocation",
+      "ct": "Action bonus",
+      "c": true,
+      "ri": false,
+      "cl": "Paladin"
+    },
+    {
+      "s": "chaudron-bouillonnant-de-tasha",
+      "n": "Chaudron bouillonnant de Tasha",
+      "vo": "Tasha's Bubbling Cauldron",
+      "lv": 6,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Occultiste, Magicien"
+    },
+    {
+      "s": "convocation-d-aberration",
+      "n": "Convocation d'aberration",
+      "vo": "Summon Aberration",
+      "lv": 4,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Occultiste, Magicien"
+    },
+    {
+      "s": "convocation-d-artificiel",
+      "n": "Convocation d'artificiel",
+      "vo": "Summon Construct",
+      "lv": 4,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Magicien"
+    },
+    {
+      "s": "convocation-d-elementaire",
+      "n": "Convocation d'élémentaire",
+      "vo": "Summon Elemental",
+      "lv": 4,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Druide, Rôdeur, Magicien"
+    },
+    {
+      "s": "convocation-de-bete",
+      "n": "Convocation de bête",
+      "vo": "Summon Beast",
+      "lv": 2,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Druide, Rôdeur"
+    },
+    {
+      "s": "convocation-de-celeste",
+      "n": "Convocation de céleste",
+      "vo": "Summon Celestial",
+      "lv": 5,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Clerc, Paladin"
+    },
+    {
+      "s": "convocation-de-fee",
+      "n": "Convocation de fée",
+      "vo": "Summon Fey",
+      "lv": 3,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Druide, Rôdeur, Occultiste, Magicien"
+    },
+    {
+      "s": "convocation-de-fielon",
+      "n": "Convocation de fiélon",
+      "vo": "Summon Fiend",
+      "lv": 6,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Occultiste, Magicien"
+    },
+    {
+      "s": "convocation-de-mort-vivant",
+      "n": "Convocation de mort-vivant",
+      "vo": "Summon Undead",
+      "lv": 3,
+      "ec": "Nécromancie",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Occultiste, Magicien"
+    },
+    {
+      "s": "cordon-de-fleches",
+      "n": "Cordon de flèches",
+      "vo": "Cordon of Arrows",
+      "lv": 2,
+      "ec": "Transmutation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Rôdeur"
+    },
+    {
+      "s": "coup-de-tonnerre",
+      "n": "Coup de tonnerre",
+      "vo": "Thunderclap",
+      "lv": 0,
+      "ec": "Évocation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Barde, Druide, Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "couronne-du-dement",
+      "n": "Couronne du dément",
+      "vo": "Crown of Madness",
+      "lv": 2,
+      "ec": "Enchantement",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Barde, Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "duel-force",
+      "n": "Duel forcé",
+      "vo": "Compelled Duel",
+      "lv": 1,
+      "ec": "Enchantement",
+      "ct": "Action bonus",
+      "c": true,
+      "ri": false,
+      "cl": "Paladin"
+    },
+    {
+      "s": "etat-cadaverique",
+      "n": "État cadavérique",
+      "vo": "Feign Death",
+      "lv": 3,
+      "ec": "Nécromancie",
+      "ct": "Action ou Rituel",
+      "c": false,
+      "ri": true,
+      "cl": "Barde, Clerc, Druide, Magicien"
+    },
+    {
+      "s": "fleche-de-foudre",
+      "n": "Flèche de foudre",
+      "vo": "Lightning Arrow",
+      "lv": 3,
+      "ec": "Transmutation",
+      "ct": "Action bonus",
+      "c": false,
+      "ri": false,
+      "cl": "Rôdeur"
+    },
+    {
+      "s": "fontaine-de-lune",
+      "n": "Fontaine de lune",
+      "vo": "Fount of Moonlight",
+      "lv": 4,
+      "ec": "Évocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Barde, Druide"
+    },
+    {
+      "s": "fouet-epineux",
+      "n": "Fouet épineux",
+      "vo": "Thorn Whip",
+      "lv": 0,
+      "ec": "Transmutation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Druide"
+    },
+    {
+      "s": "frappe-du-vent-d-acier",
+      "n": "Frappe du vent d'acier",
+      "vo": "Steel Wind Strike",
+      "lv": 5,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Rôdeur, Magicien"
+    },
+    {
+      "s": "glas",
+      "n": "Glas",
+      "vo": "Toll the Dead",
+      "lv": 0,
+      "ec": "Nécromancie",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Clerc, Occultiste, Magicien"
+    },
+    {
+      "s": "grele-d-epines",
+      "n": "Grêle d'épines",
+      "vo": "Hail of Thorns",
+      "lv": 1,
+      "ec": "Invocation",
+      "ct": "Action bonus",
+      "c": false,
+      "ri": false,
+      "cl": "Rôdeur"
+    },
+    {
+      "s": "invocation-de-projectiles-herissement",
+      "n": "Invocation de projectiles|Hérissement",
+      "vo": "Conjure Barrage",
+      "lv": 3,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Rôdeur"
+    },
+    {
+      "s": "invocation-de-volee",
+      "n": "Invocation de volée",
+      "vo": "Conjure Volley",
+      "lv": 5,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Rôdeur"
+    },
+    {
+      "s": "liane-avide",
+      "n": "Liane avide",
+      "vo": "Grasping Vine",
+      "lv": 4,
+      "ec": "Invocation",
+      "ct": "Action bonus",
+      "c": true,
+      "ri": false,
+      "cl": "Druide, Rôdeur"
+    },
+    {
+      "s": "mot-de-pouvoir-fortifiant",
+      "n": "Mot de pouvoir fortifiant",
+      "vo": "Power Word Fortify",
+      "lv": 7,
+      "ec": "Enchantement",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Barde, Clerc"
+    },
+    {
+      "s": "mot-de-radiance",
+      "n": "Mot de radiance",
+      "vo": "Word of Radiance",
+      "lv": 0,
+      "ec": "Évocation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Clerc"
+    },
+    {
+      "s": "nuee-de-dagues",
+      "n": "Nuée de dagues",
+      "vo": "Cloud of Daggers",
+      "lv": 2,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Barde, Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "perception-bestiale",
+      "n": "Perception bestiale",
+      "vo": "Beast Sense",
+      "lv": 2,
+      "ec": "Divination",
+      "ct": "Action ou Rituel",
+      "c": true,
+      "ri": true,
+      "cl": "Druide, Rôdeur"
+    },
+    {
+      "s": "perturbations-synaptiques",
+      "n": "Perturbations synaptiques",
+      "vo": "Synaptic Static",
+      "lv": 5,
+      "ec": "Enchantement",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Barde, Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "piqure-mentale",
+      "n": "Piqûre mentale",
+      "vo": "Mind Sliver",
+      "lv": 0,
+      "ec": "Enchantement",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "portail-arcanique",
+      "n": "Portail arcanique",
+      "vo": "Arcane Gate",
+      "lv": 6,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "presence-royale-de-yolane",
+      "n": "Présence royale de Yolane",
+      "vo": "Yolande's Regal Presence",
+      "lv": 5,
+      "ec": "Enchantement",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Barde, Magicien"
+    },
+    {
+      "s": "telepathie",
+      "n": "Télépathie",
+      "vo": "Telepathy",
+      "lv": 8,
+      "ec": "Divination",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Magicien"
+    },
+    {
+      "s": "tempete-radieuse-de-jallarzi",
+      "n": "Tempête radieuse de Jallarzi",
+      "vo": "Jallarzi's Storm of Radiance",
+      "lv": 5,
+      "ec": "Évocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Occultiste, Magicien"
+    },
+    {
+      "s": "tentacules-de-hadar",
+      "n": "Tentacules de Hadar",
+      "vo": "Arms of Hadar",
+      "lv": 1,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Occultiste"
+    },
+    {
+      "s": "trait-ensorcele",
+      "n": "Trait ensorcelé",
+      "vo": "Witch Bolt",
+      "lv": 1,
+      "ec": "Évocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "vague-destructrice",
+      "n": "Vague destructrice",
+      "vo": "Destructive Wave",
+      "lv": 5,
+      "ec": "Évocation",
+      "ct": "Action",
+      "c": false,
+      "ri": false,
+      "cl": "Paladin"
+    },
+    {
+      "s": "vif-carquois",
+      "n": "Vif carquois",
+      "vo": "Swift Quiver",
+      "lv": 5,
+      "ec": "Transmutation",
+      "ct": "Action bonus",
+      "c": true,
+      "ri": false,
+      "cl": "Rôdeur"
+    },
+    {
+      "s": "vigueur-arcanique",
+      "n": "Vigueur arcanique",
+      "vo": "Arcane Vigor",
+      "lv": 2,
+      "ec": "Abjuration",
+      "ct": "Action bonus",
+      "c": false,
+      "ri": false,
+      "cl": "Ensorceleur, Magicien"
+    },
+    {
+      "s": "voile-defensif",
+      "n": "Voile défensif",
+      "vo": "Blade Ward",
+      "lv": 0,
+      "ec": "Abjuration",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Barde, Ensorceleur, Occultiste, Magicien"
+    },
+    {
+      "s": "voracite-de-hadar",
+      "n": "Voracité de Hadar",
+      "vo": "Hunger of Hadar",
+      "lv": 3,
+      "ec": "Invocation",
+      "ct": "Action",
+      "c": true,
+      "ri": false,
+      "cl": "Occultiste"
+    }
+  ]
+}

@@ -1,0 +1,795 @@
+// Batterie de tests de l'appli D&D Compagnon (Playwright, fichier autonome local).
+// Usage : node tests/run.js [chemin/vers/dnd-compagnon.html]   (par défaut dist/dnd-compagnon.html)
+// Aucune donnée réelle : les persos sont créés pendant les tests ; Claude et le navigateur de l'app sont simulés.
+const path = require('path');
+const fs = require('fs');
+const { chromium } = require('playwright');
+const FILE = path.resolve(process.argv[2] || path.join(__dirname, '..', 'dist', 'dnd-compagnon.html'));
+const HTML_SOURCE = fs.readFileSync(FILE, 'utf8');
+ 
+const results = [];
+async function test(name, fn) {
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1200, height: 900 } }); const p = await ctx.newPage(); p.setDefaultTimeout(8000);
+  const errors = []; p.on('pageerror', e => errors.push(e.message));
+  await p.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+  try { await fn(p, errors); if (errors.length) throw new Error('Erreur JS : ' + errors.join(' | ')); results.push([name, true]); console.log('✓', name); }
+  catch (e) { results.push([name, false]); console.log('✗', name, '\n   ', e.message); }
+  finally { await b.close(); }
+}
+function ok(cond, msg) { if (!cond) throw new Error(msg); }
+function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg} : obtenu ${JSON.stringify(a)}, attendu ${JSON.stringify(b)}`); }
+ 
+// Simulation de window.claude.use : sample (réponses JSON) et, si demandé, le navigateur de l'app (host:claude_browser).
+async function open(p, o = {}) {
+  await p.addInitScript(o => {
+    if (o.noClaude) return;
+    const reply = () => JSON.parse(JSON.stringify(o.json || { found: true, summary: 'Résumé de test.', book: 'Manuel des joueurs (2024)', abilities: [], skills: [], pages: [] }));
+    const sample = async () => ({ text: '{}' }); sample.json = async () => reply();
+    const txt = t => ({ content: [{ type: 'text', text: t }], payload: t });
+    const mcp = o.mcp ? { callTool: async (s, t, i) => { (window.__calls = window.__calls || []).push([t, i]);
+      if (t === 'preview_start') return o.ps || txt('Opened ' + i.url + ' in the browser pane (tabId seed). Read the page to see the result.');
+      if (t === 'get_page_text') return txt('Title: Page\n' + 'texte '.repeat(200));
+      if (t === 'tabs_close' && o.closeFails) throw { code: 'tool_error', message: 'refus' };
+      return txt('Closed'); } } : null;
+    window.claude = { use: async n => n === 'sample' ? (o.noSample ? null : sample) : n === 'mcp' ? mcp : null };
+  }, o);
+  await p.goto('file://' + FILE); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.CAT);
+}
+const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'Test' }, w);
+  for (const k of ['bg', 'sp', 'feat', 'cls']) if (W[k]) W[k] = catRes(W[k]); wCreate(); return S.cur; }, w);
+ 
+(async () => {
+  await test('Démarrage : SRD et catalogue chargés', async p => {
+    await open(p);
+    const r = await p.evaluate(() => ({ cls: S.C.classes.length, spells: S.C.spells.length, cat: S.CAT.length, ids: new Set(S.CAT.map(e => e.id)).size }));
+    eq(r.cls, 12, 'classes SRD'); ok(r.spells > 300, 'sorts SRD'); ok(r.cat > 400, 'catalogue'); eq(r.ids, r.cat, 'identifiants du catalogue uniques');
+  });
+
+  await test('Mode local pur : aucun besoin de Claude, catalogues SRD et hors SRD embarqués', async p => {
+    await open(p, { noClaude: true });
+    const r = await p.evaluate(() => ({
+      claude: typeof window.claude,
+      mode: S.mode,
+      srd: S.C.spells.length + S.C.classes.length + S.C.items.length,
+      cat: S.CAT.length,
+      embeddedSrd: document.getElementById('srd-data').textContent.length,
+      embeddedCat: document.getElementById('hb-cat').textContent.length,
+      platform: { ai: PLATFORM.hasAI, browser: PLATFORM.hasBrowser }
+    }));
+    eq(r.claude, 'undefined', 'API Claude absente'); eq(r.mode, 'local', 'mode local');
+    ok(r.srd > 300 && r.embeddedSrd > 500000, 'catalogue SRD embarqué');
+    ok(r.cat > 400 && r.embeddedCat > 50000, 'catalogue hors SRD embarqué');
+    eq(r.platform, { ai: false, browser: false }, 'capacités Claude désactivées proprement');
+  });
+
+  await test('HTML propre : une seule page, métadonnées uniques et aucun Cornelius caché', async p => {
+    await open(p, { noClaude: true });
+    const markup = HTML_SOURCE.replace(/<script\b[\s\S]*?<\/script>/gi, '');
+    const count = pattern => (markup.match(pattern) || []).length;
+    eq(count(/<!doctype html>/gi), 1, 'doctype');
+    const r = await p.evaluate(() => ({
+      html: document.querySelectorAll('html').length,
+      head: document.querySelectorAll('head').length,
+      lang: document.documentElement.lang,
+      charset: document.querySelectorAll('meta[charset]').length,
+      viewport: document.querySelectorAll('meta[name="viewport"]').length,
+      titleInHead: document.querySelector('head > title')?.textContent,
+      exampleState: Object.prototype.hasOwnProperty.call(S, 'example'),
+      exampleButton: !!document.querySelector('[data-act="loadExample"]')
+    }));
+    eq(r, { html: 1, head: 1, lang: 'fr', charset: 1, viewport: 1, titleInHead: 'D&D Compagnon', exampleState: false, exampleButton: false }, 'structure de la page');
+  });
+ 
+  await test('Calculs Occultiste (Cha 17, Con 15) aux niveaux 1, 5, 11, 17', async p => {
+    await open(p);
+    const r = await p.evaluate(() => [1, 5, 11, 17].map(L => { const D = derive({ type: 'perso', name: 'T', level: L, classId: 'occultiste', abilities: { for: 8, dex: 12, con: 15, int: 10, sag: 13, cha: 17 }, skills: {}, attacks: [], spells: [], feats: [], features: [], invocations: [], conditions: [] });
+      return [D.pb, D.hpMax, D.cast.pactSlots, D.cast.pactLevel, D.cast.dc]; }));
+    eq(r, [[2, 10, 1, 1, 13], [3, 38, 2, 3, 14], [4, 80, 3, 5, 15], [6, 122, 4, 5, 17]], 'maîtrise, PV, emplacements, niveau, DD');
+  });
+ 
+  await test('Assistant : choix du catalogue, relecture et validation', async p => {
+    await open(p);
+    await p.evaluate(() => { S.W = wNew(); S.W.cls = 'guerrier'; S.view = 'wizard'; S.W.step = 1; render(); });
+    await p.click('[data-act="wpick"][data-k="bg"][data-v="cat:bg-artisan"]');
+    const w = await p.evaluate(() => ({ feat: (hb(S.W.feat) || {}).name, bgSk: wBgSkills(S.W) }));
+    eq(w, { feat: 'Façonneur', bgSk: ['investigation', 'persuasion'] }, 'don et compétences de l’historique');
+    await p.evaluate(() => { const W = S.W; W.sp = catRes('cat:sp-aasimar'); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'Test' }); wCreate(); });
+    eq(await p.evaluate(() => S.rv.items.map(i => S.docs[i.id].name).sort()), ['Aasimar', 'Artisan', 'Façonneur'], 'éléments à relire');
+    await p.click('[data-act="rvGo"]'); await p.waitForFunction(() => S.rv && !S.rv.run && S.rv.items.every(i => i.state === 'ok'));
+    await p.click('[data-act="rvAll"]'); await p.click('[data-act="rvClose"]');
+    const d = await p.evaluate(() => ({ pending: hbs().filter(h => h.pending).length, art: hbs('historique').find(h => h.name === 'Artisan') }));
+    eq(d.pending, 0, 'fiches encore à remplir'); ok(d.art.text.startsWith('Résumé de test.'), 'résumé appliqué'); eq(d.art.effects.length, 2, 'compétences gardées');
+    ok(/aidedd\.org/.test(d.art.link), 'lien du catalogue gardé');
+  });
+ 
+  await test('Assistant : les choix abandonnés sont supprimés', async p => {
+    await open(p);
+    await p.evaluate(() => { S.W = wNew(); S.W.cls = 'guerrier'; S.view = 'wizard'; S.W.step = 1; render(); });
+    await p.click('[data-act="wpick"][data-k="bg"][data-v="cat:bg-ermite"]');
+    ok(await p.evaluate(() => hbs().length === 2), 'fiches créées au choix');
+    await p.click('[data-act="wcancel"]');
+    eq(await p.evaluate(() => hbs().length), 0, 'fiches restantes après annulation');
+  });
+ 
+  await test('Création niveau 3 : popup protégée, arrêt confirmé, sous-classe du catalogue', async p => {
+    await open(p, { mcp: true, json: { found: true, summary: 'Lu sur la page.', features: [{ level: 3, name: 'Aptitude', summary: 'x' }], pages: [] } });
+    await newWizardChar(p, { cls: 'paladin', bg: 'srd:soldat', sp: 'srd:humain', level: 3 });
+    ok(await p.evaluate(() => S.pending && S.pending.type === 'lvl'), 'popup de niveau ouverte');
+    await p.mouse.click(3, 450); ok(await p.evaluate(() => !!S.pending), 'un clic à côté ne ferme pas');
+    await p.click('[data-act="lvlStop"]'); ok(await p.evaluate(() => document.getElementById('modal').innerText.includes('Arrêter la création ici')), 'confirmation affichée');
+    await p.click('[data-act="lvlStopNo"]'); await p.click('[data-act="lvlApply"]');
+    ok(await p.evaluate(() => cur().level === 2 && S.pending), 'niveau 2 puis suite');
+    const opts = await p.evaluate(() => [...document.querySelectorAll('#modal select[data-lu="sub"] option')].map(o => o.value));
+    ok(opts.includes('cat:sc-paladin-anciens') && !opts.some(v => /occultiste|barde/.test(v)), 'sous-classes filtrées par classe');
+    await p.selectOption('#modal select[data-lu="sub"]', 'cat:sc-paladin-anciens'); await p.click('[data-act="lvlApply"]');
+    eq(await p.evaluate(() => [cur().level, (hb(cur().subclass) || {}).name, S.rv && S.rv.items.length]), [3, 'Serment des Anciens', 1], 'niveau, sous-classe, relecture');
+    await p.click('[data-act="rvGo"]'); await p.waitForFunction(() => S.rv && !S.rv.run);
+    eq(await p.evaluate(() => (window.__calls || []).map(c => c[0] + (c[1].tabId ? ':' + c[1].tabId : ''))), ['preview_start', 'get_page_text:seed', 'tabs_close:seed'], 'lecture AideDD puis fermeture de l’onglet');
+    await p.click('[data-act="rvOk"]');
+    eq(await p.evaluate(() => { const h = hb(cur().subclass); return [!!h.pending, h.features.length]; }), [false, 1], 'sous-classe remplie');
+  });
+ 
+  await test('Arrêter la création au niveau 1', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain', level: 4 });
+    await p.click('[data-act="lvlStop"]'); await p.click('[data-act="lvlStopYes"]');
+    eq(await p.evaluate(() => [cur().level, !!S.pending, !!S.lvlTarget]), [1, false, false], 'niveau, popup, enchaînement');
+  });
+ 
+  for (const [label, o, want, noteRe] of [
+    ['texte réel', {}, 'tabs_close:seed', null],
+    ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],
+    ['sans identifiant', { ps: { content: [{ type: 'text', text: 'Opened page.' }], payload: 'Opened page.' } }, '', /identifiant introuvable/],
+    ['fermeture refusée', { closeFails: true }, 'tabs_close:seed', /non refermé/],
+  ]) await test('Onglets du navigateur : ' + label, async p => {
+    await open(p, Object.assign({ mcp: true }, o));
+    const r = await p.evaluate(async () => { await afBrowse('https://www.dndbeyond.com/x'); return { calls: (window.__calls || []).filter(c => c[0] === 'tabs_close').map(c => 'tabs_close:' + c[1].tabId).join(' '), note: S.afTabNote || '' }; });
+    eq(r.calls, want, 'fermeture'); ok(noteRe ? noteRe.test(r.note) : !r.note, 'signalement : ' + r.note);
+  });
+ 
+  await test('Contenu perso : recherche et ajout depuis le catalogue', async p => {
+    await open(p);
+    await p.evaluate(() => { S.view = 'hb'; render(); }); await p.click('[data-act="catPick"]');
+    await p.fill('#catq', 'toll the dead');
+    ok(await p.evaluate(() => document.getElementById('catlist').innerText.includes('Glas')), 'recherche en VO');
+    await p.click('#catlist [data-act="catAdd"]');
+    eq(await p.evaluate(() => { const h = S.docs[S.hbSel]; return [h.name, h.level, h.pending]; }), ['Glas', 0, true], 'fiche ajoutée');
+  });
+ 
+  await test('Pas de doublon avec une fiche hors SRD existante', async p => {
+    await open(p);
+    const r = await p.evaluate(() => { S.docs.h_x = { type: 'hb', kind: 'sous-classe', name: 'Protecteur céleste', text: '', effects: [] };
+      return catOpts('sous-classe', e => catClassOk(e, { id: 'occultiste', name: 'Occultiste' })).map(o => o[0]); });
+    ok(!r.includes('cat:sc-occultiste-celeste') && r.includes('cat:sc-occultiste-archifee'), 'catalogue filtré');
+  });
+ 
+  await test('Sans Claude : la relecture propose seulement de fermer', async p => {
+    await open(p, { noSample: true });
+    await newWizardChar(p, { cls: 'guerrier', bg: 'cat:bg-artisan', sp: 'srd:humain' });
+    ok(await p.evaluate(() => !!document.querySelector('#modal [data-act="rvClose"]') && !document.querySelector('#modal [data-act="rvGo"]')), 'boutons');
+  });
+ 
+  await test('À la table : ouverture et carte de détails', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
+    ok(await p.evaluate(() => (S.Titems || []).length > 20 && !!document.querySelector('.tpanels')), 'tuiles et éléments');
+    await p.click('.tpanels .tpbtn'); ok(await p.evaluate(() => !!document.querySelector('.tpop')), 'popup');
+  });
+ 
+  await test('Thème : sombre par défaut, bouton du Menu pour passer en clair et revenir', async p => {
+    await open(p);
+    eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'thème par défaut');
+    await p.evaluate(() => { S.view = 'list'; render(); });
+    ok(await p.evaluate(() => document.querySelectorAll('[data-act="theme"]').length === 1 && !!document.querySelector('#hchar [data-act="theme"]') && !document.querySelector('.hchar')), 'bouton sous Menu, plus de nom du perso en haut');
+    await p.click('[data-act="theme"]');
+    eq(await p.evaluate(() => [document.documentElement.dataset.theme, S.docs.prefs.theme, localStorage.getItem('registre-theme')]), ['light', 'light', 'light'], 'mode clair');
+    ok(await p.evaluate(() => { const m = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number); return m[0] + m[1] + m[2] > 600; }), 'fond clair');
+    ok(await p.evaluate(() => document.querySelector('[data-act="theme"]').textContent === 'Mode sombre'), 'libellé du bouton');
+    await p.click('[data-act="theme"]'); eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'retour au sombre');
+  });
+ 
+  await test('À la table : tuile Repos (court ou long), PV max « aucun », alignement', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; const ch = cur(); ch.hp.cur = 3; ch.pactUsed = 1; ch.hdUsed = 1; render(); });
+    ok(await p.evaluate(() => !document.querySelector('.trestop') && document.querySelector('.health-adjust b').innerText === '0'), 'plus de boutons de repos en haut, PV max à 0');
+    const al = await p.evaluate(() => [document.querySelector('.table-overview').getBoundingClientRect().left, document.querySelector('.tgrid').getBoundingClientRect().left]);
+    ok(Math.abs(al[0] - al[1]) < 2, 'bords gauches alignés : ' + al);
+    await p.click('[data-act="restOpen"][data-v=""]');
+    ok(await p.evaluate(() => S.T.pop === 'rest' && !document.querySelector('[data-act="restShort"]') && !document.querySelector('[data-act="restLong"]')), 'choix du repos');
+    await p.click('[data-act="restKind"][data-v="court"]'); ok(await p.evaluate(() => !!document.querySelector('[data-act="restShort"]')), 'repos court');
+    await p.click('[data-act="restShort"]'); eq(await p.evaluate(() => [cur().pactUsed, cur().hp.cur, S.T.pop]), [0, 3, null], 'repos court : pacte récupéré, PV inchangés');
+    await p.click('[data-act="restOpen"][data-v=""]'); await p.click('[data-act="restKind"][data-v="long"]'); await p.click('[data-act="restLong"]');
+    eq(await p.evaluate(() => [cur().hp.cur === derive(cur()).hpMax, cur().hdUsed, S.T.pop]), [true, 0, null], 'repos long : PV et dés de vie');
+    await p.click('.health-dice'); ok(await p.evaluate(() => !S.T.pop), 'toucher les dés de vie n’ouvre rien');
+    ok(await p.evaluate(() => !!document.querySelector('.health-footer [data-act="restOpen"]') && !document.querySelector('.tpanels [data-act="restOpen"]')), 'bouton Repos à côté d’Inspiration, plus de tuile');
+    await p.click('.health-footer [data-act="restOpen"]'); ok(await p.evaluate(() => document.querySelectorAll('.restpick .restcard').length === 2), 'deux cartes séparées');
+  });
+ 
+  await test('Portrait : image réduite et enregistrée dans la fiche', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); render(); });
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR42mP8z8Dwn4EIwDiqkL4KAX9eCgEj+3wuAAAAAElFTkSuQmCC', 'base64');
+    await p.evaluate(() => document.querySelector('.character-portrait').click());
+    await p.evaluate(() => render()); // un rendu pendant le choix de l'image ne doit plus perdre le champ
+    await p.setInputFiles('#portrait-file', { name: 'p.png', mimeType: 'image/png', buffer: png });
+    await p.waitForFunction(() => !!cur().portrait);
+    ok(await p.evaluate(() => /^data:image\/(webp|jpeg);base64,/.test(cur().portrait) && !!document.querySelector('.character-portrait img')), 'portrait affiché');
+  });
+ 
+  await test('Message « Mode local » : la croix le ferme et la fermeture est retenue', async p => {
+    await open(p);
+    ok(await p.evaluate(() => document.getElementById('banner').innerText.includes('Mode local')), 'message affiché');
+    await p.click('#banner [data-act="bannerClose"]');
+    ok(await p.evaluate(() => !document.getElementById('banner').innerText.trim()), 'message fermé');
+    await p.reload(); await p.waitForFunction(() => typeof S !== 'undefined' && S.C);
+    ok(await p.evaluate(() => !document.getElementById('banner').innerText.includes('Mode local')), 'reste fermé au rechargement');
+  });
+
+  await test('Sauvegarde : une nouvelle seed ne remplace jamais les personnages locaux', async p => {
+    await open(p);
+    const r = await p.evaluate(() => {
+      const local = { perso_garde: { type: 'perso', name: 'À garder', level: 2 } };
+      localStorage.setItem('registre-docs', JSON.stringify(local)); // ancien format, encore accepté
+      document.getElementById('seed-docs').textContent = JSON.stringify({ at: Date.now() + 1, dataVersion: DATA_VERSION, docs: { perso_seed: { type: 'perso', name: 'Seed', level: 1 } } });
+      S.docs = {}; loadLocal();
+      return Object.keys(S.docs);
+    });
+    eq(r, ['perso_garde'], 'personnage local conservé');
+  });
+
+  await test('Sauvegarde : format versionné et ancien format migré', async p => {
+    await open(p);
+    const r = await p.evaluate(() => {
+      localStorage.setItem('registre-docs', JSON.stringify({ perso_ancien: { type: 'perso', name: 'Ancien', level: 1 } }));
+      S.docs = {}; loadLocal(); S.docs.perso_ancien.level = 2; touch('perso_ancien'); flushLocalNow();
+      const saved = JSON.parse(localStorage.getItem('registre-docs'));
+      let future = ''; try { importPack({ registre: 1, dataVersion: DATA_VERSION + 1, perso: { name: 'Futur' } }); } catch (e) { future = e.message; }
+      return { registre: saved.registre, version: saved.dataVersion, level: saved.docs.perso_ancien.level, future };
+    });
+    eq(r, { registre: 1, version: 1, level: 2, future: 'version' }, 'enveloppe et contrôle de version');
+  });
+
+  await test('Sauvegarde : échec visible et données conservées comme sales', async p => {
+    await open(p);
+    const r = await p.evaluate(() => {
+      S.docs.perso_test = { type: 'perso', name: 'Test', level: 1 }; touch('perso_test');
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function () { const e = new DOMException('plein', 'QuotaExceededError'); throw e; };
+      const okSave = flushLocalNow(), banner = document.getElementById('banner').innerText;
+      Storage.prototype.setItem = original;
+      return { okSave, dirty: !!S.dirty.perso_test, banner };
+    });
+    ok(!r.okSave && r.dirty, 'échec retenu');
+    ok(/Échec.*sauvegarde|stockage.*plein/i.test(r.banner), 'message visible : ' + r.banner);
+  });
+
+  await test('Sauvegarde : pagehide écrit immédiatement sans attendre 700 ms', async p => {
+    await open(p);
+    const r = await p.evaluate(() => {
+      S.docs.perso_rapide = { type: 'perso', name: 'Rapide', level: 1 }; touch('perso_rapide');
+      window.dispatchEvent(new PageTransitionEvent('pagehide'));
+      const saved = JSON.parse(localStorage.getItem('registre-docs'));
+      return { present: !!saved.docs.perso_rapide, version: saved.dataVersion, dirty: !!S.dirty.perso_rapide };
+    });
+    eq(r, { present: true, version: 1, dirty: false }, 'sauvegarde immédiate');
+  });
+
+  await test('Import : export valide accepté, fichiers dangereux ou incohérents refusés sans ajout partiel', async p => {
+    await open(p);
+    const r = await p.evaluate(() => {
+      const perso = { type: 'perso', name: 'Importé', level: 3, abilities: { for: 8, dex: 12, con: 14, int: 10, sag: 13, cha: 17 }, attacks: [], bag: [], conditions: [], counters: [], feats: [], features: [], invocations: [], items: [], spells: [], hp: { cur: 20, temp: 0 } };
+      const id = importPack({ registre: 1, dataVersion: 1, perso, hb: [{ _id: 'test-sort', type: 'hb', kind: 'sort', name: 'Sort test', text: '' }] });
+      const count = Object.keys(S.docs).length, errors = [];
+      for(const bad of [
+        { registre: 1, perso: Object.assign({}, perso, { level: 99 }) },
+        { registre: 1, perso: Object.assign({}, perso, { abilities: { for: 8 } }) },
+        { registre: 1, perso, hb: [{ _id: 'x', type: 'hb', name: '' }] },
+        JSON.parse('{"registre":1,"perso":{"type":"perso","name":"X","level":1,"abilities":{"for":8,"dex":8,"con":8,"int":8,"sag":8,"cha":8},"__proto__":{"polluted":true}}}')
+      ]){ try { importPack(bad); errors.push('accepté'); } catch (e) { errors.push(e.message); } }
+      return { name: S.docs[id].name, errors, unchanged: Object.keys(S.docs).length === count, polluted: ({}).polluted || false };
+    });
+    eq(r.name, 'Importé', 'export valide');
+    eq(r.errors, ['import_invalid', 'import_invalid', 'import_invalid', 'import_invalid'], 'exports invalides');
+    ok(r.unchanged && !r.polluted, 'aucun ajout partiel ni pollution');
+  });
+
+  await test('Application vierge et copie personnelle clairement distinguées', async p => {
+    await open(p);
+    const r = await p.evaluate(() => ({ seed: document.getElementById('seed-docs').textContent.trim(), text: document.getElementById('app').innerText }));
+    eq(r.seed, 'null', 'application distribuée sans personnage intégré');
+    ok(r.text.includes('Télécharger ma copie personnelle') && r.text.includes("L'application distribuée est vierge"), 'avertissement visible');
+  });
+ 
+  await test('Navigation : « À la table » et « Fiche » restent sur le perso affiché', async p => {
+    await open(p);
+    const ids = await p.evaluate(() => { const a = (S.W = wNew(), Object.assign(S.W, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain', name: 'Premier', method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } }), wCreate(), S.cur);
+      const b = (S.W = wNew(), Object.assign(S.W, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain', name: 'Second', method: 'std', std: { for: 8, dex: 12, con: 15, int: 10, sag: 13, cha: 17 } }), wCreate(), S.cur);
+      S.rv = null; renderModal(); setMain(a); S.view = 'list'; S.cur = null; render(); return [a, b]; });
+    await p.click(`[data-act="open"][data-id="${ids[1]}"]`);
+    await p.click('#nav [data-v="table"]'); eq(await p.evaluate(() => [S.cur, S.tab]), [ids[1], 'table'], 'À la table');
+    await p.click('#nav [data-v="main"]'); eq(await p.evaluate(() => [S.cur, S.tab]), [ids[1], 'jeu'], 'Fiche de personnage');
+    await p.click('#nav [data-v="hb"]'); await p.click('#nav [data-v="table"]'); eq(await p.evaluate(() => S.cur), ids[1], 'retour depuis Contenu perso');
+  });
+ 
+
+  async function diceTable(p, cls = 'guerrier') {
+    await open(p);
+    await newWizardChar(p, { cls, bg: 'srd:soldat', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
+  }
+
+  await test('Dés : verrou par défaut, global entre personnages, persistant dans le navigateur', async p => {
+    await diceTable(p);
+    eq(await p.getAttribute('[data-act="virtualDice"]', 'aria-checked'), 'false', 'désactivés par défaut');
+    const first = await p.evaluate(() => S.cur);
+    await p.click('[data-act="virtualDice"]');
+    eq(await p.evaluate(() => [virtualDiceEnabled(), localStorage.getItem(VIRTUAL_DICE_KEY)]), [true, '1'], 'activation enregistrée');
+    await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
+    eq(await p.getAttribute('[data-act="virtualDice"]', 'aria-checked'), 'true', 'second personnage');
+    await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
+    ok(await p.evaluate(() => virtualDiceEnabled()), 'activation après rechargement');
+    await p.evaluate(id => { S.cur=id; S.view='sheet'; S.tab='table'; render(); }, first);
+    await p.click('[data-act="virtualDice"]');
+    await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
+    eq(await p.evaluate(() => [virtualDiceEnabled(), persos().some(c => 'virtualDice' in c)]), [false, false], 'désactivation persistante et aucune préférence dans un personnage');
+  });
+
+  await test('Dés : chaque événement aléatoire est bloqué sans tirage ni dépense', async p => {
+    await diceTable(p);
+    const r=await p.evaluate(() => {
+      let calls=0; const original=crypto.getRandomValues.bind(crypto);
+      crypto.getRandomValues=()=>{ calls++; throw new Error('tirage interdit'); };
+      const before=JSON.stringify(cur()), log=S.log.length;
+      for(const a of VIRTUAL_ACTIONS){
+        const b=document.createElement('button'); b.dataset.act=a; document.body.appendChild(b); b.click(); b.remove();
+      }
+      rollD20('test',4); rollDmg('test','2d6+4',true);
+      let refused=0; for(const fn of [()=>rnd(20),()=>rollExpr('2d6+4')]) try{ fn(); }catch(e){ refused++; }
+      crypto.getRandomValues=original;
+      return {calls,unchanged:before===JSON.stringify(cur()),sameLog:log===S.log.length,refused};
+    });
+    eq(r,{calls:0,unchanged:true,sameLog:true,refused:2},'verrou mécanique');
+  });
+
+  await test('Dés : boutons masqués dans toutes les cartes et réaffichés après activation', async p => {
+    await diceTable(p,'occultiste');
+    const r=await p.evaluate(() => {
+      let count=0;
+      for(const i of [...S.Titems]){
+        tSelect(i.key);
+        for(const b of document.querySelectorAll('[data-virtual]')){
+          count++; if(getComputedStyle(b).display!=='none') throw new Error('Bouton visible : '+b.dataset.act);
+        }
+      }
+      S.T.pop=null; setVirtualDice(true); render();
+      let shown=0;
+      for(const i of [...S.Titems]){
+        tSelect(i.key);
+        for(const b of document.querySelectorAll('[data-virtual]')) if(getComputedStyle(b).display!=='none') shown++;
+      }
+      return [count>0,shown>0];
+    });
+    eq(r,[true,true],'cartes');
+    await p.evaluate(() => { setVirtualDice(false); S.view='wizard'; S.W=wNew(); S.W.cls='guerrier'; S.W.step=3; S.W.method='dice'; render(); });
+    // All random-producing controls, including wizard and legacy sheet, carry the marker.
+    const unmarked=await p.evaluate(() => [...document.querySelectorAll('[data-act]')].filter(b=>VIRTUAL_ACTIONS.has(b.dataset.act)&&!b.hasAttribute('data-virtual')).map(b=>b.dataset.act));
+    eq(unmarked,[],'contrôles protégés');
+    for(const action of ['r20','dmg','cast','sdmg','death','spendhd','pool','wroll','tvroll','tvdmg','hdvirt','ccroll','smiteRoll']){
+      ok(HTML_SOURCE.includes('data-virtual data-act="'+action+'"'), 'marqueur '+action);
+    }
+    ok(!await p.isVisible('[data-act="wroll"]'),'création : lancer masqué');
+    await p.fill('[data-w="dice.0"]','15'); await p.locator('[data-w="dice.0"]').blur();
+    eq(await p.evaluate(() => S.W.dice[0]),'15','création : dé physique accepté');
+    await p.evaluate(() => { S.W.dice[0]=''; setVirtualDice(true); render(); });
+    await p.click('[data-act="wroll"]');
+    ok(await p.evaluate(() => S.W.rolled && S.W.dice.every(v=>v>=3&&v<=18)),'création : six jets déverrouillés');
+
+  });
+
+  await test('Dés physiques : désavantage 13 et 7, bonus +4, total 11 ; avantage et état', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
+    await p.click('[data-act="tmode"][data-v="d"]');
+    await p.fill('#t-d1','13'); await p.fill('#t-d2','7'); await p.locator('#t-d2').blur();
+    const text=await p.innerText('#t-tot');
+    ok(text.includes('Désavantage : 13 et 7 → 7 retenu')&&text.includes('Bonus : +4')&&text.includes('Total : 11'),text);
+    eq(await p.evaluate(() => cur().rollLog[0].total),11,'historique physique');
+    await p.click('[data-act="tmode"][data-v="a"]');
+    await p.fill('#t-d1','13'); await p.fill('#t-d2','7'); await p.locator('#t-d2').blur();
+    ok((await p.innerText('#t-tot')).includes('Total : 17'),'avantage');
+    await p.fill('#t-d1','20'); await p.locator('#t-d1').blur();
+    eq(await p.evaluate(() => cur().rollLog[0].total),24,'modification du premier dé également enregistrée');
+    await p.evaluate(() => { cur().conditions=['Invisible']; cur().exhaustion=1; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
+    eq(await p.evaluate(() => [S.T.mode,document.getElementById('t-tot').dataset.mod]),['a','2'],'avantage et épuisement conservés');
+    await p.fill('#t-d1','13'); await p.fill('#t-d2','7');
+    ok((await p.innerText('#t-tot')).includes('Total : 15'),'calcul avec épuisement');
+    const before=await p.evaluate(() => cur().rollLog.length);
+    await p.fill('#t-d2','21'); await p.locator('#t-d2').blur();
+    eq(await p.evaluate(() => cur().rollLog.length),before,'dé invalide ignoré');
+    ok((await p.innerText('#t-tot')).includes('entier de 1 à 20'),'validation visible');
+  });
+
+  await test('Dés : attaques, dégâts physiques, critique virtuel et reverrouillage immédiat', async p => {
+    await diceTable(p);
+    await p.evaluate(() => tSelect(S.Titems.find(i=>i.kind==='atk').key));
+    await p.fill('#t-dmg','9'); await p.locator('#t-dmg').blur(); await p.click('[data-act="tvalidate"][data-kind="dmg"]');
+    const flat=await p.evaluate(() => +document.getElementById('t-dtot').dataset.flat);
+    ok((await p.innerText('#t-dtot')).includes('Total : '+(9+flat)),'dés et bonus séparés');
+    eq(await p.evaluate(() => cur().rollLog[0].total),9+flat,'dégâts physiques');
+    ok(!await p.isVisible('[data-act="tvdmg"][data-crit="1"]'),'critique caché');
+    await p.evaluate(() => { setVirtualDice(true); render(); });
+    ok(!await p.isVisible('#t-dmg'),'saisie physique masquée en mode virtuel');
+    await p.click('[data-act="tvdmg"][data-crit="1"]');
+    ok(await p.evaluate(() => cur().rollLog[0].bd.includes('Critique')),'critique virtuel enregistré');
+    await p.click('[data-act="tvroll"]');
+    ok(await p.evaluate(() => validDie(S.T.d1,20)),'attaque virtuelle');
+    await p.evaluate(() => { setVirtualDice(false); render(); });
+    ok(!await p.isVisible('[data-act="tvroll"]')&&await p.isVisible('#t-d1'),'reverrouillage et saisie physique');
+  });
+
+  await test('Dés physiques : concentration et dés de vie restent utilisables', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { cur().conc='Sort test'; S.T.cc={dmg:10,mode:'d',d1:'',d2:'',res:null}; S.T.pop='concchk'; render(); });
+    ok(!await p.isVisible('[data-act="ccroll"]'),'concentration virtuelle cachée');
+    await p.fill('#cc-d1','19'); await p.fill('#cc-d2','18');
+    await p.click('[data-form="cc"] button[type="submit"]');
+    eq(await p.evaluate(() => S.T.cc.res.total),await p.evaluate(() => 18+derive(cur()).saves.con.val),'concentration physique');
+    await p.click('[data-act="ccclose"]');
+    await p.evaluate(() => { cur().hp.cur=1; S.T.pop='rest'; S.T.restKind='court'; render(); });
+    ok(!await p.isVisible('[data-act="hdvirt"]'),'dé de vie virtuel caché');
+    await p.fill('#t-hd','6'); await p.click('[data-form="hdroll"] button[type="submit"]');
+    eq(await p.evaluate(() => cur().hdUsed),1,'dé de vie dépensé');
+    ok(await p.evaluate(() => cur().hp.cur>1),'soins appliqués');
+  });
+
+  await test('Dés : formules libres physiques et virtuelles, verrou du formulaire', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { S.tab='jeu'; render(); renderDice(); });
+    await p.fill('#freeExpr','2d6+4'); await p.fill('[data-form="free"] [name="physical"]','7');
+    await p.click('[data-form="free"] button:not([data-virtual])');
+    eq(await p.evaluate(() => S.log[0].total),11,'formule physique');
+    ok(!await p.isVisible('[data-form="free"] [name="virtual"]'),'lancer libre caché');
+    await p.evaluate(() => { setVirtualDice(true); render(); renderDice(); });
+    await p.fill('#freeExpr','2d6+4'); await p.click('[data-form="free"] [name="virtual"]');
+    ok(await p.evaluate(() => S.log[0].total>=6&&S.log[0].total<=16),'formule virtuelle');
+  });
+
+  await test('Dés : récupération aléatoire des charges au repos saisie physiquement et conservée', async p => {
+    await diceTable(p);
+    await p.evaluate(() => {
+      cur().bag.push({id:'test-charges',name:'Baguette test',qty:1,charges:{max:10,used:8,when:'long',rec:'1d6+1',auto:false}});
+      applyRest('long'); touch(S.cur); render();
+    });
+    ok(await p.isVisible('[data-form="chargeRecovery"]'),'saisie proposée après repos');
+    eq(await p.evaluate(() => cur().bag.find(b=>b.id==='test-charges').charges.used),8,'aucun tirage implicite');
+    await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
+    await p.evaluate(() => { S.cur=persos()[0]._id; S.view='sheet'; S.tab='table'; render(); });
+    ok(await p.isVisible('[data-form="chargeRecovery"]'),'saisie conservée après rechargement');
+    await p.fill('[data-form="chargeRecovery"] [name="total"]','3');
+    await p.click('[data-form="chargeRecovery"] button[type="submit"]');
+    eq(await p.evaluate(() => {const c=cur().bag.find(b=>b.id==='test-charges').charges;return [c.used,!!c.pendingRecovery];}),[4,false],'3 dés + 1 bonus = 4 charges récupérées');
+  });
+
+  await test('Dés : préférence de session utilisable si le stockage est plein', async p => {
+    await diceTable(p);
+    const r=await p.evaluate(() => {
+      const original=Storage.prototype.setItem;
+      Storage.prototype.setItem=()=>{throw new DOMException('plein','QuotaExceededError');};
+      setVirtualDice(true); const enabled=virtualDiceEnabled(); setVirtualDice(false); const disabled=!virtualDiceEnabled();
+      Storage.prototype.setItem=original; return [enabled,disabled];
+    });
+    eq(r,[true,true],'repli en mémoire');
+  });
+
+
+  await test('Dés physiques : Frappe occulte et champs numériques en largeur iPhone', async p => {
+    await p.setViewportSize({width:390,height:844});
+    await diceTable(p,'occultiste');
+    await p.evaluate(() => {
+      const ch=cur(); ch.level=5; ch.invocations=['frappe-occulte']; ch.turn={smite:true}; render();
+      // Render the same smite section used by pact weapon cards.
+      document.querySelector('.tmain').insertAdjacentHTML('beforeend',smiteBlock(ch,derive(ch),{pact:true}));
+    });
+    ok(await p.isVisible('[data-form="smitePhysical"]'),'saisie physique disponible');
+    ok(!await p.isVisible('[data-act="smiteRoll"][data-crit="1"]'),'critique virtuel masqué');
+    await p.fill('[data-form="smitePhysical"] [name="total"]','18');
+    await p.click('[data-form="smitePhysical"] button[type="submit"]');
+    eq(await p.evaluate(() => cur().rollLog[0].total),18,'Frappe occulte physique');
+    await p.evaluate(() => { tSelect(S.Titems.find(i=>i.kind==='init').key); });
+    await p.click('[data-act="tmode"][data-v="d"]');
+    eq(await p.evaluate(() => [...document.querySelectorAll('#t-d1,#t-d2')].map(i=>[i.type,i.inputMode,parseFloat(getComputedStyle(i).fontSize)>=16])),[['number','numeric',true],['number','numeric',true]],'deux champs adaptés au clavier numérique');
+    ok(await p.evaluate(() => { const el=document.querySelector('.tpop');return el.scrollWidth<=el.clientWidth+1; }),'aucun débordement horizontal de la carte');
+  });
+
+  await test('Dés virtuels : concentration et dés de vie déverrouillés', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { setVirtualDice(true); cur().conc='Sort test'; S.T.cc={dmg:10,mode:'a',d1:'',d2:'',res:null}; S.T.pop='concchk'; render(); });
+    await p.click('[data-act="ccroll"]');
+    ok(await p.evaluate(() => !!S.T.cc.res),'concentration virtuelle');
+    await p.click('[data-act="ccclose"]');
+    await p.evaluate(() => { cur().hp.cur=1; S.T.pop='rest'; S.T.restKind='court'; render(); });
+    ok(!await p.isVisible('#t-hd'),'saisie physique masquée en mode virtuel');
+    await p.click('[data-act="hdvirt"]');
+    eq(await p.evaluate(() => cur().hdUsed),1,'dé de vie virtuel');
+  });
+
+
+  async function padNumber(p, value) {
+    for(const digit of String(value)) await p.click('[data-pad="'+digit+'"]');
+    await p.click('[data-pad="ok"]');
+  }
+
+  await test('Pavé numérique : d20 physique, bornes et annulation sans journaliser', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
+    const before=await p.evaluate(() => (cur().rollLog||[]).length);
+    await p.click('#t-d1');
+    ok(await p.isVisible('#dice-pad [role="dialog"]'),'pavé ouvert au clic');
+    await padNumber(p,21);
+    ok((await p.innerText('#dice-pad-error')).includes('1 à 20'),'borne contrôlée');
+    eq(await p.evaluate(() => S.T.d1),'','pas de valeur invalide appliquée');
+    await p.click('[data-pad="clear"]'); await padNumber(p,13);
+    eq(await p.inputValue('#t-d1'),'13','résultat validé');
+    ok((await p.innerText('#t-tot')).includes('Total : 17'),'bonus appliqué');
+    eq(await p.evaluate(() => cur().rollLog.length),before+1,'une seule ligne de jet');
+    await p.click('#t-d1'); await p.click('[data-pad="9"]'); await p.click('[data-pad="cancel"]');
+    eq(await p.inputValue('#t-d1'),'13','annulation conserve la valeur');
+    eq(await p.evaluate(() => cur().rollLog.length),before+1,'aucune ligne lors de l’annulation');
+    ok(await p.isVisible('.tpop'),'carte toujours ouverte');
+  });
+
+  await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
+    await p.setViewportSize({width:390,height:844}); await diceTable(p);
+    await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
+    await p.click('[data-act="tmode"][data-v="d"]');
+    await p.click('#t-d1'); await padNumber(p,13);
+    await p.click('#t-d2');
+    ok(await p.evaluate(() => {const r=document.querySelector('.dice-pad').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}),'pavé contenu dans l’écran iPhone');
+    await padNumber(p,7);
+    ok((await p.innerText('#t-tot')).includes('Total : 11'),'bon dé retenu');
+    await p.evaluate(() => { setVirtualDice(true); render(); });
+    ok(await p.isVisible('[data-act="tvroll"]')&&!await p.isVisible('#t-d1')&&!await p.isVisible('#t-d2'),'mode virtuel exclusif');
+    eq(await p.evaluate(() => cur().rollLog[0].total),11,'journal physique');
+  });
+
+  await test('Pavé numérique : dégâts, correction et raccourcis clavier', async p => {
+    await diceTable(p);
+    await p.evaluate(() => tSelect(S.Titems.find(i=>i.kind==='atk').key));
+    await p.locator('#t-dmg').focus(); await p.keyboard.press('Enter');
+    await p.keyboard.type('19'); await p.keyboard.press('Backspace'); await p.keyboard.type('2');
+    eq(await p.innerText('#dice-pad-value'),'12','correction au clavier');
+    await p.keyboard.press('Enter');
+    await p.click('[data-act="tvalidate"][data-kind="dmg"]');
+    const flat=await p.evaluate(() => +document.getElementById('t-dtot').dataset.flat);
+    eq(await p.inputValue('#t-dmg'),'12','dégâts validés');
+    eq(await p.evaluate(() => cur().rollLog[0].total),12+flat,'bonus aux dégâts');
+    await p.click('#t-dmg'); await p.keyboard.press('Escape');
+    ok(!await p.locator('#dice-pad').count()&&await p.isVisible('.tpop'),'Échap ferme uniquement le pavé');
+  });
+
+  await test('Pavé numérique : concentration et dé de vie physiques', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { cur().conc='Sort test'; S.T.cc={dmg:10,mode:'n',d1:'',d2:'',res:null}; S.T.pop='concchk'; render(); });
+    await p.click('#cc-d1'); await padNumber(p,18);
+    await p.click('[data-form="cc"] button[type="submit"]');
+    ok(await p.evaluate(() => !!S.T.cc.res),'concentration résolue');
+    await p.click('[data-act="ccclose"]');
+    await p.evaluate(() => { cur().hp.cur=1; S.T.pop='rest'; S.T.restKind='court'; render(); });
+    await p.click('#t-hd'); await padNumber(p,6);
+    await p.click('[data-form="hdroll"] button[type="submit"]');
+    eq(await p.evaluate(() => cur().hdUsed),1,'dé de vie dépensé après saisie au pavé');
+  });
+
+
+  await test('Modes exclusifs : aucune saisie physique ni pavé en mode virtuel, retour physique possible', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { setVirtualDice(true); render(); });
+    const result=await p.evaluate(() => {
+      let fields=0;
+      for(const item of [...S.Titems]){
+        tSelect(item.key);
+        for(const input of document.querySelectorAll(DICE_INPUTS)){
+          fields++; if(!input.disabled||getComputedStyle(input.closest('label')||input).display!=='none') throw new Error('Saisie physique exposée');
+          openDicePad(input); if(dicePad) throw new Error('Pavé ouvert en mode virtuel');
+        }
+      }
+      tSelect(S.Titems.find(i=>i.kind==='init').key);
+      const before=JSON.stringify(cur()); const input=document.getElementById('t-d1');
+      input.value='17';input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));
+      return [fields>0,S.T.d1==='',before===JSON.stringify(cur())];
+    });
+    eq(result,[true,true,true],'saisies interdites et aucun jet physique journalisé');
+    await p.evaluate(() => { S.T.pop=null; cur().conc='Sort test'; S.T.cc={dmg:10,mode:'n',d1:'',d2:'',res:null}; S.T.pop='concchk'; render(); });
+    ok(!await p.isVisible('#cc-d1')&&!await p.isVisible('[data-form="cc"] button[type="submit"]'),'concentration physique masquée');
+    await p.evaluate(() => document.querySelector('[data-form="cc"]').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+    ok(await p.evaluate(() => !S.T.cc.res),'soumission physique bloquée');
+    await p.evaluate(() => { S.T.pop=null; setVirtualDice(false); render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
+    ok(await p.isVisible('#t-d1')&&!await p.isVisible('[data-act="tvroll"]'),'retour en mode physique');
+    await p.click('#t-d1'); ok(await p.isVisible('#dice-pad'),'pavé rétabli');
+  });
+
+
+  async function turnAttack(p, virtual, cost='action') {
+    await diceTable(p);
+    return p.evaluate(({virtual,cost}) => {
+      setVirtualDice(virtual); const key=S.Titems.find(i=>i.kind==='atk').key;
+      cur().costs=cur().costs||{}; cur().costs[key]=cost; render(); tSelect(key); return key;
+    },{virtual,cost});
+  }
+  async function commitAttack(p,virtual,value='12') {
+    if(virtual) await p.click('[data-act="tvroll"]');
+    else { await p.fill('#t-d1',value); if(await p.locator('#t-d2').count()) await p.fill('#t-d2','5'); await p.click('[data-act="tvalidate"][data-kind="d20"]'); }
+  }
+  async function commitDamage(p,virtual,crit=false) {
+    if(virtual) await p.click('[data-act="tvdmg"]'+(crit?'[data-crit="1"]':':not([data-crit])'));
+    else { await p.fill('#t-dmg','7'); await p.click('[data-act="tvalidate"][data-kind="dmg"]'); }
+  }
+
+  for(const virtual of [false,true]) await test('Tour : attaque '+(virtual?'virtuelle':'physique')+', résultat conservé, relances, dégâts et annulation',async p=>{
+    await turnAttack(p,virtual);
+    eq(await p.evaluate(()=>cur().turn||{}),{},'ouvrir ne consomme rien');
+    await p.click('[data-act="tmode"][data-v="d"]');
+    eq(await p.evaluate(()=>cur().turn||{}),{},'changer le mode ne consomme rien');
+    if(!virtual){
+      await p.fill('#t-d1','12'); await p.fill('#t-d2','5'); await p.locator('#t-d2').blur();
+      eq(await p.evaluate(()=>cur().turn||{}),{},'saisir sans valider ne consomme rien');
+    }
+    await commitAttack(p,virtual);
+    eq(await p.evaluate(()=>cur().turn),{action:true},'une Action uniquement');
+    eq(await p.evaluate(()=>S.T.pop),'card','carte ouverte');
+    ok(await p.isVisible('#t-tot .tot'),'résultat visible');
+    ok((await p.innerText('#t-action-state')).includes('✓ Action consommée pour ce tour'),'confirmation dans la carte');
+    ok((await p.innerText('.tturnbtn[data-v="eco:action"]')).includes('Action consommée'),'suivi général');
+    await commitAttack(p,virtual);
+    eq(await p.evaluate(()=>cur().turn),{action:true},'relance sans coût supplémentaire');
+    await commitDamage(p,virtual);
+    if(virtual) await commitDamage(p,virtual,true);
+    eq(await p.evaluate(()=>cur().turn),{action:true},'dégâts et critiques sans autre coût');
+    const result=await p.innerText('#t-tot'), damage=await p.innerText('#t-dtot'), logs=await p.evaluate(()=>cur().rollLog.length);
+    await p.click('#t-action-state [data-act="tuse"][data-off="1"]');
+    eq(await p.evaluate(()=>cur().turn),{action:false},'annulation limitée à l’Action');
+    eq(await p.innerText('#t-tot'),result,'résultat d’attaque conservé'); eq(await p.innerText('#t-dtot'),damage,'dégâts conservés');
+    eq(await p.evaluate(()=>cur().rollLog.length),logs,'historique conservé');
+    await commitDamage(p,virtual);
+    eq(await p.evaluate(()=>cur().turn),{action:false},'relance des dégâts ne reconsomme pas');
+    eq(await p.evaluate(()=>S.T.pop),'card','carte toujours ouverte');
+  });
+
+  await test('Tour : saisie au pavé sans validation du jet et fermeture sans consommation',async p=>{
+    await turnAttack(p,false);
+    await p.click('#t-d1'); await padNumber(p,14);
+    eq(await p.evaluate(()=>cur().turn||{}),{},'valider un champ ne valide pas le jet');
+    await p.click('.tpophead [data-act="tpopclose"]');
+    eq(await p.evaluate(()=>cur().turn||{}),{},'fermer sans lancer ne consomme rien');
+  });
+
+  await test('Tour : résultat physique incomplet ou invalide ne consomme rien',async p=>{
+    await turnAttack(p,false);
+    await p.click('[data-act="tmode"][data-v="a"]');
+    await p.fill('#t-d1','12'); await p.click('[data-act="tvalidate"][data-kind="d20"]');
+    eq(await p.evaluate(()=>cur().turn||{}),{},'second dé absent');
+    await p.fill('#t-d2','21'); await p.click('[data-act="tvalidate"][data-kind="d20"]');
+    eq(await p.evaluate(()=>cur().turn||{}),{},'second dé hors bornes');
+  });
+
+  await test('Tour : plusieurs attaques restent accessibles dans une seule Action',async p=>{
+    await turnAttack(p,true);
+    await p.evaluate(()=>{ const ch=cur(); ch.level=5; ch.attacks.push({...ch.attacks[0],id:'turn-second',name:'Seconde arme'}); render(); });
+    await commitAttack(p,true);
+    await p.evaluate(()=>tSelect('atk:turn-second'));
+    ok(await p.isVisible('[data-act="tvroll"]'),'seconde attaque accessible');
+    ok((await p.innerText('#t-action-state')).includes('Action consommée'),'Action déjà consommée affichée');
+    await commitAttack(p,true);
+    eq(await p.evaluate(()=>cur().turn),{action:true},'une seule Action pour les deux attaques');
+  });
+
+  for(const cost of ['bonus','reaction']) for(const virtual of [false,true]) await test('Tour : coût '+cost+' en mode '+(virtual?'virtuel':'physique'),async p=>{
+    await turnAttack(p,virtual,cost); await commitAttack(p,virtual);
+    eq(await p.evaluate(()=>cur().turn),{[cost]:true},'coût exact sans Action ni jalon automatique');
+    const text=await p.innerText('#t-action-state');
+    ok(text.includes(cost==='bonus'?'✓ Action bonus consommée pour ce tour':'✓ Réaction consommée'),'libellé exact');
+    if(cost==='reaction') ok(!text.includes('pour ce tour'),'aucune règle temporelle ajoutée à la Réaction');
+  });
+
+  await test('Tour : action sans jet explicite, carte ouverte et annulation isolée',async p=>{
+    await diceTable(p);
+    await p.evaluate(()=>{cur().turn={bonus:true,move:true};tSelect(S.Titems.find(i=>i.kind==='basic'&&i.cost==='action'&&!['basic:attaque','basic:magie'].includes(i.key)).key);});
+    eq(await p.innerText('#t-action-state button'),'Utiliser l’action','validation manuelle');
+    await p.click('#t-action-state button');
+    eq(await p.evaluate(()=>[cur().turn,S.T.pop]),[{bonus:true,move:true,action:true},'card'],'suivi et carte');
+    await p.click('#t-action-state [data-off="1"]');
+    eq(await p.evaluate(()=>cur().turn),{bonus:true,move:true,action:false},'autres états conservés');
+  });
+
+  await test('Tour : Mouvement et Autre manuels et annulables, Nouveau tour réinitialise tout',async p=>{
+    await diceTable(p);
+    ok((await p.innerText('.tturnbtn[data-v="eco:action"]')).includes('Actions ('),'nombre d’options entre parenthèses');
+    await p.click('.tturnbtn[data-v="move"]');
+    ok((await p.innerText('.tturnbtn[data-v="move"]')).includes('✓ Mouvement terminé'),'jalon Mouvement');
+    await p.click('.tturnbtn[data-v="move"]');
+    eq(await p.evaluate(()=>cur().turn.move),false,'Mouvement annulable');
+    await p.click('.tturnbtn[data-v="eco:autre"]');
+    eq(await p.evaluate(()=>!!cur().turn.autre),false,'consulter Autre ne termine pas le jalon');
+    await p.click('.tpophead [data-act="tturn"][data-v="autre"]');
+    ok((await p.innerText('.tturnbtn[data-v="eco:autre"]')).includes('✓ Autre terminé'),'jalon Autre');
+    await p.click('.tpophead [data-act="tturn"][data-v="autre"]');
+    eq(await p.evaluate(()=>cur().turn.autre),false,'Autre annulable');
+    await p.evaluate(()=>{cur().turn={action:true,bonus:true,reaction:true,move:true,autre:true};S.T.pop=null;render();});
+    await p.click('[data-act="tnewturn"]');
+    eq(await p.evaluate(()=>cur().turn),{},'tous les états réinitialisés');
+  });
+
+  for(const virtual of [false,true]) await test('Tour : sort avec emplacement, relance sans redépense, annulation du seul suivi '+(virtual?'virtuel':'physique'),async p=>{
+    await diceTable(p,'occultiste');
+    await p.evaluate(virtual=>{setVirtualDice(virtual);cur().spells.push({ref:'srd:blessure',prepared:true});render();tSelect('spell:srd:blessure');},virtual);
+    eq(await p.evaluate(()=>[cur().pactUsed||0,cur().turn||{}]),[0,{}],'consultation gratuite');
+    await p.click('[data-act="tcast"]');
+    eq(await p.evaluate(()=>[cur().pactUsed,cur().turn]),[1,{action:true}],'emplacement et Action dépensés');
+    await commitDamage(p,virtual); await commitDamage(p,virtual);
+    eq(await p.evaluate(()=>[cur().pactUsed,cur().turn,S.T.pop]),[1,{action:true},'card'],'relances sans dépense supplémentaire');
+    const result=await p.innerText('#t-dtot');
+    await p.click('#t-action-state [data-off="1"]');
+    eq(await p.evaluate(()=>[cur().pactUsed,cur().turn.action]),[1,false],'emplacement conservé après annulation du suivi');
+    eq(await p.innerText('#t-dtot'),result,'résultat conservé');
+    await commitDamage(p,virtual);
+    eq(await p.evaluate(()=>[cur().pactUsed,cur().turn.action]),[1,false],'relancer les dégâts ne réactive pas le suivi annulé');
+    await p.evaluate(()=>tSelect('spell:srd:blessure'));
+    eq(await p.evaluate(()=>[cur().pactUsed,cur().turn.action]),[1,false],'nouvelle consultation gratuite');
+  });
+
+  for(const [id,cost] of [['mot-de-guerison','bonus'],['bouclier','reaction']]) await test('Tour : sort '+id+' consomme le bon coût',async p=>{
+    await diceTable(p,'occultiste');
+    await p.evaluate(id=>{cur().spells.push({ref:'srd:'+id,prepared:true});render();tSelect('spell:srd:'+id);},id);
+    await p.click('[data-act="tcast"]');
+    eq(await p.evaluate(()=>cur().turn),{[cost]:true},'coût du sort');
+    eq(await p.evaluate(()=>cur().pactUsed),1,'emplacement dépensé une seule fois');
+    eq(await p.evaluate(()=>S.T.pop),'card','informations du sort visibles');
+  });
+
+  for(const virtual of [false,true]) await test('Tour : premier jet de sort mineur déclare le lancement '+(virtual?'virtuel':'physique'),async p=>{
+    await diceTable(p,'occultiste');
+    await p.evaluate(virtual=>{setVirtualDice(virtual);cur().spells.push({ref:'srd:decharge-occulte',prepared:true});render();tSelect('spell:srd:decharge-occulte');},virtual);
+    await commitAttack(p,virtual);
+    eq(await p.evaluate(()=>[cur().turn,cur().pactUsed||0,S.T.castDone]),[{action:true},0,'spell:srd:decharge-occulte'],'sort mineur lancé sans emplacement');
+    await commitAttack(p,virtual); await commitDamage(p,virtual);
+    eq(await p.evaluate(()=>[cur().turn,cur().pactUsed||0]),[{action:true},0],'rayons et dégâts sans autre coût');
+  });
+
+  await test('Tour : sort sans emplacement disponible ne consomme aucune Action',async p=>{
+    await diceTable(p,'occultiste');
+    await p.evaluate(()=>{const ch=cur();ch.pactUsed=derive(ch).cast.pactSlots;ch.spells.push({ref:'srd:blessure',prepared:true});render();tSelect('spell:srd:blessure');});
+    await p.click('[data-act="tcast"]');
+    eq(await p.evaluate(()=>cur().turn||{}),{},'échec de lancement sans coût de tour');
+  });
+
+  for(const virtual of [false,true]) await test('Tour : objet à charges, relance et annulation du suivi '+(virtual?'virtuel':'physique'),async p=>{
+    await diceTable(p,'occultiste');
+    await p.evaluate(virtual=>{
+      setVirtualDice(virtual);
+      cur().bag.push({id:'turn-wand',name:'Baguette de boules de feu',ref:'item:magique:baguette-de-boules-de-feu',qty:1,charges:{max:7,used:0,when:'long',rec:'full',cost:'action',auto:false}});
+      render();tSelect('bag:turn-wand');
+    },virtual);
+    await commitDamage(p,virtual); await commitDamage(p,virtual);
+    eq(await p.evaluate(()=>[cur().bag.find(b=>b.id==='turn-wand').charges.used,cur().turn,S.T.pop]),[1,{action:true},'card'],'une charge et une Action seulement');
+    const result=await p.innerText('#t-dtot');
+    await p.click('#t-action-state [data-off="1"]');
+    eq(await p.evaluate(()=>[cur().bag.find(b=>b.id==='turn-wand').charges.used,cur().turn.action]),[1,false],'annulation sans remboursement de charge');
+    eq(await p.innerText('#t-dtot'),result,'résultat de l’objet conservé');
+  });
+
+  await test('Tour : initiative et sauvegarde sans coût ne consomment aucune ressource de tour',async p=>{
+    await diceTable(p);
+    await p.evaluate(()=>{setVirtualDice(true);render();tSelect('init');});await p.click('[data-act="tvroll"]');
+    await p.evaluate(()=>tSelect('save:con'));await p.click('[data-act="tvroll"]');
+    eq(await p.evaluate(()=>cur().turn||{}),{},'jets sans coût et jalons préservés');
+  });
+
+
+  const ko = results.filter(r => !r[1]).length;
+  console.log(`\n${results.length - ko}/${results.length} tests réussis.`);
+  process.exit(ko ? 1 : 0);
+})();
