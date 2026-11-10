@@ -257,6 +257,13 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
 .tblk .tgrid.tb-solo>*{grid-column:1!important;grid-row:auto!important;position:static!important}
 .tblk .tbottom{margin-top:0;padding-top:0;border-top:0}
 .tblk .character-banner{margin:0}
+/* Repères : grille de 2 rangées de 4 tuiles */
+.rtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.rtile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:68px;padding:8px 4px;border:1px solid var(--line);border-radius:10px;background:var(--sheet2);color:var(--ink);text-align:center;font:inherit}
+.rtile b{font-size:var(--fs-xl);line-height:1.1}
+.rtile .label{font-size:var(--fs-xs);line-height:1.2;letter-spacing:.02em;overflow-wrap:normal;word-break:normal;hyphens:none}
+button.rtile{border-color:var(--brass);cursor:pointer}
+.rtile.vide{border:0;background:none}
 /* Mode disposition */
 .tlayoutbar{display:flex;justify-content:center;margin:18px 0 6px}
 .tlayouttop{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;max-width:860px;margin:0 auto 12px;padding:10px 12px;border:1px solid var(--brass);border-radius:12px;background:var(--sheet);font-size:var(--fs-sm);box-shadow:0 6px 18px rgba(0,0,0,.35)}

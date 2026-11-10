@@ -980,6 +980,20 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     } finally { await ctx.close(); }
   });
 
+  await test('Repères : 8 tuiles, Initiative ouvre le jet, case vide sans sorts, pacte dans les emplacements', async p => {
+    await diceTable(p);
+    const tiles = () => p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(t => t.classList.contains('vide') ? '' : t.querySelector('.label').textContent.trim()));
+    eq(await tiles(), ['CA','Initiative','Vitesse','','Perception passive','Maîtrise','Attaques par action','Taille'], 'guerrier : DD des sorts laissé vide');
+    eq(await p.evaluate(() => document.querySelector('.rtile .num').innerText.trim()), String(await p.evaluate(() => derive(cur()).ac)), 'valeur de CA');
+    await p.click('.tblk[data-blk="reperes"] button.rtile[data-k="init"]');
+    eq(await p.evaluate(() => [S.T.pop, S.T.sel]), ['card','init'], 'Initiative ouvre le jet');
+    await p.keyboard.press('Escape');
+    await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
+    eq((await tiles())[3], 'DD des sorts', 'lanceur de sorts : DD affiché');
+    ok((await p.evaluate(() => document.querySelector('.tblk[data-blk="res"]')?.textContent || '')).includes('Pacte'), 'emplacements de pacte dans le bloc Emplacements et états');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

@@ -309,13 +309,11 @@ function viewTable(ch,D,banner=""){
   const lk=!S.unlockSlots;
   const lockB=`<button class="btn small ghost lock" data-act="lockSlots" aria-pressed="${!lk}" title="${lk?"Modifier les emplacements à la main":"Verrouiller les emplacements"}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>${lk?'<path d="M8 11V7a4 4 0 0 1 8 0v4"/>':'<path d="M8 11V7a4 4 0 0 1 7.5-2"/>'}</svg></button>`;
   const slots = D.cast?(D.cast.type==="pact"?`<span class="tstat"><span class="label">Pacte niv. ${D.cast.pactLevel}</span>${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}${lockB}</span>`:(D.cast.slots||[]).map((n,i)=>`<span class="tstat"><span class="label">Niv. ${i+1}</span>${pips("slot:"+(i+1),n,+(ch.slotsUsed?.[i+1]||0),true,lk)}</span>`).join("")+lockB):"";
-  const pactTile=D.cast?.type==="pact"?`<div class="tstat overview-stat panel overview-pact"><span class="label">Pacte niv. ${D.cast.pactLevel}</span><span class="row">${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}${lockB}</span></div>`:"";
-  const otherSlots=D.cast?.type==="pact"?"":slots;
+  const otherSlots=slots; // emplacements de pacte compris : bloc « Emplacements et états »
   const conds=(ch.conditions||[]).map(c=>`<button class="chip" aria-pressed="true" data-act="tsel" data-k="rule:${esc(S.idx.cond[c]?.id||"")}">${esc(c)}</button>`).join("");
   const overviewSpecies=srd("species",ch.species)||hb(ch.species);
   const overviewSize=String(ch.size||overviewSpecies?.size||"—");
-  const statsBlk=`<div class="table-overview tb-solo">
-    <div class="overview-stats"><span class="tstat table-defense panel" aria-label="Classe d’armure : ${D.ac}"><span class="ac-shield"><svg viewBox="0 0 48 56" aria-hidden="true"><path d="M24 3 44 10v15c0 13-9 22-20 28C13 47 4 38 4 25V10Z"/><path class="ac-rim" d="M24 8 39 14v11c0 10-6 18-15 23-9-5-15-13-15-23V14Z"/></svg><b class="num">${D.ac}</b></span><span class="label">CA</span></span><div class="overview-stat-grid"><button class="tstat tinit overview-stat panel btn" data-act="tsel" data-k="init" title="Jet d'initiative"><span class="label">Initiative</span><b class="num big">${sg(D.init)}</b></button><span class="tstat overview-stat panel"><span class="label">Vitesse</span><b class="num">${String(D.speed).replace(".",",")} m</b></span><span class="tstat overview-stat panel" title="${esc(overviewSize)}"><b class="num big">${esc(overviewSize.split(" (")[0])}</b><span class="label">Taille</span></span><span class="tstat overview-stat panel" title="Perception passive : 10 + ton modificateur de Perception"><span class="label">Perception passive</span><b class="num">${D.passive}</b></span>${D.cast?`<span class="tstat overview-stat panel" title="Degré de difficulté de tes sorts : le résultat que la cible doit atteindre à son jet de sauvegarde"><span class="label">Degré de difficulté des sorts</span><b class="num">${D.cast.dc}</b></span>`:""}${pactTile}</div></div></div>`;
+  const statsBlk=`<div class="rtiles" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize)}</div>`;
   const healthBlk=`<div class="table-overview tb-solo">
     <section class="health-card" aria-label="Santé du personnage">
     <div class="health-main">${hpStepper(ch,D)}</div>
@@ -363,6 +361,22 @@ function viewTable(ch,D,banner=""){
       ${chargeRecoveryForms(ch)}</div></div>`
   };
   return `${tPop(ch,D)}${tableBlocks(ch,blocks)}`;
+}
+/* Repères : 8 tuiles de valeurs (référentiel des tuiles). Une valeur absente laisse une case vide (décision d'Angle). */
+const REPERES_DEFAUT=["ca","init","vitesse","dd","pp","maitrise","attaques","taille"];
+function reperesTiles(ch,D,size){
+  const t=(v,l,title)=>`<span class="rtile"${title?` title="${esc(title)}"`:""}><b class="num">${v}</b><span class="label">${l}</span></span>`;
+  const T={
+    ca:()=>t(D.ac,"CA",D.acNote||""),
+    init:()=>`<button class="rtile act" data-act="tsel" data-k="init" title="Jet d'initiative"><b class="num">${sg(D.init)}</b><span class="label">Initiative</span></button>`,
+    vitesse:()=>t(String(D.speed).replace(".",",")+" m","Vitesse"),
+    dd:()=>D.cast?t(D.cast.dc,"DD des sorts","Degré de difficulté de tes sorts"):"",
+    pp:()=>t(D.passive,"Perception passive","10 + ton modificateur de Perception"),
+    maitrise:()=>t(sg(D.pb),"Maîtrise","Bonus de maîtrise"),
+    attaques:()=>t(D.atkN,"Attaques par action"),
+    taille:()=>t(esc(String(size).split(" (")[0]),"Taille",String(size))
+  };
+  return REPERES_DEFAUT.map(id=>T[id]()||`<span class="rtile vide" aria-hidden="true"></span>`).join("");
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
 const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","Emplacements et états"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
