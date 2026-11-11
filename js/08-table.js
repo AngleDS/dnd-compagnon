@@ -329,7 +329,8 @@ function viewTable(ch,D,banner=""){
   const otherSlots=slots; // emplacements de pacte compris : bloc « Emplacements et états »
   const overviewSpecies=srd("species",ch.species)||hb(ch.species);
   const overviewSize=String(ch.size||overviewSpecies?.size||"—");
-  const pair=repResPair(ch,D,overviewSize);
+  const pair=""; // Repères + Ressources : deux blocs posés côte à côte (placement libre), plus de grille commune
+  S.TLpair={doc:S.cur,on:repResPairOn(ch,D,overviewSize)};
   const statsBlk=pair||`${tbHead("reperes","Repères","blk:reperes")}<div class="rtiles rauto" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize,blkWidth(ch,"reperes"))}</div>`;
   // Emplacements dans la carte PV : rangée présente seulement si le perso en a (classe, sous-classe, niveau) ; une pastille par niveau de sort, ou une pastille « Pacte »
   const slotCells=!D.cast?"":D.cast.type==="pact"?(+D.cast.pactSlots>0?`<span class="hs pact"><span class="hsn">Pacte ${D.cast.pactLevel}</span>${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}</span>`:"")
@@ -365,7 +366,7 @@ function viewTable(ch,D,banner=""){
         ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
     recherche:blkHidden(ch,"recherche")?"":`<div class="tgrid tb-solo"><div class="tmain">${tbHead("recherche","Recherche","blk:recherche")}${searchBar()}</div></div>`,
     tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
-      <div class="row" style="justify-content:space-between"><span class="label">${esc(blkTitle(ch,"tour","Ce tour"))}</span><span class="row" style="gap:6px"><button class="btn small" data-act="tnewturn">Nouveau tour</button></span></div>
+      <div class="row" style="justify-content:space-between"><span></span><span class="row" style="gap:6px"><button class="btn small" data-act="tnewturn">Nouveau tour</button></span></div>
       <div class="tturnb">${turnBtns}</div>
       <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div></div></div>`,
     raccourcis:`<div class="tgrid tb-solo"><div class="tside table-reference">
@@ -401,9 +402,9 @@ const TILE_CAT={
   raccourcis:{skills:"Tests de caractéristique",saves:"Jets de sauvegarde",cond:"États",inv:"Inventaire",equip:"Équipement",rest:"Repos",hist:"Historique des jets",notes:"Notes de partie"}
 };
 /* Fiche des tuiles (lot T1, voir claude/catalogue-tuiles-2024.md) : gabarit, largeur minimale, action, blocs permis.
-   Largeurs minimales en px réels sur iPhone : É étroite 80, M moyenne 110, L large 170, P pleine 350.
+   Largeurs minimales en px réels sur iPhone : É étroite 76, M moyenne 104, L large 160, P pleine 340 (cases du placement libre).
    Une tuile n'est proposée que dans une case assez large ; les autres sont montrées grisées et barrées. */
-const TILE_W={E:80,M:110,L:170,P:350};
+const TILE_W={E:76,M:104,L:160,P:340}; // largeurs mini (px), revues pour les cases du placement libre (12 px entre tuiles)
 const TILE_META=Object.assign(
   Object.fromEntries(Object.keys(TILE_CAT.reperes).map(id=>[id,{kind:"V",min:"E",act:id==="init"}])),
   Object.fromEntries(Object.keys(TILE_CAT.raccourcis).map(id=>[id,{kind:"Pop",min:"M",act:true}])),
@@ -414,7 +415,8 @@ const tileMinW=id=>TILE_W[(TILE_META[id]||{}).min||"E"];
 const tileFits=(id,w)=>w>=tileMinW(id);
 const BLK_CELL_W={reperes:80,raccourcis:170};
 // Largeur réelle d'un groupe de cases sur iPhone (358 px utiles, grille invisible de 4 colonnes) pour un bloc de W colonnes de page
-const cellW=(C,span,W=4)=>{ const inner=(358-24)/4*W+8*(W-1); return Math.floor((inner-8*(C-1))/C*span+8*(span-1)); };
+// Placement libre : 4 colonnes de tuiles, 12 px entre deux tuiles, 4 px de marge dans le cadre (358 px utiles - 8 de marges)
+const cellW=(C,span,W=4)=>{ const col=(358-8-36)/4, inner=col*W+12*(W-1); return Math.floor((inner-12*(C-1))/C*span+12*(span-1)); };
 const tileOkInBlk=(id,blk)=>!(TILE_META[id]||{}).only&&tileFits(id,BLK_CELL_W[blk]);
 const tileWhy=(id,blk)=>(TILE_META[id]||{}).only?"Seulement dans un bloc créé":"Trop large pour ces cases";
 const chSize=ch=>String(ch.size||(srd("species",ch.species)||hb(ch.species))?.size||"—");
@@ -442,7 +444,8 @@ const plusTile=(blk,i,cls)=>S.layoutEdit?`<span class="${cls}" aria-hidden="true
 /* En-tête d'un bloc à tuiles : nom et petit crayon (toujours visible) qui ouvre la personnalisation du bloc. */
 const PEN_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>`;
 // En jeu, aucun bouton d'édition (décision d'Angle) : on modifie un bloc depuis Menu > Personnaliser l'interface.
-const tbHead=(blk,label)=>{ const t=blk.startsWith("c_")?label:blkTitle(cur(),blk,label); return t?`<div class="tbhead"><span class="label">${esc(t)}</span></div>`:""; };
+// Placement libre (lot B) : le titre de chaque bloc est dans sa bande, posée par tableBlocks ; le contenu n'en porte plus.
+const tbHead=()=>"";
 /* Visuel réduit d'une tuile (popup Personnaliser) : l'icône des Raccourcis ou la valeur des Repères. */
 function tileFace(ch,D,blk,id){
   if(id==="slots") return `<svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="18" cy="12" r="3"/></svg>`;
@@ -513,7 +516,7 @@ function repTileMap(ch,D,size){
    Toucher le nom ouvre la fiche de la ressource (description et usage). Bloc absent si le perso n'a aucune ressource. */
 function resBlock(ch,D){ if(!D.res.length) return ""; const w=blkWidth(ch,"ressources");
   // Une colonne : tuiles compactes empilées (même taille que les Repères), un toucher ouvre la petite fenêtre
-  if(w===1) return `${blkTitle(ch,"ressources","Ressources")?`<div class="tbhead"><span class="label rp1l">${esc(blkTitle(ch,"ressources","Ressources"))}</span></div>`:""}<div class="rrescol" role="group" aria-label="Ressources">${resCompact(ch,D)}</div>`;
+  if(w===1) return `<div class="rrescol" role="group" aria-label="Ressources">${resCompact(ch,D)}</div>`;
   const tiles=D.res.map(r=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, c=resCard(r);
     return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${resCtl(ch,r)}</div>`; }).join("");
   return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid${w===2?" one":""}" role="group" aria-label="Ressources">${tiles}</div>`; }
@@ -528,11 +531,11 @@ function resCtl(ch,r){ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left
 /* Repères et Ressources côte à côte (décision d'Angle, 11 nov. 2026) : grille invisible de 4 colonnes sur iPhone.
    Quand Repères tient sur 3 colonnes (3 ou 6 valeurs) et qu'il y a exactement une ressource par rangée, Ressources prend la 4ᵉ colonne :
    une seule grille, donc des tuiles de même taille et alignées ; une tuile de ressource ouvre une petite fenêtre pour dépenser. */
-function repResPair(ch,D,size){ const T=repTileMap(ch,D,size), rep=blockTiles(ch,"reperes").map(id=>T[id]&&T[id]()).filter(Boolean), n=rep.length, rows=n/3;
-  if(S.layoutEdit||blkWidthSet(ch,"reperes")||blkWidthSet(ch,"ressources")||n%3||!D.res.length||D.res.length!==rows) return "";
-  const rt=resCompact(ch,D).split(/(?=<button class="rtile rrestile)/);
-  let cells=""; for(let k=0;k<rows;k++) cells+=rep.slice(3*k,3*k+3).join("")+rt[k];
-  return `<div class="rpair" role="group" aria-label="Repères et ressources">${tbHead("reperes","Repères","blk:reperes").replace('class="tbhead"','class="tbhead rp3"')}<div class="tbhead rp1"><span class="label">${esc(blkTitle(ch,"ressources","Ressources"))}</span></div>${cells}</div>`; }
+/* Repères + Ressources par défaut : quand le perso a 3 repères par rangée et une ressource par rangée, et que rien n'est réglé,
+   Repères prend 3 colonnes et Ressources la 4ᵉ, juste à côté (les rangées de tuiles tombent en face, même hauteur fixe). */
+function repResPairOn(ch,D,size){ const T=repTileMap(ch,D,size), n=blockTiles(ch,"reperes").filter(id=>T[id]&&T[id]()).length;
+  return !blkWidthSet(ch,"reperes")&&!blkWidthSet(ch,"ressources")&&!blkHidden(ch,"reperes")&&!blkHidden(ch,"ressources")&&n>0&&n%3===0&&D.res.length>0&&D.res.length===n/3&&!ch.layout?.pos?.ressources; }
+const pairOn=()=>!!(S.TLpair&&S.TLpair.doc===S.cur&&S.TLpair.on);
 function resPop(ch,D,id,wrap){ const r=D.res.find(x=>x.id===id); if(!r){ S.T.pop=null; return ""; } const c=resCard(r);
   return wrap(r.name,`<div class="texpl rrespop"><div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Récupération : ${esc(rechargeLabel(r.recharge))}${r.origin?" · "+esc(r.origin):""}</div><div class="row" style="justify-content:center">${resCtl(ch,r)}</div>${c?`<div class="row" style="justify-content:center;margin-top:12px"><button class="btn small ghost" ${c}>Description et usage</button></div>`:""}</div>`); }
 const mFmt=v=>String(Math.round(v*10)/10).replace(".",",");
@@ -641,7 +644,7 @@ function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.cus
 /* Largeur des blocs sur la grille invisible de 4 colonnes (lot 2) : ch.layout.width = {id: 1..4}. Personnage et PV restent en pleine largeur. */
 const BLK_WIDTHS={perso:[4],pv:[4],reperes:[2,3,4],ressources:[1,2,4],recherche:[2,4],tour:[2,4],raccourcis:[2,4],notes:[2,4]};
 const blkWidths=(id,b)=>id.startsWith("c_")?[1,2,3,4].filter(w=>w>=(b?.c||1)):(BLK_WIDTHS[id]||[4]);
-function blkWidth(ch,id,b){ const w=+ch.layout?.width?.[id]; return blkWidths(id,b).includes(w)?w:4; }
+function blkWidth(ch,id,b){ const w=+ch.layout?.width?.[id]; if(blkWidths(id,b).includes(w)) return w; if((id==="reperes"||id==="ressources")&&ch===cur()&&pairOn()) return id==="reperes"?3:1; return 4; }
 const blkWidthSet=(ch,id)=>Number.isInteger(+ch.layout?.width?.[id])&&!!ch.layout.width[id];
 /* Formats d'un bloc créé (lot 3) : largeur sur la page × rangées de tuiles ; une tuile = une colonne de page ; 8 cases au plus. */
 const CUSTOM_PATS=[[1,1],[2,1],[3,1],[4,1],[1,2],[2,2],[3,2],[4,2],[1,3],[2,3],[1,4],[2,4]];
@@ -669,7 +672,7 @@ const slotAt=(b,r,c)=>bSlots(b).find(x=>x.r===r&&x.c===c);
 const slotOk=(b,id,sl)=>tileSizeOk(id,sl.sz,b.r,b.c)&&tileFits(id,sizeW(sl.sz,b.c,b.w||4));
 const agThumb=(R,C,ag,on,attrs,label)=>`<button class="bpat" aria-pressed="${!!on}" ${attrs} aria-label="${esc(label)}" title="${esc(label)}"><span class="bpb bag" style="grid-template-columns:repeat(${C},1fr);grid-template-rows:repeat(${R},9px);width:${C*12+8}px">${agSlots(R,C,ag).map(x=>{ const [h,w]=tileSpan(x.sz,R,C); return `<i style="grid-row:${x.r+1}/span ${h};grid-column:${x.c+1}/span ${w};height:auto"></i>`; }).join("")}</span></button>`;
 // Largeur de l'aperçu dans la fenêtre : w colonnes sur 4 (écart 8 px), comme sur la page
-const prevW=w=>`width:calc((100% - 24px) * ${w} / 4 + ${8*(w-1)}px)`;
+const prevW=w=>`width:calc((100% - 36px) * ${w} / 4 + ${12*(w-1)}px)`;
 /* Titre des blocs de base (lot 3) : ch.layout.titles[id] ; vide = pas de titre. */
 const BLK_TITLED=["reperes","ressources","recherche","tour","raccourcis","notes"];
 function blkTitle(ch,id,def){ const t=ch?.layout?.titles?.[id]; return typeof t==="string"?t:def; }
@@ -743,7 +746,7 @@ function customBlockHtml(ch,D,b,ctx){
     return h?`<div class="ccell" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
   let html=tiles.map(one).join("");
   occ.forEach((row,r)=>row.forEach((k,c)=>{ if(k<0) html+=`<div class="ccell" style="grid-row:${r+1};grid-column:${c+1}">${plusTile(b.id,r*b.c+c,"rtile vide")}</div>`; }));
-  return `${tbHead(b.id,b.name)}<div class="cgrid" style="grid-template-columns:repeat(${b.c},minmax(0,1fr));grid-template-rows:repeat(${b.r},minmax(68px,auto))">${html}</div>`;
+  return `${tbHead(b.id,b.name)}<div class="cgrid" style="grid-template-columns:repeat(${b.c},minmax(0,1fr));grid-template-rows:repeat(${b.r},var(--th))">${html}</div>`;
 }
 function customPop(ch,D,id,wrap){
   const b=customBlocks(ch).find(x=>x.id===id); if(!b){ S.T.pop=null; return ""; }
@@ -779,24 +782,63 @@ function blkLabel(ch,id){ const d=(TBLK.find(b=>b[0]===id)||[])[1]; if(d) return
 function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map(b=>b.id)]; const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[];
   // Ressources (lot T3b) arrive après un ordre déjà enregistré : on le place sous la carte PV, pas en bas de page
   if(saved.length&&!saved.includes("ressources")&&saved.includes("pv")) saved.splice(saved.indexOf("pv")+1,0,"ressources");
-  return [...new Set([...saved,...ids])]; }
+  const o=[...new Set([...saved,...ids])];
+  if(ch===cur()&&pairOn()){ o.splice(o.indexOf("ressources"),1); o.splice(o.indexOf("reperes")+1,0,"ressources"); } // Ressources juste à droite de Repères
+  return o; }
+/* « À la table » en placement libre (lot B, décision d'Angle) : 4 colonnes, pas de rangées. Chaque bloc a sa colonne de départ et sa largeur ;
+   verticalement, il est posé par rapport à un autre (sous, en face, aligné sur une rangée de tuiles…) : ch.layout.pos[id] = {c, t, a, k, px}.
+   Sans position enregistrée, les blocs se rangent dans l'ordre et montent dans leurs colonnes. Les positions sont calculées après le rendu (tableLayoutDom). */
 function tableBlocks(ch,blocks){
   const ed=!!S.layoutEdit, ids=tableOrder(ch).filter(id=>!blkHidden(ch,id)&&(ed||blocks[id])), label=id=>blkLabel(ch,id);
   const charges=chargeRecoveryForms(ch);
-  const cb=Object.fromEntries(customBlocks(ch).map(b=>[b.id,b])), wcls=id=>{ const w=blkWidth(ch,id,cb[id]); return w<4?` w${w}" style="grid-column:span ${w}`:""; };
-  if(!ed) return `${charges?`<div class="tcharges">${charges}</div>`:""}<div class="tblocks">${ids.map(id=>`<section class="tblk${wcls(id)}" data-blk="${id}" aria-label="${esc(label(id))}">${blocks[id]}</section>`).join("")}</div>`;
-  // Mode édition (Menu > Personnaliser l'interface) : page translucide, outils nets sur chaque bloc ; contenu inactif.
+  const cb=Object.fromEntries(customBlocks(ch).map(b=>[b.id,b]));
+  const title=id=>id==="perso"||id==="pv"?"":id.startsWith("c_")?(cb[id]?.name||""):blkTitle(ch,id,(TBLK.find(b=>b[0]===id)||[])[1]||"");
   const pen=id=>id==="perso"||id==="pv"?"":`<button class="tedpen" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}" aria-label="Modifier le bloc ${esc(label(id))}" title="Modifier le bloc">${PEN_SVG}</button>`;
-  const u=S.undo&&S.undo.doc===S.cur?S.undo:null;
-  return `<div class="tlayouttop tedbar" role="status"><span><b>Mode édition</b> · appui long sur ⋮⋮ pour déplacer</span><button class="btn small primary" data-act="layoutDone">Terminé</button></div>
+  const sec=id=>`<section class="tblk${ed?" ted":""} w${blkWidth(ch,id,cb[id])}" data-blk="${id}" data-w="${blkWidth(ch,id,cb[id])}" aria-label="${esc(label(id))}">
+    <div class="tband">${esc(title(id))}</div>${ed?`<span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span>${pen(id)}${BLK_KEEP.includes(id)?"":`<button class="tdel" data-act="blkDelNow" data-v="${id}" aria-label="Supprimer le bloc ${esc(label(id))}" title="Supprimer le bloc">✕</button>`}`:""}
+    <div class="tblkc"${ed?" inert":""}>${blocks[id]||(ed?`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`:"")}</div></section>`;
+  const box=`<div class="tblocks tfree${ed?" editing":""}">${ids.map(sec).join("")}</div>`;
+  if(!ed) return `${charges?`<div class="tcharges">${charges}</div>`:""}${box}`;
+  const u=S.undo&&S.undo.doc===S.cur?S.undo:null, mag=ch.layout?.mag!==false, grav=!!ch.layout?.grav;
+  return `<div class="tlayouttop tedbar" role="status"><span><b>Mode édition</b> · glisse un bloc par ⋮⋮</span><span class="row" style="gap:6px"><button class="chip" data-act="layoutMag" aria-pressed="${mag}" title="Aimanter aux bords et aux rangées de tuiles des voisins">Aimant</button><button class="chip" data-act="layoutGrav" aria-pressed="${grav}" title="Faire remonter les blocs pour boucher les trous">Tasser</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
   <div class="tedtop"><button class="taddblk" data-act="tpop" data-v="blkadd">＋ Ajouter un bloc</button><button class="taddblk tauto" data-act="layoutAuto">Automatique (recommandé)</button></div>
-  <div class="tblocks editing">${ids.map(id=>`<section class="tblk ted${wcls(id)}" data-blk="${id}" aria-label="${esc(label(id))}">
-    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${pen(id)}</div>
-    <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div>
-    ${BLK_KEEP.includes(id)?"":`<button class="btn small danger tdel" data-act="blkDelNow" data-v="${id}" aria-label="Supprimer le bloc ${esc(label(id))}">Supprimer</button>`}</section>`).join("")}
-</div>
+  ${box}
   ${u?`<div class="tundo" role="status"><span>${u.auto?"Disposition automatique appliquée":`Bloc « ${esc(u.label)} » supprimé`}</span><button class="btn small ghost" data-act="blkUndo">Annuler</button></div>`:""}`;
 }
+/* Géométrie du placement libre : mêmes mesures que le prototype validé par Angle. */
+const TL={G:12,M:4,BAND:16,GAP:4};
+function tableGeom(ch,list,ord){ // list : [{id,w,h}] ; renvoie {id:{c,y}}
+  const pos=ch.layout?.pos||{}, by=Object.fromEntries(list.map(b=>[b.id,b])), res={}, colB=[0,0,0,0]; let curc=0;
+  const ordered=ord.filter(id=>by[id]);
+  for(const id of ordered){ if(pos[id]) continue; const b=by[id]; let c=curc; if(c+b.w>4) c=0; const y=Math.max(0,...colB.slice(c,c+b.w)); res[id]={c,y}; for(let i=c;i<c+b.w;i++) colB[i]=y+b.h+TL.GAP; curc=(c+b.w)%4; }
+  const busy=new Set();
+  const Y=id=>{ if(res[id]) return res[id].y; const b=by[id], p=pos[id]||{}, c=Math.max(0,Math.min(4-b.w,+p.c||0)); if(busy.has(id)){ res[id]={c,y:0}; return 0; } busy.add(id);
+    const a=p.a&&by[p.a]&&p.a!==id?p.a:null, px=+p.px||0, k=+p.k||0; let y;
+    if(!a) y=Math.max(0,px);
+    else { const ay=Y(a), ah=by[a].h; y=p.t==="below"?ay+ah+TL.GAP+px:p.t==="row"?ay+k*(TH_PX()+TL.G):p.t==="bottom"?ay+ah-b.h:ay+px; }
+    res[id]={c,y:Math.max(0,Math.round(y))}; busy.delete(id); return res[id].y; };
+  for(const id of ordered) Y(id);
+  // Pas de chevauchement : un bloc qui en recouvre un autre descend dessous (dans l'ordre de haut en bas)
+  const over=(a,b)=>res[a].c<res[b].c+by[b].w&&res[b].c<res[a].c+by[a].w;
+  const seq=[...ordered].sort((a,b)=>res[a].y-res[b].y||ordered.indexOf(a)-ordered.indexOf(b)), placed=[];
+  for(const id of seq){ let again=true; while(again){ again=false; for(const q of placed) if(over(id,q)&&res[id].y<res[q].y+by[q].h+TL.GAP&&res[q].y<res[id].y+by[id].h+TL.GAP){ res[id].y=res[q].y+by[q].h+TL.GAP; again=true; } } placed.push(id); }
+  if(ch.layout?.grav){ const pl=[]; for(const id of [...ordered].sort((a,b)=>res[a].y-res[b].y)){ let y=0; for(const q of pl) if(over(id,q)) y=Math.max(y,res[q].y+by[q].h+TL.GAP); res[id].y=y; pl.push(id); } }
+  return res; }
+const TH_PX=()=>{ const v=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--th")); return v||80; };
+// Après chaque rendu : largeur des colonnes, hauteur réelle des blocs, puis position de chacun
+function tableLayoutDom(){ const box=document.querySelector(".tblocks.tfree"), ch=cur(); if(!box||!ch) return;
+  const W=box.clientWidth, CW=(W-2*TL.M-3*TL.G)/4, secs=[...box.querySelectorAll(":scope > .tblk")];
+  box.style.setProperty("--cw",CW+"px");
+  for(const el of secs){ const w=+el.dataset.w||4; el.style.width=(w*CW+(w-1)*TL.G+2*TL.M)+"px"; }
+  const list=secs.map(el=>({id:el.dataset.blk,w:+el.dataset.w||4,h:el.offsetHeight}));
+  const g=tableGeom(ch,list,tableOrder(ch)); let bottom=0;
+  for(const el of secs){ const p=g[el.dataset.blk]; if(!p) continue; el.style.left=(p.c*(CW+TL.G))+"px"; el.style.top=p.y+"px"; bottom=Math.max(bottom,p.y+el.offsetHeight); }
+  box.style.height=(bottom+(S.layoutEdit?120:4))+"px"; S.TL={W,CW,g,list};
+  // Un bloc qui change de taille sans nouveau rendu (champ ouvert, texte saisi…) : on replace les blocs, sans chevauchement
+  if(typeof ResizeObserver==="function"&&!document.body.classList.contains("blkdragging")){ TL_RO=TL_RO||new ResizeObserver(()=>{ if(TL_RAF) return; TL_RAF=requestAnimationFrame(()=>{ TL_RAF=0; if(!document.body.classList.contains("blkdragging")) tableLayoutDom(); }); });
+    TL_RO.disconnect(); secs.forEach(el=>TL_RO.observe(el)); } }
+let TL_RO=null, TL_RAF=0;
+window.addEventListener("resize",()=>{ if(S.view==="sheet"&&S.tab==="table") tableLayoutDom(); });
 /* « Automatique (recommandé) » (demande d'Angle) : la disposition conseillée pour ce perso. Tous les blocs de base sont remis ;
    Repères à 3 colonnes avec Ressources en colonne à droite quand ses tuiles tiennent sur une ou deux rangées et qu'il y a une ressource par rangée,
    sinon pleine largeur ; Raccourcis conseillés ; Recherche et Notes côte à côte en bas ; les blocs créés sont retirés (décision d'Angle ; « Annuler » les rend). Titres d'origine. */
@@ -807,7 +849,7 @@ function autoLayout(ch){ const D=derive(ch), n=reperesAuto(ch,D).length, nr=D.re
   order.push("tour","raccourcis","recherche","notes",...cb);
   for(const id of cb){ const b=customBlocks(ch).find(x=>x.id===id); width[id]=blkWidth(ch,id,b); }
   const tiles=Object.assign({},ch.layout?.tiles); delete tiles.raccourcis;
-  ch.layout=Object.assign({},ch.layout,{order,width,hidden:[],titles:{},tiles,custom:[],inspSeen:true}); touch(S.cur); }
+  ch.layout=Object.assign({},ch.layout,{order,width,hidden:[],titles:{},tiles,custom:[],pos:{},inspSeen:true}); touch(S.cur); }
 /* Blocs retirés (ch.layout.hidden) : tous sauf Personnage et Points de vie ; on les remet par « Ajouter un bloc ». */
 const BLK_FIXED=["perso","pv"];
 const BLK_KEEP=["pv"]; // seul Points de vie ne se supprime pas (décision d'Angle) ; les autres se remettent par « + Ajouter un bloc »

@@ -49,7 +49,8 @@ document.addEventListener("click",e=>{
     case "layoutAuto": if(ch){ const snap=JSON.parse(JSON.stringify(ch.layout||{})); autoLayout(ch); const u=S.undo={doc:S.cur,layout:snap,label:"",auto:true,at:Date.now()};
       clearTimeout(S.undoTimer); S.undoTimer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; render(); } },6000); render(); } break;
     case "blkUndo": if(ch&&S.undo&&S.undo.doc===S.cur){ ch.layout=S.undo.layout; S.undo=null; clearTimeout(S.undoTimer); touch(S.cur); render(); } break;
-    case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } if(S.T) S.T.pop=null; render(); break;
+    case "layoutMag": case "layoutGrav": if(ch){ const k=a==="layoutMag"?"mag":"grav", on=k==="mag"?ch.layout?.mag===false:!ch.layout?.grav; ch.layout=Object.assign({},ch.layout,{[k]:on}); touch(S.cur); render(); } break;
+    case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; delete ch.layout.pos; touch(S.cur); } if(S.T) S.T.pop=null; render(); break;
     case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.ctile=null; S.T.pop="tiles:"+t.dataset.blk; render(); break; }
     case "tileAdd": if(ch&&!tileOkInBlk(t.dataset.v,t.dataset.blk)) break; if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=Number.isInteger(S.T.tileSlot)&&S.T.tileSlot<arr.length?S.T.tileSlot:arr.indexOf(""); if(i>=0){ arr[i]=t.dataset.v; setBlockTiles(ch,blk,arr); S.T.tileSlot=null; } else setBanner("Bloc plein : retire d’abord une tuile."); render(); } break;
     case "tileCell": if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=+t.dataset.i, j=S.T.tileSlot; // toucher une case la sélectionne ; une case pleine sélectionnée puis une autre case = déplacer ou échanger
@@ -489,18 +490,33 @@ function dragGhost(el,cls){ const r=el.getBoundingClientRect(), g=document.creat
   c.classList.remove("dragging","blkph","eqsrc","eqok","eqno","eqover"); c.style.cssText="position:static;inset:auto;transform:none;width:100%;height:100%;margin:0;box-sizing:border-box";
   g.className="dragghost "+(cls||""); g.setAttribute("aria-hidden","true"); g.style.width=r.width+"px"; g.style.height=r.height+"px"; g.appendChild(c); document.body.appendChild(g); return {g,r}; }
 const reduceMotion=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
-/* Déplacement animé des autres blocs (technique FLIP) : ils glissent vers leur nouvelle place au lieu de sauter. */
-function flipMove(box,mutate){ const els=[...box.children], before=new Map(els.map(b=>[b,b.getBoundingClientRect().top])); mutate();
-  if(reduceMotion()) return;
-  els.forEach(b=>{ const dy=before.get(b)-b.getBoundingClientRect().top; if(!dy) return; b.style.transition="none"; b.style.transform=`translateY(${dy}px)`; b.offsetHeight; b.style.transition="transform .16s ease-out"; b.style.transform=""; }); }
-const layoutTop=b=>(b.offsetParent?b.offsetParent.getBoundingClientRect().top+b.offsetParent.clientTop:0)+b.offsetTop; // place sans l'animation en cours
 let BLKD=null, BLKP=null;
 const LONG_PRESS_MS=350; // appui long avant tout glisser au doigt (blocs, tuiles, équipement)
-function blkPlace(){ if(!BLKD) return; const el=BLKD.el, box=el.parentElement; if(!box) return;
-  const others=[...box.querySelectorAll(":scope > .tblk")].filter(b=>b!==el);
-  // Blocs côte à côte (lot 2) : l'ordre se lit ligne par ligne ; dans la rangée du doigt, la moitié gauche d'un bloc passe avant lui
-  const next=others.find(b=>{ const t=layoutTop(b), l=b.getBoundingClientRect().left; return BLKD.y<t||(BLKD.y<t+b.offsetHeight&&BLKD.x<l+b.offsetWidth/2); })||null;
-  if(el.nextElementSibling!==next) flipMove(box,()=>box.insertBefore(el,next)); }
+/* Placement libre (lot B) : le bloc suit le doigt ; sa colonne s'aimante sur la grille de 4, sa hauteur sur les voisins (aimant activable).
+   Au lâcher, on enregistre une relation (« sous tel bloc », « même hauteur », « rangée 2 »…) plutôt que des pixels. */
+const SNAP=22;
+function blkDeps(ch,id){ const pos=ch.layout?.pos||{}, out=new Set([id]); let more=true; while(more){ more=false; for(const k in pos) if(!out.has(k)&&out.has(pos[k]?.a)){ out.add(k); more=true; } } return out; }
+function blkSnap(ch,id,c,y){ const L=S.TL, me=L.list.find(b=>b.id===id), g=L.g, BAND=TL.BAND, M=TL.M, GAP=TL.GAP, TH=TH_PX(), dep=blkDeps(ch,id), cands=[{y:0,rel:{t:"top",px:0},lab:"en haut"}];
+  for(const o of L.list){ if(dep.has(o.id)||!g[o.id]) continue; const oy=g[o.id].y, oc=g[o.id].c, ov=c<oc+o.w&&oc<c+me.w, nm=blkLabel(ch,o.id);
+    if(ov){ cands.push({y:oy+o.h+GAP,rel:{t:"below",a:o.id,px:0},lab:"sous « "+nm+" »"}, {y:oy+o.h+GAP+BAND,rel:{t:"below",a:o.id,px:BAND},lab:"sous « "+nm+" », espacé"}); continue; }
+    cands.push({y:oy,rel:{t:"same",a:o.id,px:0},lab:"même hauteur que « "+nm+" »"},{y:oy+BAND+M,rel:{t:"same",a:o.id,px:BAND+M},lab:"décalé d’une marge"},{y:oy+o.h-me.h,rel:{t:"bottom",a:o.id},lab:"même bas que « "+nm+" »"});
+    const rows=document.querySelector(`.tblocks.tfree>[data-blk="${o.id}"] .rtile`)?Math.round((o.h-BAND-2*M+TL.G)/(TH+TL.G)):0;
+    for(let k=1;k<rows;k++) cands.push({y:oy+k*(TH+TL.G),rel:{t:"row",a:o.id,k},lab:"rangée "+(k+1)+" de « "+nm+" »"}); }
+  if(ch.layout?.mag!==false){ let best=null; for(const k of cands){ const d=Math.abs(k.y-y); if(d<=SNAP&&(!best||d<best.d)) best=Object.assign({d},k); } if(best) return best; }
+  // Sans aimant : sous le bloc le plus bas qui le précède dans ses colonnes, avec l'écart choisi
+  let a=null, ab=0; for(const o of L.list){ if(dep.has(o.id)||!g[o.id]) continue; const oc=g[o.id].c, b=g[o.id].y+o.h+GAP; if(c<oc+o.w&&oc<c+me.w&&b<=y+1&&b>=ab){ a=o.id; ab=b; } }
+  y=Math.max(0,Math.round(y)); return {y,rel:a?{t:"below",a,px:y-ab}:{t:"top",px:y},lab:""}; }
+/* Avant le premier déplacement, les blocs encore rangés « dans l'ordre » reçoivent leur relation, pour que rien d'autre ne bouge. */
+function blkFreeze(ch){ const L=S.TL, pos=Object.assign({},ch.layout?.pos), order=tableOrder(ch).filter(id=>L.g[id]);
+  for(const id of [...order].sort((a,b)=>L.g[a].y-L.g[b].y)){ if(pos[id]) continue; const me=L.list.find(b=>b.id===id), c=L.g[id].c, y=L.g[id].y; let a=null, ab=0;
+    for(const o of L.list){ if(o.id===id||!L.g[o.id]||!pos[o.id]) continue; const oc=L.g[o.id].c, b=L.g[o.id].y+o.h+TL.GAP; if(c<oc+o.w&&oc<c+me.w&&b<=y+1&&b>=ab){ a=o.id; ab=b; } }
+    pos[id]=a?{c,t:"below",a,px:Math.max(0,y-ab)}:{c,t:"top",px:y}; }
+  return pos; }
+function blkPlace(){ if(!BLKD||!S.TL) return; const ch=cur(), box=BLKD.el.parentElement; if(!ch||!box) return;
+  const r=box.getBoundingClientRect(), L=S.TL, me=L.list.find(b=>b.id===BLKD.bid), x=BLKD.x-r.left-BLKD.dx, y=BLKD.y-r.top-BLKD.dy;
+  const c=Math.max(0,Math.min(4-me.w,Math.round(x/(L.CW+TL.G)))), s=blkSnap(ch,BLKD.bid,c,y); BLKD.drop={c,y:s.y,rel:s.rel};
+  const gh=BLKD.ph; gh.style.left=(c*(L.CW+TL.G))+"px"; gh.style.top=s.y+"px"; gh.style.width=BLKD.el.offsetWidth+"px"; gh.style.height=me.h+"px";
+  BLKD.guide.style.top=s.y+"px"; BLKD.guide.style.display=s.lab?"":"none"; BLKD.guide.firstChild.textContent=s.lab; }
 function blkGhostAt(){ if(BLKD&&BLKD.ghost){ BLKD.ghost.style.left=(BLKD.x-BLKD.dx)+"px"; BLKD.ghost.style.top=(BLKD.y-BLKD.dy)+"px"; } }
 function blkLoop(){ if(!BLKD) return; // défilement automatique près des bords, même sans bouger le doigt
   const top=(document.querySelector(".tlayouttop")?.getBoundingClientRect().bottom||0)+50;
@@ -516,12 +532,13 @@ document.addEventListener("pointerdown",e=>{
     BLKP={el,g,id:e.pointerId,x:e.clientX,y:e.clientY,timer:setTimeout(()=>{ const P=BLKP; BLKP=null; if(P) blkStart(P.el,P.g,P.id,P.x,P.y); },LONG_PRESS_MS)}; return; }
   e.preventDefault(); blkStart(el,g,e.pointerId,e.clientX,e.clientY);
 });
-function blkStart(el,g,pid,x,y){ if(!el.isConnected) return;
-  const {g:ghost,r}=dragGhost(el,"blkghost");
-  BLKD={el,id:pid,ghost,x,y,dx:Math.min(x-r.left,r.width-20),dy:Math.min(y-r.top,60)};
-  blkGhostAt(); el.classList.add("dragging","blkph"); document.body.classList.add("blkdragging");
+function blkStart(el,g,pid,x,y){ if(!el.isConnected||!S.TL) return; const box=el.parentElement;
+  const {g:ghost,r}=dragGhost(el,"blkghost"), ph=document.createElement("div"), guide=document.createElement("div");
+  ph.className="tlghost"; guide.className="tlguide"; guide.innerHTML="<span></span>"; box.append(ph,guide);
+  BLKD={el,bid:el.dataset.blk,id:pid,ghost,ph,guide,x,y,dx:x-r.left,dy:y-r.top};
+  blkGhostAt(); el.classList.add("dragging"); document.body.classList.add("blkdragging");
   try{ g.setPointerCapture(pid); }catch(err){}
-  BLKD.raf=requestAnimationFrame(blkLoop); }
+  blkPlace(); BLKD.raf=requestAnimationFrame(blkLoop); }
 document.addEventListener("pointermove",e=>{ if(BLKP&&e.pointerId===BLKP.id&&Math.hypot(e.clientX-BLKP.x,e.clientY-BLKP.y)>8){ clearTimeout(BLKP.timer); BLKP=null; } });
 ["pointerup","pointercancel"].forEach(t=>document.addEventListener(t,e=>{ if(BLKP&&e.pointerId===BLKP.id){ clearTimeout(BLKP.timer); BLKP=null; } }));
 document.addEventListener("touchmove",e=>{ if(BLKD) e.preventDefault(); },{passive:false});
@@ -529,9 +546,13 @@ document.addEventListener("pointermove",e=>{
   if(!BLKD||e.pointerId!==BLKD.id) return; e.preventDefault();
   BLKD.x=e.clientX; BLKD.y=e.clientY; blkGhostAt(); blkPlace();
 });
-function blkDragEnd(e){ if(!BLKD||e.pointerId!==BLKD.id) return; const D0=BLKD, box=D0.el.parentElement; BLKD=null;
-  cancelAnimationFrame(D0.raf); D0.ghost.remove(); D0.el.classList.remove("dragging","blkph"); document.body.classList.remove("blkdragging");
-  const ch=cur(); if(ch&&box) saveTableOrder(ch,[...box.querySelectorAll(":scope > .tblk")].map(b=>b.dataset.blk)); render(); }
+function blkDragEnd(e){ if(!BLKD||e.pointerId!==BLKD.id) return; const D0=BLKD; BLKD=null;
+  cancelAnimationFrame(D0.raf); D0.ghost.remove(); D0.ph.remove(); D0.guide.remove(); D0.el.classList.remove("dragging"); document.body.classList.remove("blkdragging");
+  const ch=cur(); if(ch&&D0.drop){ const pos=blkFreeze(ch); pos[D0.bid]=Object.assign({c:D0.drop.c},D0.drop.rel);
+    // À hauteur égale, le bloc posé passe devant : il remonte dans l'ordre avant le premier bloc qui n'est pas plus haut que lui (tient après rechargement)
+    const g=S.TL.g, o=tableOrder(ch).filter(id=>id!==D0.bid), k=o.findIndex(id=>g[id]&&g[id].y>=D0.drop.y-1); o.splice(k<0?o.length:k,0,D0.bid);
+    ch.layout=Object.assign({},ch.layout,{pos,order:o}); touch(S.cur); }
+  render(); }
 document.addEventListener("pointerup",blkDragEnd);
 document.addEventListener("pointercancel",blkDragEnd);
 

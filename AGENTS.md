@@ -30,7 +30,7 @@ Le travail se fait par **lot** : l'ensemble des modifications demandées en une 
 2. **Pendant le lot**, après chaque sujet : lancer seulement les tests concernés (le ou les nouveaux tests et leurs voisins), par exemple `node tests/run.js dist/dnd-compagnon.html --only "Pavé" --only "Tour"`. Si Playwright manque sur la machine, lancer les tests ailleurs **sur le fichier construit par ce dossier** et le dire.
 3. Relire `git diff`.
 4. Si les tests ciblés réussissent : `git add` **fichier par fichier** (jamais `git add -A` ni `git add .`), puis un commit local au message explicite. Un commit par sujet ; le message indique « Tests ciblés : N/N ».
-5. **À la fin du lot**, une seule fois : reconstruire et lancer **toute** la suite (`node tests/run.js dist/dnd-compagnon.html`, 115 tests au 11 nov. 2026). Un échec se corrige par un nouveau commit, puis toute la suite est relancée. Aucun lot n'est rendu, publié ou laissé à l'autre agent sans une suite complète réussie sur son dernier commit.
+5. **À la fin du lot**, une seule fois : reconstruire et lancer **toute** la suite (`node tests/run.js dist/dnd-compagnon.html`, 116 tests au 11 nov. 2026). Un échec se corrige par un nouveau commit, puis toute la suite est relancée. Aucun lot n'est rendu, publié ou laissé à l'autre agent sans une suite complète réussie sur son dernier commit.
 6. Communiquer au propriétaire : résumé des changements, fichiers modifiés, résultat exact des tests (ciblés par commit, complet en fin de lot), identifiants des commits.
 7. Ne jamais annoncer que les tests passent sans les avoir réellement lancés ; ne jamais présenter un résultat `--only` comme la suite complète.
 

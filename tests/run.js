@@ -958,20 +958,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tdel')).map(b => b.dataset.blk)), ['pv'], 'Supprimer sur chaque bloc sauf Points de vie');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tedpen')).map(b => b.dataset.blk)), ['perso', 'pv'], 'crayon sur chaque bloc sauf Personnage et Points de vie (lot 3)');
     ok(!await p.locator('[data-act="blkMove"]').count(), 'plus de flèches : on glisse');
+    // Placement libre (lot B) : l'ordre visible se lit de haut en bas, puis de gauche à droite
+    const vis = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].sort((a, b) => a.offsetTop - b.offsetTop || a.offsetLeft - b.offsetLeft).map(b => b.dataset.blk));
+    const noOverlap = () => p.evaluate(() => { const r = [...document.querySelectorAll('.tblocks > .tblk')].map(e => e.getBoundingClientRect()); return r.every((a, i) => r.every((b, j) => i === j || a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1)); });
     const grip = await p.locator('.tblk[data-blk="notes"] [data-blkgrip]').boundingBox(), top = await p.locator('.tblk[data-blk="perso"]').boundingBox();
     await p.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await p.mouse.down();
-    await p.mouse.move(top.x + 40, top.y + 10, { steps: 3 }); await p.mouse.up();
-    eq((await order())[0], 'notes', 'bloc glissé tout en haut par sa poignée');
-    eq(await p.evaluate(() => cur().layout.order[0]), 'notes', 'ordre glissé enregistré');
-    const title = await p.locator('.tblk[data-blk="pv"] .tblkh b').boundingBox(), first = await p.locator('.tblk[data-blk="notes"]').boundingBox();
-    await p.mouse.move(title.x + 10, title.y + title.height / 2); await p.mouse.down();
-    for (let i = 1; i <= 20; i++) await p.mouse.move(title.x + 10, title.y + title.height / 2 + (first.y + 5 - title.y - title.height / 2) * i / 20);
+    await p.mouse.move(top.x + 40, top.y + 10, { steps: 5 }); await p.mouse.up();
+    eq((await vis())[0], 'notes', 'bloc glissé tout en haut par sa poignée');
+    eq(await p.evaluate(() => [cur().layout.pos.notes.t, cur().layout.pos.notes.c, Object.keys(cur().layout.pos).length, cur().layout.order[0]]), ['top', 0, 8, 'notes'], 'position enregistrée comme relation (« en haut »), les autres blocs figés à leur place');
+    ok(await noOverlap(), 'aucun bloc ne se chevauche (les autres descendent)');
+    const band = await p.locator('.tblk[data-blk="pv"] > .tband').boundingBox(), first = await p.locator('.tblk[data-blk="notes"]').boundingBox();
+    await p.mouse.move(band.x + 80, band.y + 8); await p.mouse.down();
+    for (let i = 1; i <= 20; i++) await p.mouse.move(band.x + 80, band.y + 8 + (first.y + 8 - band.y - 8) * i / 20);
     await p.mouse.up();
-    eq((await order())[0], 'pv', 'à la souris, le bloc s’attrape aussi par son titre');
+    eq((await vis())[0], 'pv', 'à la souris, le bloc s’attrape aussi par sa bande de titre');
+    ok(await noOverlap(), 'toujours sans chevauchement');
     await p.click('[data-act="layoutDone"]');
-    ok(!await p.locator('[data-blkgrip]').count() && (await order())[0] === 'pv', 'Terminé : retour au jeu, ordre conservé');
+    ok(!await p.locator('[data-blkgrip]').count() && (await vis())[0] === 'pv', 'Terminé : retour au jeu, place conservée');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.taddblk'); await p.click('.tpop [data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
-    eq((await order())[0], 'perso', 'ordre par défaut rétabli depuis « + Ajouter un bloc »');
+    eq([(await vis())[0], await p.evaluate(() => cur().layout.pos)], ['perso', undefined], 'ordre et positions par défaut rétablis depuis « + Ajouter un bloc »');
   });
 
   await test('Supprimer en mode édition : tout de suite, sans confirmation, « Annuler » pendant quelques secondes', async p => {
@@ -994,14 +999,38 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const grip = await p.locator('.tblk[data-blk="notes"] [data-blkgrip]').boundingBox(), top = await p.locator('.tblk[data-blk="pv"]').boundingBox();
     await p.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await p.mouse.down();
     await p.mouse.move(grip.x + 30, top.y + 5, { steps: 3 });
-    const st = await p.evaluate(y => { const g = document.querySelector('.dragghost.blkghost'), ph = document.querySelector('.tblocks .tblk.blkph'), r = g.getBoundingClientRect();
-      return { op: +getComputedStyle(g).opacity, txt: g.textContent.includes('Notes'), follow: Math.abs(r.top + 30 - y) < 40, ph: ph?.dataset.blk, phH: Math.round(ph.getBoundingClientRect().height), ids: g.querySelectorAll('[id],[data-act]').length,
-        dup: document.querySelectorAll('.tblk[data-blk="notes"]').length }; }, top.y + 5);
+    const st = await p.evaluate(y => { const g = document.querySelector('.dragghost.blkghost'), ph = document.querySelector('.tblocks .tlghost'), r = g.getBoundingClientRect(), n = document.querySelector('.tblk[data-blk="notes"]');
+      return { op: +getComputedStyle(g).opacity, txt: g.textContent.includes('Notes'), follow: Math.abs(r.top + 30 - y) < 40, ph: !!ph, phH: ph && Math.abs(ph.getBoundingClientRect().height - n.offsetHeight) <= 1, ids: g.querySelectorAll('[id],[data-act]').length,
+        dup: document.querySelectorAll('.tblk[data-blk="notes"]').length, guide: document.querySelector('.tlguide span')?.textContent || '' }; }, top.y + 5);
     ok(st.op > 0.5 && st.op < 1 && st.txt && st.follow, 'copie semi-transparente sous la souris : ' + JSON.stringify(st));
-    eq([st.ph, st.phH, st.ids, st.dup], ['notes', 64, 0, 1], 'emplacement d’arrivée en pointillés ; copie sans identifiants ni actions');
-    ok(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].findIndex(b => b.dataset.blk === 'notes') < [...document.querySelectorAll('.tblocks > .tblk')].findIndex(b => b.dataset.blk === 'pv')), 'l’emplacement suit la souris');
+    eq([st.ph, st.phH, st.ids, st.dup], [true, true, 0, 1], 'emplacement d’arrivée en pointillés, à la taille du bloc ; copie sans identifiants ni actions');
+    ok(/^sous « Repères »/.test(st.guide), 'aimant : repère doré avec son nom (« ' + st.guide + ' »)');
     await p.mouse.up();
-    eq(await p.evaluate(() => [!!document.querySelector('.dragghost,.blkph'), document.body.classList.contains('blkdragging'), cur().layout.order.indexOf('notes') < cur().layout.order.indexOf('pv')]), [false, false, true], 'lâché : bloc posé, copie retirée');
+    eq(await p.evaluate(() => { const y = id => document.querySelector(`.tblk[data-blk="${id}"]`).offsetTop; return [!!document.querySelector('.dragghost,.tlghost,.tlguide'), document.body.classList.contains('blkdragging'), y('notes') < y('pv'), cur().layout.pos.notes.t, cur().layout.pos.notes.a]; }), [false, false, true, 'below', 'reperes'], 'lâché : bloc posé sous Repères, PV descend, copie retirée');
+    await p.evaluate(() => { const ch = cur(); ch.layout = JSON.parse(JSON.stringify(ch.layout)); render(); });
+    ok(await p.evaluate(() => { const y = id => document.querySelector(`.tblk[data-blk="${id}"]`).offsetTop; return y('notes') < y('pv'); }), 'même place après un nouveau rendu');
+  });
+
+  await test('Placement libre : relations entre blocs, écarts égaux, aimant et tassement activables, import', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { const ch = cur(); ch.layout = { width: { recherche: 2, notes: 2 }, pos: { perso: { c: 0, t: 'top', px: 0 }, recherche: { c: 0, t: 'below', a: 'perso', px: 0 }, notes: { c: 2, t: 'same', a: 'recherche', px: 0 }, pv: { c: 0, t: 'below', a: 'notes', px: 0 } }, hidden: ['reperes', 'ressources', 'tour', 'raccourcis'] }; render(); });
+    const g = () => p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.tblocks > .tblk')].map(e => [e.dataset.blk, { y: e.offsetTop, x: e.offsetLeft, h: e.offsetHeight, w: e.offsetWidth }])));
+    let G = await g();
+    eq([G.recherche.y - (G.perso.y + G.perso.h), G.notes.y === G.recherche.y, G.notes.x - (G.recherche.x + G.recherche.w)], [4, true, 4], 'Recherche sous Personnage, Notes en face : 4 px entre deux cadres, en hauteur comme en largeur');
+    ok(Object.values(G).every(b => b.x >= 0 && b.x + b.w <= 391), 'rien ne déborde de la page');
+    await p.evaluate(() => { const d = document.createElement('div'); d.style.height = '150px'; document.querySelector('.tblk[data-blk="notes"] .tblkc').appendChild(d); }); await p.waitForTimeout(150);
+    G = await g(); eq(G.pv.y - (G.notes.y + G.notes.h), 4, 'un bloc qui grandit sans nouveau rendu repousse celui du dessous (pas de chevauchement)');
+    await menuClick(p, '[data-act="layoutEdit"]');
+    const tg = () => p.evaluate(() => ['layoutMag', 'layoutGrav'].map(a => document.querySelector(`[data-act="${a}"]`).getAttribute('aria-pressed')));
+    eq(await tg(), ['true', 'false'], 'en édition : Aimant actif, Tasser inactif par défaut');
+    await p.click('[data-act="layoutMag"]'); await p.click('[data-act="layoutGrav"]');
+    eq([await tg(), await p.evaluate(() => [cur().layout.mag, cur().layout.grav])], [['false', 'true'], [false, true]], 'réglages enregistrés dans la fiche');
+    await p.evaluate(() => { cur().layout.pos.recherche.px = 200; render(); });
+    G = await g(); eq(G.recherche.y - (G.perso.y + G.perso.h), 4, 'Tasser : le bloc écarté remonte boucher le trou');
+    await p.click('[data-act="layoutGrav"]');
+    G = await g(); eq(G.recherche.y - (G.perso.y + G.perso.h), 204, 'sans Tasser : l’écart choisi est gardé');
+    const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { pos: { notes: { c: 7, t: 'top' } } } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
+    ok(/positions/.test(bad), 'positions invalides refusées à l’import');
   });
 
   await test('Mode disposition au doigt (iPhone) : glisser un bloc vers le haut, sous le bandeau collé', async p => {
@@ -1014,12 +1043,12 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
         const g = document.querySelector('.tblk[data-blk="tour"] [data-blkgrip]'); g.scrollIntoView({ block: 'center' });
         const fire = (type, x, y, el) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 9, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, button: 0 }));
         const r0 = g.getBoundingClientRect(); const x = r0.x + r0.width / 2; let y = r0.y + r0.height / 2; fire('pointerdown', x, y, g);
-        fire('pointermove', x, y - 40, document); await new Promise(z => setTimeout(z, 50)); const scrollOnly = !document.querySelector('.blkph'); fire('pointerup', x, y - 40, document);
-        fire('pointerdown', x, y, g); await new Promise(z => setTimeout(z, 420)); if (!document.querySelector('.blkph') || !scrollOnly) return ['appui long non respecté'];
+        fire('pointermove', x, y - 40, document); await new Promise(z => setTimeout(z, 50)); const scrollOnly = !document.querySelector('.tlghost'); fire('pointerup', x, y - 40, document);
+        fire('pointerdown', x, y, g); await new Promise(z => setTimeout(z, 420)); if (!document.querySelector('.tlghost') || !scrollOnly) return ['appui long non respecté'];
         for (let i = 0; i < 400; i++) { const r = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(); y = Math.max(5, r.top + 8); fire('pointermove', x, y, document); await new Promise(z => setTimeout(z, 10));
-          if (document.querySelector('.tblocks').children[1]?.dataset.blk === 'tour') break; }
-        fire('pointerup', x, y, document); return cur().layout.order.slice(0, 3); });
-      eq(order, ['perso','tour','reperes'], 'bloc remonté au doigt, ordre enregistré');
+          if (BLKD?.drop?.rel?.a === 'perso' && BLKD.drop.rel.t === 'below' && !BLKD.drop.rel.px) break; }
+        fire('pointerup', x, y, document); return [...document.querySelectorAll('.tblocks > .tblk')].sort((a, b) => a.offsetTop - b.offsetTop).map(b => b.dataset.blk).slice(0, 3); });
+      eq(order, ['perso','tour','reperes'], 'bloc remonté au doigt sous Personnage, Repères descend');
       if (errs.length) throw new Error('Erreur JS : ' + errs.join(' | '));
     } finally { await ctx.close(); }
   });
@@ -1191,18 +1220,20 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Repères et Ressources côte à côte : 6 valeurs + 2 ressources sur une grille de 4, tuiles de même taille, petite fenêtre', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 2; render(); });
-    eq(await p.evaluate(() => [!!document.querySelector('.tblk[data-blk="reperes"] .rpair'), !document.querySelector('.tblk[data-blk="ressources"]')]), [true, true], 'paladin 2 (6 repères, 2 ressources) : un seul bloc, Ressources à droite');
-    const geo = await p.evaluate(() => { const r = [...document.querySelectorAll('.rpair > .rtile')].map(e => e.getBoundingClientRect()); return { n: r.length, w: [...new Set(r.map(x => Math.round(x.width)))], h: [...new Set(r.map(x => Math.round(x.height)))], res: [...document.querySelectorAll('.rpair .rrestile')].map(e => Math.round(e.getBoundingClientRect().left) > Math.round(r[2].left)) }; });
-    eq([geo.n, geo.w.length, geo.h.length, geo.res], [8, 1, 1, [true, true]], 'huit tuiles de même largeur et même hauteur, ressources dans la 4ᵉ colonne : ' + JSON.stringify(geo));
-    ok(await p.evaluate(() => { const l = document.querySelector('.rpair .rp1 .label'); return l.scrollWidth <= l.clientWidth + 1; }), 'titre « Ressources » entier dans sa colonne');
-    await p.click('.rpair .rrestile:last-child');
+    const pair = () => p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="reperes"]'), b = document.querySelector('.tblk[data-blk="ressources"]'); return [a.dataset.w, b.dataset.w, a.offsetTop === b.offsetTop, b.getBoundingClientRect().left > a.getBoundingClientRect().right]; });
+    eq(await pair(), ['3', '1', true, true], 'paladin 2 (6 repères, 2 ressources), rien de réglé : Repères sur 3 colonnes, Ressources juste à droite');
+    const geo = await p.evaluate(() => { const t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => e.getBoundingClientRect()), r = [...document.querySelectorAll('.tblk[data-blk="ressources"] .rrestile')].map(e => e.getBoundingClientRect()), all = [...t, ...r];
+      return { n: all.length, w: Math.max(...all.map(x => x.width)) - Math.min(...all.map(x => x.width)), h: Math.max(...all.map(x => x.height)) - Math.min(...all.map(x => x.height)), rows: r.map((x, k) => Math.abs(x.top - t[3 * k].top) < 1), gap: Math.round(r[0].left - t[2].right) }; });
+    eq([geo.n, geo.w < 1.5, geo.h < 1, geo.rows, geo.gap], [8, true, true, [true, true], 12], 'huit tuiles de même taille, rangées de ressources en face des rangées de repères, 12 px d’écart : ' + JSON.stringify(geo));
+    ok(await p.evaluate(() => { const l = document.querySelector('.tblk[data-blk="ressources"] > .tband'); return l.textContent === 'Ressources' && l.scrollWidth <= l.clientWidth + 1; }), 'titre « Ressources » entier dans sa colonne');
+    await p.click('.tblk[data-blk="ressources"] .rrestile:last-child');
     eq(await p.evaluate(() => [S.T.pop.startsWith('res:'), !!document.querySelector('.tpop .pips,.tpop .rresstep,.tpop .rresopen')]), [true, true], 'toucher une ressource ouvre la petite fenêtre');
     await p.evaluate(() => { S.T.pop = 'res:cls:imposition-des-mains'; render(); }); await p.click('.tpop [data-act="resstep"][data-v="1"]');
-    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], document.querySelector('.rpair .rrestile').querySelector('.num').textContent]), [1, '9/10'], 'dépense dans la fenêtre, tuile à jour');
+    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], document.querySelector('.tblk[data-blk="ressources"] .rrestile').querySelector('.num').textContent]), [1, '9/10'], 'dépense dans la fenêtre, tuile à jour');
     await p.keyboard.press('Escape'); await p.evaluate(() => { cur().level = 3; render(); });
-    ok(await p.evaluate(() => !document.querySelector('.rpair') && !!document.querySelector('.tblk[data-blk="ressources"] .rresgrid')), 'paladin 3 (3 ressources) : Ressources reprend toute la largeur');
+    ok(await p.evaluate(() => document.querySelector('.tblk[data-blk="ressources"]').dataset.w === '4' && !!document.querySelector('.tblk[data-blk="ressources"] .rresgrid')), 'paladin 3 (3 ressources) : Ressources reprend toute la largeur');
     await p.evaluate(() => { cur().level = 2; S.layoutEdit = true; render(); });
-    ok(await p.evaluate(() => !document.querySelector('.rpair') && !!document.querySelector('.tblk[data-blk="ressources"]')), 'mode disposition : deux blocs séparés, déplaçables');
+    eq(await pair(), ['3', '1', true, true], 'mode édition : même placement qu’en jeu, deux blocs déplaçables');
     await p.evaluate(() => { S.layoutEdit = false; render(); });
   });
 
@@ -1210,7 +1241,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 2; render(); });
     await menuClick(p, '[data-act="layoutEdit"]');
     await p.click('.tblk[data-blk="reperes"] .tedpen');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkWidth"]')].map(b => b.dataset.w + (b.getAttribute('aria-pressed') === 'true' ? '*' : ''))), ['2', '3', '4*'], 'Repères : 2, 3 ou 4 colonnes (4 par défaut)');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkWidth"]')].map(b => b.dataset.w + (b.getAttribute('aria-pressed') === 'true' ? '*' : ''))), ['2', '3*', '4'], 'Repères : 2, 3 ou 4 colonnes (3 par défaut pour ce paladin 2, Ressources à côté)');
     await p.click('.tpop [data-act="blkWidth"][data-w="3"]'); await p.keyboard.press('Escape');
     await p.click('.tblk[data-blk="ressources"] .tedpen'); await p.click('.tpop [data-act="blkWidth"][data-w="1"]'); await p.keyboard.press('Escape');
     eq(await p.evaluate(() => cur().layout.width), { reperes: 3, ressources: 1 }, 'largeurs enregistrées dans la fiche');
@@ -1297,7 +1328,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq((await pos()).includes('skills:1@1,0'), true, '2×2 refusé faute de place');
     await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
     const g = await p.evaluate(id => { const b = document.querySelector(`.tblk[data-blk="${id}"]`); const c = [...b.querySelectorAll('.ccell')].map(e => e.getBoundingClientRect());
-      return { name: b.querySelector('.tbhead .label').textContent, n: c.length, full: Math.round(c[0].width) > Math.round(c[1].width) * 2, plus: b.querySelectorAll('.rtile.vide').length, ov: document.documentElement.scrollWidth <= innerWidth, pen: !!b.querySelector('.tbpen') }; }, id);
+      return { name: b.querySelector(':scope > .tband').textContent, n: c.length, full: Math.round(c[0].width) > Math.round(c[1].width) * 2, plus: b.querySelectorAll('.rtile.vide').length, ov: document.documentElement.scrollWidth <= innerWidth, pen: !!b.querySelector('.tbpen') }; }, id);
     eq(g, { name: 'Combat', n: 4, full: true, plus: 1, ov: true, pen: false }, 'rendu : CA sur toute la ligne, une case libre, pas de crayon en jeu, pas de débordement');
     eq(await p.evaluate(id => { const b = document.querySelector(`.tblk[data-blk="${id}"] .cgrid`); const v = b.querySelector('.rtile.vide').getBoundingClientRect(), r = b.getBoundingClientRect(); return [Math.round((v.left - r.left) / r.width * 3), Math.round((v.top - r.top) / r.height * 2)]; }, id), [1, 1], 'case libre au milieu de la 2e ligne');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] .tedpen`); await p.click('.tpop [data-act="ctileCell"][data-cell="4"]');
@@ -1462,7 +1493,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('« Automatique (recommandé) » : disposition conseillée selon le perso, Annuler ; liseré sur chaque bloc', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 2; cur().layout = { order: ['notes', 'perso'], hidden: ['tour'], titles: { notes: 'X' } }; render(); });
-    ok(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].every(b => getComputedStyle(b).outlineStyle === 'solid' && parseFloat(getComputedStyle(b).outlineWidth) >= 1)), 'en jeu, chaque bloc a un liseré');
+    ok(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].every(b => getComputedStyle(b).borderTopStyle === 'solid' && parseFloat(getComputedStyle(b).borderTopWidth) >= 1)), 'en jeu, chaque bloc a un liseré');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-act="layoutAuto"]');
     eq(await p.evaluate(() => [cur().layout.order.slice(0, 7), cur().layout.width, cur().layout.hidden, cur().layout.titles]), [['perso', 'reperes', 'ressources', 'pv', 'tour', 'raccourcis', 'recherche'], { recherche: 2, notes: 2, reperes: 3, ressources: 1 }, [], {}],
       'paladin 2 (6 repères, 2 ressources) : Ressources à droite de Repères, Recherche et Notes côte à côte, tout remis');
@@ -1484,9 +1515,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().layout.width.raccourcis, getComputedStyle(document.querySelector('.tpop .bprev .tpgrid')).gridTemplateColumns.split(' ').length]), [2, 1], 'format 2 colonnes : aperçu des tuiles sur une colonne, dans la fenêtre');
     await p.fill('.tpop input[data-btitle="raccourcis"]', 'Mes outils'); await p.press('.tpop input[data-btitle="raccourcis"]', 'Tab');
     await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
-    eq(await p.evaluate(() => document.querySelector('.tblk[data-blk="raccourcis"] .tbhead .label').textContent), 'Mes outils', 'titre changé');
+    eq(await p.evaluate(() => document.querySelector('.tblk[data-blk="raccourcis"] > .tband').textContent), 'Mes outils', 'titre changé, dans la bande du bloc');
     await p.evaluate(() => { cur().layout.titles.raccourcis = ''; render(); });
-    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="raccourcis"] .tbhead')), 'titre vide : masqué');
+    eq(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="raccourcis"] > .tband'); return [b.textContent, Math.round(b.getBoundingClientRect().height)]; }), ['', 16], 'titre vide : masqué, la bande garde sa hauteur (même marge pour tous)');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] .tedpen');
     ok(await p.evaluate(() => !!document.querySelector('.tpop .bprev .rtiles') && document.querySelectorAll('.tpop .bpats .bpat').length === 3), 'Repères : 3 formats et aperçu de ses tuiles');
     await p.keyboard.press('Escape'); await p.click('.tblk[data-blk="raccourcis"] .tedpen'); await p.click('.tpop [data-act="blkResetOne"]');

@@ -430,8 +430,6 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .rresopen{gap:2px}
 .rres .pip{width:24px;height:24px}.rres .pips{gap:6px}
 /* Repères + Ressources côte à côte : une seule grille de 4 colonnes, tuiles de même taille */
-.rpair{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:auto;grid-auto-rows:1fr;gap:8px}.rpair .tbhead{margin-bottom:0}.rpair .rp3{grid-column:span 3}.rpair .rp1{grid-column:span 1}
-.rpair .rp1 .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
 .rrestile .num small{font-size:var(--fs-xs);font-weight:400;color:var(--muted)}.rrestile.vide0{opacity:.6}
 .rrespop .pip{width:28px;height:28px}.rrespop .pips{gap:8px;justify-content:center}
 /* Fenêtre du crayon (lot 3) : formats en miniatures, aperçu à la taille réelle */
@@ -451,3 +449,27 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .tblocks:not(.editing){row-gap:20px;padding:4px 0}
 .tblocks:not(.editing)>.tblk .tside,.tblocks:not(.editing)>.tblk .health-card{border-color:transparent;box-shadow:none}
 .tbhead .label.rp1l{letter-spacing:0;font-size:var(--fs-xs)}
+
+/* ===== « À la table » en placement libre (lot B) : 4 colonnes, blocs posés en position absolue par tableLayoutDom() =====
+   Mesures du prototype validé : 12 px entre tuiles (aussi d'un bloc à l'autre), cadre de 4 px (bordure 1 + marge 3), bande de titre de 16 px sur chaque bloc. */
+:root{--th:76px}
+.tblocks.tfree{display:block;position:relative;max-width:860px;margin:0 auto;padding:0;min-height:40px}
+.tblocks.tfree>.tblk,.tblocks.tfree.editing>.tblk.ted{position:absolute;top:0;left:0;box-sizing:border-box;padding:0 3px 3px;border:1px solid var(--line);border-radius:12px;outline:0;background:transparent;margin:0;width:100%}
+.tblocks.tfree>.tblk>.tband{height:16px;line-height:16px;padding:0 6px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tblocks.tfree .rtiles,.tblocks.tfree .rresgrid,.tblocks.tfree .rrescol,.tblocks.tfree .cgrid{gap:12px;grid-auto-rows:var(--th)}
+.tblocks.tfree .rrescol{grid-auto-rows:var(--th)}
+.tblocks.tfree .rtile{min-height:0;height:100%;box-sizing:border-box}
+.tblocks.tfree.editing>.tblk.ted{border:1.5px dashed var(--brass);padding:0 3px 3px;background:var(--sheet);cursor:default}
+.tblocks.tfree.editing>.tblk>.tband{padding-left:46px;padding-right:44px}
+.tblocks.tfree.editing>.tblk>.tblkgrip{position:absolute;left:-1px;top:-1px;min-width:40px;min-height:40px;z-index:3;background:var(--sheet);border-radius:12px 0 12px 0}
+.tblocks.tfree.editing>.tblk>.tedpen{position:absolute;right:2px;top:2px;min-width:34px;min-height:34px;z-index:3;margin:0}
+.tblocks.tfree.editing>.tblk>.tdel{position:absolute;right:2px;bottom:2px;z-index:3;min-width:30px;min-height:30px;padding:0;border-radius:999px;border:1px solid var(--blood);background:color-mix(in srgb,var(--blood) 55%,var(--sheet));color:#f6dada;font-size:var(--fs-sm);left:auto}
+.tblocks.tfree>.tblk.dragging{opacity:.35}
+.tlguide{position:absolute;left:0;right:0;height:0;border-top:2px solid var(--brass);z-index:5;pointer-events:none}
+.tlguide span{position:absolute;right:0;top:-18px;font-size:var(--fs-xs);color:var(--brass);background:var(--sheet);padding:0 4px;border-radius:4px}
+.tlghost{position:absolute;border:2px dashed var(--brass);border-radius:12px;background:color-mix(in srgb,var(--brass) 10%,transparent);z-index:1;pointer-events:none}
+.tedbar .chip[aria-pressed="true"]{background:var(--tgrad);border-color:var(--brass);color:var(--ink)}
+.tblocks.tfree>.tblk.w1>.tband{letter-spacing:0;padding:0 2px}
+.blkghost>.tblk{padding:0 3px 3px}
+.blkghost>.tblk>.tband{height:16px;line-height:16px;padding:0 6px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blkghost .tblkgrip,.blkghost .tedpen,.blkghost .tdel{display:none}
