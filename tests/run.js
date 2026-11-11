@@ -1430,7 +1430,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Bloc personnalisé : changer de format (miniatures), les tuiles qui ne tiennent plus retournent dans la réserve ; titre vide', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_fmt12345', name: 'Combat', r: 2, c: 4, tiles: [{ id: 'ca', sz: 'l', r: 0, c: 0 }, { id: 'init', sz: '1', r: 1, c: 0 }, { id: 'pp', sz: '1', r: 1, c: 3 }] }] }); S.T.pop = 'tiles:c_fmt12345'; render(); });
-    eq(await p.evaluate(() => document.querySelector('.tpop .bpat[aria-pressed="true"] small').textContent), '4 col. · 2 rangs', 'format actuel en évidence');
+    eq(await p.evaluate(() => document.querySelector('.tpop .bpat[data-act="blkPat"][aria-pressed="true"]').getAttribute('aria-label')), '4 col. · 2 rangs', 'format actuel en évidence');
     await p.click('.tpop [data-act="blkPat"][data-r="2"][data-c="2"]');
     eq(await p.evaluate(() => { const b = cur().layout.custom[0]; return [b.r + '×' + b.c, cur().layout.width.c_fmt12345, b.tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`).join(' '), S.T.pop]; }),
       ['2×2', 2, 'ca:l@0,0 init:1@1,0', 'tiles:c_fmt12345'], '2 colonnes × 2 rangs : CA reste en ligne, Initiative garde sa case, Perception passive retirée');
@@ -1440,10 +1440,30 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().layout.custom[0].name, !document.querySelector('.tblk[data-blk="c_fmt12345"] .tbhead')]), ['', true], 'titre vide : le bloc n’a pas de titre');
   });
 
+  await test('Agencements : 3 + 1 ligne, la tuile prend la taille de la case, la réserve se grise selon la case, changer d’agencement', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_agaaaaaa', name: 'Combat', r: 2, c: 3, tiles: [] }], width: { c_agaaaaaa: 3 } }); S.layoutEdit = true; render(); S.T.pop = 'tiles:c_agaaaaaa'; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkAg"]')].map(b => b.dataset.ag)), ['s', 'lb', 'lt', 'g', 'gr', 'll'], '3 colonnes × 2 rangs : six agencements en miniatures');
+    ok(await p.evaluate(() => !document.querySelector('.tpop .bpat small')), 'miniatures sans libellé');
+    await p.click('.tpop [data-act="blkAg"][data-ag="lb"]');
+    eq(await p.evaluate(() => [cur().layout.custom[0].ag, document.querySelectorAll('.tpop .bprev .tcell.libre').length]), ['lb', 4], 'agencement « 3 + 1 ligne » : 3 cases + 1 ligne vides dans l’aperçu');
+    await p.click('.tpop .bprev .tcell.libre[data-cell="3"]');
+    ok(await p.evaluate(() => !!document.querySelector('.tpop .tres [data-t="skills"]')), 'ligne choisie : les tuiles larges sont proposées');
+    await p.click('.tpop .tres [data-act="ctileAdd"][data-t="skills"]');
+    await p.click('.tpop .bprev .tcell.libre[data-cell="0"]');
+    ok(await p.evaluate(() => !document.querySelector('.tpop .tres [data-act="ctileAdd"][data-t="saves"]') && !!document.querySelector('.tpop .tres .toff')), 'petite case choisie : les tuiles trop larges sont grisées');
+    await p.click('.tpop .tres [data-act="ctileAdd"][data-t="ca"]');
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`).sort()), ['ca:1@0,0', 'skills:l@1,0'], 'Tests en ligne entière, CA dans sa case');
+    await p.click('.tpop [data-act="blkAg"][data-ag="g"]');
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`)), ['ca:2@0,0'], 'agencement « grande case » : la CA prend la grande case, Tests retourne dans la réserve');
+    await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
+    ok(await p.evaluate(() => { const c = document.querySelector('.tblk[data-blk="c_agaaaaaa"] .ccell').getBoundingClientRect(); return c.height > 120; }), 'en jeu, la CA occupe deux rangs');
+  });
+
   await test('Blocs de base : titre modifiable (vide = masqué), formats en miniatures, aperçu à la taille réelle, remettre comme à l’origine', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
     await p.click('.tblk[data-blk="raccourcis"] .tedpen');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .bpats .bpat small')].map(x => x.textContent)), ['2 colonnes', '4 colonnes'], 'Raccourcis : deux formats');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .bpats .bpat')].map(x => x.getAttribute('aria-label') + (x.querySelector('small') ? '+texte' : ''))), ['2 colonnes', '4 colonnes'], 'Raccourcis : deux formats');
     await p.click('.tpop [data-act="blkWidth"][data-w="2"]');
     eq(await p.evaluate(() => [cur().layout.width.raccourcis, getComputedStyle(document.querySelector('.tpop .bprev .tpgrid')).gridTemplateColumns.split(' ').length]), [2, 1], 'format 2 colonnes : aperçu des tuiles sur une colonne, dans la fenêtre');
     await p.fill('.tpop input[data-btitle="raccourcis"]', 'Mes outils'); await p.press('.tpop input[data-btitle="raccourcis"]', 'Tab');

@@ -443,3 +443,5 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .bpb{display:grid;gap:2px;padding:2px;border:1px solid var(--brass);border-radius:3px}.bpb i{display:block;height:7px;border-radius:1.5px;background:var(--brass);opacity:.75}
 .bpe{border:1px dashed var(--line);border-radius:3px;min-height:12px;opacity:.6}
 .bprev{max-width:100%;transition:width .2s}.bprevc{pointer-events:none}
+.bag{display:grid;gap:2px;padding:2px}.bag i{display:block;min-height:9px;border-radius:1.5px;background:var(--brass);opacity:.75}
+.bpat{justify-content:center;min-height:44px}

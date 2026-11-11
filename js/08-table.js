@@ -646,7 +646,28 @@ const blkWidthSet=(ch,id)=>Number.isInteger(+ch.layout?.width?.[id])&&!!ch.layou
 /* Formats d'un bloc créé (lot 3) : largeur sur la page × rangées de tuiles ; une tuile = une colonne de page ; 8 cases au plus. */
 const CUSTOM_PATS=[[1,1],[2,1],[3,1],[4,1],[1,2],[2,2],[3,2],[4,2],[1,3],[2,3],[1,4],[2,4]];
 // Miniature d'un format : la page sur 4 colonnes, le bloc occupe w colonnes, avec sa grille de tuiles
-const patThumb=(w,r,c,on,attrs,label)=>`<button class="bpat" aria-pressed="${!!on}" ${attrs}><span class="bpg"><span class="bpb" style="grid-column:span ${w};grid-template-columns:repeat(${c},1fr)">${"<i></i>".repeat(r*c)}</span>${"<span class=\"bpe\"></span>".repeat(4-w)}</span><small>${label}</small></button>`;
+const patThumb=(w,r,c,on,attrs,label)=>`<button class="bpat" aria-pressed="${!!on}" ${attrs} aria-label="${esc(label)}" title="${esc(label)}"><span class="bpg"><span class="bpb" style="grid-column:span ${w};grid-template-columns:repeat(${c},1fr)">${"<i></i>".repeat(r*c)}</span>${"<span class=\"bpe\"></span>".repeat(4-w)}</span></button>`;
+/* Agencements d'un bloc créé (décision d'Angle) : découpes prêtes des cases (lignes entières, grande case 2×2, demi-lignes).
+   b.ag = identifiant ; agSlots donne les cases {r,c,sz} qui couvrent tout le bloc ; une tuile posée dans une case prend sa taille. */
+function agList(R,C){ const L=[["s","Cases simples"]];
+  if(C>=2&&R===1) L.push(["l","Une ligne entière"]);
+  if(C>=2&&R>=2) L.push(["lb","Ligne entière en bas"],["lt","Ligne entière en haut"]);
+  if(C>=2&&R>=2) L.push(["g","Grande case à gauche"]);
+  if(C>=3&&R>=2) L.push(["gr","Grande case à droite"]);
+  if(C>=2&&R>=2) L.push(["ll","Lignes entières"]);
+  if(C===4) L.push(["h","Demi-lignes"]);
+  return L; }
+function agSlots(R,C,ag){ const S0=[], used=Array.from({length:R},()=>Array(C).fill(false)), put=(r,c,sz)=>{ const [h,w]=tileSpan(sz,R,C); for(let i=r;i<r+h;i++) for(let j=c;j<c+w;j++) used[i][j]=true; S0.push({r,c,sz}); };
+  if(ag==="l"||ag==="ll") for(let r=0;r<R;r++) put(r,0,"l");
+  if(ag==="lb") put(R-1,0,"l"); if(ag==="lt") put(0,0,"l");
+  if(ag==="g") put(0,0,"2"); if(ag==="gr") put(0,C-2,"2");
+  if(ag==="h") for(let r=0;r<R;r++){ put(r,0,"12"); put(r,2,"12"); }
+  for(let r=0;r<R;r++) for(let c=0;c<C;c++) if(!used[r][c]) put(r,c,"1");
+  return S0.sort((a,b)=>a.r-b.r||a.c-b.c); }
+const bSlots=b=>agSlots(b.r,b.c,agList(b.r,b.c).some(a=>a[0]===b.ag)?b.ag:"s");
+const slotAt=(b,r,c)=>bSlots(b).find(x=>x.r===r&&x.c===c);
+const slotOk=(b,id,sl)=>tileSizeOk(id,sl.sz,b.r,b.c)&&tileFits(id,sizeW(sl.sz,b.c,b.w||4));
+const agThumb=(R,C,ag,on,attrs,label)=>`<button class="bpat" aria-pressed="${!!on}" ${attrs} aria-label="${esc(label)}" title="${esc(label)}"><span class="bpb bag" style="grid-template-columns:repeat(${C},1fr);grid-template-rows:repeat(${R},9px);width:${C*12+8}px">${agSlots(R,C,ag).map(x=>{ const [h,w]=tileSpan(x.sz,R,C); return `<i style="grid-row:${x.r+1}/span ${h};grid-column:${x.c+1}/span ${w};height:auto"></i>`; }).join("")}</span></button>`;
 // Largeur de l'aperçu dans la fenêtre : w colonnes sur 4 (écart 8 px), comme sur la page
 const prevW=w=>`width:calc((100% - 24px) * ${w} / 4 + ${8*(w-1)}px)`;
 /* Titre des blocs de base (lot 3) : ch.layout.titles[id] ; vide = pas de titre. */
@@ -700,7 +721,7 @@ function cGrid(b){ const R=b.r,C=b.c, out=[], seen=new Set();
 /* Poser une tuile (src {i} déjà posée ou {id} venue de la réserve) sur la case {r,c} ; renvoie la nouvelle liste, ou null s'il n'y a pas la place.
    Une tuile de la réserve remplace ce qu'elle recouvre ; une tuile déplacée sur une autre l'échange si l'autre tient à son ancienne place. */
 function cMove(b,src,dst){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.assign({},t)); let t, old=null;
-  if(src.id!==undefined){ if(list.some(x=>x.id===src.id)) return null; const sz=src.sz||fitSize(b,src.id); if(!sz) return null; t={id:src.id,sz}; } else { t=list[src.i]; if(!t) return null; old={r:t.r,c:t.c}; list.splice(src.i,1); }
+  if(src.id!==undefined){ if(list.some(x=>x.id===src.id)) return null; const sl=!src.sz&&slotAt(b,dst.r,dst.c), sz=src.sz||(sl&&slotOk(b,src.id,sl)?sl.sz:fitSize(b,src.id)); if(!sz) return null; t={id:src.id,sz}; } else { t=list[src.i]; if(!t) return null; old={r:t.r,c:t.c}; list.splice(src.i,1); }
   const [h,w]=tileSpan(t.sz,R,C); t=Object.assign({},t,{r:Math.max(0,Math.min(dst.r,R-h)),c:t.sz==="l"||t.sz==="b"?0:Math.max(0,Math.min(dst.c,C-w))});
   const conf=list.filter(x=>tilesHit(x,t,R,C));
   if(conf.length){
@@ -729,16 +750,23 @@ function customPop(ch,D,id,wrap){
   const cat=customCat(), {tiles,occ}=cGrid(b), R=b.r, C=b.c, selT=Number.isInteger(S.T.ctile)&&tiles[S.T.ctile]?S.T.ctile:-1, selC=Number.isInteger(S.T.tileSlot)?S.T.tileSlot:-1;
   const face=x=>`<span class="tface">${tileFace(ch,D,"",x)}</span><span class="tname">${esc(cat[x]||x)}</span>`;
   let cells=tiles.map((t,i)=>`<button class="tcell${selT===i?" on":""}${TILE_META[t.id]?.act?" tact":""}" style="${cellStyle(t,R,C)}" data-act="ctileSel" data-v="${id}" data-i="${i}" data-tslot="" data-tdrag="ctile" data-cblk="${id}" aria-pressed="${selT===i}" aria-label="${esc(cat[t.id]||t.id)}">${face(t.id)}</button>`).join("");
-  occ.forEach((row,r)=>row.forEach((k,c)=>{ const n=r*C+c; if(k<0) cells+=`<button class="tcell libre${selC===n?" on":""}" style="grid-row:${r+1};grid-column:${c+1}" data-act="ctileCell" data-v="${id}" data-cell="${n}" data-tslot="" aria-pressed="${selC===n}" aria-label="Case libre, ligne ${r+1}, colonne ${c+1}">+</button>`; }));
+  // Cases libres selon l'agencement : une case n'apparaît que si aucune de ses cellules n'est prise ; sinon ses cellules libres restent simples
+  const slots=bSlots(b), done=Array.from({length:R},()=>Array(C).fill(false));
+  for(const sl of slots){ const [h,w]=tileSpan(sl.sz,R,C); let free=true; for(let i=sl.r;i<sl.r+h;i++) for(let j=sl.c;j<sl.c+w;j++) if(occ[i][j]>=0) free=false;
+    if(!free) continue; const n=sl.r*C+sl.c; for(let i=sl.r;i<sl.r+h;i++) for(let j=sl.c;j<sl.c+w;j++) done[i][j]=true;
+    cells+=`<button class="tcell libre${selC===n?" on":""}" style="${cellStyle(sl,R,C)}" data-act="ctileCell" data-v="${id}" data-cell="${n}" data-tslot="" aria-pressed="${selC===n}" aria-label="Case libre, ligne ${sl.r+1}, colonne ${sl.c+1}">+</button>`; }
+  occ.forEach((row,r)=>row.forEach((k,c)=>{ const n=r*C+c; if(k<0&&!done[r][c]) cells+=`<button class="tcell libre${selC===n?" on":""}" style="grid-row:${r+1};grid-column:${c+1}" data-act="ctileCell" data-v="${id}" data-cell="${n}" data-tslot="" aria-pressed="${selC===n}" aria-label="Case libre, ligne ${r+1}, colonne ${c+1}">+</button>`; }));
+  const selSlot=selC>=0?slotAt(b,Math.floor(selC/C),selC%C):null, okT=x=>selSlot?slotOk(b,x,selSlot):!!fitSize(b,x);
   const free=occ.flat().some(k=>k<0);
-  const unused=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&tileAvailable(ch,"",x)).sort((a,c)=>!fitSize(b,a)-!fitSize(b,c));
-  const res=unused.length?unused.map(x=>fitSize(b,x)?`<button class="tcell tmini${TILE_META[x]?.act?" tact":""}" data-act="ctileAdd" data-v="${id}" data-t="${x}" data-tdrag="cres" data-cblk="${id}" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`
-      :`<span class="tcell tmini toff" aria-disabled="true" title="Trop large pour ce bloc">${face(x)}<small class="toffwhy">Trop large pour ce bloc</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
+  const unused=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&tileAvailable(ch,"",x)).sort((a,c)=>!okT(a)-!okT(c));
+  const res=unused.length?unused.map(x=>okT(x)?`<button class="tcell tmini${TILE_META[x]?.act?" tact":""}" data-act="ctileAdd" data-v="${id}" data-t="${x}" data-tdrag="cres" data-cblk="${id}" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`
+      :`<span class="tcell tmini toff" aria-disabled="true" title="Trop large pour ${selSlot?"cette case":"ce bloc"}">${face(x)}<small class="toffwhy">Trop large pour ${selSlot?"cette case":"ce bloc"}</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
   const t=tiles[selT], sizes=t?TILE_SIZES.filter(([z])=>tileSizeOk(t.id,z,R,C)):[];
   const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>tileFits(t.id,sizeW(z,C,b.w||4))?`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`:`<span class="chip toff" aria-disabled="true" title="Trop étroit pour cette tuile">${l}</span>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
   const w=b.w||4, pats=CUSTOM_PATS.map(([r,ww])=>patThumb(ww,r,ww,r===R&&ww===C&&ww===w,`data-act="blkPat" data-v="${id}" data-r="${r}" data-c="${ww}"`,`${ww} col. · ${r} rang${r>1?"s":""}`)).join("");
   return wrap("Bloc : "+(b.name||"sans titre"),`<label class="field"><span>Titre (vide = pas de titre)</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
     <div class="label" style="margin:14px 0 6px">Format</div><div class="bpats">${pats}</div>
+    ${agList(R,C).length>1?`<div class="label" style="margin:14px 0 6px">Agencement</div><div class="bpats">${agList(R,C).map(([a,l])=>agThumb(R,C,a,(agList(R,C).some(z=>z[0]===b.ag)?b.ag:"s")===a,`data-act="blkAg" data-v="${id}" data-ag="${a}"`,l)).join("")}</div>`:""}
     <div class="label" style="margin:14px 0 6px">Tuiles <span class="muted" style="text-transform:none;letter-spacing:0">· aperçu à la taille réelle</span></div>
     <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},minmax(60px,auto))">${cells}</div></div>${selBar}
     <div class="muted" style="font-size:var(--fs-sm);margin:8px 0">Touche une case libre puis une tuile de la réserve, ou glisse une tuile (au doigt : appui long). Touche une tuile posée pour changer sa taille ; glisse-la hors du bloc pour la retirer.</div>

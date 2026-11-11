@@ -30,9 +30,15 @@ document.addEventListener("click",e=>{
       touch(S.cur); render(); } break;
     // Format d'un bloc créé (lot 3) : rangées × largeur ; les tuiles qui ne tiennent plus retournent dans la réserve
     case "blkPat": if(ch){ const id=t.dataset.v, list=customCopy(ch), b=list.find(x=>x.id===id), r=+t.dataset.r, c=+t.dataset.c;
-      if(b&&CUSTOM_PATS.some(([a,w])=>a===r&&w===c)){ b.w=c; const [keep,out]=cReformat(b,r,c); b.r=r; b.c=c; const fit=keep.filter(x=>tileFits(x.id,sizeW(x.sz||"1",c,c))), drop=out.concat(keep.filter(x=>!fit.includes(x)).map(x=>x.id));
+      if(b&&CUSTOM_PATS.some(([a,w])=>a===r&&w===c)){ b.w=c; delete b.ag; const [keep,out]=cReformat(b,r,c); b.r=r; b.c=c; const fit=keep.filter(x=>tileFits(x.id,sizeW(x.sz||"1",c,c))), drop=out.concat(keep.filter(x=>!fit.includes(x)).map(x=>x.id));
         b.tiles=fit.map(x=>({id:x.id,sz:x.sz||"1",r:x.r,c:x.c})); list.forEach(x=>delete x.w); saveCustom(ch,list); ch.layout.width=Object.assign({},ch.layout.width,{[id]:c}); touch(S.cur);
         if(drop.length){ const cat=customCat(); setBanner("Retour dans la réserve : "+drop.map(x=>cat[x]||x).join(", ")+"."); } }
+      S.T.ctile=null; S.T.tileSlot=null; render(); } break;
+    // Agencement d'un bloc créé : les tuiles posées au coin d'une nouvelle case en prennent la taille si elles y tiennent ; les autres retournent dans la réserve
+    case "blkAg": if(ch){ const id=t.dataset.v, list=customCopy(ch), b=list.find(x=>x.id===id), ag=t.dataset.ag; if(!b||!agList(b.r,b.c).some(a=>a[0]===ag)) break;
+      b.w=blkWidth(ch,id,b); b.ag=ag; const sl=agSlots(b.r,b.c,ag), keep=[], out=[];
+      for(const x of cGrid(b).tiles){ const s0=sl.find(y=>y.r===x.r&&y.c===x.c); if(s0&&slotOk(b,x.id,s0)) keep.push({id:x.id,sz:s0.sz,r:x.r,c:x.c}); else out.push(x.id); }
+      b.tiles=keep; list.forEach(x=>delete x.w); saveCustom(ch,list); if(out.length){ const cat=customCat(); setBanner("Retour dans la réserve : "+out.map(x=>cat[x]||x).join(", ")+"."); }
       S.T.ctile=null; S.T.tileSlot=null; render(); } break;
     case "blkDup": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v); if(!b||list.length>=20) break; const id="c_"+Math.random().toString(36).slice(2,10);
       list.forEach(x=>delete x.w); list.push(Object.assign(JSON.parse(JSON.stringify(b)),{id,name:(b.name||"Bloc")+" (copie)"})); delete list[list.length-1].w; saveCustom(ch,list);
@@ -51,7 +57,12 @@ document.addEventListener("click",e=>{
     case "blkCreate": if(ch){ const list=customCopy(ch); if(list.length>=20||(+t.dataset.r)*(+t.dataset.c)>8) break; const id="c_"+Math.random().toString(36).slice(2,10);
       const c=Math.min(4,Math.max(1,+t.dataset.c)); list.push({id,name:"Mon bloc "+(list.length+1),r:Math.min(4,Math.max(1,+t.dataset.r)),c,tiles:[]}); saveCustom(ch,list); saveTableOrder(ch,tableOrder(ch));
       ch.layout.width=Object.assign({},ch.layout.width,{[id]:c}); S.T.tileSlot=null; S.T.ctile=null; S.T.pop="tiles:"+id; render(); } break;
-    case "ctileAdd": if(ch){ const id=t.dataset.v, b=customBlocks(ch).find(x=>x.id===id); if(b){ const sz=fitSize(b,t.dataset.t), spot=sz&&cFreeSpot(b,sz,S.T.tileSlot);
+    case "ctileAdd": if(ch){ const id=t.dataset.v, b=customBlocks(ch).find(x=>x.id===id); if(b){
+        // Case choisie (agencement) : la tuile prend sa taille ; sinon, première case de l'agencement où elle tient, puis l'ancien placement
+        const n=S.T.tileSlot, sel=Number.isInteger(n)?slotAt(b,Math.floor(n/b.c),n%b.c):null, occ=cGrid(b).occ, freeSl=sl=>{ const [h,w]=tileSpan(sl.sz,b.r,b.c); for(let i=sl.r;i<sl.r+h;i++) for(let j=sl.c;j<sl.c+w;j++) if(occ[i][j]>=0) return false; return true; };
+        const sl=sel?(slotOk(b,t.dataset.t,sel)&&freeSl(sel)?sel:null):Number.isInteger(n)?null:bSlots(b).find(x=>freeSl(x)&&slotOk(b,t.dataset.t,x));
+        if(sel&&!sl){ setBanner("Cette tuile ne tient pas dans cette case."); render(); break; }
+        const sz=sl?sl.sz:fitSize(b,t.dataset.t), spot=sl?{r:sl.r,c:sl.c}:sz&&cFreeSpot(b,sz,S.T.tileSlot);
         if(!spot) setBanner(sz?"Pas assez de place libre pour cette tuile : retire ou réduis une tuile.":"Cette tuile est trop large pour ce bloc."); else if(cUpdate(ch,id,bb=>cMove(bb,{id:t.dataset.t,sz},spot))){ S.T.tileSlot=null; S.T.ctile=null; } } render(); } break;
     case "ctileSel": { const i=+t.dataset.i; S.T.ctile=S.T.ctile===i?null:i; S.T.tileSlot=null; render(); } break; // toucher une tuile la sélectionne (tailles, retirer, puis case libre pour la déplacer)
     case "ctileCell": { const n=+t.dataset.cell, j=S.T.ctile; // une tuile sélectionnée puis une case libre : déplacer
