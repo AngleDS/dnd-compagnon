@@ -1154,6 +1154,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(/compagnon/i.test(bad), 'compagnon invalide refusé à l’import');
   });
 
+  await test('Munitions : arme reliée au consommable, une de moins par jet d’attaque, moitié récupérée en fin de combat', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { const ch = cur(); ch.attacks.push({ id: 'arc', name: 'Arc long', weapon: 'srd:arc-long', ability: 'auto', prof: true }); render(); tSelect('atk:arc'); });
+    ok(await p.evaluate(() => /tire des flèches/.test(document.querySelector('.tcard .tammo')?.textContent || '')), 'arc long : propose de suivre les flèches');
+    await p.click('.tcard [data-act="ammoNew"]');
+    eq(await p.evaluate(() => cur().counters.map(c => c.name + ':' + c.cur + '/' + c.max)), ['Flèches:20/20'], 'consommable Flèches créé (20 par défaut)');
+    await p.evaluate(() => { tableRollCommitted('d20'); tableRollCommitted('d20'); tableRollCommitted('d20'); tableRollCommitted('dmg'); render(); });
+    eq(await p.evaluate(() => [cur().counters[0].cur, cur().counters[0].spent]), [17, 3], 'trois jets d’attaque : trois flèches en moins (les dégâts ne comptent pas)');
+    await p.click('.tcard [data-act="ammoEnd"]');
+    eq(await p.evaluate(() => [cur().counters[0].cur, cur().counters[0].spent]), [18, 0], 'fin du combat : la moitié (1 sur 3) récupérée');
+    ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="ressources"]') && [...document.querySelectorAll('.tblk[data-blk="ressources"] .rresname .label')].some(e => e.textContent === 'Flèches')), 'les flèches apparaissent dans Ressources');
+    await p.evaluate(() => { tSelect(S.Titems.find(i => i.kind === 'atk' && i.key !== 'atk:arc').key); });
+    ok(await p.evaluate(() => !document.querySelector('.tcard .tammo')), 'arme sans munitions : rien');
+  });
+
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
     await diceTable(p);
     const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));

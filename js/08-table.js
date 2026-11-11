@@ -837,7 +837,7 @@ function tCard(ch,D){
   if(["abil","save","skill","init"].includes(i.kind)){ body=d20(i.kind==="init"?"init":i.kind,i.mod,i.parts,i.ab,i.name);
     if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); const lv=D.skills[sk.id].lv;
       body+=`<div class="tskinfo"><div class="muted" style="font-size:var(--fs-sm)">${["Non maîtrisée","Maîtrisée","Expertise"][lv]}</div>${sk.examples?`<div class="prose" style="font-size:var(--fs-md)"><p><b>Exemples d'application.</b> ${esc(sk.examples)}</p></div>`:""}</div>`; } }
-  else if(i.kind==="atk") body=sec("Toucher",d20("atk",i.mod,i.parts,null,i.name+" — toucher"))+sec("Dégâts",dmgBlock(i.dmg,i.dtype,"Dégâts",true))+smiteBlock(ch,D,i)+(()=>{ const w=i.wref; let ref=""; if(w.startsWith("srd:")) ref="item:arme:"+w.slice(4); else if(w.startsWith("hb:")) ref=w; const h=ref?itemTipHtml(ref).replace(/<div class="tiphead">[\s\S]*?<\/div>/,""):""; return h?`<details class="tdesc"><summary class="label">Description de l'arme</summary><div class="prose">${h}</div></details>`:""; })()+(i.mastery?`<div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Botte d'arme : ${esc(i.mastery)}</div>`:"")+(i.held===false?`<div class="tnotes" style="margin-top:6px">Au fourreau : tu peux la dégainer gratuitement au moment de cette attaque (une arme par attaque).${i.bagId?` <button class="btn small" data-act="eqset" data-slot="mainP" data-id="${esc(i.bagId)}">Prendre en main</button>`:""}</div>`:"")+((i.pact?D.atkNpact:D.atkN)>1?`<div class="tnotes" style="margin-top:6px">L'action Attaque te permet d'attaquer <b>${i.pact?D.atkNpact:D.atkN} fois</b>${i.pact&&D.atkNpact>D.atkN?" avec ton arme de pacte (Lame assoiffée)":""}.</div>`:"");
+  else if(i.kind==="atk") body=sec("Toucher",d20("atk",i.mod,i.parts,null,i.name+" — toucher"))+sec("Dégâts",dmgBlock(i.dmg,i.dtype,"Dégâts",true))+smiteBlock(ch,D,i)+(()=>{ const w=i.wref; let ref=""; if(w.startsWith("srd:")) ref="item:arme:"+w.slice(4); else if(w.startsWith("hb:")) ref=w; const h=ref?itemTipHtml(ref).replace(/<div class="tiphead">[\s\S]*?<\/div>/,""):""; return h?`<details class="tdesc"><summary class="label">Description de l'arme</summary><div class="prose">${h}</div></details>`:""; })()+(i.mastery?`<div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Botte d'arme : ${esc(i.mastery)}</div>`:"")+(i.held===false?`<div class="tnotes" style="margin-top:6px">Au fourreau : tu peux la dégainer gratuitement au moment de cette attaque (une arme par attaque).${i.bagId?` <button class="btn small" data-act="eqset" data-slot="mainP" data-id="${esc(i.bagId)}">Prendre en main</button>`:""}</div>`:"")+((i.pact?D.atkNpact:D.atkN)>1?`<div class="tnotes" style="margin-top:6px">L'action Attaque te permet d'attaquer <b>${i.pact?D.atkNpact:D.atkN} fois</b>${i.pact&&D.atkNpact>D.atkN?" avec ton arme de pacte (Lame assoiffée)":""}.</div>`:"")+ammoBlock(ch,i);
   else if(i.kind==="spell"){
     const sp=i.sp, m=i.m;
     const opts=sp.level===0?[]:(D.cast.type==="pact"?[D.cast.pactLevel]:(D.cast.slots||[]).map((n,k)=>k+1)).filter(l=>l>=sp.level);
@@ -1084,8 +1084,20 @@ function tableRollCommitted(kind){
   const i=tableSelected();
   // Weapon damage never changes turn tracking, even after an explicit undo.
   if(i?.kind==="atk"&&kind!=="d20") return;
-  if(i?.kind==="atk") consumeTableCost();
+  if(i?.kind==="atk"){ consumeTableCost(); ammoSpend(cur(),i); }
 }
+/* Munitions (lot T4, demande d'Angle) : une arme à munitions est reliée au consommable du même type (Flèches, Carreaux, Billes, Balles).
+   Chaque jet d'attaque en retire une ; « Fin du combat » rend la moitié des munitions tirées depuis (arrondi à l'inférieur). */
+function ammoType(i){ const w=i&&i.wref&&i.wref.startsWith("srd:")?S.idx.weapons?.[i.wref.slice(4)]:null; const m=w&&String(w.properties||"").match(/Munitions \([^;)]*;\s*([^)]+)\)/i); return m?m[1].trim():""; }
+function ammoCounter(ch,type){ const k=norm(type).slice(0,5); return k?(ch.counters||[]).find(c=>norm(c.name||"").startsWith(k)):null; }
+function ammoSpend(ch,i){ const c=ammoCounter(ch,ammoType(i)); if(!ch||!c) return; if((+c.cur||0)<=0){ addLog({label:"Plus de "+c.name.toLowerCase(),total:"0",bd:"Ton consommable « "+c.name+" » est vide.",kind:"info"}); return; }
+  c.cur=(+c.cur||0)-1; c.spent=(+c.spent||0)+1; touch(S.cur); }
+function ammoBlock(ch,i){ const type=ammoType(i); if(!type) return ""; const c=ammoCounter(ch,type), T=type.charAt(0).toUpperCase()+type.slice(1);
+  if(!c) return `<div class="tnotes tammo" style="margin-top:6px">Cette arme tire des ${esc(type)}. <button class="btn small" data-act="ammoNew" data-v="${esc(T)}">Suivre mes ${esc(type)}</button></div>`;
+  const back=Math.floor((+c.spent||0)/2);
+  return `<div class="tnotes tammo" style="margin-top:6px"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(c.name)}</b><span class="hpstep"><button class="btn stepb" data-act="cnt" data-id="${esc(c.id)}" data-v="-1" aria-label="Retirer 1" ${(+c.cur||0)<=0?"disabled":""}>−</button><b class="num">${+c.cur||0} / ${+c.max||0}</b><button class="btn stepb" data-act="cnt" data-id="${esc(c.id)}" data-v="1" aria-label="Ajouter 1">+</button></span></div>
+    <div class="muted" style="font-size:var(--fs-sm);margin-top:4px">Chaque jet d'attaque en retire une. Après le combat, en passant une minute à chercher, tu récupères la moitié de ce que tu as tiré.</div>
+    ${+c.spent?`<button class="btn small" style="margin-top:6px" data-act="ammoEnd" data-id="${esc(c.id)}">Fin du combat : récupérer ${back} sur ${+c.spent}</button>`:""}</div>`; }
 
 function performTableCast(data){
   const ch=cur(), key=data.k||("spell:"+data.ref);

@@ -121,6 +121,10 @@ document.addEventListener("click",e=>{
       else { nv = cv===i+1 ? i : i+1; }
       if(k==="pact") ch.pactUsed=nv; else if(k.startsWith("slot:")){ ch.slotsUsed=ch.slotsUsed||{}; ch.slotsUsed[k.slice(5)]=nv; } else if(k.startsWith("res:")){ ch.resUsed=ch.resUsed||{}; ch.resUsed[k.slice(4)]=nv; } else setPath(ch,k,nv);
       touch(S.cur); render(); break; }
+    case "ammoNew": if(ch){ const name=String(t.dataset.v||"Munitions").slice(0,40); if(!ammoCounter(ch,name)){ const bagN=(ch.bag||[]).map(b=>String(b.name)).find(n=>norm(n).startsWith(norm(name).slice(0,5)));
+      const n=+((bagN||"").match(/\((\d+)\)/)||[])[1]||20; ch.counters=[...(ch.counters||[]),{id:uid(),name,cur:n,max:n}]; touch(S.cur); } render(); } break;
+    case "ammoEnd": if(ch){ const c=(ch.counters||[]).find(x=>x.id===t.dataset.id); if(!c) break; const back=Math.floor((+c.spent||0)/2); c.cur=Math.min(+c.max||Infinity,(+c.cur||0)+back); c.spent=0;
+      addLog({label:c.name+" récupérées",total:back,bd:"Moitié des munitions tirées pendant le combat",kind:"info"}); touch(S.cur); render(); } break;
     case "compstep": if(ch){ const c=JSON.parse(JSON.stringify(ch.companion||{name:"",ac:10,hp:{cur:10,max:10}})); c.hp=c.hp||{cur:0,max:0}; const d=+t.dataset.v, k=t.dataset.k;
       if(k==="ac") c.ac=Math.max(0,Math.min(40,(+c.ac||10)+d)); else if(k==="max"){ c.hp.max=Math.max(1,Math.min(999,(+c.hp.max||0)+d)); c.hp.cur=Math.min(c.hp.cur,c.hp.max); } else if(k==="cur") c.hp.cur=Math.max(0,Math.min(+c.hp.max||0,(+c.hp.cur||0)+d));
       ch.companion=c; touch(S.cur); render(); } break;
