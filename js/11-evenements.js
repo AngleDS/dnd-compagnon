@@ -46,6 +46,8 @@ document.addEventListener("click",e=>{
       S.T.pop="tiles:"+id; render(); } break;
     case "blkResetOne": if(ch){ const id=t.dataset.v; ch.layout=Object.assign({},ch.layout); for(const k of ["width","titles","tiles"]) if(ch.layout[k]&&id in ch.layout[k]){ ch.layout[k]=Object.assign({},ch.layout[k]); delete ch.layout[k][id]; }
       touch(S.cur); S.T.tileSlot=null; render(); } break;
+    case "layoutAuto": if(ch){ const snap=JSON.parse(JSON.stringify(ch.layout||{})); autoLayout(ch); const u=S.undo={doc:S.cur,layout:snap,label:"",auto:true,at:Date.now()};
+      clearTimeout(S.undoTimer); S.undoTimer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; render(); } },6000); render(); } break;
     case "blkUndo": if(ch&&S.undo&&S.undo.doc===S.cur){ ch.layout=S.undo.layout; S.undo=null; clearTimeout(S.undoTimer); touch(S.cur); render(); } break;
     case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } if(S.T) S.T.pop=null; render(); break;
     case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.ctile=null; S.T.pop="tiles:"+t.dataset.blk; render(); break; }

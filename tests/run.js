@@ -1460,6 +1460,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const c = document.querySelector('.tblk[data-blk="c_agaaaaaa"] .ccell').getBoundingClientRect(); return c.height > 120; }), 'en jeu, la CA occupe deux rangs');
   });
 
+  await test('« Automatique (recommandé) » : disposition conseillée selon le perso, Annuler ; liseré sur chaque bloc', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 2; cur().layout = { order: ['notes', 'perso'], hidden: ['tour'], titles: { notes: 'X' } }; render(); });
+    ok(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].every(b => getComputedStyle(b).outlineStyle === 'solid' && parseFloat(getComputedStyle(b).outlineWidth) >= 1)), 'en jeu, chaque bloc a un liseré');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-act="layoutAuto"]');
+    eq(await p.evaluate(() => [cur().layout.order.slice(0, 7), cur().layout.width, cur().layout.hidden, cur().layout.titles]), [['perso', 'reperes', 'ressources', 'pv', 'tour', 'raccourcis', 'recherche'], { recherche: 2, notes: 2, reperes: 3, ressources: 1 }, [], {}],
+      'paladin 2 (6 repères, 2 ressources) : Ressources à droite de Repères, Recherche et Notes côte à côte, tout remis');
+    ok(await p.evaluate(() => /Disposition automatique appliquée/.test(document.querySelector('.tundo').textContent)), 'bandeau « Annuler »');
+    await p.click('.tundo [data-act="blkUndo"]');
+    eq(await p.evaluate(() => cur().layout.order), ['notes', 'perso'], 'Annuler : disposition d’avant');
+    await p.evaluate(() => { cur().level = 6; render(); }); await p.click('[data-act="layoutAuto"]');
+    eq(await p.evaluate(() => [cur().layout.order.slice(0, 4), cur().layout.width.reperes]), [['perso', 'reperes', 'pv', 'ressources'], undefined], 'paladin 6 (8 repères, 3 ressources) : Repères en pleine largeur, Ressources sous la carte PV');
+  });
+
   await test('Blocs de base : titre modifiable (vide = masqué), formats en miniatures, aperçu à la taille réelle, remettre comme à l’origine', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
     await p.click('.tblk[data-blk="raccourcis"] .tedpen');

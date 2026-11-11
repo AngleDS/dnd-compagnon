@@ -445,3 +445,9 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .bprev{max-width:100%;transition:width .2s}.bprevc{pointer-events:none}
 .bag{display:grid;gap:2px;padding:2px}.bag i{display:block;min-height:9px;border-radius:1.5px;background:var(--brass);opacity:.75}
 .bpat{justify-content:center;min-height:44px}
+/* Liseré de chaque bloc en jeu (demande d'Angle) : tracé autour du bloc sans changer sa taille, pour que les tuiles de blocs côte à côte restent alignées ;
+   les cadres intérieurs (Ce tour, Raccourcis, carte PV) perdent leur bordure pour ne pas faire double trait */
+.tblocks:not(.editing)>.tblk{outline:1px solid var(--line);outline-offset:3px;border-radius:12px}
+.tblocks:not(.editing){row-gap:20px;padding:4px 0}
+.tblocks:not(.editing)>.tblk .tside,.tblocks:not(.editing)>.tblk .health-card{border-color:transparent;box-shadow:none}
+.tbhead .label.rp1l{letter-spacing:0;font-size:var(--fs-xs)}
