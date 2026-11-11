@@ -948,18 +948,17 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(/disposition/.test(res[1]), 'disposition invalide refusée à l’import : ' + res[1]);
   });
 
-  await test('Mode disposition : verrouillé par défaut, flèches, glisser par la poignée, ordre par défaut', async p => {
-    await p.setViewportSize({ width: 1200, height: 2200 }); await diceTable(p);
+  await test('Mode édition (Menu > Personnaliser l’interface) : rien à modifier en jeu, poignée, crayon, glisser, ordre par défaut', async p => {
+    await p.setViewportSize({ width: 1200, height: 5000 }); await diceTable(p);
     const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
-    ok(!await p.locator('[data-blkgrip],[data-act="blkMove"]').count(), 'verrouillé : ni poignée ni flèche');
+    ok(!await p.locator('[data-blkgrip],[data-act="blkMove"],.tbpen,.tedpen,.tdel,[data-act="tilePick"]').count(), 'en jeu : ni poignée, ni crayon, ni « + »');
     await menuClick(p, '[data-act="layoutEdit"]');
     eq(await order(), ['perso','reperes','pv','ressources','recherche','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
-    ok(await p.evaluate(() => [...document.querySelectorAll('.tblkc')].every(c => c.inert)), 'contenu des blocs inactif');
-    ok(await p.locator('.tblk[data-blk="perso"] [data-act="blkMove"][data-d="-1"]').isDisabled(), 'premier bloc : pas de flèche vers le haut');
-    await p.click('.tblk[data-blk="perso"] [data-act="blkMove"][data-d="1"]');
-    eq((await order()).slice(0, 2), ['reperes','perso'], 'flèche vers le bas');
-    eq(await p.evaluate(() => cur().layout.order.slice(0, 2)), ['reperes','perso'], 'ordre enregistré dans la fiche');
-    const grip = await p.locator('.tblk[data-blk="notes"] [data-blkgrip]').boundingBox(), top = await p.locator('.tblk[data-blk="reperes"]').boundingBox();
+    ok(await p.evaluate(() => [...document.querySelectorAll('.tblkc')].every(c => c.inert && +getComputedStyle(c).opacity < .6)), 'contenu inactif et translucide');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tdel')).map(b => b.dataset.blk)), ['pv'], 'Supprimer sur chaque bloc sauf Points de vie');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tedpen')).map(b => b.dataset.blk)), ['perso', 'pv'], 'crayon sur chaque bloc sauf Personnage et Points de vie (lot 3)');
+    ok(!await p.locator('[data-act="blkMove"]').count(), 'plus de flèches : on glisse');
+    const grip = await p.locator('.tblk[data-blk="notes"] [data-blkgrip]').boundingBox(), top = await p.locator('.tblk[data-blk="perso"]').boundingBox();
     await p.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await p.mouse.down();
     await p.mouse.move(top.x + 40, top.y + 10, { steps: 3 }); await p.mouse.up();
     eq((await order())[0], 'notes', 'bloc glissé tout en haut par sa poignée');
@@ -970,13 +969,28 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.mouse.up();
     eq((await order())[0], 'pv', 'à la souris, le bloc s’attrape aussi par son titre');
     await p.click('[data-act="layoutDone"]');
-    ok(!await p.locator('[data-blkgrip]').count() && (await order())[0] === 'pv', 'Terminé : verrouillé, ordre conservé');
-    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
-    eq((await order())[0], 'perso', 'ordre par défaut rétabli');
+    ok(!await p.locator('[data-blkgrip]').count() && (await order())[0] === 'pv', 'Terminé : retour au jeu, ordre conservé');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.taddblk'); await p.click('.tpop [data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
+    eq((await order())[0], 'perso', 'ordre par défaut rétabli depuis « + Ajouter un bloc »');
+  });
+
+  await test('Supprimer en mode édition : tout de suite, sans confirmation, « Annuler » pendant quelques secondes', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
+    await p.click('.tblk[data-blk="notes"] .tdel');
+    eq(await p.evaluate(() => [cur().layout.hidden, !document.querySelector('.tblk[data-blk="notes"]'), !!document.querySelector('.tundo'), S.T.pop]), [['notes'], true, true, null], 'bloc supprimé d’un toucher, bandeau « Annuler »');
+    await p.click('.tundo [data-act="blkUndo"]');
+    eq(await p.evaluate(() => [(cur().layout.hidden || []).length, !!document.querySelector('.tblk[data-blk="notes"]'), !document.querySelector('.tundo')]), [0, true, true], 'Annuler : le bloc revient');
+    await p.click('.tblk[data-blk="reperes"] .tdel');
+    ok(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].length === 0 && cur().layout.hidden.includes('reperes')), 'Repères aussi se supprime');
+    await p.click('.taddblk');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['reperes'], '« + Ajouter un bloc » propose de le remettre');
+    await p.click('.tpop [data-act="blkRestore"][data-v="reperes"]');
+    ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="reperes"]')), 'Repères remis');
+    ok(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="tour"]'), d = b.querySelector('.tdel').getBoundingClientRect(), r = b.getBoundingClientRect(); return d.right <= r.right && d.bottom <= r.bottom && d.left > r.left + r.width / 2; }), 'Supprimer en bas à droite du bloc');
   });
 
   await test('Glisser un bloc : copie transparente qui suit la souris, emplacement d’arrivée, rien ne reste', async p => {
-    await p.setViewportSize({ width: 1200, height: 2200 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
+    await p.setViewportSize({ width: 1200, height: 5000 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
     const grip = await p.locator('.tblk[data-blk="notes"] [data-blkgrip]').boundingBox(), top = await p.locator('.tblk[data-blk="pv"]').boundingBox();
     await p.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await p.mouse.down();
     await p.mouse.move(grip.x + 30, top.y + 5, { steps: 3 });
@@ -1002,7 +1016,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
         const r0 = g.getBoundingClientRect(); const x = r0.x + r0.width / 2; let y = r0.y + r0.height / 2; fire('pointerdown', x, y, g);
         fire('pointermove', x, y - 40, document); await new Promise(z => setTimeout(z, 50)); const scrollOnly = !document.querySelector('.blkph'); fire('pointerup', x, y - 40, document);
         fire('pointerdown', x, y, g); await new Promise(z => setTimeout(z, 420)); if (!document.querySelector('.blkph') || !scrollOnly) return ['appui long non respecté'];
-        for (let i = 0; i < 60; i++) { const r = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(); y = Math.max(5, r.top + 8); fire('pointermove', x, y, document); await new Promise(z => setTimeout(z, 10));
+        for (let i = 0; i < 400; i++) { const r = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(); y = Math.max(5, r.top + 8); fire('pointermove', x, y, document); await new Promise(z => setTimeout(z, 10));
           if (document.querySelector('.tblocks').children[1]?.dataset.blk === 'tour') break; }
         fire('pointerup', x, y, document); return cur().layout.order.slice(0, 3); });
       eq(order, ['perso','tour','reperes'], 'bloc remonté au doigt, ordre enregistré');
@@ -1113,9 +1127,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], document.querySelector('.tblk[data-blk="ressources"] .rresstep .num').textContent]), [2, '13 / 15'], '− dépense 1 (deux fois)');
     await p.click('.tblk[data-blk="ressources"] [data-act="resstep"][data-v="-1"]');
     eq(await p.evaluate(() => cur().resUsed['cls:imposition-des-mains']), 1, '+ en récupère 1');
-    await p.click('.tblk[data-blk="ressources"] .tbpen');
-    ok(await p.evaluate(() => S.T.pop === 'blk:ressources' && !document.querySelector('.tpop [data-act="cblkDel"]') && !!document.querySelector('.tpop [data-act="blkMove"]')), 'Ressources : se déplace, ne se supprime pas');
-    await p.keyboard.press('Escape');
+    await p.evaluate(() => { S.layoutEdit = true; render(); }); await p.click('.tblk[data-blk="ressources"] .tedpen');
+    ok(await p.evaluate(() => S.T.pop === 'blk:ressources' && !!document.querySelector('.tpop [data-act="blkMove"]')), 'Ressources : crayon en mode édition, fenêtre du bloc');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { S.layoutEdit = false; render(); });
     await p.evaluate(() => { const ch = cur(); ch.layout = { order: ['tour', 'perso', 'pv', 'reperes'] }; render(); });
     eq(await p.evaluate(() => tableOrder(cur()).slice(0, 5)), ['tour', 'perso', 'pv', 'ressources', 'reperes'], 'ordre déjà enregistré : Ressources se glisse sous PV');
   });
@@ -1207,8 +1221,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Personnaliser : « + » ouvre le choix, ajouter, vider, déplacer, défaut, enregistré et importé', async p => {
     await diceTable(p); await legacyRacc(p);
     const racc = () => p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));
-    await p.click('.tblk[data-blk="raccourcis"] .tplus');
-    eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:raccourcis', 5], 'le « + » ouvre Personnaliser sur sa case');
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tplus')).visibility === 'hidden'), 'en jeu, la case libre est vide (pas de « + »)');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="raccourcis"] .tedpen'); await p.click('.tpop [data-act="tileCell"][data-i="5"]');
+    eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:raccourcis', 5], 'mode édition : le crayon ouvre les tuiles, la case libre se choisit');
     await p.click('.tpop [data-act="tileAdd"][data-v="rest"]');
     eq((await racc())[5], 'restOpen', 'tuile Repos ajoutée dans la case libre');
     await p.click('.tpop [data-act="tileCell"][data-i="0"]'); await p.click('.tpop [data-act="tileDel"][data-i="0"]');
@@ -1216,9 +1231,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop [data-act="tileCell"][data-i="1"]'); await p.click('.tpop [data-act="tileCell"][data-i="0"]');
     eq((await racc()).slice(0, 2), ['saves', '+'], 'tuile déplacée en touchant sa case puis la case visée');
     eq(await p.evaluate(() => cur().layout.tiles.raccourcis), ['saves','','cond','inv','equip','rest'], 'choix enregistré dans la fiche');
-    await p.keyboard.press('Escape');
-    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] [data-v="blk:reperes"]');
-    ok(await p.evaluate(() => S.T.pop === 'blk:reperes' && !document.querySelector('.tpop .tpgrid,.tpop .tres,.tpop [data-act="cblkDel"]')), 'mode disposition : Repères se déplace seulement');
+    await p.keyboard.press('Escape'); await p.click('.tblk[data-blk="reperes"] .tedpen');
+    ok(await p.evaluate(() => S.T.pop === 'blk:reperes' && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Repères : pas de tuiles à choisir (contenu automatique)');
     await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
     ok(await p.evaluate(() => !tileAvailable(cur(), 'raccourcis', 'dd')), 'DD non proposé sans sorts');
     const r = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); const id = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
@@ -1229,7 +1243,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Bloc personnalisé : modèle, nom, tuiles à leur place exacte, tailles, glisser, ancien format, suppression, import', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
-    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-act="tpop"][data-v="blkadd"]');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.taddblk');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .ctpl small')].map(x => x.textContent).join(' ')), '1×1 1×2 1×3 1×4 2×1 2×2 2×3 2×4 3×1 3×2 4×1 4×2', '12 modèles, 8 cases au plus');
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); const e = document.elementFromPoint(r.left + 20, r.top + 10); return !!e.closest('.tpop'); }), 'popup au-dessus de la barre de disposition');
     await p.click('.tpop [data-act="blkCreate"][data-r="2"][data-c="3"]');
@@ -1257,22 +1271,22 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
     const g = await p.evaluate(id => { const b = document.querySelector(`.tblk[data-blk="${id}"]`); const c = [...b.querySelectorAll('.ccell')].map(e => e.getBoundingClientRect());
       return { name: b.querySelector('.tbhead .label').textContent, n: c.length, full: Math.round(c[0].width) > Math.round(c[1].width) * 2, plus: b.querySelectorAll('.rtile.vide').length, ov: document.documentElement.scrollWidth <= innerWidth, pen: !!b.querySelector('.tbpen') }; }, id);
-    eq(g, { name: 'Combat', n: 4, full: true, plus: 1, ov: true, pen: true }, 'rendu : CA sur toute la ligne, une case « + », crayon, pas de débordement');
+    eq(g, { name: 'Combat', n: 4, full: true, plus: 1, ov: true, pen: false }, 'rendu : CA sur toute la ligne, une case libre, pas de crayon en jeu, pas de débordement');
     eq(await p.evaluate(id => { const b = document.querySelector(`.tblk[data-blk="${id}"] .cgrid`); const v = b.querySelector('.rtile.vide').getBoundingClientRect(), r = b.getBoundingClientRect(); return [Math.round((v.left - r.left) / r.width * 3), Math.round((v.top - r.top) / r.height * 2)]; }, id), [1, 1], 'case libre au milieu de la 2e ligne');
-    await p.click(`.tblk[data-blk="${id}"] .rtile.vide`);
-    eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:' + id, 4], '« + » ouvre Personnaliser sur sa case');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] .tedpen`); await p.click('.tpop [data-act="ctileCell"][data-cell="4"]');
+    eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:' + id, 4], 'crayon du bloc, puis la case libre');
     await p.click('.tpop [data-act="ctileAdd"][data-t="pp"]');
     ok((await pos()).includes('pp:1@1,1'), 'tuile posée dans la case du « + »');
     await drag('.tpop [data-act="ctileSel"][aria-label="Perception passive"]', { x: 2, y: 2 });
     ok(!(await pos()).some(x => x.startsWith('pp')), 'glissée hors du bloc : retirée');
-    await p.keyboard.press('Escape');
+    await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
     eq(await p.evaluate(() => { const b = { id: 'c_ancien', name: 'Ancien', r: 2, c: 2, tiles: [{ id: 'ca', sz: 'l' }, { id: 'init', sz: '1' }, { id: 'pp', sz: '1' }, { id: 'dv', sz: '1' }] };
       return cGrid(b).tiles.map(t => `${t.id}@${t.r},${t.c}`); }), ['ca@0,0', 'init@1,0', 'pp@1,1'], 'ancien bloc (v128) converti dans l’ordre ; la tuile sans place est écartée');
     const r = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); const nid = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
       try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { custom: 'x' } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
       return [S.docs[nid].layout.custom[0].name, bad]; });
     eq(r[0], 'Combat', 'bloc suit l’export'); ok(/personnalisés/.test(r[1]), 'blocs invalides refusés');
-    await menuClick(p, '[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] [data-v="tiles:${id}"]`);
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] .tedpen`);
     await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => cur().layout.custom.length === 1), 'demande de confirmation avant suppression');
     await p.click('.tpop [data-act="cblkDelYes"]');
     eq(await p.evaluate(id => [cur().layout.custom.length, cur().layout.order.includes(id), !!document.querySelector(`.tblk[data-blk="${id}"]`), S.T.pop], id), [0, false, false, null], 'bloc supprimé');
@@ -1304,8 +1318,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Personnaliser au glisser : crayon sur le bloc, réserve → case, case → case, hors du bloc', async p => {
     await diceTable(p);
-    ok(await p.isVisible('.tblk[data-blk="reperes"] .tbpen') && await p.isVisible('.tblk[data-blk="raccourcis"] .tbpen'), 'crayon visible hors du mode disposition');
-    await p.click('.tblk[data-blk="raccourcis"] .tbpen');
+    ok(!await p.locator('.tbpen,.tedpen').count(), 'pas de crayon en jeu');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="raccourcis"] .tedpen');
     eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .tpgrid .tcell').length, ['rest', 'hist', 'notes', 'ca'].every(v => document.querySelector(`.tpop .tres [data-v="${v}"]`))]), ['tiles:raccourcis', 6, true], 'popup : 6 cases ; réserve avec Repos, Historique, Notes et aussi une tuile de valeur (CA)');
     ok(await p.evaluate(() => !!document.querySelector('.tpop .tpgrid .tcell[data-i="0"] svg') && !document.querySelector('.tpop [data-act="tileMove"]')), 'cases avec icône, plus de flèches');
     const drag = async (from, to, mid) => { const a = await p.locator(from).boundingBox(), b = to ? await p.locator(to).boundingBox() : { x: 2, y: 2, width: 0, height: 0 };
@@ -1401,38 +1415,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => /Perception passive/.test(document.body.textContent) && !!document.querySelector('.tpop .tres [data-t="pp"]')), 'message et tuile de retour dans la réserve');
   });
 
-  await test('Gérer les blocs depuis le bloc : crayon partout sauf Personnage et PV, monter, supprimer, remettre', async p => {
+  await test('Gérer les blocs depuis le crayon (mode édition) : Ce tour, Repères, Notes, Menu', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     const vis = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
     ok(await p.evaluate(() => !document.querySelector('.tlayoutbar') && !document.querySelector('.ttopbar') && !document.querySelector('.hdrop')), 'plus de bouton en bas ni de bandeau ; Menu fermé');
     await p.click('.hmenu');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.hdrop .hditem')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['nav:list', 'theme', 'virtualDice', 'tpop:blkadd', 'layoutEdit'], 'Menu déroulant : personnages, mode clair, dés, ajouter un bloc, disposition');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.hdrop .hditem')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['nav:list', 'theme', 'virtualDice', 'layoutEdit'], 'Menu déroulant : personnages, mode clair, dés, Personnaliser l’interface');
     ok(await p.evaluate(() => { const d = document.querySelector('.hdrop').getBoundingClientRect(); return d.left >= 0 && d.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; }), 'Menu dans l’écran');
     await p.mouse.click(20, 600); ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'clic ailleurs : Menu fermé');
-    ok(await p.evaluate(() => { const n = document.querySelector('.top .nav'), b = [...n.querySelectorAll('button')].map(x => Math.round(x.getBoundingClientRect().top)); return new Set(b).size === 1 && document.querySelector('.top').getBoundingClientRect().height <= 110; }), 'en-tête iPhone : onglets sur une ligne, 110 px au plus');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].filter(b => b.querySelector('.tbpen')).map(b => b.dataset.blk)), ['reperes', 'ressources', 'recherche', 'tour', 'raccourcis', 'notes'], 'crayon sur chaque bloc sauf Personnage et PV');
-    await p.click('.tblk[data-blk="tour"] .tbpen');
+    await menuClick(p, '[data-act="layoutEdit"]');
+    await p.click('.tblk[data-blk="tour"] .tedpen');
     eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Ce tour'], 'Ce tour : fenêtre du bloc');
-    ok(await p.evaluate(() => /ne se personnalise pas/.test(document.querySelector('.tpop').textContent) && !/deviendra/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Ce tour : ni tuiles ni réserve, seulement déplacer ou supprimer');
+    ok(await p.evaluate(() => /ne se personnalise pas/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Ce tour : ni tuiles ni réserve');
     await p.click('.tpop [data-act="blkMove"][data-d="1"]');
     eq((await vis()).slice(4, 7), ['recherche', 'raccourcis', 'tour'], 'descendu d’un cran');
     await p.keyboard.press('Escape');
-    await p.click('.tblk[data-blk="reperes"] .tbpen');
-    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:reperes', 'Bloc : Repères'], 'Repères : fenêtre du bloc');
-    ok(await p.evaluate(() => /s’adapte tout seul/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres,.tpop [data-act="cblkDel"]') && !!document.querySelector('.tpop [data-act="blkMove"]')), 'Repères : ni tuiles, ni suppression ; déplacement seulement');
-    await p.keyboard.press('Escape');
-    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { hidden: ['reperes'] }); render(); });
-    ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="reperes"]')), 'Repères retiré avant la v144 : il revient');
-    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { hidden: [] }); render(); });
-    await p.click('.tblk[data-blk="notes"] .tbpen'); await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => (cur().layout.hidden || []).length === 0), 'confirmation demandée');
-    await p.click('.tpop [data-act="cblkDelYes"]');
+    await p.click('.tblk[data-blk="reperes"] .tedpen');
+    ok(await p.evaluate(() => /s’adapte tout seul/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Repères : contenu automatique, pas de tuiles à choisir');
+    await p.keyboard.press('Escape'); await p.click('.tblk[data-blk="notes"] .tdel'); await p.click('[data-act="layoutDone"]');
     ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="notes"]') && !!(document.querySelector('.hmenu'))), 'Notes retiré : le réglage des dés reste dans le Menu');
-    await menuClick(p, '[data-v="blkadd"]');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['notes'], 'blocs retirés proposés dans « Ajouter un bloc »');
-    await p.keyboard.press('Escape');
-    await menuClick(p, '[data-act="layoutEdit"]');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tblkh [data-v^="tiles:"],.tblkh [data-v^="blk:"]')).map(b => b.dataset.blk)), ['perso', 'pv'], 'mode disposition : « Modifier » sur tous les blocs sauf Personnage et PV ; Notes absent');
-    await p.click('[data-act="layoutDone"]');
     const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { hidden: 'x' } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
     ok(/retirés/.test(bad), 'blocs retirés invalides refusés à l’import');
   });

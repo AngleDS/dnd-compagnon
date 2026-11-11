@@ -17,8 +17,13 @@ document.addEventListener("click",e=>{
   if(a!=="ask"&&S.confirm&&!["del","hbDel","rest"].includes(a)) S.confirm=null;
   switch(a){
     case "layoutEdit": S.layoutEdit=true; render(); break;
-    case "layoutDone": S.layoutEdit=false; render(); break;
-    case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } render(); break;
+    case "layoutDone": S.layoutEdit=false; S.undo=null; render(); break;
+    // Supprimer en mode édition : tout de suite, sans confirmation ; « Annuler » rétablit la disposition d'avant pendant quelques secondes
+    case "blkDelNow": if(ch){ const id=t.dataset.v; if(BLK_KEEP.includes(id)) break; const label=blkLabel(ch,id), snap=JSON.parse(JSON.stringify(ch.layout||{}));
+      if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else setBlkHidden(ch,id,true);
+      const u=S.undo={doc:S.cur,layout:snap,label,at:Date.now()}; clearTimeout(S.undoTimer); S.undoTimer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; render(); } },6000); render(); } break;
+    case "blkUndo": if(ch&&S.undo&&S.undo.doc===S.cur){ ch.layout=S.undo.layout; S.undo=null; clearTimeout(S.undoTimer); touch(S.cur); render(); } break;
+    case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } if(S.T) S.T.pop=null; render(); break;
     case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.ctile=null; S.T.pop="tiles:"+t.dataset.blk; render(); break; }
     case "tileAdd": if(ch&&!tileOkInBlk(t.dataset.v,t.dataset.blk)) break; if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=Number.isInteger(S.T.tileSlot)&&S.T.tileSlot<arr.length?S.T.tileSlot:arr.indexOf(""); if(i>=0){ arr[i]=t.dataset.v; setBlockTiles(ch,blk,arr); S.T.tileSlot=null; } else setBanner("Bloc plein : retire d’abord une tuile."); render(); } break;
     case "tileCell": if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=+t.dataset.i, j=S.T.tileSlot; // toucher une case la sélectionne ; une case pleine sélectionnée puis une autre case = déplacer ou échanger

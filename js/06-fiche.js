@@ -28,7 +28,7 @@ function renderNav(){
     ${mi('data-act="nav" data-v="list"',"Mes personnages")}
     ${mi('data-act="theme"',curTheme()==="dark"?"Mode clair":"Mode sombre")}
     ${mi(`data-act="virtualDice" role="menuitemcheckbox" aria-checked="${virtualDiceEnabled()}"`,"Dés virtuels",`<span class="hdstate">${virtualDiceEnabled()?"activés":"désactivés"}</span>`)}
-    ${atTable?`<div class="hdsep" role="separator"></div>${mi('data-act="tpop" data-v="blkadd"',"Ajouter un bloc")}${mi('data-act="layoutEdit"',"Disposition des blocs")}`:""}</div>`:""}`;
+    ${atTable?`<div class="hdsep" role="separator"></div>${mi('data-act="layoutEdit"',"Personnaliser l’interface")}`:""}</div>`:""}`;
   document.getElementById("hchar").innerHTML="";
 }
 function render(){

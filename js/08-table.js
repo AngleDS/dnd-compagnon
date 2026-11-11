@@ -264,9 +264,10 @@ function tPop(ch,D){
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
   if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
   if(k.startsWith("blk:")){ const id=k.slice(4); if(!TBLK.some(b=>b[0]===id)||BLK_FIXED.includes(id)){ T.pop=null; return ""; }
-    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">${id==="reperes"?"Ce bloc s’adapte tout seul à ton personnage (classe, sous-classe, espèce) : il ne se modifie pas et ne se supprime pas. Tu peux seulement le déplacer.":id==="ressources"?"Ce bloc montre tout seul les ressources de ton personnage (classe, sous-classe, dons) : il ne se modifie pas et ne se supprime pas. Tu peux seulement le déplacer.":id==="tour"?"Ce bloc ne se personnalise pas : tu peux seulement le déplacer ou le supprimer.":"Ce bloc deviendra bientôt une tuile, à placer où tu veux."}</div>`); }
+    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">${id==="reperes"?"Son contenu s’adapte tout seul à ton personnage (classe, sous-classe, espèce).":id==="ressources"?"Son contenu montre tout seul les ressources de ton personnage (classe, sous-classe, dons).":id==="tour"?"Ce bloc ne se personnalise pas : tu peux seulement le déplacer ou le supprimer.":"Ce bloc deviendra bientôt une tuile, à placer où tu veux."}</div>`); }
   if(k==="blkadd"){ const gone=TBLK.filter(b=>blkHidden(ch,b[0]));
-    return wrap("Ajouter un bloc",`${gone.length?`<div class="label" style="margin-bottom:6px">Blocs retirés</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${gone.map(b=>`<button class="btn small" data-act="blkRestore" data-v="${b[0]}">+ ${esc(b[1])}</button>`).join("")}</div><div class="label" style="margin-bottom:6px">Nouveau bloc</div>`:""}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Choisis la taille du bloc (lignes × colonnes) ; tu y placeras ensuite les tuiles de ton choix.</div>${blkTemplates("blkCreate")}`); }
+    return wrap("Ajouter un bloc",`${gone.length?`<div class="label" style="margin-bottom:6px">Blocs retirés</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${gone.map(b=>`<button class="btn small" data-act="blkRestore" data-v="${b[0]}">+ ${esc(b[1])}</button>`).join("")}</div><div class="label" style="margin-bottom:6px">Nouveau bloc</div>`:""}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Choisis la taille du bloc (lignes × colonnes) ; tu y placeras ensuite les tuiles de ton choix.</div>${blkTemplates("blkCreate")}
+    <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn small ghost" data-act="layoutReset">Remettre l’ordre des blocs par défaut</button></div>`); }
   if(k.startsWith("blkfmt:")){ const b=customBlocks(ch).find(x=>x.id===k.slice(7)); if(!b){ T.pop=null; return ""; }
     return wrap("Changer de format : "+b.name,`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Les tuiles qui tiennent gardent leur place ; les autres retournent dans la réserve.</div>${blkTemplates("blkFormat",b)}
       <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn small ghost" data-act="tpop" data-v="tiles:${b.id}">Retour</button></div>`); }
@@ -379,7 +380,7 @@ function viewTable(ch,D,banner=""){
         ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
     recherche:blkHidden(ch,"recherche")?"":`<div class="tgrid tb-solo"><div class="tmain">${tbHead("recherche","Recherche","blk:recherche")}${searchBar()}</div></div>`,
     tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
-      <div class="row" style="justify-content:space-between"><span class="label">Ce tour</span><span class="row" style="gap:6px"><button class="btn small" data-act="tnewturn">Nouveau tour</button><button class="tbpen" data-act="tpop" data-v="blk:tour" aria-label="Modifier le bloc Ce tour" title="Modifier le bloc">${PEN_SVG}</button></span></div>
+      <div class="row" style="justify-content:space-between"><span class="label">Ce tour</span><span class="row" style="gap:6px"><button class="btn small" data-act="tnewturn">Nouveau tour</button></span></div>
       <div class="tturnb">${turnBtns}</div>
       <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div></div></div>`,
     raccourcis:`<div class="tgrid tb-solo"><div class="tside table-reference">
@@ -449,10 +450,12 @@ function inspPlaced(ch){ return customBlocks(ch).some(b=>(b.tiles||[]).some(x=>x
 function seeInsp(ch){ if(ch.layout?.inspSeen&&!inspInRep(ch)) return; const r=blockTiles(ch,"raccourcis"); ch.layout=Object.assign({},ch.layout,{inspSeen:true}); ch.layout.tiles=Object.assign({},ch.layout.tiles,{raccourcis:r});
   if(inspInRep(ch)) ch.layout.tiles.reperes=ch.layout.tiles.reperes.map(x=>x==="insp"?"":x); }
 function setBlockTiles(ch,blk,arr){ if(blk==="reperes") return; seeInsp(ch); ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles,{[blk]:arr}); touch(S.cur); }
-const plusTile=(blk,i,cls)=>`<button class="${cls}" data-act="tilePick" data-blk="${blk}" data-i="${i}" aria-label="Case libre : ajouter une tuile" title="Ajouter une tuile">+</button>`;
+// Case libre : invisible en jeu (aucune édition dans « À la table ») ; « + » visible seulement en mode édition (le crayon du bloc ouvre ses tuiles)
+const plusTile=(blk,i,cls)=>S.layoutEdit?`<span class="${cls}" aria-hidden="true">+</span>`:`<span class="${cls} tvoid" aria-hidden="true"></span>`;
 /* En-tête d'un bloc à tuiles : nom et petit crayon (toujours visible) qui ouvre la personnalisation du bloc. */
 const PEN_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>`;
-const tbHead=(blk,label,v)=>`<div class="tbhead"><span class="label">${esc(label)}</span><button class="tbpen" data-act="tpop" data-v="${v||"tiles:"+blk}" aria-label="Modifier le bloc ${esc(label)}" title="Modifier le bloc">${PEN_SVG}</button></div>`;
+// En jeu, aucun bouton d'édition (décision d'Angle) : on modifie un bloc depuis Menu > Personnaliser l'interface.
+const tbHead=(blk,label)=>`<div class="tbhead"><span class="label">${esc(label)}</span></div>`;
 /* Visuel réduit d'une tuile (popup Personnaliser) : l'icône des Raccourcis ou la valeur des Repères. */
 function tileFace(ch,D,blk,id){
   if(id==="slots") return `<svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="18" cy="12" r="3"/></svg>`;
@@ -723,16 +726,20 @@ function tableBlocks(ch,blocks){
   const ed=!!S.layoutEdit, ids=tableOrder(ch).filter(id=>!blkHidden(ch,id)&&(ed||blocks[id])), label=id=>blkLabel(ch,id);
   const charges=chargeRecoveryForms(ch);
   if(!ed) return `${charges?`<div class="tcharges">${charges}</div>`:""}<div class="tblocks">${ids.map(id=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">${blocks[id]}</section>`).join("")}</div>`;
-  // Mode disposition : poignée et flèches sur chaque bloc ; le contenu est inactif pour éviter toute action par erreur.
-  return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small" data-act="tpop" data-v="blkadd">Ajouter un bloc</button><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
-  <div class="tblocks editing">${ids.map((id,n)=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">
-    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${BLK_FIXED.includes(id)?"":`<button class="btn small" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}">${id==="reperes"||id==="ressources"?"Déplacer":"Modifier"}</button>`}
-      <span class="row tblkmv"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc ${esc(label(id))}" ${n?"":"disabled"}>↑</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc ${esc(label(id))}" ${n<ids.length-1?"":"disabled"}>↓</button></span></div>
-    <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section>`).join("")}</div>`;
+  // Mode édition (Menu > Personnaliser l'interface) : page translucide, outils nets sur chaque bloc ; contenu inactif.
+  const pen=id=>id==="perso"||id==="pv"?"":`<button class="tedpen" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}" aria-label="Modifier le bloc ${esc(label(id))}" title="Modifier le bloc">${PEN_SVG}</button>`;
+  const u=S.undo&&S.undo.doc===S.cur?S.undo:null;
+  return `<div class="tlayouttop tedbar" role="status"><span><b>Mode édition</b> · appui long sur ⋮⋮ pour déplacer</span><button class="btn small primary" data-act="layoutDone">Terminé</button></div>
+  <div class="tblocks editing">${ids.map(id=>`<section class="tblk ted" data-blk="${id}" aria-label="${esc(label(id))}">
+    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${pen(id)}</div>
+    <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div>
+    ${BLK_KEEP.includes(id)?"":`<button class="btn small danger tdel" data-act="blkDelNow" data-v="${id}" aria-label="Supprimer le bloc ${esc(label(id))}">Supprimer</button>`}</section>`).join("")}
+    <button class="taddblk" data-act="tpop" data-v="blkadd">＋ Ajouter un bloc</button></div>
+  ${u?`<div class="tundo" role="status"><span>Bloc « ${esc(u.label)} » supprimé</span><button class="btn small ghost" data-act="blkUndo">Annuler</button></div>`:""}`;
 }
 /* Blocs retirés (ch.layout.hidden) : tous sauf Personnage et Points de vie ; on les remet par « Ajouter un bloc ». */
 const BLK_FIXED=["perso","pv"];
-const BLK_KEEP=["perso","pv","reperes","ressources"]; // blocs qu'on ne supprime pas (Repères : déplaçable seulement)
+const BLK_KEEP=["pv"]; // seul Points de vie ne se supprime pas (décision d'Angle) ; les autres se remettent par « + Ajouter un bloc »
 const blkHidden=(ch,id)=>!BLK_KEEP.includes(id)&&Array.isArray(ch.layout?.hidden)&&ch.layout.hidden.includes(id);
 function setBlkHidden(ch,id,on){ const h=(Array.isArray(ch.layout?.hidden)?ch.layout.hidden:[]).filter(x=>x!==id); if(on&&!BLK_KEEP.includes(id)) h.push(id); ch.layout=Object.assign({},ch.layout,{hidden:h}); touch(S.cur); }
 /* Bas de chaque fenêtre de bloc : monter, descendre, supprimer (confirmation). */

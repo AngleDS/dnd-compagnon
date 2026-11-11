@@ -301,7 +301,14 @@ body.tdragging{cursor:grabbing;user-select:none;-webkit-user-select:none}
 .tblocks.editing .tblk{border:1.5px dashed var(--brass);border-radius:12px;padding:8px 10px;background:var(--sheet)}
 .tblkh{display:flex;align-items:center;gap:8px;margin-bottom:6px}.tblkh b{flex:1;min-width:0}
 .tblkgrip{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;color:var(--brass);font-size:var(--fs-lg);letter-spacing:-3px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
-.tblkc[inert]{opacity:.55;max-height:180px;overflow:hidden}
+.tblkc[inert]{opacity:.42;filter:saturate(.6)}
+/* Mode édition : outils nets (poignée, crayon, Supprimer), contenu translucide */
+.tblocks.editing .tblk.ted{position:relative;padding:8px 10px 44px}
+.tedpen{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;border:1px solid var(--brass);border-radius:999px;background:var(--sheet2);color:var(--brass);cursor:pointer}.tedpen svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.tblk.ted .tdel{position:absolute;right:10px;bottom:8px;background:color-mix(in srgb,var(--blood) 55%,var(--sheet));border-color:var(--blood);color:#f6dada}
+.tlayouttop.tedbar{flex-wrap:nowrap}.tedbar>span{min-width:0;font-size:var(--fs-xs)}
+.taddblk{display:flex;align-items:center;justify-content:center;width:100%;min-height:64px;border:1.5px dashed var(--brass);border-radius:12px;background:none;color:var(--brass);font:inherit;font-size:var(--fs-sm);cursor:pointer}
+.tundo{position:fixed;left:12px;right:12px;bottom:max(16px,env(safe-area-inset-bottom));z-index:60;max-width:560px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--sheet2);box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:var(--fs-sm)}
 @media (hover:hover) and (pointer:fine){.tblocks.editing .tblk{cursor:grab}.tblocks.editing .tblk button{cursor:pointer}}
 .tblk.dragging{cursor:grabbing}
 .tblocks.editing .tblk.blkph{height:64px;padding:0;overflow:hidden;border:2px dashed var(--brass);background:color-mix(in srgb,var(--brass) 10%,transparent)}.tblk.blkph>*{visibility:hidden}
@@ -507,3 +514,4 @@ html[data-virtual-dice="on"] [data-physical]{display:none!important}
 .btndel{display:inline-grid;place-items:center;color:var(--muted)}
 .btndel:hover,.btndel:focus-visible{color:var(--blood)}
 .btndel .ico{display:block}
+.tvoid{visibility:hidden}
