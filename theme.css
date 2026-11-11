@@ -417,3 +417,15 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .tpbtn[data-act="insp"][aria-pressed="true"] .tpsub{color:var(--ok)}
 .tbottom .tpanels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
 .tbottom .tbhead{width:100%}
+
+/* Bloc Ressources (lot T3b) : 2 tuiles par rangée, la dernière seule prend toute la largeur */
+.rresgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rres{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:68px;padding:8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--sheet2);text-align:center}
+.rres:last-child:nth-child(odd){grid-column:1/-1}
+.rres.vide0{opacity:.6}
+.rresname{display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:0;padding:0;color:var(--ink);font:inherit;cursor:pointer;min-width:0}
+.rresname:disabled{cursor:default}.rresname .label{font-size:var(--fs-xs);line-height:1.2;overflow-wrap:break-word}.rresname small{font-size:var(--fs-xs)}
+.rres .pips{justify-content:center}
+.rresstep b{min-width:56px;text-align:center}.rresstep small{font-size:var(--fs-xs);color:var(--muted);font-weight:400}
+.rresopen{gap:2px}
+.rres .pip{width:24px;height:24px}.rres .pips{gap:6px}

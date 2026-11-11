@@ -264,7 +264,7 @@ function tPop(ch,D){
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
   if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
   if(k.startsWith("blk:")){ const id=k.slice(4); if(!TBLK.some(b=>b[0]===id)||BLK_FIXED.includes(id)){ T.pop=null; return ""; }
-    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">${id==="reperes"?"Ce bloc s’adapte tout seul à ton personnage (classe, sous-classe, espèce) : il ne se modifie pas et ne se supprime pas. Tu peux seulement le déplacer.":id==="tour"?"Ce bloc ne se personnalise pas : tu peux seulement le déplacer ou le supprimer.":"Ce bloc deviendra bientôt une tuile, à placer où tu veux."}</div>`); }
+    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">${id==="reperes"?"Ce bloc s’adapte tout seul à ton personnage (classe, sous-classe, espèce) : il ne se modifie pas et ne se supprime pas. Tu peux seulement le déplacer.":id==="ressources"?"Ce bloc montre tout seul les ressources de ton personnage (classe, sous-classe, dons) : il ne se modifie pas et ne se supprime pas. Tu peux seulement le déplacer.":id==="tour"?"Ce bloc ne se personnalise pas : tu peux seulement le déplacer ou le supprimer.":"Ce bloc deviendra bientôt une tuile, à placer où tu veux."}</div>`); }
   if(k==="blkadd"){ const gone=TBLK.filter(b=>blkHidden(ch,b[0]));
     return wrap("Ajouter un bloc",`${gone.length?`<div class="label" style="margin-bottom:6px">Blocs retirés</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${gone.map(b=>`<button class="btn small" data-act="blkRestore" data-v="${b[0]}">+ ${esc(b[1])}</button>`).join("")}</div><div class="label" style="margin-bottom:6px">Nouveau bloc</div>`:""}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Choisis la taille du bloc (lignes × colonnes) ; tu y placeras ensuite les tuiles de ton choix.</div>${blkTemplates("blkCreate")}`); }
   if(k.startsWith("blkfmt:")){ const b=customBlocks(ch).find(x=>x.id===k.slice(7)); if(!b){ T.pop=null; return ""; }
@@ -369,6 +369,7 @@ function viewTable(ch,D,banner=""){
   const blocks={
     perso:banner,
     reperes:statsBlk,
+    ressources:resBlock(ch,D),
     pv:`${(+hp.cur||0)<=0?`<div class="tdeath"><div class="row" style="justify-content:space-between"><b>À 0 PV : jets contre la mort</b><span class="muted" style="font-size:var(--fs-sm)">10 ou plus : réussite · 1 : deux échecs · 20 : tu reviens à 1 PV</span></div>
         <div class="row" style="gap:16px"><span class="row" style="gap:6px"><span class="label">Réussites</span>${pips("death.s",3,ch.death?.s||0)}</span><span class="row" style="gap:6px"><span class="label">Échecs</span>${pips("death.f",3,ch.death?.f||0)}</span></div>
         ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
@@ -510,6 +511,17 @@ function repTileMap(ch,D,size){
     return REP_ICON[id]?h.replace('<b class="num',`<svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON[id]}</svg><b class="num`):h; }; }
   return T;
 }
+/* Bloc Ressources (lot T3b) : une tuile par ressource du perso (classe, sous-classe, dons, objets maison), 2 par rangée.
+   Jusqu'à 8 : des ronds à toucher directement ; au-delà : − / + ; réserve de dés et Rouerie magique : leur fiche (dépense guidée).
+   Toucher le nom ouvre la fiche de la ressource (description et usage). Bloc absent si le perso n'a aucune ressource. */
+function resBlock(ch,D){ if(!D.res.length) return "";
+  const card=r=>{ const it=(S.Titems||[]).find(x=>x.res&&x.res.id===r.id); return it?`data-act="tsel" data-k="${esc(it.key)}"`:""; };
+  const tiles=D.res.map(r=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, c=card(r), sid=esc(r.id);
+    const ctl=r.pool||r.id==="cls:rouerie-magique"?`<button class="btn small rresopen" ${c}><b class="num">${left}</b> / ${r.max}${r.pool?" d"+r.die:""}</button>`
+      :r.max<=8?pips("res:"+r.id,r.max,used,true)
+      :`<span class="hpstep rresstep"><button class="btn stepb" data-act="resstep" data-id="${sid}" data-v="1" aria-label="${esc(r.name)} : dépenser 1" ${left<=0?"disabled":""}>−</button><b class="num">${left}<small> / ${r.max}</small></b><button class="btn stepb" data-act="resstep" data-id="${sid}" data-v="-1" aria-label="${esc(r.name)} : récupérer 1" ${used<=0?"disabled":""}>+</button></span>`;
+    return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${ctl}</div>`; }).join("");
+  return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid" role="group" aria-label="Ressources">${tiles}</div>`; }
 const mFmt=v=>String(Math.round(v*10)/10).replace(".",",");
 const REP_ICON={
   ca:'<path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.3 7.5 10 4.3-1.7 7.5-5.4 7.5-10v-6z"/>',
@@ -666,9 +678,12 @@ function customPop(ch,D,id,wrap){
     <div class="label" style="margin:14px 0 6px">Réserve${!free&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${id}">${res}</div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
-const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
+const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["ressources","Ressources"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
 function blkLabel(ch,id){ return (TBLK.find(b=>b[0]===id)||[])[1]||customBlocks(ch).find(b=>b.id===id)?.name||id; }
-function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map(b=>b.id)]; const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[]; return [...new Set([...saved,...ids])]; }
+function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map(b=>b.id)]; const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[];
+  // Ressources (lot T3b) arrive après un ordre déjà enregistré : on le place sous la carte PV, pas en bas de page
+  if(saved.length&&!saved.includes("ressources")&&saved.includes("pv")) saved.splice(saved.indexOf("pv")+1,0,"ressources");
+  return [...new Set([...saved,...ids])]; }
 function tableBlocks(ch,blocks){
   const ed=!!S.layoutEdit, ids=tableOrder(ch).filter(id=>!blkHidden(ch,id)&&(ed||blocks[id])), label=id=>blkLabel(ch,id);
   const charges=chargeRecoveryForms(ch);
@@ -676,13 +691,13 @@ function tableBlocks(ch,blocks){
   // Mode disposition : poignée et flèches sur chaque bloc ; le contenu est inactif pour éviter toute action par erreur.
   return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small" data-act="tpop" data-v="blkadd">Ajouter un bloc</button><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
   <div class="tblocks editing">${ids.map((id,n)=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">
-    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${BLK_FIXED.includes(id)?"":`<button class="btn small" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}">${id==="reperes"?"Déplacer":"Modifier"}</button>`}
+    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${BLK_FIXED.includes(id)?"":`<button class="btn small" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}">${id==="reperes"||id==="ressources"?"Déplacer":"Modifier"}</button>`}
       <span class="row tblkmv"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc ${esc(label(id))}" ${n?"":"disabled"}>↑</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc ${esc(label(id))}" ${n<ids.length-1?"":"disabled"}>↓</button></span></div>
     <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section>`).join("")}</div>`;
 }
 /* Blocs retirés (ch.layout.hidden) : tous sauf Personnage et Points de vie ; on les remet par « Ajouter un bloc ». */
 const BLK_FIXED=["perso","pv"];
-const BLK_KEEP=["perso","pv","reperes"]; // blocs qu'on ne supprime pas (Repères : déplaçable seulement)
+const BLK_KEEP=["perso","pv","reperes","ressources"]; // blocs qu'on ne supprime pas (Repères : déplaçable seulement)
 const blkHidden=(ch,id)=>!BLK_KEEP.includes(id)&&Array.isArray(ch.layout?.hidden)&&ch.layout.hidden.includes(id);
 function setBlkHidden(ch,id,on){ const h=(Array.isArray(ch.layout?.hidden)?ch.layout.hidden:[]).filter(x=>x!==id); if(on&&!BLK_KEEP.includes(id)) h.push(id); ch.layout=Object.assign({},ch.layout,{hidden:h}); touch(S.cur); }
 /* Bas de chaque fenêtre de bloc : monter, descendre, supprimer (confirmation). */
