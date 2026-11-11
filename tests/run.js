@@ -1290,6 +1290,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`)), ['ca:b@0,0'], 'bandeau : deux lignes sur toute la largeur');
     await p.keyboard.press('Escape');
     ok(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="c_t1aaaaaa"] .ccell').getBoundingClientRect(), g = document.querySelector('.tblk[data-blk="c_t1aaaaaa"] .cgrid').getBoundingClientRect(); return Math.abs(b.width - g.width) < 2 && b.height > 130; }), 'bandeau affiché sur deux lignes et toute la largeur');
+    for (const th of ['dark', 'light']) { await p.evaluate(th => { setTheme(th); render(); }, th);
+      eq(await p.evaluate(() => ['.tblk[data-blk="reperes"] button.rtile', '.tblk[data-blk="raccourcis"] .tpbtn:not(.tplus)', '.tblk[data-blk="reperes"] span.rtile'].map(q => /gradient/.test(getComputedStyle(document.querySelector(q)).backgroundImage))), [true, true, false], `dégradé sur les tuiles cliquables seulement (${th})`); }
+    await p.evaluate(() => { setTheme('dark'); render(); });
     eq(await p.evaluate(() => { const v = getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpbtn:not(.tplus)')).borderTopColor, t = document.createElement('i'); t.style.color = getComputedStyle(document.documentElement).getPropertyValue('--brass').trim(); document.body.appendChild(t); const c = getComputedStyle(t).color; t.remove(); return v === c; }), true, 'liseré doré sur les tuiles qui ouvrent une action');
   });
 

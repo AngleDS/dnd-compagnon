@@ -390,3 +390,8 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 .tcell.tact{border-color:var(--brass)}
 .tpbtn:not(.tplus){border-color:var(--brass)}
 .tpanels>.rtile{min-height:60px}
+/* Tuiles cliquables : liseré doré et léger dégradé, en mode sombre comme en clair ; les tuiles d'information restent unies (demande d'Angle) */
+:root{--tgrad:linear-gradient(150deg,#38342d,#1f2024)}
+:root[data-theme="light"]{--tgrad:linear-gradient(150deg,#d3cbba,#f1ece3)}
+button.rtile:not(.vide),.tpbtn:not(.tplus),.tcell.tact{background:var(--tgrad);border-color:var(--brass)}
+button.rtile:not(.vide):hover,.tpbtn:not(.tplus):hover,.tcell.tact:hover{background:var(--tgrad);filter:brightness(1.08)}
