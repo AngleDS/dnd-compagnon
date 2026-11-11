@@ -382,3 +382,11 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
   .top .nav button{flex:0 0 auto}}
 .blkconfirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--blood);border-radius:10px;background:color-mix(in srgb,var(--blood) 14%,transparent)}
 .tblkgrip{touch-action:manipulation;-webkit-touch-callout:none}
+/* Tuiles (T1) : tuiles non éligibles grisées et barrées ; liseré doré pour les tuiles qui ouvrent une action */
+.tcell.toff{opacity:.45;cursor:not-allowed;border-style:dashed;touch-action:auto}
+.tcell.toff .tname{text-decoration:line-through}
+.toffwhy{display:block;font-size:10px;line-height:1.2;color:var(--muted);margin-top:2px}
+.chip.toff{opacity:.45;text-decoration:line-through;cursor:not-allowed}
+.tcell.tact{border-color:var(--brass)}
+.tpbtn:not(.tplus){border-color:var(--brass)}
+.tpanels>.rtile{min-height:60px}

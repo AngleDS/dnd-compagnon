@@ -1136,7 +1136,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await diceTable(p);
     ok(await p.isVisible('.tblk[data-blk="reperes"] .tbpen') && await p.isVisible('.tblk[data-blk="raccourcis"] .tbpen'), 'crayon visible hors du mode disposition');
     await p.click('.tblk[data-blk="raccourcis"] .tbpen');
-    eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .tpgrid .tcell').length, document.querySelectorAll('.tpop .tres .tcell').length]), ['tiles:raccourcis', 6, 3], 'popup : 6 cases et une réserve de 3 tuiles');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .tpgrid .tcell').length, ['rest', 'hist', 'notes', 'ca'].every(v => document.querySelector(`.tpop .tres [data-v="${v}"]`))]), ['tiles:raccourcis', 6, true], 'popup : 6 cases ; réserve avec Repos, Historique, Notes et aussi une tuile de valeur (CA)');
     ok(await p.evaluate(() => !!document.querySelector('.tpop .tpgrid .tcell[data-i="0"] svg') && !document.querySelector('.tpop [data-act="tileMove"]')), 'cases avec icône, plus de flèches');
     const drag = async (from, to, mid) => { const a = await p.locator(from).boundingBox(), b = to ? await p.locator(to).boundingBox() : { x: 2, y: 2, width: 0, height: 0 };
       await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 3 }); if (mid) await mid(); await p.mouse.up(); };
@@ -1268,6 +1268,28 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await diceTable(p);
     await p.evaluate(() => { cur().rollLog = [{ label: 'Initiative', total: 12, bd: 'd20 11 +1', t: Date.now() }]; S.T.pop = 'hist'; render(); });
     eq(await p.evaluate(() => { const c = getComputedStyle(document.querySelector('.thdays .chip[aria-pressed="true"]')).borderColor, ok = getComputedStyle(document.documentElement).getPropertyValue('--ok').trim(); const t = document.createElement('i'); t.style.color = ok; document.body.appendChild(t); const v = getComputedStyle(t).color; t.remove(); return c === v; }), true, 'bordure verte (--ok)');
+  });
+
+  await test('Tuiles (T1) : largeur des cases, tuiles trop larges grisées et barrées, 1×2 et bandeau, liseré doré', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { S.T.pop = 'tiles:reperes'; render(); });
+    const rep = await p.evaluate(() => ({ off: [...document.querySelectorAll('.tpop .tres .toff')].map(e => e.querySelector('.tname').textContent), drag: document.querySelectorAll('.tpop .tres .toff[data-tdrag],.tpop .tres .toff[data-act]').length,
+      strike: getComputedStyle(document.querySelector('.tpop .tres .toff .tname')).textDecorationLine, why: document.querySelector('.tpop .tres .toff .toffwhy').textContent }));
+    ok(rep.off.includes('Jets de sauvegarde') && rep.off.includes('Inventaire') && rep.drag === 0 && rep.strike === 'line-through' && /Trop large/.test(rep.why), 'Repères : tuiles larges grisées, barrées, non déplaçables : ' + JSON.stringify(rep));
+    await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
+    await p.click('.tpop .tres [data-v="ca"]');
+    eq(await p.evaluate(() => [blockTiles(cur(), 'raccourcis')[5], !!document.querySelector('.tblk[data-blk="raccourcis"] .tpanels .rtile')]), ['ca', true], 'Raccourcis : une tuile de valeur s’y place et s’affiche');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t1aaaaaa', name: 'Test', r: 2, c: 4, tiles: [] }] }); S.T.pop = 'tiles:c_t1aaaaaa'; render(); });
+    await p.click('.tpop [data-act="ctileAdd"][data-t="saves"]'); await p.click('.tpop [data-act="ctileAdd"][data-t="ca"]');
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`)), ['saves:12@0,0', 'ca:1@0,2'], 'bloc de 4 colonnes : tuile moyenne posée en 1×2 d’office, tuile de valeur en 1×1');
+    await p.click('.tpop [data-act="ctileSel"][data-i="0"]');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .chip[data-act="ctileSize"]')].map(c => c.dataset.z).concat([...document.querySelectorAll('.tpop .chip.toff')].map(c => 'x' + c.textContent))), ['12', '2', 'l', 'b', 'x1×1'], 'tailles : 1×1 barrée (trop étroite), 1×2, 2×2, ligne, bandeau');
+    await p.click('.tpop [data-act="ctileDel"]'); await p.click('.tpop [data-act="ctileSel"][data-i="0"]'); await p.click('.tpop [data-act="ctileSize"][data-z="b"]');
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`)), ['ca:b@0,0'], 'bandeau : deux lignes sur toute la largeur');
+    await p.keyboard.press('Escape');
+    ok(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="c_t1aaaaaa"] .ccell').getBoundingClientRect(), g = document.querySelector('.tblk[data-blk="c_t1aaaaaa"] .cgrid').getBoundingClientRect(); return Math.abs(b.width - g.width) < 2 && b.height > 130; }), 'bandeau affiché sur deux lignes et toute la largeur');
+    eq(await p.evaluate(() => { const v = getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpbtn:not(.tplus)')).borderTopColor, t = document.createElement('i'); t.style.color = getComputedStyle(document.documentElement).getPropertyValue('--brass').trim(); document.body.appendChild(t); const c = getComputedStyle(t).color; t.remove(); return v === c; }), true, 'liseré doré sur les tuiles qui ouvrent une action');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
