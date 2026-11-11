@@ -388,7 +388,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await open(p);
     await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); S.T.pop = 'hist'; render(); });
-    const desk = await p.evaluate(() => ({ small: document.querySelector('.btn.small').getBoundingClientRect().height }));
+    const desk = await p.evaluate(() => ({ small: document.querySelector('.btn.small:not([data-act="tpopclose"])').getBoundingClientRect().height }));
     ok(desk.small < 40, 'densité conservée sur ordinateur : ' + desk.small);
     eq([...new Set(await closeSizes(p))], ['44×44 28px'], 'croix sur ordinateur (popup et bannière)');
   });
@@ -397,12 +397,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await open(p);
     eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'thème par défaut');
     await p.evaluate(() => { S.view = 'list'; render(); });
-    ok(await p.evaluate(() => document.querySelectorAll('[data-act="theme"]').length === 1 && !!document.querySelector('#hchar [data-act="theme"]') && !document.querySelector('.hchar')), 'bouton sous Menu, plus de nom du perso en haut');
-    await p.click('[data-act="theme"]');
+    ok(await p.evaluate(() => !document.querySelector('[data-act="theme"]') && !document.querySelector('.hchar')), 'mode clair rangé dans le Menu');
+    await menuClick(p, '[data-act="theme"]');
+    ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'le Menu se referme après un choix');
     eq(await p.evaluate(() => [document.documentElement.dataset.theme, S.docs.prefs.theme, localStorage.getItem('registre-theme')]), ['light', 'light', 'light'], 'mode clair');
     ok(await p.evaluate(() => { const m = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number); return m[0] + m[1] + m[2] > 600; }), 'fond clair');
-    ok(await p.evaluate(() => document.querySelector('[data-act="theme"]').textContent === 'Mode sombre'), 'libellé du bouton');
-    await p.click('[data-act="theme"]'); eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'retour au sombre');
+    await p.click('.hmenu'); ok(await p.evaluate(() => document.querySelector('.hdrop [data-act="theme"]').textContent === 'Mode sombre'), 'libellé du bouton');
+    await p.click('.hdrop [data-act="theme"]'); eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'retour au sombre');
   });
  
   await test('À la table : tuile Repos (court ou long), PV max « aucun », alignement', async p => {
@@ -541,17 +542,17 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Dés : verrou par défaut, global entre personnages, persistant dans le navigateur', async p => {
     await diceTable(p);
-    eq(await p.getAttribute('[data-act="virtualDice"]', 'aria-checked'), 'false', 'désactivés par défaut');
+    await p.click('.hmenu'); eq(await p.getAttribute('.hdrop [data-act="virtualDice"]', 'aria-checked'), 'false', 'désactivés par défaut');
     const first = await p.evaluate(() => S.cur);
-    await p.click('[data-act="virtualDice"]');
+    await p.click('.hdrop [data-act="virtualDice"]');
     eq(await p.evaluate(() => [virtualDiceEnabled(), localStorage.getItem(VIRTUAL_DICE_KEY)]), [true, '1'], 'activation enregistrée');
     await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
-    eq(await p.getAttribute('[data-act="virtualDice"]', 'aria-checked'), 'true', 'second personnage');
+    await p.click('.hmenu'); eq(await p.getAttribute('.hdrop [data-act="virtualDice"]', 'aria-checked'), 'true', 'second personnage'); await p.keyboard.press('Escape');
     await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
     ok(await p.evaluate(() => virtualDiceEnabled()), 'activation après rechargement');
     await p.evaluate(id => { S.cur=id; S.view='sheet'; S.tab='table'; render(); }, first);
-    await p.click('[data-act="virtualDice"]');
+    await menuClick(p, '[data-act="virtualDice"]');
     await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
     eq(await p.evaluate(() => [virtualDiceEnabled(), persos().some(c => 'virtualDice' in c)]), [false, false], 'désactivation persistante et aucune préférence dans un personnage');
   });
@@ -735,6 +736,11 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => cur().hdUsed),1,'dé de vie virtuel');
   });
 
+
+  async function menuClick(p, sel) {
+    if (!await p.locator('.hdrop').count()) await p.click('.hmenu');
+    await p.click('.hdrop ' + sel);
+  }
 
   async function padNumber(p, value) {
     for(const digit of String(value)) await p.click('[data-pad="'+digit+'"]');
@@ -941,7 +947,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.setViewportSize({ width: 1200, height: 2200 }); await diceTable(p);
     const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
     ok(!await p.locator('[data-blkgrip],[data-act="blkMove"]').count(), 'verrouillé : ni poignée ni flèche');
-    await p.click('[data-act="layoutEdit"]');
+    await menuClick(p, '[data-act="layoutEdit"]');
     eq(await order(), ['perso','reperes','pv','recherche','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
     ok(await p.evaluate(() => [...document.querySelectorAll('.tblkc')].every(c => c.inert)), 'contenu des blocs inactif');
     ok(await p.locator('.tblk[data-blk="perso"] [data-act="blkMove"][data-d="-1"]').isDisabled(), 'premier bloc : pas de flèche vers le haut');
@@ -960,12 +966,12 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq((await order())[0], 'pv', 'à la souris, le bloc s’attrape aussi par son titre');
     await p.click('[data-act="layoutDone"]');
     ok(!await p.locator('[data-blkgrip]').count() && (await order())[0] === 'pv', 'Terminé : verrouillé, ordre conservé');
-    await p.click('[data-act="layoutEdit"]'); await p.click('[data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
     eq((await order())[0], 'perso', 'ordre par défaut rétabli');
   });
 
   await test('Glisser un bloc : copie transparente qui suit la souris, emplacement d’arrivée, rien ne reste', async p => {
-    await p.setViewportSize({ width: 1200, height: 2200 }); await diceTable(p); await p.click('[data-act="layoutEdit"]');
+    await p.setViewportSize({ width: 1200, height: 2200 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
     const grip = await p.locator('.tblk[data-blk="notes"] [data-blkgrip]').boundingBox(), top = await p.locator('.tblk[data-blk="pv"]').boundingBox();
     await p.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await p.mouse.down();
     await p.mouse.move(grip.x + 30, top.y + 5, { steps: 3 });
@@ -1036,7 +1042,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq((await racc()).slice(0, 2), ['saves', '+'], 'tuile déplacée en touchant sa case puis la case visée');
     eq(await p.evaluate(() => cur().layout.tiles.raccourcis), ['saves','','cond','inv','equip','rest'], 'choix enregistré dans la fiche');
     await p.keyboard.press('Escape');
-    await p.click('[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] [data-v="tiles:reperes"]');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] [data-v="tiles:reperes"]');
     await p.click('.tpop [data-act="tileAdd"][data-v="ivp"]');
     const ivp = await p.evaluate(() => [blockTiles(cur(), 'reperes')[3], 10 + derive(cur()).skills.investigation.val]);
     eq(ivp[0], 'ivp', 'Investigation passive dans la case libre du DD');
@@ -1051,7 +1057,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Bloc personnalisé : modèle, nom, tuiles à leur place exacte, tailles, glisser, ancien format, suppression, import', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
-    await p.click('[data-act="layoutEdit"]'); await p.click('[data-act="tpop"][data-v="blkadd"]');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-act="tpop"][data-v="blkadd"]');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .ctpl small')].map(x => x.textContent).join(' ')), '1×1 1×2 1×3 1×4 2×1 2×2 2×3 2×4 3×1 3×2 4×1 4×2', '12 modèles, 8 cases au plus');
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); const e = document.elementFromPoint(r.left + 20, r.top + 10); return !!e.closest('.tpop'); }), 'popup au-dessus de la barre de disposition');
     await p.click('.tpop [data-act="blkCreate"][data-r="2"][data-c="3"]');
@@ -1094,7 +1100,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { custom: 'x' } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
       return [S.docs[nid].layout.custom[0].name, bad]; });
     eq(r[0], 'Combat', 'bloc suit l’export'); ok(/personnalisés/.test(r[1]), 'blocs invalides refusés');
-    await p.click('[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] [data-v="tiles:${id}"]`);
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] [data-v="tiles:${id}"]`);
     await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => cur().layout.custom.length === 1), 'demande de confirmation avant suppression');
     await p.click('.tpop [data-act="cblkDelYes"]');
     eq(await p.evaluate(id => [cur().layout.custom.length, cur().layout.order.includes(id), !!document.querySelector(`.tblk[data-blk="${id}"]`), S.T.pop], id), [0, false, false, null], 'bloc supprimé');
@@ -1202,8 +1208,12 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Gérer les blocs depuis le bloc : crayon partout sauf Personnage et PV, monter, supprimer, remettre', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     const vis = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
-    ok(await p.evaluate(() => !document.querySelector('.tlayoutbar') && !!document.querySelector('.ttopbar [data-act="layoutEdit"]') && !!document.querySelector('.ttopbar [data-v="blkadd"]') && !!document.querySelector('.ttopbar [data-act="virtualDice"]')), 'bandeau du haut : dés, ajouter, disposition ; plus de bouton en bas');
-    ok(await p.evaluate(() => { const r = [...document.querySelectorAll('.ttopbar .btn')].map(b => Math.round(b.getBoundingClientRect().top)); return new Set(r).size === 1 && document.documentElement.scrollWidth <= innerWidth; }), 'bandeau sur une seule ligne sur iPhone');
+    ok(await p.evaluate(() => !document.querySelector('.tlayoutbar') && !document.querySelector('.ttopbar') && !document.querySelector('.hdrop')), 'plus de bouton en bas ni de bandeau ; Menu fermé');
+    await p.click('.hmenu');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.hdrop .hditem')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['nav:list', 'theme', 'virtualDice', 'tpop:blkadd', 'layoutEdit'], 'Menu déroulant : personnages, mode clair, dés, ajouter un bloc, disposition');
+    ok(await p.evaluate(() => { const d = document.querySelector('.hdrop').getBoundingClientRect(); return d.left >= 0 && d.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; }), 'Menu dans l’écran');
+    await p.mouse.click(20, 600); ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'clic ailleurs : Menu fermé');
+    ok(await p.evaluate(() => { const n = document.querySelector('.top .nav'), b = [...n.querySelectorAll('button')].map(x => Math.round(x.getBoundingClientRect().top)); return new Set(b).size === 1 && document.querySelector('.top').getBoundingClientRect().height <= 110; }), 'en-tête iPhone : onglets sur une ligne, 110 px au plus');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].filter(b => b.querySelector('.tbpen')).map(b => b.dataset.blk)), ['reperes', 'recherche', 'tour', 'raccourcis', 'notes'], 'crayon sur chaque bloc sauf Personnage et PV');
     await p.click('.tblk[data-blk="tour"] .tbpen');
     eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Ce tour'], 'Ce tour : fenêtre du bloc');
@@ -1216,16 +1226,22 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop [data-act="cblkDelYes"]');
     eq(await p.evaluate(() => [cur().layout.hidden, !document.querySelector('.tblk[data-blk="reperes"]'), S.T.pop]), [['reperes'], true, null], 'Repères retiré en trois touchers');
     await p.click('.tblk[data-blk="notes"] .tbpen'); await p.click('.tpop [data-act="cblkDel"]'); await p.click('.tpop [data-act="cblkDelYes"]');
-    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="notes"]') && !!document.querySelector('.ttopbar [data-act="virtualDice"]')), 'Notes retiré : le réglage des dés reste accessible');
-    await p.click('.ttopbar [data-v="blkadd"]');
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="notes"]') && !!(document.querySelector('.hmenu'))), 'Notes retiré : le réglage des dés reste dans le Menu');
+    await menuClick(p, '[data-v="blkadd"]');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['reperes', 'notes'], 'blocs retirés proposés dans « Ajouter un bloc »');
     await p.click('.tpop [data-act="blkRestore"][data-v="reperes"]');
     eq(await p.evaluate(() => [cur().layout.hidden, !!document.querySelector('.tblk[data-blk="reperes"]')]), [['notes'], true], 'Repères remis à sa place');
-    await p.click('[data-act="layoutEdit"]');
+    await menuClick(p, '[data-act="layoutEdit"]');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tblkh [data-v^="tiles:"],.tblkh [data-v^="blk:"]')).map(b => b.dataset.blk)), ['perso', 'pv'], 'mode disposition : « Modifier » sur tous les blocs sauf Personnage et PV ; Notes absent');
     await p.click('[data-act="layoutDone"]');
     const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { hidden: 'x' } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
     ok(/retirés/.test(bad), 'blocs retirés invalides refusés à l’import');
+  });
+
+  await test('Historique des jets : jour sélectionné en vert', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { cur().rollLog = [{ label: 'Initiative', total: 12, bd: 'd20 11 +1', t: Date.now() }]; S.T.pop = 'hist'; render(); });
+    eq(await p.evaluate(() => { const c = getComputedStyle(document.querySelector('.thdays .chip[aria-pressed="true"]')).borderColor, ok = getComputedStyle(document.documentElement).getPropertyValue('--ok').trim(); const t = document.createElement('i'); t.style.color = ok; document.body.appendChild(t); const v = getComputedStyle(t).color; t.remove(); return c === v; }), true, 'bordure verte (--ok)');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {

@@ -22,8 +22,14 @@ function renderNav(){
   items.push(["hb","Mes contenus",S.view==="hb"],["comp","Catalogue",S.view==="comp"]);
   document.getElementById("nav").innerHTML=items.map(([k,l,on])=>`<button data-act="nav" data-v="${k}" ${on?'aria-current="page"':""}>${esc(l)}</button>`).join("");
   const shown = !inPerso ? null : (S.view==="sheet"&&S.cur&&S.docs[S.cur] ? S.docs[S.cur] : (m?S.docs[m]:null));
-  document.getElementById("hmenu").innerHTML=`<button class="hmenu" data-act="nav" data-v="list" ${S.view==="list"||(S.view==="sheet"&&!onMine)?'aria-current="page"':""}>Menu</button>`;
-  document.getElementById("hchar").innerHTML=`<button class="btn small ghost themebtn" data-act="theme" title="Changer l'apparence de l'appli">${curTheme()==="dark"?"Mode clair":"Mode sombre"}</button>`;
+  // Menu : liste déroulante (personnages, mode clair, dés, et pour « À la table » : ajouter un bloc, disposition ; d'autres réglages viendront)
+  const atTable=S.view==="sheet"&&S.tab==="table"&&!!S.cur, mi=(attrs,label,extra="")=>`<button class="hditem" role="menuitem" ${attrs}>${label}${extra}</button>`;
+  document.getElementById("hmenu").innerHTML=`<button class="hmenu" data-act="menuToggle" aria-haspopup="menu" aria-expanded="${!!S.menuOpen}" ${S.view==="list"||(S.view==="sheet"&&!onMine)?'aria-current="page"':""}>Menu <span aria-hidden="true">▾</span></button>${S.menuOpen?`<div class="hdrop" role="menu" aria-label="Menu">
+    ${mi('data-act="nav" data-v="list"',"Mes personnages")}
+    ${mi('data-act="theme"',curTheme()==="dark"?"Mode clair":"Mode sombre")}
+    ${mi(`data-act="virtualDice" role="menuitemcheckbox" aria-checked="${virtualDiceEnabled()}"`,"Dés virtuels",`<span class="hdstate">${virtualDiceEnabled()?"activés":"désactivés"}</span>`)}
+    ${atTable?`<div class="hdsep" role="separator"></div>${mi('data-act="tpop" data-v="blkadd"',"Ajouter un bloc")}${mi('data-act="layoutEdit"',"Disposition des blocs")}`:""}</div>`:""}`;
+  document.getElementById("hchar").innerHTML="";
 }
 function render(){
   closeDicePad(false);

@@ -519,8 +519,7 @@ function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map
 function tableBlocks(ch,blocks){
   const ed=!!S.layoutEdit, ids=tableOrder(ch).filter(id=>!blkHidden(ch,id)&&(ed||blocks[id])), label=id=>blkLabel(ch,id);
   const charges=chargeRecoveryForms(ch);
-  if(!ed) return `<div class="ttopbar"><button class="btn small ghost" data-act="virtualDice" role="switch" aria-checked="${virtualDiceEnabled()}" aria-label="Dés virtuels" title="Toucher pour passer aux dés ${virtualDiceEnabled()?"physiques":"virtuels"}">Dés : ${virtualDiceEnabled()?"virtuels":"physiques"}</button><span class="row" style="gap:6px"><button class="btn small" data-act="tpop" data-v="blkadd">+ Ajouter un bloc</button><button class="btn small ghost" data-act="layoutEdit">Disposition</button></span></div>
-    ${charges?`<div class="tcharges">${charges}</div>`:""}<div class="tblocks">${ids.map(id=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">${blocks[id]}</section>`).join("")}</div>`;
+  if(!ed) return `${charges?`<div class="tcharges">${charges}</div>`:""}<div class="tblocks">${ids.map(id=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">${blocks[id]}</section>`).join("")}</div>`;
   // Mode disposition : poignée et flèches sur chaque bloc ; le contenu est inactif pour éviter toute action par erreur.
   return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small" data-act="tpop" data-v="blkadd">Ajouter un bloc</button><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
   <div class="tblocks editing">${ids.map((id,n)=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">

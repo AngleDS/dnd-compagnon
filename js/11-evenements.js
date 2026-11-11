@@ -1,4 +1,8 @@
 /* ---------- events ---------- */
+/* Menu déroulant : se ferme au choix d'un élément, au clic ailleurs et avec Échap. */
+document.addEventListener("click",e=>{ if(!S.menuOpen) return; const inMenu=e.target.closest&&e.target.closest("#hmenu");
+  if(!inMenu||(e.target.closest(".hditem")&&!e.target.closest('[data-act="menuToggle"]'))){ S.menuOpen=false; if(!inMenu) render(); } },true);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&S.menuOpen){ S.menuOpen=false; render(); document.querySelector(".hmenu")?.focus(); } });
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-act]"); if(!t) return;
   if(t.dataset.act==="tip"){ e.preventDefault(); openTip(t.dataset.k,t); return; }
@@ -145,6 +149,7 @@ document.addEventListener("click",e=>{
     case "ccclose": S.T.pop=null; S.T.cc=null; render(); break;
     case "hdvirt": { const D=derive(ch); const r=rnd(D.hd); hdSpend(ch,D,r,false); break; }
     case "bannerClose": { const k=t.dataset.k; if(k){ try{ localStorage.setItem("registre-banner-"+k,"1"); }catch(e){} } setBanner(""); break; }
+    case "menuToggle": S.menuOpen=!S.menuOpen; render(); break;
     case "theme": setTheme(curTheme()==="dark"?"light":"dark"); render(); break;
     case "restOpen": S.T=S.T||{}; S.T.restKind=t.dataset.v||""; S.T.pop="rest"; render(); break;
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
