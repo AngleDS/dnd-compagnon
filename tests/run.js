@@ -737,6 +737,11 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
 
 
+  // Ancienne disposition des Raccourcis (case 6 libre), sans Inspiration ajoutée d'office.
+  async function legacyRacc(p) {
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { inspSeen: true }); ch.layout.tiles = Object.assign({}, ch.layout.tiles, { raccourcis: ['skills','saves','cond','inv','equip',''] }); S.T.pop = null; render(); });
+  }
+
   async function menuClick(p, sel) {
     if (!await p.locator('.hdrop').count()) await p.click('.hmenu');
     await p.click('.hdrop ' + sel);
@@ -1021,8 +1026,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
     await diceTable(p);
-    const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : e.dataset.v));
-    eq(cells, ['skills','saves','cond','inv','equip','+'], 'six cases, la dernière libre');
+    const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));
+    eq(cells, ['skills','saves','cond','inv','equip','insp'], 'six cases, Inspiration héroïque dans la dernière');
     for (const v of ['skills','saves','cond','inv','equip']) {
       await p.click(`.tblk[data-blk="raccourcis"] [data-v="${v}"]`);
       ok(await p.isVisible('.tpop'), 'popup ' + v); await p.keyboard.press('Escape');
@@ -1032,7 +1037,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
 
   await test('Personnaliser : « + » ouvre le choix, ajouter, vider, déplacer, défaut, enregistré et importé', async p => {
-    await diceTable(p);
+    await diceTable(p); await legacyRacc(p);
     const racc = () => p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));
     await p.click('.tblk[data-blk="raccourcis"] .tplus');
     eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:raccourcis', 5], 'le « + » ouvre Personnaliser sur sa case');
@@ -1112,7 +1117,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
-      await diceTable(t); await t.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
+      await diceTable(t); await legacyRacc(t); await t.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
       const res = await t.evaluate(async () => {
         const fire = (type, x, y, el) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 5, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y }));
         const src = document.querySelector('.tpop .tres [data-v="rest"]'), dst = document.querySelector('.tpop .tpgrid [data-i="5"]').getBoundingClientRect(), r = src.getBoundingClientRect();
@@ -1277,7 +1282,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const rep = await p.evaluate(() => ({ off: [...document.querySelectorAll('.tpop .tres .toff')].map(e => e.querySelector('.tname').textContent), drag: document.querySelectorAll('.tpop .tres .toff[data-tdrag],.tpop .tres .toff[data-act]').length,
       strike: getComputedStyle(document.querySelector('.tpop .tres .toff .tname')).textDecorationLine, why: document.querySelector('.tpop .tres .toff .toffwhy').textContent }));
     ok(rep.off.includes('Jets de sauvegarde') && rep.off.includes('Inventaire') && rep.drag === 0 && rep.strike === 'line-through' && /Trop large/.test(rep.why), 'Repères : tuiles larges grisées, barrées, non déplaçables : ' + JSON.stringify(rep));
-    await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
+    await legacyRacc(p); await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
     await p.click('.tpop .tres [data-v="ca"]');
     eq(await p.evaluate(() => [blockTiles(cur(), 'raccourcis')[5], !!document.querySelector('.tblk[data-blk="raccourcis"] .tpanels .rtile')]), ['ca', true], 'Raccourcis : une tuile de valeur s’y place et s’affiche');
     await p.keyboard.press('Escape');
@@ -1301,6 +1306,49 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const b = getComputedStyle(document.body), a = getComputedStyle(document.body, '::after'), top = getComputedStyle(document.querySelector('.top'));
       return [b.backgroundAttachment.includes('fixed'), /gradient/.test(b.backgroundImage), /radial-gradient/.test(a.backgroundImage), a.position, a.transform !== 'none', top.backdropFilter || top.webkitBackdropFilter || 'none']; }),
       [false, false, true, 'fixed', true, 'none'], 'fond sur une couche fixe composée, en-tête sans flou');
+  });
+
+  await test('Tuiles (T2) : Inspiration hors de la carte PV, Concentration, Épuisement, Recherche en tuile, Notes en tuiles', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    ok(await p.evaluate(() => !document.querySelector('.health-card [data-act="insp"]') && !!document.querySelector('.health-card .tconcb')), 'carte PV : plus d’Inspiration, Concentration toujours là');
+    await p.click('.tblk[data-blk="raccourcis"] [data-act="insp"]');
+    eq(await p.evaluate(() => [cur().inspiration, document.querySelector('.tblk[data-blk="raccourcis"] [data-act="insp"]').getAttribute('aria-pressed')]), [true, 'true'], 'tuile Inspiration : un toucher la gagne');
+    await p.evaluate(() => { const ch = cur(); ch.layout = { tiles: { raccourcis: ['skills','saves','cond','inv','equip',''] } }; render(); });
+    eq(await p.evaluate(() => [blockTiles(cur(), 'raccourcis')[5], cur().layout.tiles.raccourcis[5], !!cur().layout.inspSeen]), ['insp', '', false], 'disposition déjà enregistrée : Inspiration ajoutée à l’écran sans rien écrire');
+    await p.evaluate(() => { S.T.pop = 'tiles:reperes'; render(); }); await p.click('.tpop [data-act="tileAdd"][data-v="ivp"]');
+    eq(await p.evaluate(() => [cur().layout.tiles.raccourcis[5], !!cur().layout.inspSeen]), ['insp', true], 'premier changement de tuiles : Inspiration enregistrée à sa place');
+    await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); }); await p.click('.tpop [data-act="tileCell"][data-i="5"]'); await p.click('.tpop [data-act="tileDel"][data-i="5"]');
+    await p.keyboard.press('Escape'); eq(await p.evaluate(() => blockTiles(cur(), 'raccourcis')[5]), '', 'retirée par le joueur : elle ne revient pas');
+    await p.fill('#tq', 'rep');
+    eq(await p.evaluate(() => { const d = document.getElementById('tres'); return [getComputedStyle(d).position, getComputedStyle(d).display !== 'none', d.querySelectorAll('.trow').length > 0]; }), ['absolute', true, true], 'Recherche : résultats dans une liste déroulante');
+    await p.evaluate(() => { const b = document.querySelector('.brand').getBoundingClientRect(); document.querySelector('.brand').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: b.x + 5, clientY: b.y + 5 })); });
+    ok(await p.evaluate(() => getComputedStyle(document.getElementById('tres')).display === 'none'), 'toucher ailleurs replie la liste');
+    await p.click('#tq'); ok(await p.evaluate(() => getComputedStyle(document.getElementById('tres')).display !== 'none'), 'revenir dans la barre la rouvre');
+    await p.fill('#tq', '');
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t2aaaaaa', name: 'T2', r: 2, c: 4, tiles: [] }] }); S.T.pop = 'tiles:c_t2aaaaaa'; render(); });
+    for (const v of ['search', 'conc', 'exh']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}`)), ['search:1', 'conc:12', 'exh:1'], 'Recherche 1×1, Concentration en 1×2 d’office (tuile moyenne), Épuisement 1×1');
+    await p.click('.tpop [data-act="ctileSel"][data-i="0"]');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="ctileSize"]')].map(c => c.dataset.z)), ['1', '12', 'l'], 'Recherche : une seule ligne de haut (1, 2 ou 4 colonnes)');
+    await p.keyboard.press('Escape');
+    await p.click('.tblk[data-blk="c_t2aaaaaa"] [data-act="tsearch"]');
+    ok(await p.evaluate(() => !S.T.pop && document.activeElement && document.activeElement.id === 'tq'), 'loupe : va à la barre du bloc Recherche');
+    await p.click('.tblk[data-blk="c_t2aaaaaa"] [data-act="tpop"][data-v="cond"]'); eq(await p.evaluate(() => S.T.pop), 'cond', 'tuile Épuisement : ouvre la fenêtre des états'); await p.keyboard.press('Escape');
+    await p.evaluate(() => { setBlkHidden(cur(), 'recherche', true); render(); });
+    await p.click('.tblk[data-blk="c_t2aaaaaa"] [data-act="tsearch"]');
+    ok(await p.evaluate(() => S.T.pop === 'search' && !!document.querySelector('.tpop #tq') && document.querySelectorAll('#tq').length === 1), 'sans barre à l’écran : la loupe ouvre la recherche dans une fenêtre');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { cur().layout.custom[0].tiles[0].sz = 'l'; render(); });
+    ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="c_t2aaaaaa"] #tq') && document.querySelectorAll('#tq').length === 1), 'Recherche en pleine largeur : la barre elle-même');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="notes"] .tpbtn')].map(b => b.dataset.v)), ['notes', 'hist'], 'bloc Notes : tuiles Notes et Historique');
+  });
+
+  await test('iPhone SE / mini (375 points) : « À la table » sans débordement, textes des tuiles entiers', async p => {
+    await p.setViewportSize({ width: 375, height: 667 }); await diceTable(p);
+    await p.evaluate(() => { const ch = cur(); ch.conditions = ['Empoisonné', 'Charmé']; ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_seaaaaaa', name: 'SE', r: 2, c: 4, tiles: [{ id: 'conc', sz: '12', r: 0, c: 0 }, { id: 'exh', sz: '1', r: 0, c: 2 }, { id: 'insp', sz: '1', r: 0, c: 3 }, { id: 'search', sz: 'l', r: 1, c: 0 }] }] }); render(); });
+    eq(await p.evaluate(() => { const bad = []; if (document.documentElement.scrollWidth > innerWidth) bad.push('page plus large que l’écran');
+      document.querySelectorAll('.tblocks .rtile .label, .tblocks .tpbtn, .tblocks .rtile .num, .health-card .label').forEach(e => { if (e.scrollWidth > e.clientWidth + 1) bad.push((e.textContent || '').trim().slice(0, 30)); });
+      return bad; }), [], 'aucun débordement à 375 points');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {

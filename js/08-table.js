@@ -310,6 +310,7 @@ function tPop(ch,D){
         ${S.T.hdLast?`<div class="tnotes">${esc(S.T.hdLast)}</div>`:""}</div>
       <div class="lusec"><div class="label">À la fin du repos</div><ul class="lul"><li>${D.cast&&D.cast.type==="pact"?"Emplacements de pacte récupérés":"Pas d'emplacement récupéré (repos long)"}</li>${shortRes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
       <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button></div>`); }
+  if(k==="search") return wrap("Recherche",searchBar());
   if(k==="notes") return wrap("Notes de partie",`<textarea id="t-notes" data-bind="sessionNotes" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="min-height:260px;width:100%">${esc(ch.sessionNotes||"")}</textarea><div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Séparées des notes du personnage. Enregistrées au fil de la frappe.</div>`);
   if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } return wrap("Détails",c," wide"); }
   if(k==="hist") return wrap("Historique des jets", histBody(ch));
@@ -325,6 +326,7 @@ function tPop(ch,D){
   return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop" role="dialog" aria-modal="true" aria-label="${B[0]}" data-act="noop"><div class="tpophead"><b>${B[0]}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${B[1]}</div></div></div>`;
 }
 function viewTable(ch,D,banner=""){
+  if(S.T) S.T._tq=false; // une seule barre de recherche par écran
   ensureBag(ch);
   const T=S.T||(S.T={q:"",sel:null,eco:null,mode:"n",d1:"",d2:"",dmg:"",recent:[]});
   const items=tableItems(ch,D); S.Titems=items; S.Tderived=D;
@@ -352,7 +354,7 @@ function viewTable(ch,D,banner=""){
       <div class="health-detail health-dice" title="Dés de vie restants : à dépenser pendant un repos court (bouton Repos)"><span class="label">Dés de vie</span><span><b class="num">${Math.max(0,D.L-(+ch.hdUsed||0))} / ${D.L}</b> <small>d${D.hd}</small></span></div>
       <div class="health-detail health-rest"><span class="label">Repos</span><button class="btn hprest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg></button></div>
     </div>${slotsRow}
-  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span><button class="chip insp overview-inspiration" aria-pressed="${!!ch.inspiration}" data-act="insp" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg><span>Inspiration héroïque${ch.inspiration?" ✓":""}</span></button></div></section></div>`;
+  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span></div></section></div>`;
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
@@ -367,8 +369,7 @@ function viewTable(ch,D,banner=""){
     pv:`${(+hp.cur||0)<=0?`<div class="tdeath"><div class="row" style="justify-content:space-between"><b>À 0 PV : jets contre la mort</b><span class="muted" style="font-size:var(--fs-sm)">10 ou plus : réussite · 1 : deux échecs · 20 : tu reviens à 1 PV</span></div>
         <div class="row" style="gap:16px"><span class="row" style="gap:6px"><span class="label">Réussites</span>${pips("death.s",3,ch.death?.s||0)}</span><span class="row" style="gap:6px"><span class="label">Échecs</span>${pips("death.f",3,ch.death?.f||0)}</span></div>
         ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
-    recherche:`<div class="tgrid tb-solo"><div class="tmain">${tbHead("recherche","Recherche","blk:recherche")}<form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form>
-      <div id="tres">${tResults()}</div></div></div>`,
+    recherche:blkHidden(ch,"recherche")?"":`<div class="tgrid tb-solo"><div class="tmain">${tbHead("recherche","Recherche","blk:recherche")}${searchBar()}</div></div>`,
     tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
       <div class="row" style="justify-content:space-between"><span class="label">Ce tour</span><span class="row" style="gap:6px"><button class="btn small" data-act="tnewturn">Nouveau tour</button><button class="tbpen" data-act="tpop" data-v="blk:tour" aria-label="Modifier le bloc Ce tour" title="Modifier le bloc">${PEN_SVG}</button></span></div>
       <div class="tturnb">${turnBtns}</div>
@@ -377,9 +378,7 @@ function viewTable(ch,D,banner=""){
       ${tbHead("raccourcis","Raccourcis")}
       <div class="tpanels">${raccourcisTiles(ch,D)}
       </div></div></div>`,
-    notes:`<div class="tgrid tb-solo"><div class="tbottom">${tbHead("notes","Notes et historique","blk:notes")}
-      <div class="row" style="gap:8px"><button class="btn" data-act="tpop" data-v="notes">Notes de partie${(ch.sessionNotes||"").trim()?` <span class="muted num">(${(ch.sessionNotes||"").trim().split(/\n+/).length} l.)</span>`:""}</button>
-      <button class="btn" data-act="tpop" data-v="hist">Historique des jets${(ch.rollLog||[]).length?` <span class="muted num">(${ch.rollLog.length})</span>`:""}</button></div></div></div>`
+    notes:`<div class="tgrid tb-solo"><div class="tbottom">${tbHead("notes","Notes et historique","blk:notes")}<div class="tpanels">${racTileMap(ch,D).notes()}${racTileMap(ch,D).hist()}</div></div></div>`
   };
   for(const b of customBlocks(ch)) blocks[b.id]=customBlockHtml(ch,D,b,{slots:otherSlots,size:overviewSize});
   return `${tPop(ch,D)}${tableBlocks(ch,blocks)}`;
@@ -387,7 +386,7 @@ function viewTable(ch,D,banner=""){
 /* Tuiles des blocs Repères (8 cases) et Raccourcis (6 cases) : choix enregistré par perso dans ch.layout.tiles ;
    une case libre affiche un « + » qui ouvre « Personnaliser ». Une valeur absente (DD sans sorts) laisse la case libre. */
 const REPERES_DEFAUT=["ca","init","vitesse","dd","pp","maitrise","attaques","taille"];
-const RACC_DEFAUT=["skills","saves","cond","inv","equip",""];
+const RACC_DEFAUT=["skills","saves","cond","inv","equip","insp"];
 const TILE_CAT={
   reperes:{ca:"CA",init:"Initiative",vitesse:"Vitesse",dd:"DD des sorts",atks:"Attaque de sort",pp:"Perception passive",ip:"Intuition passive",ivp:"Investigation passive",maitrise:"Maîtrise",attaques:"Attaques par action",taille:"Taille",dv:"Dés de vie"},
   raccourcis:{skills:"Tests de caractéristique",saves:"Jets de sauvegarde",cond:"États",inv:"Inventaire",equip:"Équipement",rest:"Repos",hist:"Historique des jets",notes:"Notes de partie"}
@@ -399,7 +398,9 @@ const TILE_W={E:80,M:110,L:170,P:350};
 const TILE_META=Object.assign(
   Object.fromEntries(Object.keys(TILE_CAT.reperes).map(id=>[id,{kind:"V",min:"E",act:id==="init"}])),
   Object.fromEntries(Object.keys(TILE_CAT.raccourcis).map(id=>[id,{kind:"Pop",min:"M",act:true}])),
-  {slots:{kind:"K",min:"L",act:false,only:"custom"}});
+  {slots:{kind:"K",min:"L",act:false,only:"custom"},
+   insp:{kind:"B",min:"E",act:true}, conc:{kind:"V",min:"M",act:true}, exh:{kind:"V",min:"E",act:true},
+   search:{kind:"Pop",min:"E",act:true,h1:true}}); // h1 : une seule ligne de haut (Recherche : 1, 2 ou 4 colonnes)
 const tileMinW=id=>TILE_W[(TILE_META[id]||{}).min||"E"];
 const tileFits=(id,w)=>w>=tileMinW(id);
 const BLK_CELL_W={reperes:80,raccourcis:170};
@@ -411,12 +412,16 @@ function blockTiles(ch,blk){
   const def=blk==="reperes"?REPERES_DEFAUT:RACC_DEFAUT, cat=customCat(), saved=ch.layout?.tiles?.[blk];
   const arr=Array.isArray(saved)?saved.slice(0,def.length).map(x=>typeof x==="string"&&cat[x]&&tileOkInBlk(x,blk)?x:""):def.slice();
   while(arr.length<def.length) arr.push("");
+  // Inspiration héroïque quitte la carte PV : ajoutée une fois dans une case libre des Raccourcis tant que le joueur n'a pas retouché ses tuiles
+  if(blk==="raccourcis"&&Array.isArray(saved)&&!ch.layout?.inspSeen&&!inspPlaced(ch)){ const k=arr.indexOf(""); if(k>=0) arr[k]="insp"; }
   // Sans sorts, DD et attaque de sort n'ont pas de valeur : leur case est libre.
   if(!derive(ch).cast) return arr.map(x=>x==="dd"||x==="atks"?"":x);
   return arr;
 }
 const tileAvailable=(ch,blk,id)=>!((id==="dd"||id==="atks"||id==="slots")&&!derive(ch).cast);
-function setBlockTiles(ch,blk,arr){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles,{[blk]:arr}); touch(S.cur); }
+function inspPlaced(ch){ const t=ch.layout?.tiles||{}; return ["reperes"].some(k=>Array.isArray(t[k])&&t[k].includes("insp"))||customBlocks(ch).some(b=>(b.tiles||[]).some(x=>x&&x.id==="insp")); }
+function seeInsp(ch){ if(ch.layout?.inspSeen) return; const r=blockTiles(ch,"raccourcis"); ch.layout=Object.assign({},ch.layout,{inspSeen:true}); ch.layout.tiles=Object.assign({},ch.layout.tiles,{raccourcis:r}); }
+function setBlockTiles(ch,blk,arr){ seeInsp(ch); ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles,{[blk]:arr}); touch(S.cur); }
 const plusTile=(blk,i,cls)=>`<button class="${cls}" data-act="tilePick" data-blk="${blk}" data-i="${i}" aria-label="Case libre : ajouter une tuile" title="Ajouter une tuile">+</button>`;
 /* En-tête d'un bloc à tuiles : nom et petit crayon (toujours visible) qui ouvre la personnalisation du bloc. */
 const PEN_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>`;
@@ -424,7 +429,7 @@ const tbHead=(blk,label,v)=>`<div class="tbhead"><span class="label">${esc(label
 /* Visuel réduit d'une tuile (popup Personnaliser) : l'icône des Raccourcis ou la valeur des Repères. */
 function tileFace(ch,D,blk,id){
   if(id==="slots") return `<svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="18" cy="12" r="3"/></svg>`;
-  if(TILE_CAT.raccourcis[id]){ const h=racTileMap(ch,D)[id]?.()||""; return (h.match(/<svg[\s\S]*?<\/svg>/)||[""])[0]; }
+  if(TILE_CAT.raccourcis[id]||TILE_GEN[id]){ const h=racTileMap(ch,D)[id]?.()||""; return (h.match(/<svg[\s\S]*?<\/svg>/)||[""])[0]; }
   const size=chSize(ch);
   const h=repTileMap(ch,D,size)[id]?.()||"", m=h.match(/<b class="num">([\s\S]*?)<\/b>/); return m?`<b class="num">${m[1]}</b>`:"";
 }
@@ -437,6 +442,10 @@ function racTileMap(ch,D){
     equip:()=>`<button class="tpbtn" data-act="tpop" data-v="equip"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.6"/><path d="M8 9.5h8l1.5 6h-2.2L15 21h-6l-.3-5.5H6.5z"/></svg>Équipement<small class="tpsub">Mains, armure, harmonisation</small></button>`,
     rest:()=>`<button class="tpbtn" data-act="restOpen" data-v=""><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/></svg>Repos<small class="tpsub">Court ou long</small></button>`,
     hist:()=>`<button class="tpbtn" data-act="tpop" data-v="hist"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historique des jets<small class="tpsub">${(ch.rollLog||[]).length} jet${(ch.rollLog||[]).length>1?"s":""}</small></button>`,
+    insp:()=>`<button class="tpbtn" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg>Inspiration héroïque<small class="tpsub">${ch.inspiration?"Disponible ✓":"Pas d'inspiration"}</small></button>`,
+    conc:()=>`<button class="tpbtn" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></svg>Concentration<small class="tpsub">${ch.conc?esc(ch.conc):"Aucun sort"}</small></button>`,
+    exh:()=>`<button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/></svg>Épuisement<small class="tpsub">${+ch.exhaustion?"Niveau "+ch.exhaustion:"Aucun"}</small></button>`,
+    search:()=>`<button class="tpbtn" data-act="tsearch"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>Recherche<small class="tpsub">Jet, action, sort…</small></button>`,
     notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
   };
 }
@@ -455,7 +464,11 @@ function repTileMap(ch,D,size){
     atks:()=>D.cast?t(sg(D.cast.atk),"Attaque de sort"):"",
     ip:()=>t(10+D.skills.intuition.val,"Intuition passive","10 + ton modificateur d'Intuition"),
     ivp:()=>t(10+D.skills.investigation.val,"Investigation passive","10 + ton modificateur d'Investigation"),
-    dv:()=>t(`${Math.max(0,D.L-(+ch.hdUsed||0))}/${D.L}`,"Dés de vie","Dés de vie restants (d"+D.hd+")")
+    dv:()=>t(`${Math.max(0,D.L-(+ch.hdUsed||0))}/${D.L}`,"Dés de vie","Dés de vie restants (d"+D.hd+")"),
+    insp:()=>`<button class="rtile" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Inspiration héroïque : toucher pour l'utiliser ou la regagner"><b class="num">${ch.inspiration?"✓":"—"}</b><span class="label">Inspiration</span></button>`,
+    conc:()=>`<button class="rtile" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="Concentration"><b class="num tconcv">${ch.conc?esc(ch.conc):"—"}</b><span class="label">Concentration</span></button>`,
+    exh:()=>`<button class="rtile" data-act="tpop" data-v="cond" title="Épuisement : toucher pour le modifier"><b class="num">${+ch.exhaustion||0}</b><span class="label">Épuisement</span></button>`,
+    search:()=>`<button class="rtile" data-act="tsearch" title="Recherche"><b class="num"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></b><span class="label">Recherche</span></button>`
   };
   return T;
 }
@@ -468,7 +481,9 @@ const blkTemplates=(act,b)=>`<div class="ctpls">${BLK_TPL.map(([r,c])=>`<button 
 /* Nouveau format : les tuiles qui tiennent à leur place sont gardées, dans l'ordre ; renvoie [tuiles gardées, noms retirés]. */
 function cReformat(b,r,c){ const keep=[], out=[], nb={r,c}; for(const t of cGrid(b).tiles){ const [h,w]=tileSpan(t.sz,r,c), n=Object.assign({},t,{c:t.sz==="l"?0:t.c});
     if(n.r+h<=r&&n.c+w<=c&&!keep.some(k=>tilesHit(k,n,r,c))) keep.push(n); else out.push(t.id); } return [keep,out]; }
-function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,{slots:"Emplacements de sorts"}); }
+/* Tuiles générales (lot T2) : proposées dans tous les blocs selon la largeur. */
+const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",exh:"Épuisement",search:"Recherche"};
+function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,TILE_GEN,{slots:"Emplacements de sorts"}); }
 function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4):[]; }
 function customCopy(ch){ return customBlocks(ch).map(b=>Object.assign({},b,{tiles:(Array.isArray(b.tiles)?b.tiles:[]).map(t=>Object.assign({},t))})); }
 function saveCustom(ch,list){ ch.layout=Object.assign({},ch.layout,{custom:list}); touch(S.cur); }
@@ -478,7 +493,8 @@ const tileSpan=(sz,R,C)=>sz==="l"?[1,C]:sz==="b"?[Math.min(2,R),C]:sz==="12"&&C>
 const TILE_SIZES=[["1","1×1"],["12","1×2"],["2","2×2"],["l","Ligne"],["b","Bandeau"]];
 const sizeOk=(sz,R,C)=>sz==="1"||(sz==="12"&&C>=3)||(sz==="2"&&R>=2&&C>=2)||(sz==="l"&&C>1)||(sz==="b"&&R>=2);
 const sizeW=(sz,C)=>cellW(C,tileSpan(sz,4,C)[1]);
-const fitSize=(b,id)=>(TILE_SIZES.map(z=>z[0]).find(z=>sizeOk(z,b.r,b.c)&&tileFits(id,sizeW(z,b.c))))||null;
+const tileSizeOk=(id,sz,R,C)=>sizeOk(sz,R,C)&&!((TILE_META[id]||{}).h1&&(sz==="2"||sz==="b"));
+const fitSize=(b,id)=>(TILE_SIZES.map(z=>z[0]).find(z=>tileSizeOk(id,z,b.r,b.c)&&tileFits(id,sizeW(z,b.c))))||null;
 /* Première place libre pour une tuile de cette taille (sans rien recouvrir), à partir de la case n si elle est donnée. */
 function cFreeSpot(b,sz,n){ const R=b.r,C=b.c, {tiles}=cGrid(b), [h,w]=tileSpan(sz,R,C), free=(r,c)=>r+h<=R&&c+w<=C&&!tiles.some(x=>tilesHit(x,{sz,r,c},R,C));
   if(Number.isInteger(n)){ const r=Math.floor(n/C), c=sz==="l"||sz==="b"?0:n%C; if(free(r,c)) return {r,c}; }
@@ -506,15 +522,15 @@ function cMove(b,src,dst){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.
     else return null; }
   if(old) list.splice(src.i,0,t); else list.push(t); return list; }
 function cResize(b,i,sz){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.assign({},t)), t=list[i]; if(!t) return null;
-  if(!sizeOk(sz,R,C)||!tileFits(t.id,sizeW(sz,C))) return null;
+  if(!tileSizeOk(t.id,sz,R,C)||!tileFits(t.id,sizeW(sz,C))) return null;
   const [h,w]=tileSpan(sz,R,C), n=Object.assign({},t,{sz,r:Math.min(t.r,R-h),c:sz==="l"||sz==="b"?0:Math.min(t.c,C-w)});
   if(list.some((y,k)=>k!==i&&tilesHit(n,y,R,C))) return null; list[i]=n; return list; }
-function cUpdate(ch,id,fn){ const list=customCopy(ch), b=list.find(x=>x.id===id); if(!b) return false; const tiles=fn(b); if(!tiles) return false;
+function cUpdate(ch,id,fn){ seeInsp(ch); const list=customCopy(ch), b=list.find(x=>x.id===id); if(!b) return false; const tiles=fn(b); if(!tiles) return false;
   b.tiles=tiles.map(t=>({id:t.id,sz:t.sz||"1",r:t.r,c:t.c})); saveCustom(ch,list); return true; }
 const cellStyle=(t,R,C)=>{ const [h,w]=tileSpan(t.sz,R,C); return `grid-row:${t.r+1}/span ${h};grid-column:${t.c+1}/span ${w}`; };
 function customBlockHtml(ch,D,b,ctx){
-  const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b);
-  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||"");
+  const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b), wide=t=>sizeW(t.sz,b.c)>=TILE_W.L;
+  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:t.id==="search"&&wide(t)&&!S.T._tq?searchBar():(wide(t)&&TILE_GEN[t.id]&&Rm[t.id]?Rm[t.id]():((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||""));
     return h?`<div class="ccell" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
   let html=tiles.map(one).join("");
   occ.forEach((row,r)=>row.forEach((k,c)=>{ if(k<0) html+=`<div class="ccell" style="grid-row:${r+1};grid-column:${c+1}">${plusTile(b.id,r*b.c+c,"rtile vide")}</div>`; }));
@@ -530,7 +546,7 @@ function customPop(ch,D,id,wrap){
   const unused=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&tileAvailable(ch,"",x)).sort((a,c)=>!fitSize(b,a)-!fitSize(b,c));
   const res=unused.length?unused.map(x=>fitSize(b,x)?`<button class="tcell tmini${TILE_META[x]?.act?" tact":""}" data-act="ctileAdd" data-v="${id}" data-t="${x}" data-tdrag="cres" data-cblk="${id}" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`
       :`<span class="tcell tmini toff" aria-disabled="true" title="Trop large pour ce bloc">${face(x)}<small class="toffwhy">Trop large pour ce bloc</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
-  const t=tiles[selT], sizes=t?TILE_SIZES.filter(([z])=>sizeOk(z,R,C)):[];
+  const t=tiles[selT], sizes=t?TILE_SIZES.filter(([z])=>tileSizeOk(t.id,z,R,C)):[];
   const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>tileFits(t.id,sizeW(z,C))?`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`:`<span class="chip toff" aria-disabled="true" title="Trop étroit pour cette tuile">${l}</span>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
   const del=S.T.cdel===id?`<span class="row" style="gap:6px"><span>Supprimer ce bloc ?</span><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span>`:`<button class="btn small ghost" data-act="cblkDel" data-v="${id}">Supprimer le bloc</button>`;
   return wrap("Bloc : "+b.name,`${blkActions(ch,id,`<button class="btn small ghost" data-act="tpop" data-v="blkfmt:${id}">Format ${R}×${C}</button>`)}<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
@@ -587,6 +603,8 @@ function tempStepper(ch){
   if(S.tab==="table") return `<span class="table-temp"><span class="table-temp-value"><span class="label">PV temporaires</span><b class="num">${t}</b></span><span class="table-temp-actions"><button class="btn stepb" data-act="tmpstep" data-v="1" aria-label="Ajouter 1 PV temporaire">+</button><button class="btn stepb" data-act="tmpstep" data-v="-1" aria-label="Retirer 1 PV temporaire" ${t<=0?"disabled":""}>−</button></span></span>`;
   return `<span class="hpstep"><span class="label">PV temp.</span><button class="btn stepb" data-act="tmpstep" data-v="-1" aria-label="Retirer 1 PV temporaire" ${t<=0?"disabled":""}>−</button><b class="num" style="font-size:var(--fs-xl);min-width:1.5em;text-align:center">${t}</b><button class="btn stepb" data-act="tmpstep" data-v="1" aria-label="Ajouter 1 PV temporaire">+</button></span>`;
 }
+/* Barre de recherche (tuile Recherche en largeur, ou bloc Recherche) : résultats dans une liste déroulante sous la barre. Une seule barre par écran. */
+function searchBar(){ S.T._tq=true; const T=S.T; return `<div class="tsearchwrap"><form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form><div id="tres" class="tresdrop${T.qOpen===false?" closed":""}">${tResults()}</div></div>`; }
 function tResults(){
   const T=S.T; if(!T||!T.q.trim()) return "";
   const r=searchItems(S.Titems||[],T.q);

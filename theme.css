@@ -396,3 +396,14 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 :root[data-theme="light"]{--tgrad:linear-gradient(150deg,#d3cbba,#f1ece3)}
 button.rtile:not(.vide),.tpbtn:not(.tplus),.tcell.tact{background:var(--tgrad);border-color:var(--brass)}
 button.rtile:not(.vide):hover,.tpbtn:not(.tplus):hover,.tcell.tact:hover{background:var(--tgrad);filter:brightness(1.08)}
+/* Recherche : liste déroulante sous la barre (la tuile ne fait qu'une ligne de haut) */
+.tsearchwrap{position:relative}
+.tresdrop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;max-height:min(60vh,520px);overflow:auto;background:var(--sheet);border:1px solid var(--brass);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.tresdrop:empty,.tresdrop.closed{display:none}
+.tpop .tresdrop{position:static;margin-top:8px;max-height:none;box-shadow:none}
+.ccell>.tsearchwrap{align-self:center}
+.rtile .tconcv{font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.rtile[aria-pressed="true"] .num{color:var(--ok)}
+.tpbtn[data-act="insp"][aria-pressed="true"] .tpsub{color:var(--ok)}
+.tbottom .tpanels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.tbottom .tbhead{width:100%}

@@ -1,4 +1,7 @@
 /* ---------- events ---------- */
+/* Liste des résultats de recherche : se replie quand on touche ailleurs, se rouvre en revenant dans la barre. */
+document.addEventListener("pointerdown",e=>{ if(!S.T) return; const inside=e.target.closest&&e.target.closest(".tsearchwrap");
+  const d=document.getElementById("tres"); if(!d) return; if(inside){ S.T.qOpen=true; d.classList.remove("closed"); } else if(!e.target.closest(".tpop")||!d.closest(".tpop")){ S.T.qOpen=false; d.classList.add("closed"); } },true);
 /* Menu déroulant : se ferme au choix d'un élément, au clic ailleurs et avec Échap. */
 document.addEventListener("click",e=>{ if(!S.menuOpen) return; const inMenu=e.target.closest&&e.target.closest("#hmenu");
   if(!inMenu||(e.target.closest(".hditem")&&!e.target.closest('[data-act="menuToggle"]'))){ S.menuOpen=false; if(!inMenu) render(); } },true);
@@ -207,6 +210,7 @@ document.addEventListener("click",e=>{
     case "rouerieUndo": { ch.resUsed=ch.resUsed||{}; ch.resUsed["cls:rouerie-magique"]=0; touch(S.cur); render(); break; }
     case "cond": { const c=t.dataset.v; ch.conditions=ch.conditions||[]; ch.conditions=ch.conditions.includes(c)?ch.conditions.filter(x=>x!==c):[...ch.conditions,c]; touch(S.cur); render(); break; }
     case "exh": ch.exhaustion=Math.max(0,Math.min(6,(+ch.exhaustion||0)+(+t.dataset.v))); touch(S.cur); render(); break;
+    case "tsearch": { const q=document.getElementById("tq"); if(q&&!q.closest(".tpop")){ q.scrollIntoView({block:"center",behavior:"smooth"}); q.focus({preventScroll:true}); } else { S.T.pop="search"; render(); setTimeout(()=>document.getElementById("tq")?.focus(),0); } break; }
     case "insp": ch.inspiration=!ch.inspiration; touch(S.cur); render(); break;
     case "addAttack": { ch.attacks=ch.attacks||[]; const id=uid(); ch.attacks.push({id,name:"",weapon:"",ability:"auto",prof:true}); touch(S.cur); S.pending={type:"attack",id}; render(); break; }
     case "editAttack": S.pending={type:"attack",id:t.dataset.id}; renderModal(); break;
@@ -346,7 +350,7 @@ document.addEventListener("input",e=>{
     return; }
   if(!S.T) return;
   if(t.dataset.bind==="sessionNotes"){ const ch=cur(); if(ch){ ch.sessionNotes=t.value; touch(S.cur); } return; }
-  if(t.id==="tq"){ S.T.q=t.value; const r=document.getElementById("tres"); if(r) r.innerHTML=tResults(); const c=document.querySelector(".tqclear"); if(c) c.hidden=!t.value; return; }
+  if(t.id==="tq"){ S.T.q=t.value; S.T.qOpen=true; const r=document.getElementById("tres"); if(r){ r.innerHTML=tResults(); r.classList.remove("closed"); } const c=document.querySelector(".tqclear"); if(c) c.hidden=!t.value; return; }
   if(t.dataset.tin){ S.T[t.dataset.tin]=t.value; S.T.logSig=""; if(t.dataset.tin==="dmg") S.T.dmgBd=""; const tt=document.getElementById("t-tot"); if(tt) tt.innerHTML=totalHtml(+tt.dataset.mod);
     const dt=document.getElementById("t-dtot"); if(dt&&t.dataset.tin==="dmg"){ const f=+dt.dataset.flat; dt.innerHTML=damageTotalHtml(t.value,f); } }
 });
