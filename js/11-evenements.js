@@ -121,6 +121,9 @@ document.addEventListener("click",e=>{
       else { nv = cv===i+1 ? i : i+1; }
       if(k==="pact") ch.pactUsed=nv; else if(k.startsWith("slot:")){ ch.slotsUsed=ch.slotsUsed||{}; ch.slotsUsed[k.slice(5)]=nv; } else if(k.startsWith("res:")){ ch.resUsed=ch.resUsed||{}; ch.resUsed[k.slice(4)]=nv; } else setPath(ch,k,nv);
       touch(S.cur); render(); break; }
+    case "compstep": if(ch){ const c=JSON.parse(JSON.stringify(ch.companion||{name:"",ac:10,hp:{cur:10,max:10}})); c.hp=c.hp||{cur:0,max:0}; const d=+t.dataset.v, k=t.dataset.k;
+      if(k==="ac") c.ac=Math.max(0,Math.min(40,(+c.ac||10)+d)); else if(k==="max"){ c.hp.max=Math.max(1,Math.min(999,(+c.hp.max||0)+d)); c.hp.cur=Math.min(c.hp.cur,c.hp.max); } else if(k==="cur") c.hp.cur=Math.max(0,Math.min(+c.hp.max||0,(+c.hp.cur||0)+d));
+      ch.companion=c; touch(S.cur); render(); } break;
     case "resstep": if(ch){ const D=derive(ch), r=D.res.find(x=>x.id===t.dataset.id); if(!r) break; ch.resUsed=Object.assign({},ch.resUsed); ch.resUsed[r.id]=Math.max(0,Math.min(r.max,(+ch.resUsed[r.id]||0)+(+t.dataset.v))); touch(S.cur); render(); } break;
     case "resuse": { const id=t.dataset.id, inp=document.getElementById("resn-"+id.replace(/[^a-z0-9]/g,"")); const n=+inp.value||0; if(!n) break; const D=derive(ch); const r=D.res.find(x=>x.id===id); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=Math.max(0,Math.min(r.max,(+ch.resUsed[id]||0)+n)); touch(S.cur); render(); break; }
     case "pool": { const id=t.dataset.id, D=derive(ch), r=D.res.find(x=>x.id===id); const inp=document.getElementById("pool-"+id.replace(/[^a-z0-9]/g,"")); let n=Math.max(1,+inp.value||1); const left=r.max-(+ch.resUsed?.[id]||0); n=Math.min(n,left,r.maxUse||n); if(n<=0) break; const rr=rollExpr(n+"d"+r.die); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=(+ch.resUsed[id]||0)+n; addLog({label:r.name+" ("+n+"d"+r.die+")",total:rr.total,bd:rr.bd}); touch(S.cur); render(); break; }
@@ -134,6 +137,7 @@ document.addEventListener("click",e=>{
     case "pvpad": { const inp=t.closest(".pvpop")?.querySelector("input[data-pvset]"); if(inp) openDicePad(inp,true); break; }
     case "hpask": S.pending={type:"hp",mode:t.dataset.v}; renderModal(); break;
     case "hpquick": hpApply(+t.dataset.v); break;
+    case "chgstep": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(!b) break; const c=Object.assign({},itemCharges(ch,b)); if(!c.max) break; c.used=Math.max(0,Math.min(c.max,(+c.used||0)+(+t.dataset.v))); c.auto=false; b.charges=c; touch(S.cur); render(); break; }
     case "chg": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(!b) break; const c=Object.assign({},itemCharges(ch,b)); const i=+t.dataset.i, left=c.max-(+c.used||0);
       c.used = i<left ? c.max-i : c.max-(i+1); c.auto=false; b.charges=c; touch(S.cur); render(); break; }
     case "itemN": S.T.itemN=+t.dataset.v; render(); break;
@@ -318,6 +322,7 @@ document.addEventListener("change",e=>{
   if(t.id==="hp-set"){ const ch=cur(); const D=derive(ch); ch.hp=ch.hp||{cur:0,temp:0}; const before=+ch.hp.cur||0; ch.hp.cur=Math.max(0,Math.min(D.hpMax,+t.value||0)); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0}; S.hpEdit=false; touch(S.cur); render(); return; }
   if(t.dataset.actChange==="tcost"){ const ch=cur(); ch.costs=ch.costs||{}; ch.costs[t.dataset.k]=t.value; S.unlockCost=false; touch(S.cur); render(); return; }
   if(t.dataset.cname){ const ch=cur(); if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.cname); if(b){ b.name=t.value.trim().slice(0,40)||"Mon bloc"; saveCustom(ch,list); render(); } } return; }
+  if(t.dataset.comp==="name"){ const ch=cur(); if(ch){ ch.companion=Object.assign({ac:10,hp:{cur:10,max:10}},ch.companion,{name:t.value.trim().slice(0,40)}); touch(S.cur); render(); } return; }
   if(t.dataset.pvset){ const ch=cur(); if(ch&&t.value!==""){ const D=derive(ch), v=Math.floor(+t.value||0);
       if(t.dataset.pvset==="temp"){ ch.hp=ch.hp||{cur:D.hpMax,temp:0}; ch.hp.temp=Math.max(0,Math.min(999,v)); touch(S.cur); } else hpMaxAdd(ch,Math.max(-999,Math.min(999,v))-D.hpBonus); render(); } return; }
   if(t.dataset.actChange==="tslot"){ S.T.slot=+t.value; render(); return; }

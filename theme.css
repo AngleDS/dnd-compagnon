@@ -429,3 +429,4 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .rresstep b{min-width:56px;text-align:center}.rresstep small{font-size:var(--fs-xs);color:var(--muted);font-weight:400}
 .rresopen{gap:2px}
 .rres .pip{width:24px;height:24px}.rres .pips{gap:6px}
+.rres .chg{flex-wrap:wrap;justify-content:center;margin-left:0;gap:6px}

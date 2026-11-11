@@ -284,6 +284,7 @@ function tPop(ch,D){
 `); }
   if(k.startsWith("info:")) return infoPop(ch,D,k.slice(5),wrap);
   if(k==="speed") return speedPop(ch,D,wrap);
+  if(k==="comp") return compPop(ch,wrap);
   if(k==="concchk") return ccPop(ch,D,anim);
   if(k==="equip") return wrap("Équipement",eqPop(ch,D)," xl");
   if(k==="hptemp"){ const t=+(ch.hp?.temp||0);
@@ -406,7 +407,7 @@ const reperesAuto=(ch,D)=>REP_BASE.concat(repWants(ch,D).slice(0,4));
 const RACC_DEFAUT=["skills","saves","cond","inv","equip","insp"];
 const TILE_CAT={
   reperes:{ca:"CA",init:"Initiative",vitesse:"Vitesse",dd:"DD des sorts",atks:"Attaque de sort",pp:"Perception passive",ip:"Intuition passive",ivp:"Investigation passive",maitrise:"Maîtrise",attaques:"Attaques par action",taille:"Taille",dv:"Dés de vie",
-    rage:"Dégâts de rage",bard:"Dé bardique",ma:"Arts martiaux",credo:"DD du Credo",sneak:"Attaque sournoise",malice:"DD Frappe malicieuse",crit:"Critique",aura:"Aura de protection",souffle:"DD du souffle"},
+    rage:"Dégâts de rage",bard:"Dé bardique",ma:"Arts martiaux",credo:"DD du Credo",sneak:"Attaque sournoise",malice:"DD Frappe malicieuse",crit:"Critique",aura:"Aura de protection",souffle:"DD du souffle",or:"Or"},
   raccourcis:{skills:"Tests de caractéristique",saves:"Jets de sauvegarde",cond:"États",inv:"Inventaire",equip:"Équipement",rest:"Repos",hist:"Historique des jets",notes:"Notes de partie"}
 };
 /* Fiche des tuiles (lot T1, voir claude/catalogue-tuiles-2024.md) : gabarit, largeur minimale, action, blocs permis.
@@ -418,7 +419,7 @@ const TILE_META=Object.assign(
   Object.fromEntries(Object.keys(TILE_CAT.raccourcis).map(id=>[id,{kind:"Pop",min:"M",act:true}])),
   {slots:{kind:"K",min:"L",act:false,only:"custom"},
    insp:{kind:"B",min:"E",act:true}, conc:{kind:"V",min:"M",act:true}, exh:{kind:"V",min:"E",act:true},
-   search:{kind:"Pop",min:"E",act:true,h1:true}}); // h1 : une seule ligne de haut (Recherche : 1, 2 ou 4 colonnes)
+   search:{kind:"Pop",min:"E",act:true,h1:true}, comp:{kind:"Pop",min:"E",act:true}}); // h1 : une seule ligne de haut (Recherche : 1, 2 ou 4 colonnes)
 const tileMinW=id=>TILE_W[(TILE_META[id]||{}).min||"E"];
 const tileFits=(id,w)=>w>=tileMinW(id);
 const BLK_CELL_W={reperes:80,raccourcis:170};
@@ -468,6 +469,7 @@ function racTileMap(ch,D){
     insp:()=>`<button class="tpbtn" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg>Inspiration héroïque<small class="tpsub">${ch.inspiration?"Disponible ✓":"Pas d'inspiration"}</small></button>`,
     conc:()=>`<button class="tpbtn" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></svg>Concentration<small class="tpsub">${ch.conc?esc(ch.conc):"Aucun sort"}</small></button>`,
     exh:()=>`<button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/></svg>Épuisement<small class="tpsub">${+ch.exhaustion?"Niveau "+ch.exhaustion:"Aucun"}</small></button>`,
+    comp:()=>{ const c=ch.companion; return `<button class="tpbtn" data-act="tpop" data-v="comp"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.comp}</svg>${c&&c.name?esc(c.name):"Compagnon"}<small class="tpsub">${c?`${+c.hp?.cur||0}/${+c.hp?.max||0} PV · CA ${+c.ac||10}`:"Ajouter un compagnon"}</small></button>`; },
     search:()=>`<button class="tpbtn" data-act="tsearch"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>Recherche<small class="tpsub">Jet, action, sort…</small></button>`,
     notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
   };
@@ -499,6 +501,8 @@ function repTileMap(ch,D,size){
     crit:()=>want("crit")?t(D.L>=15?"18-20":"19-20","Critique","Résultats du d20 qui donnent un coup critique"):"",
     aura:()=>want("aura")?t(sg(Math.max(1,D.mods.cha)),"Aura de protection",`Bonus aux jets de sauvegarde pour toi et tes alliés à ${D.L>=18?9:3} m`):"",
     souffle:()=>want("souffle")?t(8+D.pb+D.mods.con,"DD du souffle",`Souffle : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10, sauvegarde de Dextérité`):"",
+    comp:()=>{ const c=ch.companion; return `<button class="rtile" data-act="tpop" data-v="comp" title="Compagnon : PV et CA"><b class="num">${c?`${+c.hp?.cur||0}/${+c.hp?.max||0}`:"—"}</b><span class="label">${c&&c.name?esc(c.name):"Compagnon"}</span></button>`; },
+    or:()=>t(orTotal(ch)+" po","Or","Valeur totale de ta bourse, en pièces d'or"),
     insp:()=>`<button class="rtile" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Inspiration héroïque : toucher pour l'utiliser ou la regagner"><b class="num">${ch.inspiration?"✓":"—"}</b><span class="label">Inspiration</span></button>`,
     conc:()=>`<button class="rtile" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="Concentration"><b class="num tconcv">${ch.conc?esc(ch.conc):"—"}</b><span class="label">Concentration</span></button>`,
     exh:()=>`<button class="rtile" data-act="tpop" data-v="cond" title="Épuisement : toucher pour le modifier"><b class="num">${+ch.exhaustion||0}</b><span class="label">Épuisement</span></button>`,
@@ -514,13 +518,19 @@ function repTileMap(ch,D,size){
 /* Bloc Ressources (lot T3b) : une tuile par ressource du perso (classe, sous-classe, dons, objets maison), 2 par rangée.
    Jusqu'à 8 : des ronds à toucher directement ; au-delà : − / + ; réserve de dés et Rouerie magique : leur fiche (dépense guidée).
    Toucher le nom ouvre la fiche de la ressource (description et usage). Bloc absent si le perso n'a aucune ressource. */
-function resBlock(ch,D){ if(!D.res.length) return "";
+function resBlock(ch,D){ const bagC=(ch.bag||[]).filter(b=>(+b.qty||0)>0&&itemCharges(ch,b)?.max>0), cnts=(ch.counters||[]).filter(c=>(+c.max||0)>0);
+  if(!D.res.length&&!bagC.length&&!cnts.length) return "";
   const card=r=>{ const it=(S.Titems||[]).find(x=>x.res&&x.res.id===r.id); return it?`data-act="tsel" data-k="${esc(it.key)}"`:""; };
   const tiles=D.res.map(r=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, c=card(r), sid=esc(r.id);
     const ctl=r.pool||r.id==="cls:rouerie-magique"?`<button class="btn small rresopen" ${c}><b class="num">${left}</b> / ${r.max}${r.pool?" d"+r.die:""}</button>`
       :r.max<=8?pips("res:"+r.id,r.max,used,true)
       :`<span class="hpstep rresstep"><button class="btn stepb" data-act="resstep" data-id="${sid}" data-v="1" aria-label="${esc(r.name)} : dépenser 1" ${left<=0?"disabled":""}>−</button><b class="num">${left}<small> / ${r.max}</small></b><button class="btn stepb" data-act="resstep" data-id="${sid}" data-v="-1" aria-label="${esc(r.name)} : récupérer 1" ${used<=0?"disabled":""}>+</button></span>`;
-    return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${ctl}</div>`; }).join("");
+    return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${ctl}</div>`; }).join("")
+    // Objets à charges du sac et consommables suivis (Feuille) : mêmes ronds que dans l'inventaire
+    +bagC.map(b=>{ const ch2=itemCharges(ch,b), left=Math.max(0,ch2.max-(+ch2.used||0));
+      return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" data-act="tsel" data-k="bag:${esc(b.id)}" title="Voir l'objet"><span class="label">${esc(b.name)}</span><small class="muted">charges</small></button>${ch2.max<=8?chargePips(ch,b).replace(/<b class="num">[^<]*<\/b>/,""):`<span class="hpstep rresstep"><button class="btn stepb" data-act="chgstep" data-id="${esc(b.id)}" data-v="1" aria-label="${esc(b.name)} : dépenser 1 charge" ${left<=0?"disabled":""}>−</button><b class="num">${left}<small> / ${ch2.max}</small></b><button class="btn stepb" data-act="chgstep" data-id="${esc(b.id)}" data-v="-1" aria-label="${esc(b.name)} : récupérer 1 charge" ${left>=ch2.max?"disabled":""}>+</button></span>`}</div>`; }).join("")
+    +cnts.map(k=>{ const mx=+k.max||0, cu=Math.max(0,Math.min(mx,+k.cur||0));
+      return `<div class="rres${cu<=0?" vide0":""}"><button class="rresname" data-act="tsel" data-k="cnt:${esc(k.id)}" title="Voir le consommable"><span class="label">${esc(k.name)}</span><small class="muted">consommable</small></button>${mx<=8?pips("cnt:"+k.id,mx,mx-cu,true):`<span class="hpstep rresstep"><button class="btn stepb" data-act="cnt" data-id="${esc(k.id)}" data-v="-1" aria-label="${esc(k.name)} : utiliser 1" ${cu<=0?"disabled":""}>−</button><b class="num">${cu}<small> / ${mx}</small></b><button class="btn stepb" data-act="cnt" data-id="${esc(k.id)}" data-v="1" aria-label="${esc(k.name)} : ajouter 1" ${cu>=mx?"disabled":""}>+</button></span>`}</div>`; }).join("");
   return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid" role="group" aria-label="Ressources">${tiles}</div>`; }
 const mFmt=v=>String(Math.round(v*10)/10).replace(".",",");
 const REP_ICON={
@@ -547,8 +557,22 @@ const REP_ICON={
   souffle:'<path d="M12 21c-4 0-7-2.7-7-6.5 0-3 2-5 3-6.5.5 2 1.5 3 2.5 3C10 7 12 4.5 14 3c0 3.5 5 5.5 5 11.5 0 3.8-3 6.5-7 6.5z"/>',
   insp:'<path d="m12 2 2.6 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.4-.5z"/>',
   conc:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/>',
-  exh:'<path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/>'
+  exh:'<path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/>',
+  comp:'<ellipse cx="12" cy="16" rx="4.5" ry="3.8"/><circle cx="5.5" cy="10.5" r="2"/><circle cx="9.5" cy="6" r="2"/><circle cx="14.5" cy="6" r="2"/><circle cx="18.5" cy="10.5" r="2"/>',
+  or:'<ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/>'
 };
+const COINS=[["pp","Platine",10],["po","Or",1],["pe","Électrum",0.5],["pa","Argent",0.1],["pc","Cuivre",0.01]];
+const orTotal=ch=>Math.floor(COINS.reduce((t,[k,,v])=>t+(+ch.gold?.[k]||0)*v,0)+1e-9);
+/* Compagnon (lot T4, décision d'Angle : tuile simple, PV et CA ; fiche complète plus tard) : ch.companion = {name, ac, hp:{cur,max}} */
+function compPop(ch,wrap){ const c=ch.companion||{name:"",ac:10,hp:{cur:10,max:10}}, hp=c.hp||{cur:0,max:0};
+  const st=(k,d,l)=>`<button class="btn small" data-act="compstep" data-k="${k}" data-v="${d}">${l}</button>`;
+  return wrap("Compagnon",`<div class="texpl"><label class="field"><span>Nom</span><input id="comp-name" data-comp="name" maxlength="40" value="${esc(c.name||"")}" placeholder="Loup, destrier, familier…"></label>
+    <div class="label" style="margin-top:12px">Points de vie</div><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b class="num" style="font-size:var(--fs-2xl)">${+hp.cur||0}</b><span class="muted num">/ ${+hp.max||0}</span></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="label" style="min-width:56px">Dégâts</span>${st("cur",-1,"−1")}${st("cur",-5,"−5")}${st("cur",-10,"−10")}</div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="label" style="min-width:56px">Soins</span>${st("cur",1,"+1")}${st("cur",5,"+5")}${st("cur",999,"Au max")}</div>
+    <div class="tspd" style="margin-top:12px"><span>PV maximum</span><span class="hpstep"><button class="btn stepb" data-act="compstep" data-k="max" data-v="-1" aria-label="PV maximum : retirer 1">−</button><b class="num">${+hp.max||0}</b><button class="btn stepb" data-act="compstep" data-k="max" data-v="1" aria-label="PV maximum : ajouter 1">+</button></span><span></span>
+      <span>Classe d'armure</span><span class="hpstep"><button class="btn stepb" data-act="compstep" data-k="ac" data-v="-1" aria-label="CA : retirer 1">−</button><b class="num">${+c.ac||10}</b><button class="btn stepb" data-act="compstep" data-k="ac" data-v="1" aria-label="CA : ajouter 1">+</button></span><span></span></div>
+    <div class="muted tinfonote">Pour un compagnon animal, un destrier, un familier ou une créature invoquée. Sa fiche complète (attaques, vitesse) viendra plus tard.</div></div>`); }
 /* Fenêtre d'explication d'une tuile de valeur : sens de la valeur, puis calcul ligne par ligne avec les chiffres du perso. */
 function skillRows(D,k){ const s=D.skills[k], m=D.mods[s.ab], pr=s.lv*D.pb, r=[[ABN[s.ab],m]]; if(s.lv) r.push([s.lv>1?"Expertise (maîtrise × 2)":"Maîtrise",pr]); if(s.val-m-pr) r.push(["Autres bonus",s.val-m-pr]); return r; }
 function infoData(ch,D,id){
@@ -575,6 +599,7 @@ function infoData(ch,D,id){
     malice:()=>({title:"DD Frappe malicieuse",v:8+D.pb+D.mods.dex,desc:"Le DD des sauvegardes imposées par tes Frappes malicieuses, quand tu renonces à des dés d'Attaque sournoise pour un effet.",rows:dcRows("dex")}),
     crit:()=>({title:"Critique",v:D.L>=15?"18-20":"19-20",desc:"Ton attaque devient un coup critique sur ces résultats du d20.",rows:[[D.L>=15?"Critique supérieur (niveau 15)":"Critique amélioré (niveau 3)",D.L>=15?"18-20":"19-20"]],noTotal:true}),
     aura:()=>({title:"Aura de protection",v:sg(Math.max(1,D.mods.cha)),desc:`Toi et tes alliés à ${D.L>=18?9:3} m ajoutez ce bonus à vos jets de sauvegarde, tant que tu es conscient.`,rows:[["Charisme (au moins +1)",Math.max(1,D.mods.cha)]],noTotal:true}),
+    or:()=>({title:"Bourse",v:orTotal(ch)+" po",desc:"La valeur totale de tes pièces, en pièces d'or (on arrondit à l'or inférieur). Tu modifies ta bourse dans l'onglet Feuille.",rows:COINS.map(([k,l,v])=>[`${l} (${k}) × ${+ch.gold?.[k]||0}`,String(Math.round((+ch.gold?.[k]||0)*v*100)/100).replace(".",",")+" po"]),noTotal:true}),
     souffle:()=>({title:"DD du souffle",v:8+D.pb+D.mods.con,desc:"Ton Souffle remplace une de tes attaques : chaque créature dans la zone fait une sauvegarde de Dextérité contre ce DD.",rows:dcRows("con"),note:`Dégâts : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10, la moitié en cas de réussite.`})
   };
   return I[id]?I[id]():null;
@@ -605,7 +630,7 @@ const blkTemplates=(act,b)=>`<div class="ctpls">${BLK_TPL.map(([r,c])=>`<button 
 function cReformat(b,r,c){ const keep=[], out=[], nb={r,c}; for(const t of cGrid(b).tiles){ const [h,w]=tileSpan(t.sz,r,c), n=Object.assign({},t,{c:t.sz==="l"?0:t.c});
     if(n.r+h<=r&&n.c+w<=c&&!keep.some(k=>tilesHit(k,n,r,c))) keep.push(n); else out.push(t.id); } return [keep,out]; }
 /* Tuiles générales (lot T2) : proposées dans tous les blocs selon la largeur. */
-const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",exh:"Épuisement",search:"Recherche"};
+const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",exh:"Épuisement",search:"Recherche",comp:"Compagnon"};
 function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,TILE_GEN,{slots:"Emplacements de sorts"}); }
 function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4):[]; }
 function customCopy(ch){ return customBlocks(ch).map(b=>Object.assign({},b,{tiles:(Array.isArray(b.tiles)?b.tiles:[]).map(t=>Object.assign({},t))})); }

@@ -278,6 +278,12 @@ function derive(ch){
     if(/sans dépenser d.emplacement/i.test(f.text)){ const nm=norm(sf.s.name); let r=D.res.find(x=>norm(x.name).includes(nm));
       if(!r){ r={id:"free:"+sf.ref,name:sf.s.name+" sans emplacement",max:/deux fois/i.test(f.text)?2:1,recharge:"long",origin:f.name}; if(r.max>0) D.res.push(r); }
       r.freeSpell=sf.ref; } }
+  // Ressources d'espèce et de dons (lot T4) : traits du SRD 5.2.1 à usages limités ; [nom, max, recharge, niveau minimal]
+  const spId=String(ch.species||"").startsWith("srd:")?ch.species.slice(4):"", spName=(S.idx.species[spId]||{}).name||"";
+  for(const [n,mx,rc,lv] of ({drakeide:[["Souffle",pb,"long",1],["Vol draconique",1,"long",5]],nain:[["Connaissance de la pierre",pb,"long",1]],goliath:[["Ascendance gigante",pb,"long",1],["Forme de géant",1,"long",5]],orc:[["Poussée d’adrénaline",pb,"court",1],["Acharnement",1,"long",1]]}[spId]||[]))
+    if(L>=lv) D.res.push({id:"esp:"+norm(n),name:n,max:mx,recharge:rc,origin:spName});
+  for(const s of sources) if(s.kind==="don"){ const f={"srd:initie-a-la-magie":["Initié à la magie (sort de niveau 1)",1,"long"],"srd:faveur-du-destin":["Faveur du destin",1,"court"]}[s.ref];
+    if(f&&!D.res.some(r=>r.id==="don:"+norm(f[0]))) D.res.push({id:"don:"+norm(f[0]),name:f[0],max:f[1],recharge:f[2],origin:s.name}); }
   if(cls&&cls.id==="occultiste"&&L>=9) D.res.push({id:"cls:communication-protecteur",name:"Communication avec le protecteur",max:1,recharge:"long",origin:cls.name});
   D.guerisseur=sources.some(s=>norm(s.name)==="guerisseur"||(s.effects||[]).some(e=>e.t==="guerisseur"));
   for(const s of sources) for(const e of s.effects||[]){

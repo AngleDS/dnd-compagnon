@@ -1120,6 +1120,40 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => tableOrder(cur()).slice(0, 5)), ['tour', 'perso', 'pv', 'ressources', 'reperes'], 'ordre déjà enregistré : Ressources se glisse sous PV');
   });
 
+  await test('Tuiles (T4) : ressources d’espèce et de don, objets à charges et consommables dans Ressources, Compagnon, Or', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await open(p);
+    const mk = (cls, sp, lv, extra) => p.evaluate(([cls, sp, lv, extra]) => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'T' }, { cls: catRes(cls), bg: catRes('srd:soldat'), sp: catRes('srd:' + sp) }); wCreate();
+      Object.assign(cur(), { level: lv }, extra || {}); S.rv = null; renderModal(); S.tab = 'table'; render(); }, [cls, sp, lv, extra]);
+    const names = () => p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="ressources"] .rres .rresname .label')].map(e => e.textContent));
+    await mk('magicien', 'drakeide', 5);
+    eq(await names(), ['Souffle', 'Vol draconique'], 'magicien drakéide 5 : Souffle et Vol draconique, sans autre ressource');
+    eq(await p.evaluate(() => document.querySelectorAll('.tblk[data-blk="ressources"] .rres:first-child .pip').length), 3, 'Souffle : autant d’usages que la maîtrise (+3)');
+    await mk('magicien', 'orc', 1); eq(await p.evaluate(() => derive(cur()).res.map(r => r.name + ':' + r.max + ':' + r.recharge)), ['Poussée d’adrénaline:2:court', 'Acharnement:1:long'], 'orc : Poussée d’adrénaline (repos court) et Acharnement');
+    await mk('magicien', 'humain', 1, { counters: [{ id: 'k1', name: 'Flèches', cur: 18, max: 20 }], bag: [{ id: 'b1', name: 'Baguette test', qty: 1, note: '', charges: { max: 7, used: 2, rec: '1d6+1', when: 'long' } }] });
+    eq(await names(), ['Baguette test', 'Flèches'], 'magicien humain 1 : objet à charges et consommable suivi');
+    eq(await p.evaluate(() => [document.querySelectorAll('.tblk[data-blk="ressources"] .rres:first-child .pip:not(.used)').length, document.querySelector('.tblk[data-blk="ressources"] .rres:last-child .rresstep .num').textContent]), [5, '18 / 20'], 'baguette : 5 charges sur 7 ; flèches : 18 / 20');
+    await p.click('.tblk[data-blk="ressources"] .rres:last-child [data-act="cnt"][data-v="-1"]');
+    eq(await p.evaluate(() => cur().counters[0].cur), 17, 'flèche utilisée');
+    await p.click('.tblk[data-blk="ressources"] .rres:first-child .pip:nth-child(5)');
+    eq(await p.evaluate(() => cur().bag[0].charges.used), 3, 'charge de la baguette dépensée');
+    await p.evaluate(() => { cur().bag[0].charges = { max: 10, used: 2, rec: '', when: 'long' }; render(); });
+    await p.click('.tblk[data-blk="ressources"] .rres:first-child [data-act="chgstep"][data-v="1"]');
+    eq(await p.evaluate(() => [cur().bag[0].charges.used, document.querySelector('.tblk[data-blk="ressources"] .rres:first-child .num').textContent, document.documentElement.scrollWidth <= innerWidth]), [3, '7 / 10', true], 'plus de 8 charges : − / +, sans débordement');
+    // Compagnon et Or dans un bloc créé
+    await p.evaluate(() => { const ch = cur(); ch.gold = { po: 12, pa: 15, pp: 1 }; ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t4aaaaaa', name: 'T4', r: 1, c: 4, tiles: [{ id: 'comp', sz: '12', r: 0, c: 0 }, { id: 'or', sz: '1', r: 0, c: 2 }] }] }); render(); });
+    eq(await p.evaluate(() => document.querySelector('.tblk[data-blk="c_t4aaaaaa"] [data-v="info:or"] .num').textContent), '23 po', 'Or : 1 pp + 12 po + 15 pa = 23 po');
+    await p.click('.tblk[data-blk="c_t4aaaaaa"] [data-v="comp"]');
+    eq(await p.evaluate(() => document.querySelector('.tpop .tpophead b').textContent), 'Compagnon', 'la tuile Compagnon ouvre sa fenêtre');
+    await p.fill('#comp-name', 'Loup'); await p.press('#comp-name', 'Enter'); await p.evaluate(() => document.getElementById('comp-name').dispatchEvent(new Event('change', { bubbles: true })));
+    for (let i = 0; i < 5; i++) await p.click('.tpop [data-act="compstep"][data-k="max"][data-v="1"]');
+    await p.click('.tpop [data-act="compstep"][data-k="cur"][data-v="-5"]'); await p.click('.tpop [data-act="compstep"][data-k="ac"][data-v="1"]');
+    eq(await p.evaluate(() => { const c = cur().companion; return [c.name, c.ac, c.hp.cur, c.hp.max]; }), ['Loup', 11, 5, 15], 'nom, PV max, dégâts et CA enregistrés');
+    await p.keyboard.press('Escape');
+    ok(await p.evaluate(() => /Loup/.test(document.querySelector('.tblk[data-blk="c_t4aaaaaa"] [data-v="comp"]').textContent) && /5\/15 PV · CA 11/.test(document.querySelector('.tblk[data-blk="c_t4aaaaaa"] [data-v="comp"]').textContent)), 'tuile large : nom, PV et CA');
+    const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { companion: { hp: 'x' } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
+    ok(/compagnon/i.test(bad), 'compagnon invalide refusé à l’import');
+  });
+
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
     await diceTable(p);
     const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));
