@@ -136,7 +136,7 @@ function hdSpend(ch,D,r,phys){
 }
 function lvlApply(){
   const ch=cur(), P=S.pending, p=levelPlan(ch); if(p.from>=20) return;
-  const D0=p.D0;
+  const D0=p.D0, rep0=reperesAuto(ch,D0), res0=D0.res.map(r=>r.name);
   const gain = P.hp==="roll"&&+P.roll ? Math.max(1,Math.min(p.hd,+P.roll)+D0.mods.con)+p.pvniv : p.hpAvg;
   if(P.hp==="roll"&&+P.roll&&ch.hpMode!=="manual"){ ch.hpMode="manual"; ch.hpMaxManual=D0.hpMax; }
   if(ch.hpMode==="manual") ch.hpMaxManual=(+ch.hpMaxManual||D0.hpMax)+gain;
@@ -153,7 +153,11 @@ function lvlApply(){
   if(p.arc&&P.arc){ ch.arcanum=ch.arcanum||{}; ch.arcanum[p.arc]=P.arc; }
   const D1=derive(ch); ch.hp.cur=Math.min(ch.hp.cur,D1.hpMax);
   touch(S.cur); S.pending=null; renderModal();
-  addLog({label:(ch.name||"Personnage")+" passe niveau "+p.to,total:"↑",bd:`+${gain} PV max.`+(p.feats.length?" Nouveau : "+p.feats.map(f=>f.name).join(", ")+".":""),kind:"info"});
+  // Ce qui apparaît dans « À la table » (lot T5) : Repères et Ressources se calculent seuls, on dit au joueur ce qui vient d'y entrer
+  const newRep=reperesAuto(ch,D1).filter(id=>!rep0.includes(id)).map(id=>TILE_CAT.reperes[id]||id), newRes=D1.res.map(r=>r.name).filter(n=>!res0.includes(n));
+  const newTab=[newRep.length?"Repères : "+newRep.join(", "):"",newRes.length?"Ressources : "+newRes.join(", "):""].filter(Boolean).join(" ; ");
+  addLog({label:(ch.name||"Personnage")+" passe niveau "+p.to,total:"↑",bd:`+${gain} PV max.`+(p.feats.length?" Nouveau : "+p.feats.map(f=>f.name).join(", ")+".":"")+(newTab?" Nouveau dans À la table : "+newTab+".":""),kind:"info"});
+  if(newTab) setBanner("Niveau "+p.to+" — nouveau dans « À la table » : "+newTab+".");
   if(S.lvlTarget&&S.lvlTarget.id===S.cur&&ch.level<S.lvlTarget.to){ S.pending={type:"lvl",hp:"avg"}; } else S.lvlTarget=null;
   render(); if(!S.pending) rvStart(S.cur);
 }

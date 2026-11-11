@@ -1169,6 +1169,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => !document.querySelector('.tcard .tammo')), 'arme sans munitions : rien');
   });
 
+  await test('T5 : « Automatique (recommandé) » remet les Raccourcis conseillés ; la montée de niveau dit ce qui entre dans À la table', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p); await legacyRacc(p);
+    await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
+    eq(await p.evaluate(() => document.querySelector('.tpop [data-act="tileReset"]').textContent), 'Automatique (recommandé)', 'bouton renommé');
+    await p.click('.tpop [data-act="tileReset"]'); await p.keyboard.press('Escape');
+    eq(await p.evaluate(() => blockTiles(cur(), 'raccourcis')), ['skills','saves','cond','inv','equip','insp'], 'jeu conseillé remis');
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 10, con: 13, int: 8, sag: 12, cha: 14 }, name: 'P' }, { cls: catRes('paladin'), bg: catRes('srd:soldat'), sp: catRes('srd:humain') }); wCreate(); cur().level = 5; cur().subclass = 'srd:serment-de-devotion'; S.rv = null;
+      S.pending = { type: 'lvl', hp: 'avg' }; lvlApply(); });
+    const log = await p.evaluate(() => S.log.concat(cur().rollLog || []).map(l => l.bd || '').find(b => /passe|Nouveau dans/.test(b)) || '');
+    ok(/Nouveau dans À la table : Repères : Aura de protection/.test(log), 'niveau 6 : « Repères : Aura de protection » annoncé : ' + log);
+    ok(await p.evaluate(() => /nouveau dans « À la table » : Repères : Aura de protection/.test(document.getElementById('banner')?.textContent || '')), 'bandeau d’information');
+  });
+
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
     await diceTable(p);
     const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));

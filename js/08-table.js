@@ -278,9 +278,10 @@ function tPop(ch,D){
     const res=unused.length?unused.map(x=>tileOkInBlk(x,blk)?`<button class="tcell tmini${TILE_META[x]?.act?" tact":""}" data-act="tileAdd" data-blk="${blk}" data-v="${x}" data-tdrag="res" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`
       :`<span class="tcell tmini toff" aria-disabled="true" title="${tileWhy(x,blk)}">${face(x)}<small class="toffwhy">${tileWhy(x,blk)}</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
     const selBar=sel>=0&&arr[sel]?`<div class="row" style="gap:8px;margin-top:8px;align-items:center"><span class="muted" style="font-size:var(--fs-sm)">Case ${sel+1} : ${esc(cat[arr[sel]])}</span><button class="btn small ghost" data-act="tileDel" data-blk="${blk}" data-i="${sel}">Retirer cette tuile</button></div>`:"";
-    return wrap("Bloc : "+TBLK.find(b=>b[0]===blk)[1],`${blkActions(ch,blk,`<button class="btn small ghost" data-act="tileReset" data-blk="${blk}">Tuiles par défaut</button>`)}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Au doigt, appui long sur une tuile puis glisse-la. Glisse une tuile de la réserve vers une case, ou d’une case à l’autre. Glisse-la hors du bloc pour la retirer.</div>
+    return wrap("Bloc : "+TBLK.find(b=>b[0]===blk)[1],`${blkActions(ch,blk)}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Au doigt, appui long sur une tuile puis glisse-la. Glisse une tuile de la réserve vers une case, ou d’une case à l’autre. Glisse-la hors du bloc pour la retirer.</div>
       <div class="tpgrid" data-tblk="${blk}" style="grid-template-columns:repeat(${blk==="reperes"?4:2},minmax(0,1fr))">${cells}</div>${selBar}
-      <div class="label" style="margin:14px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn small ghost" data-act="tileReset" data-blk="${blk}" title="Remet les tuiles conseillées : Tests, Sauvegardes, États, Inventaire, Équipement, Inspiration">Automatique (recommandé)</button></div>
+      <div class="label" style="margin:10px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>
 `); }
   if(k.startsWith("info:")) return infoPop(ch,D,k.slice(5),wrap);
   if(k==="speed") return speedPop(ch,D,wrap);
