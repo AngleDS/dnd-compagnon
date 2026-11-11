@@ -338,7 +338,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       await p.evaluate(() => { S.rv = null; renderModal(); });
       const bad = new Set();
       for (const t of ['jeu', 'comp', 'sorts', 'apt', 'inv', 'notes', 'build', 'table']) { await p.evaluate(t => { S.tab = t; render(); }, t); (await fsOutside(p)).forEach(x => bad.add(t + ' : ' + x)); }
-      for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'rest']) { await p.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await fsOutside(p)).forEach(x => bad.add(k + ' : ' + x)); }
+      for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'hptemp', 'rest']) { await p.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await fsOutside(p)).forEach(x => bad.add(k + ' : ' + x)); }
       await p.evaluate(() => { S.T.pop = null; S.view = 'list'; render(); }); (await fsOutside(p)).forEach(x => bad.add('liste : ' + x));
       eq([...bad], [], 'tailles hors échelle en ' + vp.width + ' px');
     }
@@ -372,7 +372,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
         ch.rollLog = [{ label: 'Initiative', total: 12, bd: 'd20 11 +1', t: Date.now() }]; ch.conditions = ['Empoisonné']; });
       const bad = new Set(), closes = new Set();
       for (const tab of ['jeu', 'comp', 'sorts', 'apt', 'inv', 'notes', 'build', 'table']) { await t.evaluate(tab => { S.T && (S.T.pop = null); S.tab = tab; render(); }, tab); (await touchSmall(t)).forEach(x => bad.add(tab + ' : ' + x)); }
-      for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'rest']) { await t.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await touchSmall(t)).forEach(x => bad.add(k + ' : ' + x)); (await closeSizes(t)).forEach(x => closes.add(x)); }
+      for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'hptemp', 'rest']) { await t.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await touchSmall(t)).forEach(x => bad.add(k + ' : ' + x)); (await closeSizes(t)).forEach(x => closes.add(x)); }
       await t.evaluate(() => { S.T.pop = null; render(); tSelect(S.Titems.find(i => i.kind === 'init').key); }); await t.click('#t-d1');
       (await closeSizes(t)).forEach(x => closes.add(x));
       eq([...bad], [], 'cibles tactiles trop petites');
@@ -1052,7 +1052,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Bloc personnalisé : modèle, nom, tuiles à leur place exacte, tailles, glisser, ancien format, suppression, import', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.click('[data-act="layoutEdit"]'); await p.click('[data-act="tpop"][data-v="blkadd"]');
-    eq(await p.evaluate(() => document.querySelectorAll('.tpop .ctpl').length), 16, '16 modèles de 1×1 à 4×4');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .ctpl small')].map(x => x.textContent).join(' ')), '1×1 1×2 1×3 1×4 2×1 2×2 2×3 2×4 3×1 3×2 4×1 4×2', '12 modèles, 8 cases au plus');
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); const e = document.elementFromPoint(r.left + 20, r.top + 10); return !!e.closest('.tpop'); }), 'popup au-dessus de la barre de disposition');
     await p.click('.tpop [data-act="blkCreate"][data-r="2"][data-c="3"]');
     const id = await p.evaluate(() => cur().layout.custom[0].id);
@@ -1134,7 +1134,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(new Set(sans.tops).size === 1, 'les trois valeurs sont alignées : ' + sans.tops);
     await p.click('.health-card [data-v="hptemp"]');
     eq(await p.evaluate(() => S.T.pop), 'hptemp', 'toucher PV temp. ouvre la saisie');
-    await p.fill('.tpop input[data-tmpset]', '12'); await p.press('.tpop input[data-tmpset]', 'Enter');
+    await p.click('.tpop [data-act="pvpad"]'); ok(await p.isVisible('#dice-pad'), 'icône clavier : pavé numérique, même en dés virtuels');
+    await padNumber(p, 12);
     eq(await p.evaluate(() => [cur().hp.temp, document.querySelector('.health-card [data-v="hptemp"] b').textContent]), [12, '12'], 'valeur saisie');
     await p.click('.tpop [data-act="tmpstep"][data-v="-12"]'); eq(await p.evaluate(() => cur().hp.temp), 0, 'remise à zéro'); await p.keyboard.press('Escape');
     await newWizardChar(p, { cls: 'magicien', bg: 'srd:sage', sp: 'srd:humain' });
@@ -1158,6 +1159,44 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(st.h >= 44, 'zone tactile d’au moins 44 px : ' + st.h);
     ok((await card()).h > h0, 'la carte grandit avec les états');
     await p.click('.health-card .hpconds'); eq(await p.evaluate(() => S.T.pop), 'cond', 'toucher la rangée ouvre la fenêtre des états');
+  });
+
+  await test('PV temp. et PV max ± : même fenêtre, pavé numérique (avec ± pour un malus)', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    const shape = () => p.evaluate(() => [...document.querySelectorAll('.tpop .pvpop > *, .tpop .pvline > *')].map(e => e.className.split(' ')[0] || e.tagName).join(','));
+    await p.click('.health-card [data-v="hptemp"]'); const s1 = await shape();
+    await p.keyboard.press('Escape'); await p.click('.health-card [data-v="hpmax"]'); const s2 = await shape();
+    eq(s1.replace('pvinfo,', ''), s2.replace('pvinfo,', ''), 'même présentation (PV max ajoute la ligne Base / Maximum)');
+    await p.click('.tpop [data-act="pvpad"]');
+    ok(await p.evaluate(() => !!document.querySelector('#dice-pad [data-pad="neg"]')), 'touche ± pour un malus');
+    eq(await p.evaluate(() => { const [a, v] = ['.dice-pad-actions [data-pad="cancel"]', '.dice-pad-actions [data-pad="ok"]'].map(q => getComputedStyle(document.querySelector(q)).fontSize); return a === v; }), true, 'Annuler et Valider dans la même taille');
+    await p.click('[data-pad="neg"]'); await padNumber(p, 3);
+    eq(await p.evaluate(() => [derive(cur()).hpBonus, document.querySelector('.tpop .pvval').textContent]), [-3, '-3'], 'malus de 3 saisi au pavé');
+    await p.click('.tpop [data-act="pvpad"]'); await padNumber(p, 5);
+    eq(await p.evaluate(() => derive(cur()).hpBonus), 5, 'bonus de 5 saisi au pavé');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { S.T.pop = 'cond'; render(); });
+    const g = await p.evaluate(() => { const rows = [...document.querySelectorAll('.tpop .condgrid .condpick')]; const cols = new Set(rows.map(r => Math.round(r.getBoundingClientRect().left)));
+      const endOk = rows.filter(r => r.querySelector('.tinfo')).every(r => Math.abs(r.querySelector('.tinfo').getBoundingClientRect().right - r.getBoundingClientRect().right) < 2);
+      return [cols.size, endOk, document.documentElement.scrollWidth <= innerWidth]; });
+    eq(g, [2, true, true], 'fenêtre des États : 2 colonnes, « i » au bout de chaque case');
+    for (const w of [1280, 390]) {
+      await p.setViewportSize({ width: w, height: 900 }); await p.evaluate(() => { S.T.pop = 'eco:action'; render(); });
+      const bad = await p.evaluate(() => [...document.querySelectorAll('.tpop .trow')].filter(r => r.querySelector('.tinfo')).filter(r => { const i = r.querySelector('.tinfo').getBoundingClientRect(), row = r.getBoundingClientRect(), pr = parseFloat(getComputedStyle(r).paddingRight);
+        return Math.abs(i.right - (row.right - pr)) > 2; }).map(r => r.querySelector('.tname').textContent));
+      eq(bad, [], `fenêtre Action (${w} px) : « i » au bout de chaque ligne`);
+    }
+  });
+
+  await test('Bloc personnalisé : changer de format, les tuiles qui ne tiennent plus retournent dans la réserve', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_fmt12345', name: 'Combat', r: 2, c: 4, tiles: [{ id: 'ca', sz: 'l', r: 0, c: 0 }, { id: 'init', sz: '1', r: 1, c: 0 }, { id: 'pp', sz: '1', r: 1, c: 3 }] }] }); S.T.pop = 'tiles:c_fmt12345'; render(); });
+    await p.click('.tpop [data-v="blkfmt:c_fmt12345"]');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .ctpl.on small').textContent]), ['blkfmt:c_fmt12345', '2×4'], 'modèles, format actuel en évidence');
+    await p.click('.tpop [data-act="blkFormat"][data-r="2"][data-c="2"]');
+    eq(await p.evaluate(() => { const b = cur().layout.custom[0]; return [b.r + '×' + b.c, b.tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`).join(' '), S.T.pop]; }),
+      ['2×2', 'ca:l@0,0 init:1@1,0', 'tiles:c_fmt12345'], 'CA reste en ligne, Initiative garde sa case, Perception passive retirée');
+    ok(await p.evaluate(() => /Perception passive/.test(document.body.textContent) && !!document.querySelector('.tpop .tres [data-t="pp"]')), 'message et tuile de retour dans la réserve');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {

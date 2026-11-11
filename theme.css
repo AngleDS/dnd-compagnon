@@ -274,7 +274,7 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 .bannerx{flex:none;background:none;border:0;color:var(--muted);font-size:var(--fs-xl);line-height:1;width:32px;height:32px;border-radius:50%;cursor:pointer;display:grid;place-items:center}
 .bannerx:hover{color:var(--ink);background:var(--sheet2)}
 /* Croix de fermeture : une seule taille partout (popups, bulles, pavé numérique, bannière) */
-.tpophead [data-act="tpopclose"],.tiphead [data-act="tipclose"],#dice-pad [data-pad="cancel"],.bannerx{font-size:var(--fs-2xl);line-height:1;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;display:inline-grid;place-items:center}
+.tpophead [data-act="tpopclose"],.tiphead [data-act="tipclose"],#dice-pad .small[data-pad="cancel"],.bannerx{font-size:var(--fs-2xl);line-height:1;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;display:inline-grid;place-items:center}
 @media(max-width:720px){.top{grid-template-areas:"brand menu" "nav char"}.top .nav{grid-area:nav}}
 /* Bouton Repos à côté d'Inspiration héroïque ; popup de choix en deux cartes séparées. */
 .health-dice{cursor:default}
@@ -344,3 +344,19 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 .hpconds{display:flex;flex-wrap:wrap;align-items:center;gap:4px;width:100%;margin:-4px 0 -11px;padding:11px 0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .hpcond{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:999px;font-size:var(--fs-xs);line-height:1.3;white-space:nowrap;border:1px solid var(--blood,#b55);background:color-mix(in srgb,var(--blood,#b55) 22%,transparent);color:var(--ink)}
 .hpconds:hover .hpcond,.hpconds:focus-visible .hpcond{border-color:var(--brass)}
+/* Fenêtres PV temp. et PV max ± */
+.pvpop .label{margin-bottom:6px}
+.pvline{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pvval{font-size:var(--fs-2xl);min-width:2.2em;text-align:center}
+.pvkbd{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0}
+.pvkbd svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pvinfo{margin-top:10px;font-size:var(--fs-sm);color:var(--muted)}.pvinfo b{color:var(--ink)}
+.pvquick{margin-top:12px;gap:6px}.pvnote{font-size:var(--fs-sm);margin-top:10px}
+/* Fenêtre des États : 2 colonnes, « i » au bout de chaque case */
+.condgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0 8px}
+.condgrid .condpick{display:flex;align-items:center;gap:2px;min-width:0}
+.condgrid .condpick .chip{flex:1 1 auto;min-width:0;justify-content:flex-start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.condgrid .condpick .tinfo{margin-left:auto}
+.ctpl.on{border-color:var(--brass);background:color-mix(in srgb,var(--brass) 14%,transparent)}
+/* Le « i » des lignes (recherche, Action, Bonus, Réaction…) toujours au bout de la ligne */
+@media (min-width:521px){.trow .tright{order:2;margin-left:auto}.trow .tinfo{order:3;margin-left:0}}
