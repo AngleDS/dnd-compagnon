@@ -42,7 +42,7 @@ document.addEventListener("click",e=>{
       S.T.ctile=null; S.T.tileSlot=null; S.T.pop="tiles:"+id; render(); } break;
     case "cblkDel": S.T.cdel=S.T.cdel===t.dataset.v?null:t.dataset.v; render(); { const pb=document.querySelector(".tpopbody"); if(pb) pb.scrollTop=0; } break;
     case "cblkDelNo": S.T.cdel=null; render(); break;
-    case "cblkDelYes": if(ch){ const id=t.dataset.v; if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else if(!BLK_FIXED.includes(id)){ setBlkHidden(ch,id,true); setBanner("Bloc retiré : « Ajouter un bloc » permet de le remettre."); } S.T.cdel=null; S.T.pop=null; render(); } break;
+    case "cblkDelYes": if(ch){ const id=t.dataset.v; if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else if(!BLK_KEEP.includes(id)){ setBlkHidden(ch,id,true); setBanner("Bloc retiré : « Ajouter un bloc » permet de le remettre."); } S.T.cdel=null; S.T.pop=null; render(); } break;
     case "blkRestore": if(ch){ setBlkHidden(ch,t.dataset.v,false); S.T.pop=null; render(); } break;
     case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }

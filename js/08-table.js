@@ -257,13 +257,14 @@ function eqPop(ch,D){
     <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Touche un emplacement pour y mettre un objet de ton sac, ou fais glisser un objet vers un emplacement ou vers le sac (au doigt : appui long, puis glisser). ◇ = harmonisation (3 objets maximum). Changer d'arme est gratuit pendant une attaque (une arme par attaque).</div>`;
 }
 function tPop(ch,D){
-  const T=S.T, k=T.pop; if(!k){ S.lastPop=null; return ""; }
+  const T=S.T; if(T.pop==="tiles:reperes") T.pop="blk:reperes"; // Repères ne se personnalise plus (lot T3a)
+  const k=T.pop; if(!k){ S.lastPop=null; return ""; }
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const anim=S.lastPop!==k; S.lastPop=k;
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
   if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
   if(k.startsWith("blk:")){ const id=k.slice(4); if(!TBLK.some(b=>b[0]===id)||BLK_FIXED.includes(id)){ T.pop=null; return ""; }
-    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">${id==="tour"?"Ce bloc ne se personnalise pas : tu peux seulement le déplacer ou le supprimer.":"Ce bloc deviendra bientôt une tuile, à placer où tu veux."}</div>`); }
+    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">${id==="reperes"?"Ce bloc s’adapte tout seul à ton personnage (classe, sous-classe, espèce) : il ne se modifie pas et ne se supprime pas. Tu peux seulement le déplacer.":id==="tour"?"Ce bloc ne se personnalise pas : tu peux seulement le déplacer ou le supprimer.":"Ce bloc deviendra bientôt une tuile, à placer où tu veux."}</div>`); }
   if(k==="blkadd"){ const gone=TBLK.filter(b=>blkHidden(ch,b[0]));
     return wrap("Ajouter un bloc",`${gone.length?`<div class="label" style="margin-bottom:6px">Blocs retirés</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${gone.map(b=>`<button class="btn small" data-act="blkRestore" data-v="${b[0]}">+ ${esc(b[1])}</button>`).join("")}</div><div class="label" style="margin-bottom:6px">Nouveau bloc</div>`:""}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Choisis la taille du bloc (lignes × colonnes) ; tu y placeras ensuite les tuiles de ton choix.</div>${blkTemplates("blkCreate")}`); }
   if(k.startsWith("blkfmt:")){ const b=customBlocks(ch).find(x=>x.id===k.slice(7)); if(!b){ T.pop=null; return ""; }
@@ -337,7 +338,7 @@ function viewTable(ch,D,banner=""){
   const otherSlots=slots; // emplacements de pacte compris : bloc « Emplacements et états »
   const overviewSpecies=srd("species",ch.species)||hb(ch.species);
   const overviewSize=String(ch.size||overviewSpecies?.size||"—");
-  const statsBlk=`${tbHead("reperes","Repères")}<div class="rtiles" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize)}</div>`;
+  const statsBlk=`${tbHead("reperes","Repères","blk:reperes")}<div class="rtiles rauto" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize)}</div>`;
   // Emplacements dans la carte PV : rangée présente seulement si le perso en a (classe, sous-classe, niveau) ; une pastille par niveau de sort, ou une pastille « Pacte »
   const slotCells=!D.cast?"":D.cast.type==="pact"?(+D.cast.pactSlots>0?`<span class="hs pact"><span class="hsn">Pacte ${D.cast.pactLevel}</span>${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}</span>`:"")
     :(D.cast.slots||[]).map((n,i)=>n>0?`<span class="hs"><span class="hsn" title="Niveau ${i+1}">${i+1}</span>${pips("slot:"+(i+1),n,+(ch.slotsUsed?.[i+1]||0),true,lk)}</span>`:"").join("");
@@ -383,12 +384,27 @@ function viewTable(ch,D,banner=""){
   for(const b of customBlocks(ch)) blocks[b.id]=customBlockHtml(ch,D,b,{slots:otherSlots,size:overviewSize});
   return `${tPop(ch,D)}${tableBlocks(ch,blocks)}`;
 }
-/* Tuiles des blocs Repères (8 cases) et Raccourcis (6 cases) : choix enregistré par perso dans ch.layout.tiles ;
-   une case libre affiche un « + » qui ouvre « Personnaliser ». Une valeur absente (DD sans sorts) laisse la case libre. */
-const REPERES_DEFAUT=["ca","init","vitesse","dd","pp","maitrise","attaques","taille"];
+/* Repères sur mesure (lot T3a, décision d'Angle du 11 nov. 2026) : bloc immuable, calculé selon la classe, la sous-classe et l'espèce ;
+   4 valeurs communes puis 4 valeurs propres au plus, par ordre de priorité. Un ancien choix (ch.layout.tiles.reperes) est ignoré, pas effacé. */
+const REP_BASE=["ca","init","vitesse","pp"];
+const colVal=(cls,lab,L)=>{ const c=cls&&(cls.columns||[]).find(x=>x.label===lab); return c?c.values[L-1]:null; };
+function repWants(ch,D){ const cls=D.cls, id=cls&&!cls.hb?cls.id:"", L=D.L, has=n=>!!cls&&cls.features.some(f=>f.level<=L&&f.name===n), x=[];
+  if(id==="barbare") x.push("rage");
+  if(id==="barde") x.push("bard");
+  if(id==="moine"){ x.push("ma"); if(has("Credo du Moine")) x.push("credo"); }
+  if(id==="roublard"){ x.push("sneak"); if(has("Frappe malicieuse")) x.push("malice"); }
+  if(id==="guerrier"&&ch.subclass==="srd:champion"&&L>=3) x.push("crit");
+  if(D.cast) x.push("dd","atks");
+  if(D.atkNpact>1) x.push("attaques");
+  if(id==="paladin"&&has("Aura de protection")) x.push("aura");
+  if(ch.species==="srd:drakeide") x.push("souffle");
+  return x; }
+const reperesAuto=(ch,D)=>REP_BASE.concat(repWants(ch,D).slice(0,4));
+/* Tuiles du bloc Raccourcis (6 cases) : choix enregistré par perso dans ch.layout.tiles ; une case libre affiche un « + ». */
 const RACC_DEFAUT=["skills","saves","cond","inv","equip","insp"];
 const TILE_CAT={
-  reperes:{ca:"CA",init:"Initiative",vitesse:"Vitesse",dd:"DD des sorts",atks:"Attaque de sort",pp:"Perception passive",ip:"Intuition passive",ivp:"Investigation passive",maitrise:"Maîtrise",attaques:"Attaques par action",taille:"Taille",dv:"Dés de vie"},
+  reperes:{ca:"CA",init:"Initiative",vitesse:"Vitesse",dd:"DD des sorts",atks:"Attaque de sort",pp:"Perception passive",ip:"Intuition passive",ivp:"Investigation passive",maitrise:"Maîtrise",attaques:"Attaques par action",taille:"Taille",dv:"Dés de vie",
+    rage:"Dégâts de rage",bard:"Dé bardique",ma:"Arts martiaux",credo:"DD du Credo",sneak:"Attaque sournoise",malice:"DD Frappe malicieuse",crit:"Critique",aura:"Aura de protection",souffle:"DD du souffle"},
   raccourcis:{skills:"Tests de caractéristique",saves:"Jets de sauvegarde",cond:"États",inv:"Inventaire",equip:"Équipement",rest:"Repos",hist:"Historique des jets",notes:"Notes de partie"}
 };
 /* Fiche des tuiles (lot T1, voir claude/catalogue-tuiles-2024.md) : gabarit, largeur minimale, action, blocs permis.
@@ -409,19 +425,24 @@ const tileOkInBlk=(id,blk)=>!(TILE_META[id]||{}).only&&tileFits(id,BLK_CELL_W[bl
 const tileWhy=(id,blk)=>(TILE_META[id]||{}).only?"Seulement dans un bloc créé":"Trop large pour ces cases";
 const chSize=ch=>String(ch.size||(srd("species",ch.species)||hb(ch.species))?.size||"—");
 function blockTiles(ch,blk){
-  const def=blk==="reperes"?REPERES_DEFAUT:RACC_DEFAUT, cat=customCat(), saved=ch.layout?.tiles?.[blk];
+  if(blk==="reperes") return reperesAuto(ch,derive(ch));
+  const def=RACC_DEFAUT, cat=customCat(), saved=ch.layout?.tiles?.[blk];
   const arr=Array.isArray(saved)?saved.slice(0,def.length).map(x=>typeof x==="string"&&cat[x]&&tileOkInBlk(x,blk)?x:""):def.slice();
   while(arr.length<def.length) arr.push("");
   // Inspiration héroïque quitte la carte PV : ajoutée une fois dans une case libre des Raccourcis tant que le joueur n'a pas retouché ses tuiles
-  if(blk==="raccourcis"&&Array.isArray(saved)&&!ch.layout?.inspSeen&&!inspPlaced(ch)){ const k=arr.indexOf(""); if(k>=0) arr[k]="insp"; }
+  // (et une fois de plus si elle était dans les anciens Repères, devenus immuables)
+  if(blk==="raccourcis"&&Array.isArray(saved)&&(!ch.layout?.inspSeen||inspInRep(ch))&&!inspPlaced(ch)&&!arr.includes("insp")){ const k=arr.indexOf(""); if(k>=0) arr[k]="insp"; }
   // Sans sorts, DD et attaque de sort n'ont pas de valeur : leur case est libre.
   if(!derive(ch).cast) return arr.map(x=>x==="dd"||x==="atks"?"":x);
   return arr;
 }
-const tileAvailable=(ch,blk,id)=>!((id==="dd"||id==="atks"||id==="slots")&&!derive(ch).cast);
-function inspPlaced(ch){ const t=ch.layout?.tiles||{}; return ["reperes"].some(k=>Array.isArray(t[k])&&t[k].includes("insp"))||customBlocks(ch).some(b=>(b.tiles||[]).some(x=>x&&x.id==="insp")); }
-function seeInsp(ch){ if(ch.layout?.inspSeen) return; const r=blockTiles(ch,"raccourcis"); ch.layout=Object.assign({},ch.layout,{inspSeen:true}); ch.layout.tiles=Object.assign({},ch.layout.tiles,{raccourcis:r}); }
-function setBlockTiles(ch,blk,arr){ seeInsp(ch); ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles,{[blk]:arr}); touch(S.cur); }
+const REP_CLS=["rage","bard","ma","credo","sneak","malice","crit","aura","souffle"];
+const tileAvailable=(ch,blk,id)=>{ const D=derive(ch); if((id==="dd"||id==="atks"||id==="slots")&&!D.cast) return false; return !REP_CLS.includes(id)||repWants(ch,D).includes(id); };
+const inspInRep=ch=>Array.isArray(ch.layout?.tiles?.reperes)&&ch.layout.tiles.reperes.includes("insp");
+function inspPlaced(ch){ return customBlocks(ch).some(b=>(b.tiles||[]).some(x=>x&&x.id==="insp")); }
+function seeInsp(ch){ if(ch.layout?.inspSeen&&!inspInRep(ch)) return; const r=blockTiles(ch,"raccourcis"); ch.layout=Object.assign({},ch.layout,{inspSeen:true}); ch.layout.tiles=Object.assign({},ch.layout.tiles,{raccourcis:r});
+  if(inspInRep(ch)) ch.layout.tiles.reperes=ch.layout.tiles.reperes.map(x=>x==="insp"?"":x); }
+function setBlockTiles(ch,blk,arr){ if(blk==="reperes") return; seeInsp(ch); ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles,{[blk]:arr}); touch(S.cur); }
 const plusTile=(blk,i,cls)=>`<button class="${cls}" data-act="tilePick" data-blk="${blk}" data-i="${i}" aria-label="Case libre : ajouter une tuile" title="Ajouter une tuile">+</button>`;
 /* En-tête d'un bloc à tuiles : nom et petit crayon (toujours visible) qui ouvre la personnalisation du bloc. */
 const PEN_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>`;
@@ -451,6 +472,7 @@ function racTileMap(ch,D){
 }
 function raccourcisTiles(ch,D){ const R=racTileMap(ch,D), T=repTileMap(ch,D,chSize(ch)); return blockTiles(ch,"raccourcis").map((id,i)=>(id&&(R[id]?R[id]():T[id]&&T[id]()))||plusTile("raccourcis",i,"tpbtn tplus")).join(""); }
 function repTileMap(ch,D,size){
+  let wl; const want=id=>(wl||(wl=repWants(ch,D))).includes(id);
   const t=(v,l,title)=>`<span class="rtile"${title?` title="${esc(title)}"`:""}><b class="num">${v}</b><span class="label">${l}</span></span>`;
   const T={
     ca:()=>t(D.ac,"CA",D.acNote||""),
@@ -459,12 +481,22 @@ function repTileMap(ch,D,size){
     dd:()=>D.cast?t(D.cast.dc,"DD des sorts","Degré de difficulté de tes sorts"):"",
     pp:()=>t(D.passive,"Perception passive","10 + ton modificateur de Perception"),
     maitrise:()=>t(sg(D.pb),"Maîtrise","Bonus de maîtrise"),
-    attaques:()=>t(D.atkN,"Attaques par action"),
+    attaques:()=>t(D.atkNpact,"Attaques par action"),
     taille:()=>t(esc(String(size).split(" (")[0]),"Taille",String(size)),
     atks:()=>D.cast?t(sg(D.cast.atk),"Attaque de sort"):"",
     ip:()=>t(10+D.skills.intuition.val,"Intuition passive","10 + ton modificateur d'Intuition"),
     ivp:()=>t(10+D.skills.investigation.val,"Investigation passive","10 + ton modificateur d'Investigation"),
     dv:()=>t(`${Math.max(0,D.L-(+ch.hdUsed||0))}/${D.L}`,"Dés de vie","Dés de vie restants (d"+D.hd+")"),
+    // Valeurs propres à la classe ou à l'espèce (Repères sur mesure) : vides si le perso n'y a pas droit
+    rage:()=>want("rage")?t(colVal(D.cls,"Dégâts de Rage",D.L),"Dégâts de rage","Bonus aux dégâts des attaques de Force pendant ta Rage"):"",
+    bard:()=>want("bard")?t(colVal(D.cls,"Dé bardique",D.L),"Dé bardique","Dé de ton Inspiration bardique"):"",
+    ma:()=>want("ma")?t(colVal(D.cls,"Arts martiaux",D.L),"Arts martiaux","Dé de dégâts de tes attaques à mains nues et armes de moine"):"",
+    credo:()=>want("credo")?t(8+D.pb+D.mods.sag,"DD du Credo","8 + ton modificateur de Sagesse + ta maîtrise"):"",
+    sneak:()=>want("sneak")?t(colVal(D.cls,"Attaque sournoise",D.L),"Attaque sournoise","Dégâts en plus, une fois par tour"):"",
+    malice:()=>want("malice")?t(8+D.pb+D.mods.dex,"DD Frappe malicieuse","8 + ton modificateur de Dextérité + ta maîtrise"):"",
+    crit:()=>want("crit")?t(D.L>=15?"18-20":"19-20","Critique","Résultats du d20 qui donnent un coup critique"):"",
+    aura:()=>want("aura")?t(sg(Math.max(1,D.mods.cha)),"Aura de protection",`Bonus aux jets de sauvegarde pour toi et tes alliés à ${D.L>=18?9:3} m`):"",
+    souffle:()=>want("souffle")?t(8+D.pb+D.mods.con,"DD du souffle",`Souffle : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10, sauvegarde de Dextérité`):"",
     insp:()=>`<button class="rtile" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Inspiration héroïque : toucher pour l'utiliser ou la regagner"><b class="num">${ch.inspiration?"✓":"—"}</b><span class="label">Inspiration</span></button>`,
     conc:()=>`<button class="rtile" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="Concentration"><b class="num tconcv">${ch.conc?esc(ch.conc):"—"}</b><span class="label">Concentration</span></button>`,
     exh:()=>`<button class="rtile" data-act="tpop" data-v="cond" title="Épuisement : toucher pour le modifier"><b class="num">${+ch.exhaustion||0}</b><span class="label">Épuisement</span></button>`,
@@ -472,7 +504,9 @@ function repTileMap(ch,D,size){
   };
   return T;
 }
-function reperesTiles(ch,D,size){ const T=repTileMap(ch,D,size); return blockTiles(ch,"reperes").map((id,i)=>(id&&T[id]())||plusTile("reperes",i,"rtile vide")).join(""); }
+/* Repères : rangées équilibrées sur une grille de 12 (4 → 1 rangée ; 5 → 3+2 ; 6 → 3+3 ; 7 → 4+3 ; 8 → 4+4), jamais de case vide. */
+function reperesTiles(ch,D,size){ const T=repTileMap(ch,D,size), h=blockTiles(ch,"reperes").map(id=>T[id]&&T[id]()).filter(Boolean), n=h.length, top=n<=4?n:Math.ceil(n/2);
+  return h.map((x,i)=>x.replace(/^<(\w+)/,`<$1 style="grid-column:span ${12/(i<top?top:n-top)}"`)).join(""); }
 /* Blocs personnalisés (étape 6) : ch.layout.custom = [{id,name,r,c,tiles:[{id,sz}]}] ; taille d'une tuile : "1" (1×1), "2" (2×2), "l" (ligne entière).
    Placement automatique dans l'ordre (les tuiles comblent les trous) ; les cases restantes affichent « + ». */
 /* Modèles de blocs personnalisés : 8 cases au plus (décision d'Angle). */
@@ -565,16 +599,17 @@ function tableBlocks(ch,blocks){
   // Mode disposition : poignée et flèches sur chaque bloc ; le contenu est inactif pour éviter toute action par erreur.
   return `<div class="tlayouttop" role="status"><span>Disposition : glisse un bloc par sa poignée ⋮⋮ ou utilise les flèches.</span><span class="row" style="gap:6px"><button class="btn small" data-act="tpop" data-v="blkadd">Ajouter un bloc</button><button class="btn small ghost" data-act="layoutReset">Ordre par défaut</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
   <div class="tblocks editing">${ids.map((id,n)=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">
-    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${BLK_FIXED.includes(id)?"":`<button class="btn small" data-act="tpop" data-v="${TILE_CAT[id]||id.startsWith("c_")?"tiles:":"blk:"}${id}">Modifier</button>`}
+    <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${BLK_FIXED.includes(id)?"":`<button class="btn small" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}">${id==="reperes"?"Déplacer":"Modifier"}</button>`}
       <span class="row tblkmv"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc ${esc(label(id))}" ${n?"":"disabled"}>↑</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc ${esc(label(id))}" ${n<ids.length-1?"":"disabled"}>↓</button></span></div>
     <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section>`).join("")}</div>`;
 }
 /* Blocs retirés (ch.layout.hidden) : tous sauf Personnage et Points de vie ; on les remet par « Ajouter un bloc ». */
 const BLK_FIXED=["perso","pv"];
-const blkHidden=(ch,id)=>!BLK_FIXED.includes(id)&&Array.isArray(ch.layout?.hidden)&&ch.layout.hidden.includes(id);
-function setBlkHidden(ch,id,on){ const h=(Array.isArray(ch.layout?.hidden)?ch.layout.hidden:[]).filter(x=>x!==id); if(on&&!BLK_FIXED.includes(id)) h.push(id); ch.layout=Object.assign({},ch.layout,{hidden:h}); touch(S.cur); }
+const BLK_KEEP=["perso","pv","reperes"]; // blocs qu'on ne supprime pas (Repères : déplaçable seulement)
+const blkHidden=(ch,id)=>!BLK_KEEP.includes(id)&&Array.isArray(ch.layout?.hidden)&&ch.layout.hidden.includes(id);
+function setBlkHidden(ch,id,on){ const h=(Array.isArray(ch.layout?.hidden)?ch.layout.hidden:[]).filter(x=>x!==id); if(on&&!BLK_KEEP.includes(id)) h.push(id); ch.layout=Object.assign({},ch.layout,{hidden:h}); touch(S.cur); }
 /* Bas de chaque fenêtre de bloc : monter, descendre, supprimer (confirmation). */
-function blkActions(ch,id,extra=""){ const vis=tableOrder(ch).filter(x=>!blkHidden(ch,x)), i=vis.indexOf(id), custom=id.startsWith("c_"), fixed=BLK_FIXED.includes(id);
+function blkActions(ch,id,extra=""){ const vis=tableOrder(ch).filter(x=>!blkHidden(ch,x)), i=vis.indexOf(id), custom=id.startsWith("c_"), fixed=BLK_KEEP.includes(id);
   const bar=`<div class="blkacts"><span class="row" style="gap:6px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc" ${i>0?"":"disabled"}>↑ Monter</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc" ${i>=0&&i<vis.length-1?"":"disabled"}>↓ Descendre</button>${extra}</span>${fixed?"":`<button class="btn small ghost blkdel" data-act="cblkDel" data-v="${id}" aria-expanded="${S.T.cdel===id}">Supprimer le bloc</button>`}</div>`;
   const conf=!fixed&&S.T.cdel===id?`<div class="blkconfirm" role="alert"><span>${custom?"Supprimer ce bloc et ses tuiles ?":"Retirer ce bloc ? Tu pourras le remettre avec « Ajouter un bloc »."}</span><span class="row" style="gap:6px"><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span></div>`:"";
   return bar+conf; }

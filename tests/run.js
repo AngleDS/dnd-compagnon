@@ -1010,18 +1010,53 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     } finally { await ctx.close(); }
   });
 
-  await test('Repères : 8 tuiles, Initiative ouvre le jet, case vide sans sorts, pacte dans les emplacements', async p => {
+  await test('Repères : tuiles sur mesure, Initiative ouvre le jet, pacte dans les emplacements', async p => {
     await diceTable(p);
     const tiles = () => p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(t => t.classList.contains('vide') ? '' : t.querySelector('.label').textContent.trim()));
-    eq(await tiles(), ['CA','Initiative','Vitesse','','Perception passive','Maîtrise','Attaques par action','Taille'], 'guerrier : DD des sorts laissé vide');
+    eq(await tiles(), ['CA','Initiative','Vitesse','Perception passive'], 'guerrier niveau 1 : les 4 valeurs communes, sans case vide');
     eq(await p.evaluate(() => document.querySelector('.rtile .num').innerText.trim()), String(await p.evaluate(() => derive(cur()).ac)), 'valeur de CA');
     await p.click('.tblk[data-blk="reperes"] button.rtile[data-k="init"]');
     eq(await p.evaluate(() => [S.T.pop, S.T.sel]), ['card','init'], 'Initiative ouvre le jet');
     await p.keyboard.press('Escape');
     await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
-    eq((await tiles())[3], 'DD des sorts', 'lanceur de sorts : DD affiché');
+    eq((await tiles()).slice(4), ['DD des sorts','Attaque de sort'], 'lanceur de sorts : DD et attaque de sort');
     ok((await p.evaluate(() => document.querySelector('.health-card .hslots .hs.pact')?.textContent || '')).includes('Pacte'), 'emplacements de pacte dans la carte PV');
+  });
+
+  await test('Repères sur mesure (T3a) : valeurs par classe et espèce, rangées sans vide, ancien choix ignoré, Inspiration déplacée', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await open(p);
+    const rep = (cls, sp, lv, sub) => p.evaluate(([cls, sp, lv, sub]) => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'T' }, { cls: catRes(cls), bg: catRes('srd:soldat'), sp: catRes('srd:' + sp) }); wCreate();
+      const ch = cur(); ch.level = lv; if (sub) ch.subclass = 'srd:' + sub; S.rv = null; renderModal(); S.tab = 'table'; render();
+      return [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(t => t.querySelector('.label').textContent.trim() + '=' + t.querySelector('.num').textContent.trim()); }, [cls, sp, lv, sub]);
+    const com = ['CA', 'Initiative', 'Vitesse', 'Perception passive'], lab = a => a.map(x => x.split('=')[0]), val = (a, l) => (a.find(x => x.startsWith(l + '=')) || '').split('=')[1];
+    let r = await rep('moine', 'drakeide', 5);
+    eq(lab(r), com.concat(['Arts martiaux', 'DD du Credo', 'Attaques par action', 'DD du souffle']), 'moine drakéide 5 : 8 tuiles');
+    eq([val(r, 'Arts martiaux'), val(r, 'DD du Credo'), val(r, 'Attaques par action'), val(r, 'DD du souffle')], await p.evaluate(() => { const D = derive(cur()); return ['1d8', String(8 + D.pb + D.mods.sag), '2', String(8 + D.pb + D.mods.con)]; }), 'moine 5 : d8, DD 8 + Sag + maîtrise, 2 attaques, souffle 8 + Con + maîtrise');
+    eq(await p.evaluate(() => { const t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => Math.round(e.getBoundingClientRect().top)); return [new Set(t).size, t.filter(y => y === t[0]).length]; }), [2, 4], '8 tuiles : 2 rangées de 4');
+    r = await rep('roublard', 'humain', 5);
+    eq(lab(r).slice(4), ['Attaque sournoise', 'DD Frappe malicieuse'], 'roublard 5 : attaque sournoise et DD');
+    eq([val(r, 'Attaque sournoise'), val(r, 'DD Frappe malicieuse')], await p.evaluate(() => { const D = derive(cur()); return ['3d6', String(8 + D.pb + D.mods.dex)]; }), 'roublard 5 : 3d6, DD 8 + Dex + maîtrise');
+    eq(await p.evaluate(() => { const g = document.querySelector('.tblk[data-blk="reperes"] .rtiles').getBoundingClientRect(), t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => e.getBoundingClientRect()); return [new Set(t.map(e => Math.round(e.top))).size, Math.abs(t[2].right - g.right) < 2 && Math.abs(t[5].right - g.right) < 2]; }), [2, true], '6 tuiles : 3 + 3, rangées pleines');
+    r = await rep('guerrier', 'humain', 15, 'champion');
+    eq([val(r, 'Critique'), val(r, 'Attaques par action')], ['18-20', '3'], 'champion 15 : critique sur 18-20, 3 attaques');
+    r = await rep('guerrier', 'humain', 20); eq(val(r, 'Attaques par action'), '4', 'guerrier 20 : 4 attaques (Triple attaque supplémentaire)');
+    r = await rep('paladin', 'humain', 6);
+    eq(lab(r).slice(4), ['DD des sorts', 'Attaque de sort', 'Attaques par action', 'Aura de protection'], 'paladin 6 : sorts, attaques, aura');
+    eq(val(r, 'Aura de protection'), await p.evaluate(() => sg(Math.max(1, derive(cur()).mods.cha))), 'aura : Charisme, au moins +1');
+    r = await rep('barbare', 'humain', 1); eq(r.slice(4), ['Dégâts de rage=+2'], 'barbare 1 : dégâts de rage');
+    r = await rep('barde', 'humain', 1); eq(lab(r).slice(4), ['Dé bardique', 'DD des sorts', 'Attaque de sort'], 'barde 1 : dé bardique puis sorts');
+    eq(await p.evaluate(() => { const t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => Math.round(e.getBoundingClientRect().top)); return [t.filter(y => y === t[0]).length, t.length - t.filter(y => y === t[0]).length]; }), [4, 3], '7 tuiles : 4 + 3');
+    // Ancien choix de Repères : ignoré, pas effacé ; l'Inspiration qui y était passe dans les Raccourcis
+    await p.evaluate(() => { const ch = cur(); ch.layout = { inspSeen: true, tiles: { reperes: ['ca', 'insp', 'taille', '', '', '', '', ''], raccourcis: ['skills', 'saves', 'cond', 'inv', 'equip', ''] } }; render(); });
+    eq(await p.evaluate(() => [blockTiles(cur(), 'reperes').length, blockTiles(cur(), 'raccourcis')[5], cur().layout.tiles.reperes[1]]), [7, 'insp', 'insp'], 'ancien choix ignoré à l’écran, rien d’écrit ; Inspiration dans une case libre des Raccourcis');
+    await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); }); await p.click('.tpop [data-act="tileCell"][data-i="0"]'); await p.click('.tpop [data-act="tileCell"][data-i="1"]');
+    eq(await p.evaluate(() => [cur().layout.tiles.raccourcis[5], cur().layout.tiles.reperes]), ['insp', ['ca', '', 'taille', '', '', '', '', '']], 'premier changement : Inspiration enregistrée dans les Raccourcis, retirée des anciens Repères');
+    await p.click('.tpop [data-act="tileCell"][data-i="5"]'); await p.click('.tpop [data-act="tileDel"][data-i="5"]'); await p.keyboard.press('Escape');
+    eq(await p.evaluate(() => blockTiles(cur(), 'raccourcis')[5]), '', 'retirée ensuite par le joueur : elle ne revient pas');
+    await p.evaluate(() => { S.T.pop = 'tiles:reperes'; render(); });
+    eq(await p.evaluate(() => S.T.pop), 'blk:reperes', 'ancienne fenêtre de personnalisation des Repères : renvoie au bloc');
+    ok(await p.evaluate(() => !tileAvailable(cur(), 'raccourcis', 'crit') && tileAvailable(cur(), 'raccourcis', 'bard')), 'tuiles de classe proposées ailleurs seulement si le perso y a droit');
   });
 
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
@@ -1033,7 +1068,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       ok(await p.isVisible('.tpop'), 'popup ' + v); await p.keyboard.press('Escape');
     }
     ok((await p.evaluate(() => document.querySelector('.tblk[data-blk="raccourcis"] [data-v="cond"] .tpsub').textContent)).includes('Aucun'), 'information sous la tuile États');
-    eq(await p.evaluate(() => { const v = document.querySelector('.tblk[data-blk="reperes"] .rtile.vide'); return [v.textContent.trim(), getComputedStyle(v).borderStyle]; }), ['+', 'dashed'], 'case libre des Repères : « + » en pointillés');
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="reperes"] .rtile.vide')), 'Repères : jamais de case libre');
   });
 
   await test('Personnaliser : « + » ouvre le choix, ajouter, vider, déplacer, défaut, enregistré et importé', async p => {
@@ -1049,13 +1084,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq((await racc()).slice(0, 2), ['saves', '+'], 'tuile déplacée en touchant sa case puis la case visée');
     eq(await p.evaluate(() => cur().layout.tiles.raccourcis), ['saves','','cond','inv','equip','rest'], 'choix enregistré dans la fiche');
     await p.keyboard.press('Escape');
-    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] [data-v="tiles:reperes"]');
-    await p.click('.tpop [data-act="tileAdd"][data-v="ivp"]');
-    const ivp = await p.evaluate(() => [blockTiles(cur(), 'reperes')[3], 10 + derive(cur()).skills.investigation.val]);
-    eq(ivp[0], 'ivp', 'Investigation passive dans la case libre du DD');
-    await p.click('.tpop [data-act="tileReset"]'); await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
-    eq(await p.evaluate(() => blockTiles(cur(), 'reperes')), ['ca','init','vitesse','','pp','maitrise','attaques','taille'], 'tuiles par défaut rétablies (sans sorts, la case du DD reste libre)');
-    ok(await p.evaluate(() => !tileAvailable(cur(), 'reperes', 'dd')), 'DD non proposé sans sorts');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] [data-v="blk:reperes"]');
+    ok(await p.evaluate(() => S.T.pop === 'blk:reperes' && !document.querySelector('.tpop .tpgrid,.tpop .tres,.tpop [data-act="cblkDel"]')), 'mode disposition : Repères se déplace seulement');
+    await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
+    ok(await p.evaluate(() => !tileAvailable(cur(), 'raccourcis', 'dd')), 'DD non proposé sans sorts');
     const r = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); const id = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
       try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { tiles: { reperes: 'x' } } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
       return [S.docs[id].layout.tiles.raccourcis[5], bad]; });
@@ -1253,16 +1285,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq((await vis()).slice(3, 6), ['recherche', 'raccourcis', 'tour'], 'descendu d’un cran');
     await p.keyboard.press('Escape');
     await p.click('.tblk[data-blk="reperes"] .tbpen');
-    eq(await p.evaluate(() => document.querySelector('.tpop .tpophead b').textContent), 'Bloc : Repères', 'Repères : tuiles et actions dans la même fenêtre');
-    await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => (cur().layout.hidden || []).length === 0), 'confirmation demandée');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:reperes', 'Bloc : Repères'], 'Repères : fenêtre du bloc');
+    ok(await p.evaluate(() => /s’adapte tout seul/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres,.tpop [data-act="cblkDel"]') && !!document.querySelector('.tpop [data-act="blkMove"]')), 'Repères : ni tuiles, ni suppression ; déplacement seulement');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { hidden: ['reperes'] }); render(); });
+    ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="reperes"]')), 'Repères retiré avant la v144 : il revient');
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { hidden: [] }); render(); });
+    await p.click('.tblk[data-blk="notes"] .tbpen'); await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => (cur().layout.hidden || []).length === 0), 'confirmation demandée');
     await p.click('.tpop [data-act="cblkDelYes"]');
-    eq(await p.evaluate(() => [cur().layout.hidden, !document.querySelector('.tblk[data-blk="reperes"]'), S.T.pop]), [['reperes'], true, null], 'Repères retiré en trois touchers');
-    await p.click('.tblk[data-blk="notes"] .tbpen'); await p.click('.tpop [data-act="cblkDel"]'); await p.click('.tpop [data-act="cblkDelYes"]');
     ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="notes"]') && !!(document.querySelector('.hmenu'))), 'Notes retiré : le réglage des dés reste dans le Menu');
     await menuClick(p, '[data-v="blkadd"]');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['reperes', 'notes'], 'blocs retirés proposés dans « Ajouter un bloc »');
-    await p.click('.tpop [data-act="blkRestore"][data-v="reperes"]');
-    eq(await p.evaluate(() => [cur().layout.hidden, !!document.querySelector('.tblk[data-blk="reperes"]')]), [['notes'], true], 'Repères remis à sa place');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['notes'], 'blocs retirés proposés dans « Ajouter un bloc »');
+    await p.keyboard.press('Escape');
     await menuClick(p, '[data-act="layoutEdit"]');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tblkh [data-v^="tiles:"],.tblkh [data-v^="blk:"]')).map(b => b.dataset.blk)), ['perso', 'pv'], 'mode disposition : « Modifier » sur tous les blocs sauf Personnage et PV ; Notes absent');
     await p.click('[data-act="layoutDone"]');
@@ -1278,11 +1312,11 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Tuiles (T1) : largeur des cases, tuiles trop larges grisées et barrées, 1×2 et bandeau, liseré doré', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
-    await p.evaluate(() => { S.T.pop = 'tiles:reperes'; render(); });
+    await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' }); await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; S.T.pop = 'tiles:raccourcis'; render(); });
     const rep = await p.evaluate(() => ({ off: [...document.querySelectorAll('.tpop .tres .toff')].map(e => e.querySelector('.tname').textContent), drag: document.querySelectorAll('.tpop .tres .toff[data-tdrag],.tpop .tres .toff[data-act]').length,
       strike: getComputedStyle(document.querySelector('.tpop .tres .toff .tname')).textDecorationLine, why: document.querySelector('.tpop .tres .toff .toffwhy').textContent }));
-    ok(rep.off.includes('Jets de sauvegarde') && rep.off.includes('Inventaire') && rep.drag === 0 && rep.strike === 'line-through' && /Trop large/.test(rep.why), 'Repères : tuiles larges grisées, barrées, non déplaçables : ' + JSON.stringify(rep));
-    await legacyRacc(p); await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
+    ok(rep.off.includes('Emplacements de sorts') && rep.drag === 0 && rep.strike === 'line-through' && /bloc créé/.test(rep.why), 'Raccourcis : tuile non éligible grisée, barrée, non déplaçable : ' + JSON.stringify(rep));
+    await p.keyboard.press('Escape'); await diceTable(p); await legacyRacc(p); await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
     await p.click('.tpop .tres [data-v="ca"]');
     eq(await p.evaluate(() => [blockTiles(cur(), 'raccourcis')[5], !!document.querySelector('.tblk[data-blk="raccourcis"] .tpanels .rtile')]), ['ca', true], 'Raccourcis : une tuile de valeur s’y place et s’affiche');
     await p.keyboard.press('Escape');
@@ -1315,8 +1349,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().inspiration, document.querySelector('.tblk[data-blk="raccourcis"] [data-act="insp"]').getAttribute('aria-pressed')]), [true, 'true'], 'tuile Inspiration : un toucher la gagne');
     await p.evaluate(() => { const ch = cur(); ch.layout = { tiles: { raccourcis: ['skills','saves','cond','inv','equip',''] } }; render(); });
     eq(await p.evaluate(() => [blockTiles(cur(), 'raccourcis')[5], cur().layout.tiles.raccourcis[5], !!cur().layout.inspSeen]), ['insp', '', false], 'disposition déjà enregistrée : Inspiration ajoutée à l’écran sans rien écrire');
-    await p.evaluate(() => { S.T.pop = 'tiles:reperes'; render(); }); await p.click('.tpop [data-act="tileAdd"][data-v="ivp"]');
+    await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); }); await p.click('.tpop [data-act="tileCell"][data-i="0"]'); await p.click('.tpop [data-act="tileCell"][data-i="1"]');
     eq(await p.evaluate(() => [cur().layout.tiles.raccourcis[5], !!cur().layout.inspSeen]), ['insp', true], 'premier changement de tuiles : Inspiration enregistrée à sa place');
+    await p.keyboard.press('Escape');
     await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); }); await p.click('.tpop [data-act="tileCell"][data-i="5"]'); await p.click('.tpop [data-act="tileDel"][data-i="5"]');
     await p.keyboard.press('Escape'); eq(await p.evaluate(() => blockTiles(cur(), 'raccourcis')[5]), '', 'retirée par le joueur : elle ne revient pas');
     await p.fill('#tq', 'rep');
@@ -1349,6 +1384,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const bad = []; if (document.documentElement.scrollWidth > innerWidth) bad.push('page plus large que l’écran');
       document.querySelectorAll('.tblocks .rtile .label, .tblocks .tpbtn, .tblocks .rtile .num, .health-card .label').forEach(e => { if (e.scrollWidth > e.clientWidth + 1) bad.push((e.textContent || '').trim().slice(0, 30)); });
       return bad; }), [], 'aucun débordement à 375 points');
+
+    for (const [cls, sp] of [['moine', 'srd:drakeide'], ['roublard', 'srd:humain'], ['paladin', 'srd:humain']]) {
+      await newWizardChar(p, { cls, bg: 'srd:soldat', sp }); await p.evaluate(() => { cur().level = 15; S.rv = null; renderModal(); S.tab = 'table'; render(); });
+      eq(await p.evaluate(() => { const bad = []; if (document.documentElement.scrollWidth > innerWidth) bad.push('page'); document.querySelectorAll('.tblk[data-blk="reperes"] .rtile .label, .tblk[data-blk="reperes"] .rtile .num').forEach(e => { if (e.scrollWidth > e.clientWidth + 1) bad.push(e.textContent.trim()); }); return bad; }), [], `Repères de ${cls} niveau 15 : textes entiers à 375 points`); }
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {

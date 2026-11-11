@@ -252,7 +252,7 @@ function derive(ch){
   for(const r of Object.values(D.arc)) if(r) D.always[r]="Arcanum mystique";
   // attaques par action Attaque
   const fl=cls?cls.features.filter(f=>f.level<=L).map(f=>f.name):[];
-  D.atkN=1+(fl.some(n=>/^Attaque supplémentaire/i.test(n))?1:0)+(fl.some(n=>/^Deux attaques supplémentaires/i.test(n))?1:0)+(fl.some(n=>/^Trois attaques supplémentaires/i.test(n))?1:0);
+  D.atkN=1+(fl.some(n=>/^Attaque supplémentaire/i.test(n))?1:0)+(fl.some(n=>/^(Deux|Double) attaques? supplémentaires?/i.test(n))?1:0)+(fl.some(n=>/^(Trois|Triple) attaques? supplémentaires?/i.test(n))?1:0); // Guerrier SRD : « Double » (11) et « Triple » (20)
   D.atkNpact=Math.max(D.atkN, D.inv.has("lame-assoiffee")?2:1);
   // resources
   D.res=[];
