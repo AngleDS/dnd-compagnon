@@ -45,7 +45,7 @@ h1,h2,h3{font-family:var(--f-display);font-weight:400;text-wrap:balance;margin:0
   .top .nav::-webkit-scrollbar{display:none}
   .top .nav button{white-space:nowrap;padding:5px 7px;font-size:var(--fs-sm)}
   .hmenu{padding:4px 10px}
-  .sheettabs{position:static!important}
+  .sheettabs{position:relative!important;top:auto!important}
   .tbar{position:static!important}
   .sheet-head h1{font-size:var(--fs-2xl)}
   .sheet-head .row[style*="margin-left:auto"]:not(.trestop) .label,.sheet-head .row[style*="margin-left:auto"]:not(.trestop) .num{display:none}

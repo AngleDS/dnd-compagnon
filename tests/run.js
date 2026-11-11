@@ -1296,6 +1296,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const v = getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpbtn:not(.tplus)')).borderTopColor, t = document.createElement('i'); t.style.color = getComputedStyle(document.documentElement).getPropertyValue('--brass').trim(); document.body.appendChild(t); const c = getComputedStyle(t).color; t.remove(); return v === c; }), true, 'liseré doré sur les tuiles qui ouvrent une action');
   });
 
+  await test('Défilement : pas de fond « fixed » ni de flou sur l’en-tête collé (saccades Safari)', async p => {
+    await diceTable(p);
+    eq(await p.evaluate(() => { const b = getComputedStyle(document.body), a = getComputedStyle(document.body, '::after'), top = getComputedStyle(document.querySelector('.top'));
+      return [b.backgroundAttachment.includes('fixed'), /gradient/.test(b.backgroundImage), /radial-gradient/.test(a.backgroundImage), a.position, a.transform !== 'none', top.backdropFilter || top.webkitBackdropFilter || 'none']; }),
+      [false, false, true, 'fixed', true, 'none'], 'fond sur une couche fixe composée, en-tête sans flou');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
