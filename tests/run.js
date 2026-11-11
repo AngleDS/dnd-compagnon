@@ -1128,7 +1128,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tblk[data-blk="ressources"] [data-act="resstep"][data-v="-1"]');
     eq(await p.evaluate(() => cur().resUsed['cls:imposition-des-mains']), 1, '+ en récupère 1');
     await p.evaluate(() => { S.layoutEdit = true; render(); }); await p.click('.tblk[data-blk="ressources"] .tedpen');
-    ok(await p.evaluate(() => S.T.pop === 'blk:ressources' && !!document.querySelector('.tpop [data-act="blkMove"]')), 'Ressources : crayon en mode édition, fenêtre du bloc');
+    ok(await p.evaluate(() => S.T.pop === 'blk:ressources' && !!document.querySelector('.tpop .bpats [data-act="blkWidth"]') && !!document.querySelector('.tpop .bprev .rres')), 'Ressources : crayon en mode édition, formats et aperçu dans la fenêtre');
     await p.keyboard.press('Escape'); await p.evaluate(() => { S.layoutEdit = false; render(); });
     await p.evaluate(() => { const ch = cur(); ch.layout = { order: ['tour', 'perso', 'pv', 'reperes'] }; render(); });
     eq(await p.evaluate(() => tableOrder(cur()).slice(0, 5)), ['tour', 'perso', 'pv', 'ressources', 'reperes'], 'ordre déjà enregistré : Ressources se glisse sous PV');
@@ -1224,8 +1224,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="raccourcis"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="notes"]').getBoundingClientRect(); return [Math.round(a.top) === Math.round(b.top), getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpanels')).gridTemplateColumns.split(' ').length]; }), [true, 1], 'Raccourcis et Notes (2 colonnes chacun) côte à côte, tuiles sur une colonne');
     // Bloc créé : largeur ≥ nombre de colonnes de tuiles ; une tuile trop large retourne dans la réserve
     await p.evaluate(() => { const ch = cur(); ch.layout.custom = [{ id: 'c_l2aaaaaa', name: 'Étroit', r: 2, c: 2, tiles: [{ id: 'saves', sz: '1', r: 0, c: 0 }, { id: 'ca', sz: '1', r: 0, c: 1 }] }]; S.T.pop = 'tiles:c_l2aaaaaa'; render(); });
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkWidth"]')].map(b => b.dataset.w)), ['2', '3', '4'], 'bloc de 2 colonnes de tuiles : 2, 3 ou 4 colonnes de page');
-    await p.click('.tpop [data-act="blkWidth"][data-w="2"]');
+    eq(await p.evaluate(() => document.querySelectorAll('.tpop .bpats [data-act="blkPat"]').length), 12, 'bloc créé : 12 formats en miniatures');
+    await p.click('.tpop [data-act="blkPat"][data-r="2"][data-c="2"]');
     eq(await p.evaluate(() => [cur().layout.width.c_l2aaaaaa, cur().layout.custom[0].tiles.map(t => t.id)]), [2, ['ca']], 'largeur 2 : Jets de sauvegarde (trop large) retourne dans la réserve, la CA reste');
     const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { width: { reperes: 9 } } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
     ok(/largeurs/.test(bad), 'largeur invalide refusée à l’import');
@@ -1269,10 +1269,12 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Bloc personnalisé : modèle, nom, tuiles à leur place exacte, tailles, glisser, ancien format, suppression, import', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.taddblk');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .ctpl small')].map(x => x.textContent).join(' ')), '1×1 1×2 1×3 1×4 2×1 2×2 2×3 2×4 3×1 3×2 4×1 4×2', '12 modèles, 8 cases au plus');
+    eq(await p.evaluate(() => document.querySelectorAll('.tpop .bpats [data-act="blkCreate"]').length), 12, '12 formats en miniatures (largeur × rangées, 8 cases au plus)');
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); const e = document.elementFromPoint(r.left + 20, r.top + 10); return !!e.closest('.tpop'); }), 'popup au-dessus de la barre de disposition');
     await p.click('.tpop [data-act="blkCreate"][data-r="2"][data-c="3"]');
     const id = await p.evaluate(() => cur().layout.custom[0].id);
+    eq(await p.evaluate(id => [cur().layout.width[id], !!document.querySelector('.tpop .bprev [data-cgrid]')], id), [3, true], 'nouveau bloc : 3 colonnes de page, tuiles à placer dans la même fenêtre');
+    await p.evaluate(id => { cur().layout.width[id] = 4; render(); }, id); // la suite du test reprend des cases larges (bloc de 3 tuiles sur 4 colonnes)
     eq(await p.evaluate(() => [S.T.pop, cur().layout.custom[0].name, cur().layout.order.at(-1)]), ['tiles:' + id, 'Mon bloc 1', id], 'bloc créé, nommé, placé en bas, Personnaliser ouvert');
     await p.fill(`.tpop input[data-cname="${id}"]`, 'Combat'); await p.press(`.tpop input[data-cname="${id}"]`, 'Tab');
     eq(await p.evaluate(() => cur().layout.custom[0].name), 'Combat', 'bloc renommé');
@@ -1311,13 +1313,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { custom: 'x' } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
       return [S.docs[nid].layout.custom[0].name, bad]; });
     eq(r[0], 'Combat', 'bloc suit l’export'); ok(/personnalisés/.test(r[1]), 'blocs invalides refusés');
-    await menuClick(p, '[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] .tedpen`);
-    await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => cur().layout.custom.length === 1), 'demande de confirmation avant suppression');
-    await p.click('.tpop [data-act="cblkDelYes"]');
-    eq(await p.evaluate(id => [cur().layout.custom.length, cur().layout.order.includes(id), !!document.querySelector(`.tblk[data-blk="${id}"]`), S.T.pop], id), [0, false, false, null], 'bloc supprimé');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click(`.tblk[data-blk="${id}"] .tedpen`); await p.click('.tpop [data-act="blkDup"]');
+    eq(await p.evaluate(() => cur().layout.custom.map(b => b.name)), ['Combat', 'Combat (copie)'], 'Dupliquer le bloc');
+    await p.keyboard.press('Escape'); await p.click(`.tblk[data-blk="${id}"] .tdel`);
+    eq(await p.evaluate(id => [cur().layout.custom.length, cur().layout.order.includes(id), !!document.querySelector(`.tblk[data-blk="${id}"]`)], id), [1, false, false], 'bloc supprimé en mode édition');
   });
 
-  await test('Au doigt : appui long pour glisser une tuile, le glisser rapide fait défiler ; suppression confirmée en tête', async p => {
+  await test('Au doigt : appui long pour glisser une tuile, le glisser rapide fait défiler', async p => {
     const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
@@ -1333,16 +1335,12 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
         fire('pointermove', tx, ty, document); fire('pointerup', tx, ty, document);
         return [quick, afterQuick, ghost, blockTiles(cur(), 'raccourcis')[5]]; });
       eq(res, [false, '', true, 'rest'], 'glisser rapide : rien ne bouge ; appui long : la tuile part et se pose');
-      await t.evaluate(() => { const b = document.querySelector('.tpopbody'); b.scrollTop = b.scrollHeight; });
-      await t.click('.tpop [data-act="cblkDel"]');
-      eq(await t.evaluate(() => { const c = document.querySelector('.tpop .blkconfirm'), body = document.querySelector('.tpopbody'), first = body.firstElementChild; return [!!c, body.scrollTop, first.classList.contains('blkacts'), c.previousElementSibling === first, c.getBoundingClientRect().top < body.getBoundingClientRect().top + 140]; }),
-        [true, 0, true, true, true], 'actions du bloc en tête de fenêtre, confirmation juste dessous, visible sans défiler');
       if (errs.length) throw new Error('Erreur JS : ' + errs.join(' | '));
     } finally { await ctx.close(); }
   });
 
   await test('Personnaliser au glisser : crayon sur le bloc, réserve → case, case → case, hors du bloc', async p => {
-    await diceTable(p);
+    await p.setViewportSize({ width: 1280, height: 1600 }); await diceTable(p);
     ok(!await p.locator('.tbpen,.tedpen').count(), 'pas de crayon en jeu');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="raccourcis"] .tedpen');
     eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .tpgrid .tcell').length, ['rest', 'hist', 'notes', 'ca'].every(v => document.querySelector(`.tpop .tres [data-v="${v}"]`))]), ['tiles:raccourcis', 6, true], 'popup : 6 cases ; réserve avec Repos, Historique, Notes et aussi une tuile de valeur (CA)');
@@ -1429,15 +1427,36 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     }
   });
 
-  await test('Bloc personnalisé : changer de format, les tuiles qui ne tiennent plus retournent dans la réserve', async p => {
-    await diceTable(p);
+  await test('Bloc personnalisé : changer de format (miniatures), les tuiles qui ne tiennent plus retournent dans la réserve ; titre vide', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_fmt12345', name: 'Combat', r: 2, c: 4, tiles: [{ id: 'ca', sz: 'l', r: 0, c: 0 }, { id: 'init', sz: '1', r: 1, c: 0 }, { id: 'pp', sz: '1', r: 1, c: 3 }] }] }); S.T.pop = 'tiles:c_fmt12345'; render(); });
-    await p.click('.tpop [data-v="blkfmt:c_fmt12345"]');
-    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .ctpl.on small').textContent]), ['blkfmt:c_fmt12345', '2×4'], 'modèles, format actuel en évidence');
-    await p.click('.tpop [data-act="blkFormat"][data-r="2"][data-c="2"]');
-    eq(await p.evaluate(() => { const b = cur().layout.custom[0]; return [b.r + '×' + b.c, b.tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`).join(' '), S.T.pop]; }),
-      ['2×2', 'ca:l@0,0 init:1@1,0', 'tiles:c_fmt12345'], 'CA reste en ligne, Initiative garde sa case, Perception passive retirée');
+    eq(await p.evaluate(() => document.querySelector('.tpop .bpat[aria-pressed="true"] small').textContent), '4 col. · 2 rangs', 'format actuel en évidence');
+    await p.click('.tpop [data-act="blkPat"][data-r="2"][data-c="2"]');
+    eq(await p.evaluate(() => { const b = cur().layout.custom[0]; return [b.r + '×' + b.c, cur().layout.width.c_fmt12345, b.tiles.map(t => `${t.id}:${t.sz}@${t.r},${t.c}`).join(' '), S.T.pop]; }),
+      ['2×2', 2, 'ca:l@0,0 init:1@1,0', 'tiles:c_fmt12345'], '2 colonnes × 2 rangs : CA reste en ligne, Initiative garde sa case, Perception passive retirée');
     ok(await p.evaluate(() => /Perception passive/.test(document.body.textContent) && !!document.querySelector('.tpop .tres [data-t="pp"]')), 'message et tuile de retour dans la réserve');
+    ok(await p.evaluate(() => { const pv = document.querySelector('.tpop .bprev').getBoundingClientRect(), body = document.querySelector('.tpop .tpopbody').getBoundingClientRect(); return pv.width < body.width * 0.6 && pv.width > body.width * 0.35; }), 'aperçu dans la fenêtre, à la moitié de la largeur (2 colonnes sur 4)');
+    await p.fill('.tpop input[data-cname="c_fmt12345"]', ''); await p.press('.tpop input[data-cname="c_fmt12345"]', 'Tab'); await p.keyboard.press('Escape');
+    eq(await p.evaluate(() => [cur().layout.custom[0].name, !document.querySelector('.tblk[data-blk="c_fmt12345"] .tbhead')]), ['', true], 'titre vide : le bloc n’a pas de titre');
+  });
+
+  await test('Blocs de base : titre modifiable (vide = masqué), formats en miniatures, aperçu à la taille réelle, remettre comme à l’origine', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
+    await p.click('.tblk[data-blk="raccourcis"] .tedpen');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .bpats .bpat small')].map(x => x.textContent)), ['2 colonnes', '4 colonnes'], 'Raccourcis : deux formats');
+    await p.click('.tpop [data-act="blkWidth"][data-w="2"]');
+    eq(await p.evaluate(() => [cur().layout.width.raccourcis, getComputedStyle(document.querySelector('.tpop .bprev .tpgrid')).gridTemplateColumns.split(' ').length]), [2, 1], 'format 2 colonnes : aperçu des tuiles sur une colonne, dans la fenêtre');
+    await p.fill('.tpop input[data-btitle="raccourcis"]', 'Mes outils'); await p.press('.tpop input[data-btitle="raccourcis"]', 'Tab');
+    await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
+    eq(await p.evaluate(() => document.querySelector('.tblk[data-blk="raccourcis"] .tbhead .label').textContent), 'Mes outils', 'titre changé');
+    await p.evaluate(() => { cur().layout.titles.raccourcis = ''; render(); });
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="raccourcis"] .tbhead')), 'titre vide : masqué');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] .tedpen');
+    ok(await p.evaluate(() => !!document.querySelector('.tpop .bprev .rtiles') && document.querySelectorAll('.tpop .bpats .bpat').length === 3), 'Repères : 3 formats et aperçu de ses tuiles');
+    await p.keyboard.press('Escape'); await p.click('.tblk[data-blk="raccourcis"] .tedpen'); await p.click('.tpop [data-act="blkResetOne"]');
+    eq(await p.evaluate(() => [cur().layout.width?.raccourcis, cur().layout.titles?.raccourcis]), [undefined, undefined], 'remettre comme à l’origine : largeur et titre effacés');
+    const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { titles: { notes: 5 } } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
+    ok(/titres/.test(bad), 'titres invalides refusés à l’import');
   });
 
   await test('Gérer les blocs depuis le crayon (mode édition) : Ce tour, Repères, Notes, Menu', async p => {
@@ -1452,8 +1471,6 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tblk[data-blk="tour"] .tedpen');
     eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Ce tour'], 'Ce tour : fenêtre du bloc');
     ok(await p.evaluate(() => /ne se personnalise pas/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Ce tour : ni tuiles ni réserve');
-    await p.click('.tpop [data-act="blkMove"][data-d="1"]');
-    eq((await vis()).slice(4, 7), ['recherche', 'raccourcis', 'tour'], 'descendu d’un cran');
     await p.keyboard.press('Escape');
     await p.click('.tblk[data-blk="reperes"] .tedpen');
     ok(await p.evaluate(() => /s’adapte tout seul/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Repères : contenu automatique, pas de tuiles à choisir');

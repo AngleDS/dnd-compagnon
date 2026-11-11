@@ -28,6 +28,18 @@ document.addEventListener("click",e=>{
       if(b){ const list=customCopy(ch), bb=list.find(x=>x.id===id); bb.w=w; const keep=cGrid(bb).tiles.filter(x=>tileFits(x.id,sizeW(x.sz,bb.c,w))), n=cGrid(bb).tiles.length-keep.length;
         bb.tiles=keep.map(x=>({id:x.id,sz:x.sz,r:x.r,c:x.c})); list.forEach(x=>delete x.w); saveCustom(ch,list); if(n) setBanner(n+" tuile"+(n>1?"s retournent":" retourne")+" dans la réserve : trop large"+(n>1?"s":"")+" pour cette largeur."); }
       touch(S.cur); render(); } break;
+    // Format d'un bloc créé (lot 3) : rangées × largeur ; les tuiles qui ne tiennent plus retournent dans la réserve
+    case "blkPat": if(ch){ const id=t.dataset.v, list=customCopy(ch), b=list.find(x=>x.id===id), r=+t.dataset.r, c=+t.dataset.c;
+      if(b&&CUSTOM_PATS.some(([a,w])=>a===r&&w===c)){ b.w=c; const [keep,out]=cReformat(b,r,c); b.r=r; b.c=c; const fit=keep.filter(x=>tileFits(x.id,sizeW(x.sz||"1",c,c))), drop=out.concat(keep.filter(x=>!fit.includes(x)).map(x=>x.id));
+        b.tiles=fit.map(x=>({id:x.id,sz:x.sz||"1",r:x.r,c:x.c})); list.forEach(x=>delete x.w); saveCustom(ch,list); ch.layout.width=Object.assign({},ch.layout.width,{[id]:c}); touch(S.cur);
+        if(drop.length){ const cat=customCat(); setBanner("Retour dans la réserve : "+drop.map(x=>cat[x]||x).join(", ")+"."); } }
+      S.T.ctile=null; S.T.tileSlot=null; render(); } break;
+    case "blkDup": if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.v); if(!b||list.length>=20) break; const id="c_"+Math.random().toString(36).slice(2,10);
+      list.forEach(x=>delete x.w); list.push(Object.assign(JSON.parse(JSON.stringify(b)),{id,name:(b.name||"Bloc")+" (copie)"})); delete list[list.length-1].w; saveCustom(ch,list);
+      const o=tableOrder(ch).filter(x=>x!==id); o.splice(o.indexOf(b.id)+1,0,id); saveTableOrder(ch,o); if(ch.layout.width?.[b.id]) ch.layout.width=Object.assign({},ch.layout.width,{[id]:ch.layout.width[b.id]});
+      S.T.pop="tiles:"+id; render(); } break;
+    case "blkResetOne": if(ch){ const id=t.dataset.v; ch.layout=Object.assign({},ch.layout); for(const k of ["width","titles","tiles"]) if(ch.layout[k]&&id in ch.layout[k]){ ch.layout[k]=Object.assign({},ch.layout[k]); delete ch.layout[k][id]; }
+      touch(S.cur); S.T.tileSlot=null; render(); } break;
     case "blkUndo": if(ch&&S.undo&&S.undo.doc===S.cur){ ch.layout=S.undo.layout; S.undo=null; clearTimeout(S.undoTimer); touch(S.cur); render(); } break;
     case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } if(S.T) S.T.pop=null; render(); break;
     case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.ctile=null; S.T.pop="tiles:"+t.dataset.blk; render(); break; }
@@ -37,7 +49,8 @@ document.addEventListener("click",e=>{
     case "tileDel": if(ch){ const arr=blockTiles(ch,t.dataset.blk); arr[+t.dataset.i]=""; setBlockTiles(ch,t.dataset.blk,arr); S.T.tileSlot=null; render(); } break;
     case "tileReset": if(ch){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles); delete ch.layout.tiles[t.dataset.blk]; touch(S.cur); S.T.tileSlot=null; render(); } break;
     case "blkCreate": if(ch){ const list=customCopy(ch); if(list.length>=20||(+t.dataset.r)*(+t.dataset.c)>8) break; const id="c_"+Math.random().toString(36).slice(2,10);
-      list.push({id,name:"Mon bloc "+(list.length+1),r:Math.min(4,Math.max(1,+t.dataset.r)),c:Math.min(4,Math.max(1,+t.dataset.c)),tiles:[]}); saveCustom(ch,list); saveTableOrder(ch,tableOrder(ch)); S.T.tileSlot=null; S.T.ctile=null; S.T.pop="tiles:"+id; render(); } break;
+      const c=Math.min(4,Math.max(1,+t.dataset.c)); list.push({id,name:"Mon bloc "+(list.length+1),r:Math.min(4,Math.max(1,+t.dataset.r)),c,tiles:[]}); saveCustom(ch,list); saveTableOrder(ch,tableOrder(ch));
+      ch.layout.width=Object.assign({},ch.layout.width,{[id]:c}); S.T.tileSlot=null; S.T.ctile=null; S.T.pop="tiles:"+id; render(); } break;
     case "ctileAdd": if(ch){ const id=t.dataset.v, b=customBlocks(ch).find(x=>x.id===id); if(b){ const sz=fitSize(b,t.dataset.t), spot=sz&&cFreeSpot(b,sz,S.T.tileSlot);
         if(!spot) setBanner(sz?"Pas assez de place libre pour cette tuile : retire ou réduis une tuile.":"Cette tuile est trop large pour ce bloc."); else if(cUpdate(ch,id,bb=>cMove(bb,{id:t.dataset.t,sz},spot))){ S.T.tileSlot=null; S.T.ctile=null; } } render(); } break;
     case "ctileSel": { const i=+t.dataset.i; S.T.ctile=S.T.ctile===i?null:i; S.T.tileSlot=null; render(); } break; // toucher une tuile la sélectionne (tailles, retirer, puis case libre pour la déplacer)
@@ -335,7 +348,8 @@ document.addEventListener("change",e=>{
   if(t.dataset.invfix!==undefined&&t.value){ const ch=cur(); const i=+t.dataset.invfix; if(ch.invocations&&ch.invocations[i]){ ch.invocations[i]=invId(ch.invocations[i])+"|"+t.value; touch(S.cur); render(); } return; }
   if(t.id==="hp-set"){ const ch=cur(); const D=derive(ch); ch.hp=ch.hp||{cur:0,temp:0}; const before=+ch.hp.cur||0; ch.hp.cur=Math.max(0,Math.min(D.hpMax,+t.value||0)); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0}; S.hpEdit=false; touch(S.cur); render(); return; }
   if(t.dataset.actChange==="tcost"){ const ch=cur(); ch.costs=ch.costs||{}; ch.costs[t.dataset.k]=t.value; S.unlockCost=false; touch(S.cur); render(); return; }
-  if(t.dataset.cname){ const ch=cur(); if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.cname); if(b){ b.name=t.value.trim().slice(0,40)||"Mon bloc"; saveCustom(ch,list); render(); } } return; }
+  if(t.dataset.btitle){ const ch=cur(); if(ch){ const id=t.dataset.btitle; ch.layout=Object.assign({},ch.layout,{titles:Object.assign({},ch.layout?.titles,{[id]:t.value.trim().slice(0,40)})}); touch(S.cur); render(); } return; }
+  if(t.dataset.cname){ const ch=cur(); if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.cname); if(b){ b.name=t.value.trim().slice(0,40); saveCustom(ch,list); render(); } } return; }
   if(t.dataset.comp==="name"){ const ch=cur(); if(ch){ ch.companion=Object.assign({ac:10,hp:{cur:10,max:10}},ch.companion,{name:t.value.trim().slice(0,40)}); touch(S.cur); render(); } return; }
   if(t.dataset.pvset){ const ch=cur(); if(ch&&t.value!==""){ const D=derive(ch), v=Math.floor(+t.value||0);
       if(t.dataset.pvset==="temp"){ ch.hp=ch.hp||{cur:D.hpMax,temp:0}; ch.hp.temp=Math.max(0,Math.min(999,v)); touch(S.cur); } else hpMaxAdd(ch,Math.max(-999,Math.min(999,v))-D.hpBonus); render(); } return; }

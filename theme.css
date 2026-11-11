@@ -434,3 +434,12 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .rpair .rp1 .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
 .rrestile .num small{font-size:var(--fs-xs);font-weight:400;color:var(--muted)}.rrestile.vide0{opacity:.6}
 .rrespop .pip{width:28px;height:28px}.rrespop .pips{gap:8px;justify-content:center}
+/* Fenêtre du crayon (lot 3) : formats en miniatures, aperçu à la taille réelle */
+.bpats{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
+.bpat{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--sheet2);color:var(--ink);font:inherit;cursor:pointer}
+.bpat[aria-pressed="true"]{border-color:var(--brass);background:var(--tgrad);box-shadow:0 0 0 1px var(--brass) inset}
+.bpat small{font-size:var(--fs-xs);color:var(--muted);text-align:center;line-height:1.2}
+.bpg{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;width:60px}
+.bpb{display:grid;gap:2px;padding:2px;border:1px solid var(--brass);border-radius:3px}.bpb i{display:block;height:7px;border-radius:1.5px;background:var(--brass);opacity:.75}
+.bpe{border:1px dashed var(--line);border-radius:3px;min-height:12px;opacity:.6}
+.bprev{max-width:100%;transition:width .2s}.bprevc{pointer-events:none}
