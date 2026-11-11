@@ -1469,7 +1469,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => /Disposition automatique appliquée/.test(document.querySelector('.tundo').textContent)), 'bandeau « Annuler »');
     await p.click('.tundo [data-act="blkUndo"]');
     eq(await p.evaluate(() => cur().layout.order), ['notes', 'perso'], 'Annuler : disposition d’avant');
+    await p.evaluate(() => { cur().layout.custom = [{ id: 'c_autoaaaa', name: 'Perso', r: 1, c: 1, tiles: [] }]; render(); });
+    ok(await p.evaluate(() => { const a = document.querySelector('.tedtop [data-act="tpop"]').getBoundingClientRect(), b = document.querySelector('.tedtop [data-act="layoutAuto"]').getBoundingClientRect(), f = document.querySelector('.tblocks.editing > .tblk').getBoundingClientRect(); return a.bottom < f.top && b.left - a.right >= 30; }), 'boutons en haut de page, séparés');
     await p.evaluate(() => { cur().level = 6; render(); }); await p.click('[data-act="layoutAuto"]');
+    eq(await p.evaluate(() => cur().layout.custom), [], 'les blocs créés sont retirés');
     eq(await p.evaluate(() => [cur().layout.order.slice(0, 4), cur().layout.width.reperes]), [['perso', 'reperes', 'pv', 'ressources'], undefined], 'paladin 6 (8 repères, 3 ressources) : Repères en pleine largeur, Ressources sous la carte PV');
   });
 

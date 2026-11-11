@@ -522,4 +522,5 @@ html[data-virtual-dice="on"] [data-physical]{display:none!important}
 .tblocks.editing .tblk.w1{padding-left:4px;padding-right:4px}.tblk.w1 .tblkh{gap:2px}.tblk.w1 .tblkh b{display:none}.tblk.w1 .tblkgrip{min-width:34px}.tblk.w1 .tedpen{min-width:34px;min-height:34px}
 .tblk.ted.w1 .tdel{left:4px;right:4px;padding:4px 2px;font-size:var(--fs-xs)}
 .tblk.w2 .tblkh b,.tblk.w3 .tblkh b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tedfoot{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}.tauto{border-style:solid!important;background:var(--tgrad)!important}
+/* Mode édition : « Ajouter un bloc » à gauche, « Automatique » à droite, bien séparés (éviter un toucher par erreur) */
+.tedtop{display:flex;justify-content:space-between;gap:40px;max-width:860px;margin:0 auto 14px}.tedtop .taddblk{width:auto;flex:0 1 42%;min-height:52px;padding:8px 12px}.tauto{border-style:solid!important;background:var(--tgrad)!important}

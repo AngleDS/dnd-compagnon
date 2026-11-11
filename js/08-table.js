@@ -789,24 +789,25 @@ function tableBlocks(ch,blocks){
   const pen=id=>id==="perso"||id==="pv"?"":`<button class="tedpen" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}" aria-label="Modifier le bloc ${esc(label(id))}" title="Modifier le bloc">${PEN_SVG}</button>`;
   const u=S.undo&&S.undo.doc===S.cur?S.undo:null;
   return `<div class="tlayouttop tedbar" role="status"><span><b>Mode édition</b> · appui long sur ⋮⋮ pour déplacer</span><button class="btn small primary" data-act="layoutDone">Terminé</button></div>
+  <div class="tedtop"><button class="taddblk" data-act="tpop" data-v="blkadd">＋ Ajouter un bloc</button><button class="taddblk tauto" data-act="layoutAuto">Automatique (recommandé)</button></div>
   <div class="tblocks editing">${ids.map(id=>`<section class="tblk ted${wcls(id)}" data-blk="${id}" aria-label="${esc(label(id))}">
     <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${pen(id)}</div>
     <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div>
     ${BLK_KEEP.includes(id)?"":`<button class="btn small danger tdel" data-act="blkDelNow" data-v="${id}" aria-label="Supprimer le bloc ${esc(label(id))}">Supprimer</button>`}</section>`).join("")}
-    <div class="tedfoot"><button class="taddblk" data-act="tpop" data-v="blkadd">＋ Ajouter un bloc</button><button class="taddblk tauto" data-act="layoutAuto">Automatique (recommandé)</button></div></div>
+</div>
   ${u?`<div class="tundo" role="status"><span>${u.auto?"Disposition automatique appliquée":`Bloc « ${esc(u.label)} » supprimé`}</span><button class="btn small ghost" data-act="blkUndo">Annuler</button></div>`:""}`;
 }
 /* « Automatique (recommandé) » (demande d'Angle) : la disposition conseillée pour ce perso. Tous les blocs de base sont remis ;
    Repères à 3 colonnes avec Ressources en colonne à droite quand ses tuiles tiennent sur une ou deux rangées et qu'il y a une ressource par rangée,
-   sinon pleine largeur ; Raccourcis conseillés ; Recherche et Notes côte à côte en bas ; les blocs créés suivent, dans leur ordre. Titres d'origine. */
-function autoLayout(ch){ const D=derive(ch), n=reperesAuto(ch,D).length, nr=D.res.length, cb=customBlocks(ch).map(b=>b.id);
+   sinon pleine largeur ; Raccourcis conseillés ; Recherche et Notes côte à côte en bas ; les blocs créés sont retirés (décision d'Angle ; « Annuler » les rend). Titres d'origine. */
+function autoLayout(ch){ const D=derive(ch), n=reperesAuto(ch,D).length, nr=D.res.length, cb=[];
   const width={recherche:2,notes:2}, order=["perso"];
   if(nr&&n<=6&&nr===Math.ceil(n/3)){ width.reperes=3; width.ressources=1; order.push("reperes","ressources","pv"); }
   else { order.push("reperes","pv"); if(nr) order.push("ressources"); }
   order.push("tour","raccourcis","recherche","notes",...cb);
   for(const id of cb){ const b=customBlocks(ch).find(x=>x.id===id); width[id]=blkWidth(ch,id,b); }
   const tiles=Object.assign({},ch.layout?.tiles); delete tiles.raccourcis;
-  ch.layout=Object.assign({},ch.layout,{order,width,hidden:[],titles:{},tiles,inspSeen:true}); touch(S.cur); }
+  ch.layout=Object.assign({},ch.layout,{order,width,hidden:[],titles:{},tiles,custom:[],inspSeen:true}); touch(S.cur); }
 /* Blocs retirés (ch.layout.hidden) : tous sauf Personnage et Points de vie ; on les remet par « Ajouter un bloc ». */
 const BLK_FIXED=["perso","pv"];
 const BLK_KEEP=["pv"]; // seul Points de vie ne se supprime pas (décision d'Angle) ; les autres se remettent par « + Ajouter un bloc »
