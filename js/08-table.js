@@ -807,22 +807,25 @@ function tableBlocks(ch,blocks){
 }
 /* Géométrie du placement libre : mêmes mesures que le prototype validé par Angle. */
 const TL={G:12,M:4,BAND:16,GAP:4};
+/* Écart vertical entre deux blocs empilés (décision d'Angle) : une marge de 16 px par défaut ; « Tasser » le réduit à 4 px (comme entre deux colonnes) et fait remonter les blocs.
+   Les relations enregistrées ne changent pas : en décochant « Tasser », les marges reviennent. */
+const tlGapV=ch=>ch.layout?.grav?TL.GAP:TL.BAND;
 function tableGeom(ch,list,ord){ // list : [{id,w,h}] ; renvoie {id:{c,y}}
-  const pos=ch.layout?.pos||{}, by=Object.fromEntries(list.map(b=>[b.id,b])), res={}, colB=[0,0,0,0]; let curc=0;
+  const gv=tlGapV(ch), pos=ch.layout?.pos||{}, by=Object.fromEntries(list.map(b=>[b.id,b])), res={}, colB=[0,0,0,0]; let curc=0;
   const ordered=ord.filter(id=>by[id]);
-  for(const id of ordered){ if(pos[id]) continue; const b=by[id]; let c=curc; if(c+b.w>4) c=0; const y=Math.max(0,...colB.slice(c,c+b.w)); res[id]={c,y}; for(let i=c;i<c+b.w;i++) colB[i]=y+b.h+TL.GAP; curc=(c+b.w)%4; }
+  for(const id of ordered){ if(pos[id]) continue; const b=by[id]; let c=curc; if(c+b.w>4) c=0; const y=Math.max(0,...colB.slice(c,c+b.w)); res[id]={c,y}; for(let i=c;i<c+b.w;i++) colB[i]=y+b.h+gv; curc=(c+b.w)%4; }
   const busy=new Set();
   const Y=id=>{ if(res[id]) return res[id].y; const b=by[id], p=pos[id]||{}, c=Math.max(0,Math.min(4-b.w,+p.c||0)); if(busy.has(id)){ res[id]={c,y:0}; return 0; } busy.add(id);
     const a=p.a&&by[p.a]&&p.a!==id?p.a:null, px=+p.px||0, k=+p.k||0; let y;
     if(!a) y=Math.max(0,px);
-    else { const ay=Y(a), ah=by[a].h; y=p.t==="below"?ay+ah+TL.GAP+px:p.t==="row"?ay+k*(TH_PX()+TL.G):p.t==="bottom"?ay+ah-b.h:ay+px; }
+    else { const ay=Y(a), ah=by[a].h; y=p.t==="below"?ay+ah+gv+px:p.t==="row"?ay+k*(TH_PX()+TL.G):p.t==="bottom"?ay+ah-b.h:ay+px; }
     res[id]={c,y:Math.max(0,Math.round(y))}; busy.delete(id); return res[id].y; };
   for(const id of ordered) Y(id);
   // Pas de chevauchement : un bloc qui en recouvre un autre descend dessous (dans l'ordre de haut en bas)
   const over=(a,b)=>res[a].c<res[b].c+by[b].w&&res[b].c<res[a].c+by[a].w;
   const seq=[...ordered].sort((a,b)=>res[a].y-res[b].y||ordered.indexOf(a)-ordered.indexOf(b)), placed=[];
-  for(const id of seq){ let again=true; while(again){ again=false; for(const q of placed) if(over(id,q)&&res[id].y<res[q].y+by[q].h+TL.GAP&&res[q].y<res[id].y+by[id].h+TL.GAP){ res[id].y=res[q].y+by[q].h+TL.GAP; again=true; } } placed.push(id); }
-  if(ch.layout?.grav){ const pl=[]; for(const id of [...ordered].sort((a,b)=>res[a].y-res[b].y)){ let y=0; for(const q of pl) if(over(id,q)) y=Math.max(y,res[q].y+by[q].h+TL.GAP); res[id].y=y; pl.push(id); } }
+  for(const id of seq){ let again=true; while(again){ again=false; for(const q of placed) if(over(id,q)&&res[id].y<res[q].y+by[q].h+gv&&res[q].y<res[id].y+by[id].h+gv){ res[id].y=res[q].y+by[q].h+gv; again=true; } } placed.push(id); }
+  if(ch.layout?.grav){ const pl=[]; for(const id of [...ordered].sort((a,b)=>res[a].y-res[b].y)){ let y=0; for(const q of pl) if(over(id,q)) y=Math.max(y,res[q].y+by[q].h+gv); res[id].y=y; pl.push(id); } }
   return res; }
 const TH_PX=()=>{ const v=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--th")); return v||80; };
 // Après chaque rendu : largeur des colonnes, hauteur réelle des blocs, puis position de chacun

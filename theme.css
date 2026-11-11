@@ -473,3 +473,7 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .blkghost>.tblk{padding:0 3px 3px}
 .blkghost>.tblk>.tband{height:16px;line-height:16px;padding:0 6px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .blkghost .tblkgrip,.blkghost .tedpen,.blkghost .tdel{display:none}
+/* Chaque bloc a un seul fond, bande de titre comprise (demande d'Angle) : les cartes intérieures n'ont plus ni fond propre ni trait */
+.tblocks.tfree>.tblk{background:var(--sheet)}
+.tblocks.tfree>.tblk .character-banner{border-bottom:0}
+.tblocks.tfree>.tblk :is(.health-card,.tside,.tbottom){background:none;border-color:transparent;box-shadow:none}

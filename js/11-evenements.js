@@ -496,7 +496,7 @@ const LONG_PRESS_MS=350; // appui long avant tout glisser au doigt (blocs, tuile
    Au lâcher, on enregistre une relation (« sous tel bloc », « même hauteur », « rangée 2 »…) plutôt que des pixels. */
 const SNAP=22;
 function blkDeps(ch,id){ const pos=ch.layout?.pos||{}, out=new Set([id]); let more=true; while(more){ more=false; for(const k in pos) if(!out.has(k)&&out.has(pos[k]?.a)){ out.add(k); more=true; } } return out; }
-function blkSnap(ch,id,c,y){ const L=S.TL, me=L.list.find(b=>b.id===id), g=L.g, BAND=TL.BAND, M=TL.M, GAP=TL.GAP, TH=TH_PX(), dep=blkDeps(ch,id), cands=[{y:0,rel:{t:"top",px:0},lab:"en haut"}];
+function blkSnap(ch,id,c,y){ const L=S.TL, me=L.list.find(b=>b.id===id), g=L.g, BAND=TL.BAND, M=TL.M, GAP=tlGapV(ch), TH=TH_PX(), dep=blkDeps(ch,id), cands=[{y:0,rel:{t:"top",px:0},lab:"en haut"}];
   for(const o of L.list){ if(dep.has(o.id)||!g[o.id]) continue; const oy=g[o.id].y, oc=g[o.id].c, ov=c<oc+o.w&&oc<c+me.w, nm=blkLabel(ch,o.id);
     if(ov){ cands.push({y:oy+o.h+GAP,rel:{t:"below",a:o.id,px:0},lab:"sous « "+nm+" »"}, {y:oy+o.h+GAP+BAND,rel:{t:"below",a:o.id,px:BAND},lab:"sous « "+nm+" », espacé"}); continue; }
     cands.push({y:oy,rel:{t:"same",a:o.id,px:0},lab:"même hauteur que « "+nm+" »"},{y:oy+BAND+M,rel:{t:"same",a:o.id,px:BAND+M},lab:"décalé d’une marge"},{y:oy+o.h-me.h,rel:{t:"bottom",a:o.id},lab:"même bas que « "+nm+" »"});
@@ -509,7 +509,7 @@ function blkSnap(ch,id,c,y){ const L=S.TL, me=L.list.find(b=>b.id===id), g=L.g, 
 /* Avant le premier déplacement, les blocs encore rangés « dans l'ordre » reçoivent leur relation, pour que rien d'autre ne bouge. */
 function blkFreeze(ch){ const L=S.TL, pos=Object.assign({},ch.layout?.pos), order=tableOrder(ch).filter(id=>L.g[id]);
   for(const id of [...order].sort((a,b)=>L.g[a].y-L.g[b].y)){ if(pos[id]) continue; const me=L.list.find(b=>b.id===id), c=L.g[id].c, y=L.g[id].y; let a=null, ab=0;
-    for(const o of L.list){ if(o.id===id||!L.g[o.id]||!pos[o.id]) continue; const oc=L.g[o.id].c, b=L.g[o.id].y+o.h+TL.GAP; if(c<oc+o.w&&oc<c+me.w&&b<=y+1&&b>=ab){ a=o.id; ab=b; } }
+    for(const o of L.list){ if(o.id===id||!L.g[o.id]||!pos[o.id]) continue; const oc=L.g[o.id].c, b=L.g[o.id].y+o.h+tlGapV(ch); if(c<oc+o.w&&oc<c+me.w&&b<=y+1&&b>=ab){ a=o.id; ab=b; } }
     pos[id]=a?{c,t:"below",a,px:Math.max(0,y-ab)}:{c,t:"top",px:y}; }
   return pos; }
 function blkPlace(){ if(!BLKD||!S.TL) return; const ch=cur(), box=BLKD.el.parentElement; if(!ch||!box) return;
