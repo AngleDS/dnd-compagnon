@@ -1199,6 +1199,35 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => /Perception passive/.test(document.body.textContent) && !!document.querySelector('.tpop .tres [data-t="pp"]')), 'message et tuile de retour dans la réserve');
   });
 
+  await test('Gérer les blocs depuis le bloc : crayon partout sauf Personnage et PV, monter, supprimer, remettre', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    const vis = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
+    ok(await p.evaluate(() => !document.querySelector('.tlayoutbar') && !!document.querySelector('.ttopbar [data-act="layoutEdit"]') && !!document.querySelector('.ttopbar [data-v="blkadd"]') && !!document.querySelector('.ttopbar [data-act="virtualDice"]')), 'bandeau du haut : dés, ajouter, disposition ; plus de bouton en bas');
+    ok(await p.evaluate(() => { const r = [...document.querySelectorAll('.ttopbar .btn')].map(b => Math.round(b.getBoundingClientRect().top)); return new Set(r).size === 1 && document.documentElement.scrollWidth <= innerWidth; }), 'bandeau sur une seule ligne sur iPhone');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].filter(b => b.querySelector('.tbpen')).map(b => b.dataset.blk)), ['reperes', 'recherche', 'tour', 'raccourcis', 'notes'], 'crayon sur chaque bloc sauf Personnage et PV');
+    await p.click('.tblk[data-blk="tour"] .tbpen');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Ce tour'], 'Ce tour : fenêtre du bloc');
+    await p.click('.tpop [data-act="blkMove"][data-d="1"]');
+    eq((await vis()).slice(3, 6), ['recherche', 'raccourcis', 'tour'], 'descendu d’un cran');
+    await p.keyboard.press('Escape');
+    await p.click('.tblk[data-blk="reperes"] .tbpen');
+    eq(await p.evaluate(() => document.querySelector('.tpop .tpophead b').textContent), 'Bloc : Repères', 'Repères : tuiles et actions dans la même fenêtre');
+    await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => (cur().layout.hidden || []).length === 0), 'confirmation demandée');
+    await p.click('.tpop [data-act="cblkDelYes"]');
+    eq(await p.evaluate(() => [cur().layout.hidden, !document.querySelector('.tblk[data-blk="reperes"]'), S.T.pop]), [['reperes'], true, null], 'Repères retiré en trois touchers');
+    await p.click('.tblk[data-blk="notes"] .tbpen'); await p.click('.tpop [data-act="cblkDel"]'); await p.click('.tpop [data-act="cblkDelYes"]');
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="notes"]') && !!document.querySelector('.ttopbar [data-act="virtualDice"]')), 'Notes retiré : le réglage des dés reste accessible');
+    await p.click('.ttopbar [data-v="blkadd"]');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['reperes', 'notes'], 'blocs retirés proposés dans « Ajouter un bloc »');
+    await p.click('.tpop [data-act="blkRestore"][data-v="reperes"]');
+    eq(await p.evaluate(() => [cur().layout.hidden, !!document.querySelector('.tblk[data-blk="reperes"]')]), [['notes'], true], 'Repères remis à sa place');
+    await p.click('[data-act="layoutEdit"]');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tblkh [data-v^="tiles:"],.tblkh [data-v^="blk:"]')).map(b => b.dataset.blk)), ['perso', 'pv'], 'mode disposition : « Modifier » sur tous les blocs sauf Personnage et PV ; Notes absent');
+    await p.click('[data-act="layoutDone"]');
+    const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { hidden: 'x' } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
+    ok(/retirés/.test(bad), 'blocs retirés invalides refusés à l’import');
+  });
+
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });

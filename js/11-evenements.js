@@ -35,7 +35,8 @@ document.addEventListener("click",e=>{
       S.T.ctile=null; S.T.tileSlot=null; S.T.pop="tiles:"+id; render(); } break;
     case "cblkDel": S.T.cdel=t.dataset.v; render(); break;
     case "cblkDelNo": S.T.cdel=null; render(); break;
-    case "cblkDelYes": if(ch){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==t.dataset.v)); saveTableOrder(ch,tableOrder(ch)); S.T.cdel=null; S.T.pop=null; render(); } break;
+    case "cblkDelYes": if(ch){ const id=t.dataset.v; if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else if(!BLK_FIXED.includes(id)){ setBlkHidden(ch,id,true); setBanner("Bloc retiré : « Ajouter un bloc » permet de le remettre."); } S.T.cdel=null; S.T.pop=null; render(); } break;
+    case "blkRestore": if(ch){ setBlkHidden(ch,t.dataset.v,false); S.T.pop=null; render(); } break;
     case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
     case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); break;
@@ -149,7 +150,7 @@ document.addEventListener("click",e=>{
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
     case "restLong": applyRest("long"); S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": applyRest("court"); S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
-    case "tpop": S.T.eqSlot=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
+    case "tpop": S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
     case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="card") S.T.q=""; S.T.pop=null; render(); } break;
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }

@@ -360,3 +360,10 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 .ctpl.on{border-color:var(--brass);background:color-mix(in srgb,var(--brass) 14%,transparent)}
 /* Le « i » des lignes (recherche, Action, Bonus, Réaction…) toujours au bout de la ligne */
 @media (min-width:521px){.trow .tright{order:2;margin-left:auto}.trow .tinfo{order:3;margin-left:0}}
+/* « À la table » : bandeau du haut (dés, ajouter un bloc, disposition) et actions de bloc */
+.ttopbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;max-width:860px;margin:0 auto 10px}
+.tcharges{max-width:860px;margin:0 auto 10px}
+.blkacts{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.blkdel{color:var(--blood)}
+.table-turn .tbpen{margin:0}
+.ttopbar{flex-wrap:nowrap}.ttopbar>.row{flex-wrap:nowrap}.ttopbar .btn{white-space:nowrap}
