@@ -328,7 +328,6 @@ function viewTable(ch,D,banner=""){
   const lockB=`<button class="btn small ghost lock" data-act="lockSlots" aria-pressed="${!lk}" title="${lk?"Modifier les emplacements à la main":"Verrouiller les emplacements"}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>${lk?'<path d="M8 11V7a4 4 0 0 1 8 0v4"/>':'<path d="M8 11V7a4 4 0 0 1 7.5-2"/>'}</svg></button>`;
   const slots = D.cast?(D.cast.type==="pact"?`<span class="tstat"><span class="label">Pacte niv. ${D.cast.pactLevel}</span>${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}${lockB}</span>`:(D.cast.slots||[]).map((n,i)=>`<span class="tstat"><span class="label">Niv. ${i+1}</span>${pips("slot:"+(i+1),n,+(ch.slotsUsed?.[i+1]||0),true,lk)}</span>`).join("")+lockB):"";
   const otherSlots=slots; // emplacements de pacte compris : bloc « Emplacements et états »
-  const conds=(ch.conditions||[]).map(c=>`<button class="chip" aria-pressed="true" data-act="tsel" data-k="rule:${esc(S.idx.cond[c]?.id||"")}">${esc(c)}</button>`).join("");
   const overviewSpecies=srd("species",ch.species)||hb(ch.species);
   const overviewSize=String(ch.size||overviewSpecies?.size||"—");
   const statsBlk=`${tbHead("reperes","Repères")}<div class="rtiles" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize)}</div>`;
@@ -336,9 +335,12 @@ function viewTable(ch,D,banner=""){
   const slotCells=!D.cast?"":D.cast.type==="pact"?(+D.cast.pactSlots>0?`<span class="hs pact"><span class="hsn">Pacte ${D.cast.pactLevel}</span>${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}</span>`:"")
     :(D.cast.slots||[]).map((n,i)=>n>0?`<span class="hs"><span class="hsn" title="Niveau ${i+1}">${i+1}</span>${pips("slot:"+(i+1),n,+(ch.slotsUsed?.[i+1]||0),true,lk)}</span>`:"").join("");
   const slotsRow=slotCells?`<div class="hslots${lk?"":" open"}"><div class="hshead"><span class="label">Emplacements de sorts</span>${lockB}</div><div class="hscells">${slotCells}</div></div>`:"";
+  // États actifs sous la barre de PV (décision d'Angle) : tous visibles, la rangée entière ouvre la fenêtre des états
+  const condList=[...(ch.conditions||[]),...(+ch.exhaustion?["Épuisement "+ch.exhaustion]:[])];
+  const condRow=condList.length?`<button class="hpconds" data-act="tpop" data-v="cond" aria-label="États actifs : ${esc(condList.join(", "))}. Toucher pour les modifier" title="États actifs : toucher pour les modifier">${condList.map(c=>`<span class="hpcond">${esc(c)}</span>`).join("")}</button>`:"";
   const healthBlk=`<div class="table-overview tb-solo">
     <section class="health-card" aria-label="Santé du personnage">
-    <div class="health-main">${hpStepper(ch,D)}</div>
+    <div class="health-main">${hpStepper(ch,D).replace('</span><span class="table-hp-actions">',condRow+'</span><span class="table-hp-actions">')}</div>
     <div class="health-details">
       <button class="health-detail health-adjust" data-act="tpop" data-v="hptemp" title="PV temporaires : toucher pour les modifier"><span class="label">PV temp.</span><b class="num">${+(ch.hp?.temp||0)}</b></button>
       <button class="health-detail health-adjust" data-act="tpop" data-v="hpmax" title="Modifier les PV maximum"><span class="label">PV max ±</span><b class="num">${D.hpBonus?sg(D.hpBonus):0}</b></button>
@@ -346,7 +348,6 @@ function viewTable(ch,D,banner=""){
       <div class="health-detail health-rest"><span class="label">Repos</span><button class="btn hprest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg></button></div>
     </div>${slotsRow}
   <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span><button class="chip insp overview-inspiration" aria-pressed="${!!ch.inspiration}" data-act="insp" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg><span>Inspiration héroïque${ch.inspiration?" ✓":""}</span></button></div></section></div>`;
-  const resBlk=conds?`<div class="tbar overview-resources">${conds}</div>`:""; // emplacements dans la carte PV ; les états actifs restent ici en attendant la décision d'Angle
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
@@ -361,7 +362,6 @@ function viewTable(ch,D,banner=""){
     pv:`${(+hp.cur||0)<=0?`<div class="tdeath"><div class="row" style="justify-content:space-between"><b>À 0 PV : jets contre la mort</b><span class="muted" style="font-size:var(--fs-sm)">10 ou plus : réussite · 1 : deux échecs · 20 : tu reviens à 1 PV</span></div>
         <div class="row" style="gap:16px"><span class="row" style="gap:6px"><span class="label">Réussites</span>${pips("death.s",3,ch.death?.s||0)}</span><span class="row" style="gap:6px"><span class="label">Échecs</span>${pips("death.f",3,ch.death?.f||0)}</span></div>
         ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
-    res:resBlk,
     recherche:`<div class="tgrid tb-solo"><div class="tmain"><form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form>
       <div id="tres">${tResults()}</div></div></div>`,
     tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
@@ -505,7 +505,7 @@ function customPop(ch,D,id,wrap){
     <div class="row" style="justify-content:flex-end;margin-top:14px">${del}</div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
-const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","États actifs"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
+const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
 function blkLabel(ch,id){ return (TBLK.find(b=>b[0]===id)||[])[1]||customBlocks(ch).find(b=>b.id===id)?.name||id; }
 function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map(b=>b.id)]; const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[]; return [...new Set([...saved,...ids])]; }
 function tableBlocks(ch,blocks){

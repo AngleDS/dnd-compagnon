@@ -804,8 +804,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => cur().conditions),['Empoisonné'],'état activé depuis la carte');
     ok((await p.innerText('.tcard [data-act="cond"]')).includes('Retirer'),'bouton devenu Retirer');
     await p.keyboard.press('Escape');
-    await p.click('[data-act="tsel"][data-k="rule:empoisonne"]');
-    eq(await p.evaluate(() => [S.T.pop,S.T.sel]),['card','rule:empoisonne'],'la pastille d’un état actif ouvre sa règle');
+    ok((await p.innerText('.health-card .hpconds')).includes('Empoisonné'),'état actif affiché sous la barre de PV');
+    await p.click('.health-card .hpconds');
+    eq(await p.evaluate(() => S.T.pop),'cond','la rangée des états ouvre la fenêtre des états');
+    ok(await p.evaluate(() => !!document.querySelector('.tpop [data-act="tip"][data-k="rule:empoisonne"]')),'la règle reste accessible depuis la fenêtre');
     await p.keyboard.press('Escape');
     await p.fill('#tq','repos');
     ok((await p.innerText('#tres')).includes('Repos court'),'repos trouvé par la recherche');
@@ -940,7 +942,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
     ok(!await p.locator('[data-blkgrip],[data-act="blkMove"]').count(), 'verrouillé : ni poignée ni flèche');
     await p.click('[data-act="layoutEdit"]');
-    eq(await order(), ['perso','reperes','pv','res','recherche','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
+    eq(await order(), ['perso','reperes','pv','recherche','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
     ok(await p.evaluate(() => [...document.querySelectorAll('.tblkc')].every(c => c.inert)), 'contenu des blocs inactif');
     ok(await p.locator('.tblk[data-blk="perso"] [data-act="blkMove"][data-d="-1"]').isDisabled(), 'premier bloc : pas de flèche vers le haut');
     await p.click('.tblk[data-blk="perso"] [data-act="blkMove"][data-d="1"]');
@@ -1148,9 +1150,14 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.hslots .hs:first-child button.pip >> nth=3');
     eq(await p.evaluate(() => [+(cur().slotsUsed?.[1] || 0), document.querySelector('.hslots').classList.contains('open'), document.documentElement.scrollWidth <= innerWidth]), [1, true, true], 'déverrouillé : un toucher dépense un emplacement, sans débordement');
     await p.click('.hslots [data-act="lockSlots"]');
-    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="res"]')), 'sans état actif : bloc des états caché (les emplacements sont dans la carte)');
-    await p.evaluate(() => { cur().conditions = ['Empoisonné']; render(); });
-    ok(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="res"]'); return !!b && !b.querySelector('.pip') && !!b.querySelector('[data-k="rule:empoisonne"]'); }), 'un état actif : il reste affiché dans son bloc');
+    ok(await p.evaluate(() => !document.querySelector('.health-card .hpconds') && !document.querySelector('.tblk[data-blk="res"]')), 'sans état actif : pas de rangée d’états, plus de bloc séparé');
+    const h0 = (await card()).h;
+    await p.evaluate(() => { cur().conditions = ['Empoisonné', 'Charmé', 'À terre', 'Aveuglé', 'Assourdi']; cur().exhaustion = 2; render(); });
+    const st = await p.evaluate(() => { const r = document.querySelector('.health-card .hpconds'), b = r.getBoundingClientRect(); return { n: r.querySelectorAll('.hpcond').length, txt: r.textContent, h: b.height, inBar: b.top > document.querySelector('.health-card .table-hp-track').getBoundingClientRect().bottom - 1, over: document.documentElement.scrollWidth > innerWidth }; });
+    eq([st.n, st.txt.includes('Épuisement 2'), st.inBar, st.over], [6, true, true, false], 'tous les états et l’épuisement, sous la barre, sans débordement');
+    ok(st.h >= 44, 'zone tactile d’au moins 44 px : ' + st.h);
+    ok((await card()).h > h0, 'la carte grandit avec les états');
+    await p.click('.health-card .hpconds'); eq(await p.evaluate(() => S.T.pop), 'cond', 'toucher la rangée ouvre la fenêtre des états');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
