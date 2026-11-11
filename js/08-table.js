@@ -263,7 +263,7 @@ function tPop(ch,D){
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
   if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
   if(k.startsWith("blk:")){ const id=k.slice(4); if(!TBLK.some(b=>b[0]===id)||BLK_FIXED.includes(id)){ T.pop=null; return ""; }
-    return wrap("Bloc : "+blkLabel(ch,id),`<div class="muted" style="font-size:var(--fs-sm)">Ce bloc deviendra bientôt une tuile, à placer où tu veux.</div>${blkActions(ch,id)}`); }
+    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">Ce bloc deviendra bientôt une tuile, à placer où tu veux.</div>`); }
   if(k==="blkadd"){ const gone=TBLK.filter(b=>blkHidden(ch,b[0]));
     return wrap("Ajouter un bloc",`${gone.length?`<div class="label" style="margin-bottom:6px">Blocs retirés</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${gone.map(b=>`<button class="btn small" data-act="blkRestore" data-v="${b[0]}">+ ${esc(b[1])}</button>`).join("")}</div><div class="label" style="margin-bottom:6px">Nouveau bloc</div>`:""}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Choisis la taille du bloc (lignes × colonnes) ; tu y placeras ensuite les tuiles de ton choix.</div>${blkTemplates("blkCreate")}`); }
   if(k.startsWith("blkfmt:")){ const b=customBlocks(ch).find(x=>x.id===k.slice(7)); if(!b){ T.pop=null; return ""; }
@@ -276,10 +276,10 @@ function tPop(ch,D){
       :`<button class="tcell libre${sel===i?" on":""}" data-act="tileCell" data-blk="${blk}" data-i="${i}" data-tslot="${i}" aria-pressed="${sel===i}" aria-label="Case ${i+1} libre">+</button>`).join("");
     const res=unused.length?unused.map(x=>`<button class="tcell tmini" data-act="tileAdd" data-blk="${blk}" data-v="${x}" data-tdrag="res" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
     const selBar=sel>=0&&arr[sel]?`<div class="row" style="gap:8px;margin-top:8px;align-items:center"><span class="muted" style="font-size:var(--fs-sm)">Case ${sel+1} : ${esc(cat[arr[sel]])}</span><button class="btn small ghost" data-act="tileDel" data-blk="${blk}" data-i="${sel}">Retirer cette tuile</button></div>`:"";
-    return wrap("Bloc : "+TBLK.find(b=>b[0]===blk)[1],`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Glisse une tuile de la réserve vers une case, ou d’une case à l’autre. Glisse-la hors du bloc pour la retirer.</div>
+    return wrap("Bloc : "+TBLK.find(b=>b[0]===blk)[1],`${blkActions(ch,blk,`<button class="btn small ghost" data-act="tileReset" data-blk="${blk}">Tuiles par défaut</button>`)}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Au doigt, appui long sur une tuile puis glisse-la. Glisse une tuile de la réserve vers une case, ou d’une case à l’autre. Glisse-la hors du bloc pour la retirer.</div>
       <div class="tpgrid" data-tblk="${blk}" style="grid-template-columns:repeat(${blk==="reperes"?4:2},minmax(0,1fr))">${cells}</div>${selBar}
       <div class="label" style="margin:14px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>
-      <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn small ghost" data-act="tileReset" data-blk="${blk}">Tuiles par défaut</button></div>${blkActions(ch,blk)}`); }
+`); }
   if(k==="concchk") return ccPop(ch,D,anim);
   if(k==="equip") return wrap("Équipement",eqPop(ch,D)," xl");
   if(k==="hptemp"){ const t=+(ch.hp?.temp||0);
@@ -506,11 +506,10 @@ function customPop(ch,D,id,wrap){
   const t=tiles[selT], sizes=t?[["1","1×1"],["2","2×2"],["l","Ligne"]].filter(([z])=>z!=="2"||(R>=2&&C>=2)).filter(([z])=>z!=="l"||C>1):[];
   const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
   const del=S.T.cdel===id?`<span class="row" style="gap:6px"><span>Supprimer ce bloc ?</span><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span>`:`<button class="btn small ghost" data-act="cblkDel" data-v="${id}">Supprimer le bloc</button>`;
-  return wrap("Bloc : "+b.name,`<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
-    <div class="muted" style="font-size:var(--fs-sm);margin:10px 0">Glisse une tuile de la réserve vers une case, ou d’une case à l’autre ; hors du bloc pour la retirer. Touche une tuile posée pour changer sa taille.</div>
+  return wrap("Bloc : "+b.name,`${blkActions(ch,id,`<button class="btn small ghost" data-act="tpop" data-v="blkfmt:${id}">Format ${R}×${C}</button>`)}<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
+    <div class="muted" style="font-size:var(--fs-sm);margin:10px 0">Au doigt, appui long sur une tuile puis glisse-la. Glisse une tuile de la réserve vers une case, ou d’une case à l’autre ; hors du bloc pour la retirer. Touche une tuile posée pour changer sa taille.</div>
     <div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},minmax(60px,auto))">${cells}</div>${selBar}
-    <div class="label" style="margin:14px 0 6px">Réserve${!free&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${id}">${res}</div>
-    <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn small ghost" data-act="tpop" data-v="blkfmt:${id}">Changer de format (${R}×${C})</button></div>${blkActions(ch,id)}`);
+    <div class="label" style="margin:14px 0 6px">Réserve${!free&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${id}">${res}</div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
 const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
@@ -532,10 +531,10 @@ const BLK_FIXED=["perso","pv"];
 const blkHidden=(ch,id)=>!BLK_FIXED.includes(id)&&Array.isArray(ch.layout?.hidden)&&ch.layout.hidden.includes(id);
 function setBlkHidden(ch,id,on){ const h=(Array.isArray(ch.layout?.hidden)?ch.layout.hidden:[]).filter(x=>x!==id); if(on&&!BLK_FIXED.includes(id)) h.push(id); ch.layout=Object.assign({},ch.layout,{hidden:h}); touch(S.cur); }
 /* Bas de chaque fenêtre de bloc : monter, descendre, supprimer (confirmation). */
-function blkActions(ch,id){ const vis=tableOrder(ch).filter(x=>!blkHidden(ch,x)), i=vis.indexOf(id), custom=id.startsWith("c_");
-  const del=BLK_FIXED.includes(id)?"":S.T.cdel===id?`<span class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><span>${custom?"Supprimer ce bloc et ses tuiles ?":"Retirer ce bloc ? Tu pourras le remettre avec « Ajouter un bloc »."}</span><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span>`
-    :`<button class="btn small ghost blkdel" data-act="cblkDel" data-v="${id}">Supprimer le bloc</button>`;
-  return `<div class="blkacts"><span class="row" style="gap:6px"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" ${i>0?"":"disabled"}>↑ Monter</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" ${i>=0&&i<vis.length-1?"":"disabled"}>↓ Descendre</button></span>${del}</div>`; }
+function blkActions(ch,id,extra=""){ const vis=tableOrder(ch).filter(x=>!blkHidden(ch,x)), i=vis.indexOf(id), custom=id.startsWith("c_"), fixed=BLK_FIXED.includes(id);
+  const bar=`<div class="blkacts"><span class="row" style="gap:6px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc" ${i>0?"":"disabled"}>↑ Monter</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc" ${i>=0&&i<vis.length-1?"":"disabled"}>↓ Descendre</button>${extra}</span>${fixed?"":`<button class="btn small ghost blkdel" data-act="cblkDel" data-v="${id}" aria-expanded="${S.T.cdel===id}">Supprimer le bloc</button>`}</div>`;
+  const conf=!fixed&&S.T.cdel===id?`<div class="blkconfirm" role="alert"><span>${custom?"Supprimer ce bloc et ses tuiles ?":"Retirer ce bloc ? Tu pourras le remettre avec « Ajouter un bloc »."}</span><span class="row" style="gap:6px"><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span></div>`:"";
+  return bar+conf; }
 function saveTableOrder(ch,order){ ch.layout=Object.assign({},ch.layout,{order}); touch(S.cur); }
 function moveTableBlock(ch,id,d){ const o=tableOrder(ch), vis=o.filter(x=>!blkHidden(ch,x)), i=vis.indexOf(id), j=i+d; if(i<0||j<0||j>=vis.length) return; [vis[i],vis[j]]=[vis[j],vis[i]]; let k=0; saveTableOrder(ch,o.map(x=>blkHidden(ch,x)?x:vis[k++])); }
 function hpStepper(ch,D){

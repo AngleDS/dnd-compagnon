@@ -995,6 +995,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
         const g = document.querySelector('.tblk[data-blk="tour"] [data-blkgrip]'); g.scrollIntoView({ block: 'center' });
         const fire = (type, x, y, el) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 9, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, button: 0 }));
         const r0 = g.getBoundingClientRect(); const x = r0.x + r0.width / 2; let y = r0.y + r0.height / 2; fire('pointerdown', x, y, g);
+        fire('pointermove', x, y - 40, document); await new Promise(z => setTimeout(z, 50)); const scrollOnly = !document.querySelector('.blkph'); fire('pointerup', x, y - 40, document);
+        fire('pointerdown', x, y, g); await new Promise(z => setTimeout(z, 420)); if (!document.querySelector('.blkph') || !scrollOnly) return ['appui long non respecté'];
         for (let i = 0; i < 60; i++) { const r = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(); y = Math.max(5, r.top + 8); fire('pointermove', x, y, document); await new Promise(z => setTimeout(z, 10));
           if (document.querySelector('.tblocks').children[1]?.dataset.blk === 'tour') break; }
         fire('pointerup', x, y, document); return cur().layout.order.slice(0, 3); });
@@ -1075,10 +1077,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop [data-act="ctileSel"][data-i="0"]'); await p.click('.tpop [data-act="ctileSize"][data-z="l"]');
     eq((await pos())[0], 'ca:l@0,0', 'CA en ligne entière');
     const cellXY = (r, c) => p.evaluate(([r, c]) => { const b = document.querySelector('.tpop [data-cgrid]').getBoundingClientRect(); return { x: b.left + b.width * (c + .5) / 3, y: b.top + b.height * (r + .5) / 2 }; }, [r, c]);
-    const drag = async (from, to) => { const a = await p.locator(from).boundingBox(); await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down(); await p.mouse.move(to.x, to.y, { steps: 3 }); await p.mouse.up(); };
-    await drag('.tpop .tres [data-t="skills"]', await cellXY(1, 2));
+    const drag = async (from, to) => { await p.locator(from).scrollIntoViewIfNeeded(); const a = await p.locator(from).boundingBox(); if (typeof to === 'function') to = await to(); await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down(); await p.mouse.move(to.x, to.y, { steps: 3 }); await p.mouse.up(); };
+    await drag('.tpop .tres [data-t="skills"]', () => cellXY(1, 2));
     eq(await pos(), ['ca:l@0,0', 'init:1@1,0', 'skills:1@1,2'], 'réserve glissée sur la case visée (ligne 2, colonne 3)');
-    await drag('.tpop [data-act="ctileSel"][aria-label="Initiative"]', await cellXY(1, 2));
+    await drag('.tpop [data-act="ctileSel"][aria-label="Initiative"]', () => cellXY(1, 2));
     eq(await pos(), ['ca:l@0,0', 'init:1@1,2', 'skills:1@1,0'], 'tuile glissée sur une autre : échange');
     await p.click('.tpop [data-act="ctileSel"][aria-label="Tests de caractéristique"]'); await p.click('.tpop [data-act="ctileSize"][data-z="2"]');
     eq((await pos()).includes('skills:1@1,0'), true, '2×2 refusé faute de place');
@@ -1104,6 +1106,30 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop [data-act="cblkDel"]'); ok(await p.evaluate(() => cur().layout.custom.length === 1), 'demande de confirmation avant suppression');
     await p.click('.tpop [data-act="cblkDelYes"]');
     eq(await p.evaluate(id => [cur().layout.custom.length, cur().layout.order.includes(id), !!document.querySelector(`.tblk[data-blk="${id}"]`), S.T.pop], id), [0, false, false, null], 'bloc supprimé');
+  });
+
+  await test('Au doigt : appui long pour glisser une tuile, le glisser rapide fait défiler ; suppression confirmée en tête', async p => {
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+    try {
+      await diceTable(t); await t.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
+      const res = await t.evaluate(async () => {
+        const fire = (type, x, y, el) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 5, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y }));
+        const src = document.querySelector('.tpop .tres [data-v="rest"]'), dst = document.querySelector('.tpop .tpgrid [data-i="5"]').getBoundingClientRect(), r = src.getBoundingClientRect();
+        const x = r.x + r.width / 2, y = r.y + r.height / 2, tx = dst.x + dst.width / 2, ty = dst.y + dst.height / 2;
+        fire('pointerdown', x, y, src); fire('pointermove', x, y - 30, document); await new Promise(z => setTimeout(z, 30));
+        const quick = !!document.querySelector('.dragghost'); fire('pointermove', tx, ty, document); fire('pointerup', tx, ty, document);
+        const afterQuick = blockTiles(cur(), 'raccourcis')[5];
+        fire('pointerdown', x, y, src); await new Promise(z => setTimeout(z, 420)); const ghost = !!document.querySelector('.dragghost.tghost');
+        fire('pointermove', tx, ty, document); fire('pointerup', tx, ty, document);
+        return [quick, afterQuick, ghost, blockTiles(cur(), 'raccourcis')[5]]; });
+      eq(res, [false, '', true, 'rest'], 'glisser rapide : rien ne bouge ; appui long : la tuile part et se pose');
+      await t.evaluate(() => { const b = document.querySelector('.tpopbody'); b.scrollTop = b.scrollHeight; });
+      await t.click('.tpop [data-act="cblkDel"]');
+      eq(await t.evaluate(() => { const c = document.querySelector('.tpop .blkconfirm'), body = document.querySelector('.tpopbody'), first = body.firstElementChild; return [!!c, body.scrollTop, first.classList.contains('blkacts'), c.previousElementSibling === first, c.getBoundingClientRect().top < body.getBoundingClientRect().top + 140]; }),
+        [true, 0, true, true, true], 'actions du bloc en tête de fenêtre, confirmation juste dessous, visible sans défiler');
+      if (errs.length) throw new Error('Erreur JS : ' + errs.join(' | '));
+    } finally { await ctx.close(); }
   });
 
   await test('Personnaliser au glisser : crayon sur le bloc, réserve → case, case → case, hors du bloc', async p => {

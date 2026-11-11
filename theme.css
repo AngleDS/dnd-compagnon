@@ -363,7 +363,7 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 /* « À la table » : bandeau du haut (dés, ajouter un bloc, disposition) et actions de bloc */
 .ttopbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;max-width:860px;margin:0 auto 10px}
 .tcharges{max-width:860px;margin:0 auto 10px}
-.blkacts{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.blkacts{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .blkdel{color:var(--blood)}
 .table-turn .tbpen{margin:0}
 .ttopbar{flex-wrap:nowrap}.ttopbar>.row{flex-wrap:nowrap}.ttopbar .btn{white-space:nowrap}
@@ -380,3 +380,5 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 @media(max-width:720px){.top{grid-template-areas:"brand menu" "nav nav"!important}
   .top .nav{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);padding-right:24px}
   .top .nav button{flex:0 0 auto}}
+.blkconfirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--blood);border-radius:10px;background:color-mix(in srgb,var(--blood) 14%,transparent)}
+.tblkgrip{touch-action:manipulation;-webkit-touch-callout:none}

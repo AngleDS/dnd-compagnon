@@ -37,7 +37,7 @@ document.addEventListener("click",e=>{
       if(b&&r*c<=8&&r>=1&&c>=1){ const [keep,out]=cReformat(b,r,c); b.r=r; b.c=c; b.tiles=keep.map(x=>({id:x.id,sz:x.sz||"1",r:x.r,c:x.c})); saveCustom(ch,list);
         if(out.length){ const cat=customCat(); setBanner("Retour dans la réserve : "+out.map(x=>cat[x]||x).join(", ")+"."); } }
       S.T.ctile=null; S.T.tileSlot=null; S.T.pop="tiles:"+id; render(); } break;
-    case "cblkDel": S.T.cdel=t.dataset.v; render(); break;
+    case "cblkDel": S.T.cdel=S.T.cdel===t.dataset.v?null:t.dataset.v; render(); { const pb=document.querySelector(".tpopbody"); if(pb) pb.scrollTop=0; } break;
     case "cblkDelNo": S.T.cdel=null; render(); break;
     case "cblkDelYes": if(ch){ const id=t.dataset.v; if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else if(!BLK_FIXED.includes(id)){ setBlkHidden(ch,id,true); setBanner("Bloc retiré : « Ajouter un bloc » permet de le remettre."); } S.T.cdel=null; S.T.pop=null; render(); } break;
     case "blkRestore": if(ch){ setBlkHidden(ch,t.dataset.v,false); S.T.pop=null; render(); } break;
@@ -441,7 +441,8 @@ function flipMove(box,mutate){ const els=[...box.children], before=new Map(els.m
   if(reduceMotion()) return;
   els.forEach(b=>{ const dy=before.get(b)-b.getBoundingClientRect().top; if(!dy) return; b.style.transition="none"; b.style.transform=`translateY(${dy}px)`; b.offsetHeight; b.style.transition="transform .16s ease-out"; b.style.transform=""; }); }
 const layoutTop=b=>(b.offsetParent?b.offsetParent.getBoundingClientRect().top+b.offsetParent.clientTop:0)+b.offsetTop; // place sans l'animation en cours
-let BLKD=null;
+let BLKD=null, BLKP=null;
+const LONG_PRESS_MS=350; // appui long avant tout glisser au doigt (blocs, tuiles, équipement)
 function blkPlace(){ if(!BLKD) return; const el=BLKD.el, box=el.parentElement; if(!box) return;
   const others=[...box.querySelectorAll(":scope > .tblk")].filter(b=>b!==el);
   const next=others.find(b=>BLKD.y<layoutTop(b)+b.offsetHeight/2)||null;
@@ -456,13 +457,20 @@ document.addEventListener("pointerdown",e=>{
   // Au doigt : la poignée seule (la page doit pouvoir défiler) ; à la souris : tout le bloc, sauf ses boutons.
   if(!S.layoutEdit||!e.target.closest||(e.pointerType==="mouse"&&e.button!==0)) return;
   const g=e.target.closest("[data-blkgrip]")||(e.pointerType==="mouse"&&!e.target.closest("button")?e.target.closest(".tblocks.editing > .tblk"):null); if(!g) return;
-  const el=g.closest(".tblk"); if(!el) return; e.preventDefault();
-  const {g:ghost,r}=dragGhost(el,"blkghost");
-  BLKD={el,id:e.pointerId,ghost,x:e.clientX,y:e.clientY,dx:Math.min(e.clientX-r.left,r.width-20),dy:Math.min(e.clientY-r.top,60)};
-  blkGhostAt(); el.classList.add("dragging","blkph"); document.body.classList.add("blkdragging");
-  try{ g.setPointerCapture(e.pointerId); }catch(err){}
-  BLKD.raf=requestAnimationFrame(blkLoop);
+  const el=g.closest(".tblk"); if(!el) return;
+  if(e.pointerType!=="mouse"){ // au doigt : appui long sur la poignée, sinon la page défile
+    BLKP={el,g,id:e.pointerId,x:e.clientX,y:e.clientY,timer:setTimeout(()=>{ const P=BLKP; BLKP=null; if(P) blkStart(P.el,P.g,P.id,P.x,P.y); },LONG_PRESS_MS)}; return; }
+  e.preventDefault(); blkStart(el,g,e.pointerId,e.clientX,e.clientY);
 });
+function blkStart(el,g,pid,x,y){ if(!el.isConnected) return;
+  const {g:ghost,r}=dragGhost(el,"blkghost");
+  BLKD={el,id:pid,ghost,x,y,dx:Math.min(x-r.left,r.width-20),dy:Math.min(y-r.top,60)};
+  blkGhostAt(); el.classList.add("dragging","blkph"); document.body.classList.add("blkdragging");
+  try{ g.setPointerCapture(pid); }catch(err){}
+  BLKD.raf=requestAnimationFrame(blkLoop); }
+document.addEventListener("pointermove",e=>{ if(BLKP&&e.pointerId===BLKP.id&&Math.hypot(e.clientX-BLKP.x,e.clientY-BLKP.y)>8){ clearTimeout(BLKP.timer); BLKP=null; } });
+["pointerup","pointercancel"].forEach(t=>document.addEventListener(t,e=>{ if(BLKP&&e.pointerId===BLKP.id){ clearTimeout(BLKP.timer); BLKP=null; } }));
+document.addEventListener("touchmove",e=>{ if(BLKD) e.preventDefault(); },{passive:false});
 document.addEventListener("pointermove",e=>{
   if(!BLKD||e.pointerId!==BLKD.id) return; e.preventDefault();
   BLKD.x=e.clientX; BLKD.y=e.clientY; blkGhostAt(); blkPlace();
@@ -500,14 +508,20 @@ function tdgStop(drop){ const D0=TDG; TDG=null; if(!D0||!D0.active) return; tdgE
 document.addEventListener("pointerdown",e=>{
   tdgEnd=0; // un nouvel appui est un vrai toucher : ne plus bloquer le clic
   const el=e.target.closest&&e.target.closest(".tpop [data-tdrag]"); if(!el||(e.pointerType==="mouse"&&e.button!==0)) return;
+  if(e.pointerType!=="mouse"){ // au doigt : appui long (la fenêtre doit pouvoir défiler)
+    const startT=e; TDG={el,blk:el.dataset.blk,cblk:el.dataset.cblk,ctile:el.dataset.tdrag==="ctile"?+el.dataset.i:undefined,cell:el.dataset.tdrag==="cell"||el.dataset.tdrag==="ctile"?+el.dataset.i:undefined,id:el.dataset.tdrag==="cres"?el.dataset.t:el.dataset.v,x0:e.clientX,y0:e.clientY,touch:true,pid:e.pointerId,active:false,armed:false};
+    TDG.timer=setTimeout(()=>{ if(TDG&&!TDG.active){ TDG.armed=true; tdgStart(TDG.x0,TDG.y0); } },LONG_PRESS_MS); return; }
   TDG={el,blk:el.dataset.blk,cblk:el.dataset.cblk,ctile:el.dataset.tdrag==="ctile"?+el.dataset.i:undefined,cell:el.dataset.tdrag==="cell"||el.dataset.tdrag==="ctile"?+el.dataset.i:undefined,id:el.dataset.tdrag==="cres"?el.dataset.t:el.dataset.v,x0:e.clientX,y0:e.clientY,touch:e.pointerType!=="mouse",pid:e.pointerId,active:false};
 });
+function tdgStart(x,y){ const {g,r}=dragGhost(TDG.el,"tghost"); Object.assign(TDG,{active:true,ghost:g,gw:r.width,gh:r.height,dx:TDG.x0-r.left,dy:TDG.y0-r.top}); TDG.el.classList.add("tdsrc"); document.body.classList.add("tdragging"); tdgMove(x,y); }
 document.addEventListener("pointermove",e=>{ if(!TDG||e.pointerId!==TDG.pid) return;
-  if(!TDG.active){ if(Math.hypot(e.clientX-TDG.x0,e.clientY-TDG.y0)<=6) return;
-    const {g,r}=dragGhost(TDG.el,"tghost"); Object.assign(TDG,{active:true,ghost:g,gw:r.width,gh:r.height,dx:TDG.x0-r.left,dy:TDG.y0-r.top}); TDG.el.classList.add("tdsrc"); document.body.classList.add("tdragging"); }
+  if(!TDG.active){ const far=Math.hypot(e.clientX-TDG.x0,e.clientY-TDG.y0);
+    if(TDG.touch){ if(far>8){ clearTimeout(TDG.timer); TDG=null; } return; } // le doigt bouge avant l'appui long : c'est un défilement
+    if(far<=6) return; tdgStart(e.clientX,e.clientY); return; }
   e.preventDefault(); tdgMove(e.clientX,e.clientY); });
-document.addEventListener("pointerup",e=>{ if(TDG&&e.pointerId===TDG.pid){ if(TDG.active) tdgStop({x:e.clientX,y:e.clientY}); else TDG=null; } });
-document.addEventListener("pointercancel",e=>{ if(TDG&&e.pointerId===TDG.pid){ if(TDG.active) tdgStop(null); else TDG=null; } });
+document.addEventListener("touchmove",e=>{ if(TDG&&TDG.active) e.preventDefault(); },{passive:false});
+document.addEventListener("pointerup",e=>{ if(TDG&&e.pointerId===TDG.pid){ clearTimeout(TDG.timer); if(TDG.active) tdgStop({x:e.clientX,y:e.clientY}); else TDG=null; } });
+document.addEventListener("pointercancel",e=>{ if(TDG&&e.pointerId===TDG.pid){ clearTimeout(TDG.timer); if(TDG.active) tdgStop(null); else TDG=null; } });
 document.addEventListener("click",e=>{ if(Date.now()-tdgEnd<400){ e.stopPropagation(); e.preventDefault(); } },true);
 
 /* ---------- Équipement : glisser-déposer (souris ; au doigt, appui long puis glisser) ---------- */
@@ -532,7 +546,7 @@ document.addEventListener("pointerdown",e=>{
   const el=e.target.closest&&e.target.closest("[data-eqdrag]"); if(!el||(e.pointerType==="mouse"&&e.button!==0)) return;
   if(EQD) eqdStop(null);
   EQD={el,src:eqdSrc(el),name:el.dataset.name||el.textContent.trim(),x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,touch:e.pointerType!=="mouse",active:false,id:e.pointerId};
-  if(EQD.touch) EQD.timer=setTimeout(()=>{ if(EQD&&!EQD.active) eqdStart(); },350);
+  if(EQD.touch) EQD.timer=setTimeout(()=>{ if(EQD&&!EQD.active) eqdStart(); },LONG_PRESS_MS);
 });
 document.addEventListener("pointermove",e=>{
   if(!EQD||e.pointerId!==EQD.id) return; EQD.x=e.clientX; EQD.y=e.clientY;
