@@ -316,3 +316,27 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
   .pips{gap:0!important}
   .chg{flex-wrap:wrap;max-width:100%}
 }
+
+/* Carte PV : PV temp., PV max ±, dés de vie et Repos alignés ; emplacements de sorts qui s'adaptent au perso */
+.health-details .health-detail{align-self:start;align-content:start}
+.health-rest{justify-items:start}
+.health-rest .hprest{display:inline-flex;align-items:center;justify-content:center;width:44px;height:36px;min-height:36px;padding:0}
+.health-rest .hprest .tpi{width:20px;height:20px;stroke:var(--brass)}
+@media (pointer:coarse){.health-rest .hprest{height:44px;min-height:44px}}
+@media(max-width:720px){.health-details{grid-template-columns:repeat(3,minmax(0,1fr)) auto}}
+@media(max-width:340px){.health-details{grid-template-columns:1fr 1fr}.health-dice{grid-column:auto}}
+.hslots{grid-column:1/-1;border-top:1px solid var(--df-50463b,var(--line));padding-top:10px;min-width:0}
+.hshead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;min-height:28px}
+.hshead .label{font-size:var(--fs-xs);letter-spacing:.08em}
+.hshead .lock{margin:0;flex:0 0 auto}
+.hscells{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px 10px}
+.hslots.open .hscells{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.hs{display:flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:999px;min-width:0}
+.hs.pact{grid-column:span 2;border-color:var(--brass)}
+.hslots.open .hs.pact{grid-column:auto}
+.hsn{font-size:var(--fs-xs);color:var(--muted);font-weight:700;white-space:nowrap;min-width:1.1em}
+.hs .pips{display:flex;gap:3px;flex-wrap:nowrap}
+.hs span.pip{width:15px;height:15px;min-width:15px;min-height:15px;padding:0}
+.health-dice>span{display:flex;align-items:baseline;gap:4px}
+.health-dice>span>b{line-height:28px}
+@media(min-width:721px){.table-overview>.health-card{grid-template-columns:minmax(0,1fr) 200px}.health-details{grid-template-columns:1fr 1fr;column-gap:14px;row-gap:12px}}

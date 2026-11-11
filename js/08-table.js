@@ -276,6 +276,11 @@ function tPop(ch,D){
       <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn small ghost" data-act="tileReset" data-blk="${blk}">Tuiles par défaut</button></div>`); }
   if(k==="concchk") return ccPop(ch,D,anim);
   if(k==="equip") return wrap("Équipement",eqPop(ch,D)," xl");
+  if(k==="hptemp"){ const t=+(ch.hp?.temp||0);
+    return wrap("PV temporaires",`<div class="row" style="gap:12px;align-items:center;flex-wrap:wrap"><span class="hpstep"><button class="btn stepb" data-act="tmpstep" data-v="-1" aria-label="Retirer 1 PV temporaire" ${t<=0?"disabled":""}>−</button><b class="num" style="font-size:var(--fs-2xl);min-width:2em;text-align:center">${t}</b><button class="btn stepb" data-act="tmpstep" data-v="1" aria-label="Ajouter 1 PV temporaire">+</button></span>
+      <label class="field" style="margin:0"><span>Nouvelle valeur</span><input type="number" inputmode="numeric" min="0" max="999" data-tmpset="1" placeholder="${t}" style="width:7em"></label></div>
+      <div class="row" style="margin-top:12px;gap:6px"><button class="btn small" data-act="tmpstep" data-v="5">+5</button><button class="btn small" data-act="tmpstep" data-v="10">+10</button>${t?`<button class="btn small ghost" data-act="tmpstep" data-v="${-t}">Remettre à zéro</button>`:""}</div>
+      <div class="muted" style="font-size:var(--fs-sm);margin-top:10px">Les PV temporaires ne s'additionnent pas : si tu en reçois d'autres, garde la valeur la plus haute. Les dégâts les retirent en premier ; ils disparaissent au repos long.</div>`); }
   if(k==="hpmax"){ const b=D.hpBonus;
     return wrap("Points de vie maximum",`<div class="row" style="gap:18px;align-items:center"><div><div class="label">Base</div><b class="num" style="font-size:var(--fs-xl)">${D.hpBase}</b></div>
       <div><div class="label">Bonus ou malus temporaire</div><span class="hpstep"><button class="btn stepb" data-act="hpmaxb" data-v="-1" aria-label="Retirer 1">−</button><b class="num" style="font-size:var(--fs-xl);min-width:2.2em;text-align:center">${sg(b)}</b><button class="btn stepb" data-act="hpmaxb" data-v="1" aria-label="Ajouter 1">+</button></span></div>
@@ -327,16 +332,21 @@ function viewTable(ch,D,banner=""){
   const overviewSpecies=srd("species",ch.species)||hb(ch.species);
   const overviewSize=String(ch.size||overviewSpecies?.size||"—");
   const statsBlk=`${tbHead("reperes","Repères")}<div class="rtiles" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize)}</div>`;
+  // Emplacements dans la carte PV : rangée présente seulement si le perso en a (classe, sous-classe, niveau) ; une pastille par niveau de sort, ou une pastille « Pacte »
+  const slotCells=!D.cast?"":D.cast.type==="pact"?(+D.cast.pactSlots>0?`<span class="hs pact"><span class="hsn">Pacte ${D.cast.pactLevel}</span>${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}</span>`:"")
+    :(D.cast.slots||[]).map((n,i)=>n>0?`<span class="hs"><span class="hsn" title="Niveau ${i+1}">${i+1}</span>${pips("slot:"+(i+1),n,+(ch.slotsUsed?.[i+1]||0),true,lk)}</span>`:"").join("");
+  const slotsRow=slotCells?`<div class="hslots${lk?"":" open"}"><div class="hshead"><span class="label">Emplacements de sorts</span>${lockB}</div><div class="hscells">${slotCells}</div></div>`:"";
   const healthBlk=`<div class="table-overview tb-solo">
     <section class="health-card" aria-label="Santé du personnage">
     <div class="health-main">${hpStepper(ch,D)}</div>
     <div class="health-details">
-      <div class="health-detail">${tempStepper(ch)}</div>
+      <button class="health-detail health-adjust" data-act="tpop" data-v="hptemp" title="PV temporaires : toucher pour les modifier"><span class="label">PV temp.</span><b class="num">${+(ch.hp?.temp||0)}</b></button>
       <button class="health-detail health-adjust" data-act="tpop" data-v="hpmax" title="Modifier les PV maximum"><span class="label">PV max ±</span><b class="num">${D.hpBonus?sg(D.hpBonus):0}</b></button>
       <div class="health-detail health-dice" title="Dés de vie restants : à dépenser pendant un repos court (bouton Repos)"><span class="label">Dés de vie</span><span><b class="num">${Math.max(0,D.L-(+ch.hdUsed||0))} / ${D.L}</b> <small>d${D.hd}</small></span></div>
-    </div>
-  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span><button class="chip insp overview-inspiration" aria-pressed="${!!ch.inspiration}" data-act="insp" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg><span>Inspiration héroïque${ch.inspiration?" ✓":""}</span></button><button class="chip overview-inspiration overview-rest" data-act="restOpen" data-v="" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg><span>Repos</span></button></div></section></div>`;
-  const resBlk=otherSlots||conds?`<div class="tbar overview-resources">${otherSlots}${conds}</div>`:"";
+      <div class="health-detail health-rest"><span class="label">Repos</span><button class="btn hprest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg></button></div>
+    </div>${slotsRow}
+  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span><button class="chip insp overview-inspiration" aria-pressed="${!!ch.inspiration}" data-act="insp" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg><span>Inspiration héroïque${ch.inspiration?" ✓":""}</span></button></div></section></div>`;
+  const resBlk=conds?`<div class="tbar overview-resources">${conds}</div>`:""; // emplacements dans la carte PV ; les états actifs restent ici en attendant la décision d'Angle
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
@@ -495,7 +505,7 @@ function customPop(ch,D,id,wrap){
     <div class="row" style="justify-content:flex-end;margin-top:14px">${del}</div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
-const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","Emplacements et états"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
+const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["res","États actifs"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
 function blkLabel(ch,id){ return (TBLK.find(b=>b[0]===id)||[])[1]||customBlocks(ch).find(b=>b.id===id)?.name||id; }
 function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map(b=>b.id)]; const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[]; return [...new Set([...saved,...ids])]; }
 function tableBlocks(ch,blocks){

@@ -419,8 +419,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="restOpen"][data-v=""]'); await p.click('[data-act="restKind"][data-v="long"]'); await p.click('[data-act="restLong"]');
     eq(await p.evaluate(() => [cur().hp.cur === derive(cur()).hpMax, cur().hdUsed, S.T.pop]), [true, 0, null], 'repos long : PV et dés de vie');
     await p.click('.health-dice'); ok(await p.evaluate(() => !S.T.pop), 'toucher les dés de vie n’ouvre rien');
-    ok(await p.evaluate(() => !!document.querySelector('.health-footer [data-act="restOpen"]') && !document.querySelector('.tpanels [data-act="restOpen"]')), 'bouton Repos à côté d’Inspiration, plus de tuile');
-    await p.click('.health-footer [data-act="restOpen"]'); ok(await p.evaluate(() => document.querySelectorAll('.restpick .restcard').length === 2), 'deux cartes séparées');
+    ok(await p.evaluate(() => !!document.querySelector('.health-details .health-rest [data-act="restOpen"]') && !document.querySelector('.health-footer [data-act="restOpen"]') && !document.querySelector('.tpanels [data-act="restOpen"]')), 'bouton Repos en 4e colonne de la carte PV, plus de tuile');
+    await p.click('.health-rest [data-act="restOpen"]'); ok(await p.evaluate(() => document.querySelectorAll('.restpick .restcard').length === 2), 'deux cartes séparées');
   });
  
   await test('Portrait : image réduite et enregistrée dans la fiche', async p => {
@@ -1006,7 +1006,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
     eq((await tiles())[3], 'DD des sorts', 'lanceur de sorts : DD affiché');
-    ok((await p.evaluate(() => document.querySelector('.tblk[data-blk="res"]')?.textContent || '')).includes('Pacte'), 'emplacements de pacte dans le bloc Emplacements et états');
+    ok((await p.evaluate(() => document.querySelector('.health-card .hslots .hs.pact')?.textContent || '')).includes('Pacte'), 'emplacements de pacte dans la carte PV');
   });
 
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
@@ -1119,6 +1119,38 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [blockTiles(cur(), 'raccourcis')[2], S.T.pop, !!document.querySelector('.dragghost,.tdsrc,.tover')]), ['', 'tiles:raccourcis', false], 'hors du bloc : retirée, popup ouverte, rien ne reste');
     await drag('.tpop .tres [data-v="hist"]', '.tpop .tpgrid [data-i="0"]');
     eq((await arr())[0], 'hist', 'réserve → case pleine : remplacée');
+  });
+
+  await test('Carte PV selon le perso : emplacements qui s’adaptent (aucun, pacte, 1 à 9 niveaux), cadenas, PV temp., alignement', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    const card = () => p.evaluate(() => { const c = document.querySelector('.health-card'), h = c.querySelector('.hslots');
+      const tops = [...c.querySelectorAll('.health-details > .health-detail b.num')].map(b => Math.round(b.getBoundingClientRect().top));
+      return { row: !!h, cells: h ? [...h.querySelectorAll('.hs')].map(x => x.querySelector('.hsn').textContent + ':' + x.querySelectorAll('.pip').length) : [], tops, cols: c.querySelectorAll('.health-details > .health-detail').length,
+        rest: !!c.querySelector('.health-rest .hprest'), over: document.documentElement.scrollWidth > innerWidth, h: Math.round(c.getBoundingClientRect().height) }; });
+    const sans = await card();
+    eq([sans.row, sans.cols, sans.rest, sans.over], [false, 4, true, false], 'sans sorts : pas de rangée Emplacements ; PV temp., PV max ±, dés de vie et Repos');
+    ok(new Set(sans.tops).size === 1, 'les trois valeurs sont alignées : ' + sans.tops);
+    await p.click('.health-card [data-v="hptemp"]');
+    eq(await p.evaluate(() => S.T.pop), 'hptemp', 'toucher PV temp. ouvre la saisie');
+    await p.fill('.tpop input[data-tmpset]', '12'); await p.press('.tpop input[data-tmpset]', 'Enter');
+    eq(await p.evaluate(() => [cur().hp.temp, document.querySelector('.health-card [data-v="hptemp"] b').textContent]), [12, '12'], 'valeur saisie');
+    await p.click('.tpop [data-act="tmpstep"][data-v="-12"]'); eq(await p.evaluate(() => cur().hp.temp), 0, 'remise à zéro'); await p.keyboard.press('Escape');
+    await newWizardChar(p, { cls: 'magicien', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
+    const m1 = await card(); eq(m1.cells, ['1:2'], 'magicien niveau 1 : une pastille');
+    await p.evaluate(() => { cur().level = 10; render(); });
+    const m10 = await card(); eq(m10.cells, ['1:4', '2:3', '3:3', '4:3', '5:2'], 'niveau 10 : cinq niveaux de sort');
+    await p.evaluate(() => { cur().level = 20; render(); });
+    const m20 = await card(); eq(m20.cells.length, 9, 'niveau 20 : neuf niveaux'); ok(m20.h > m10.h && m10.h > m1.h && !m20.over, 'la carte grandit avec le niveau, sans débordement : ' + [m1.h, m10.h, m20.h]);
+    ok(new Set(m20.tops).size === 1, 'valeurs toujours alignées');
+    eq(await p.evaluate(() => document.querySelectorAll('.hslots .pip').length && [...document.querySelectorAll('.hslots .pip')].every(x => x.tagName === 'SPAN')), true, 'verrouillé : ronds en lecture seule');
+    await p.click('.hslots [data-act="lockSlots"]');
+    await p.click('.hslots .hs:first-child button.pip >> nth=3');
+    eq(await p.evaluate(() => [+(cur().slotsUsed?.[1] || 0), document.querySelector('.hslots').classList.contains('open'), document.documentElement.scrollWidth <= innerWidth]), [1, true, true], 'déverrouillé : un toucher dépense un emplacement, sans débordement');
+    await p.click('.hslots [data-act="lockSlots"]');
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="res"]')), 'sans état actif : bloc des états caché (les emplacements sont dans la carte)');
+    await p.evaluate(() => { cur().conditions = ['Empoisonné']; render(); });
+    ok(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="res"]'); return !!b && !b.querySelector('.pip') && !!b.querySelector('[data-k="rule:empoisonne"]'); }), 'un état actif : il reste affiché dans son bloc');
   });
 
   await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
