@@ -282,6 +282,8 @@ function tPop(ch,D){
       <div class="tpgrid" data-tblk="${blk}" style="grid-template-columns:repeat(${blk==="reperes"?4:2},minmax(0,1fr))">${cells}</div>${selBar}
       <div class="label" style="margin:14px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>
 `); }
+  if(k.startsWith("info:")) return infoPop(ch,D,k.slice(5),wrap);
+  if(k==="speed") return speedPop(ch,D,wrap);
   if(k==="concchk") return ccPop(ch,D,anim);
   if(k==="equip") return wrap("Équipement",eqPop(ch,D)," xl");
   if(k==="hptemp"){ const t=+(ch.hp?.temp||0);
@@ -387,7 +389,6 @@ function viewTable(ch,D,banner=""){
 /* Repères sur mesure (lot T3a, décision d'Angle du 11 nov. 2026) : bloc immuable, calculé selon la classe, la sous-classe et l'espèce ;
    4 valeurs communes puis 4 valeurs propres au plus, par ordre de priorité. Un ancien choix (ch.layout.tiles.reperes) est ignoré, pas effacé. */
 const REP_BASE=["ca","init","vitesse","pp"];
-const colVal=(cls,lab,L)=>{ const c=cls&&(cls.columns||[]).find(x=>x.label===lab); return c?c.values[L-1]:null; };
 function repWants(ch,D){ const cls=D.cls, id=cls&&!cls.hb?cls.id:"", L=D.L, has=n=>!!cls&&cls.features.some(f=>f.level<=L&&f.name===n), x=[];
   if(id==="barbare") x.push("rage");
   if(id==="barde") x.push("bard");
@@ -477,7 +478,7 @@ function repTileMap(ch,D,size){
   const T={
     ca:()=>t(D.ac,"CA",D.acNote||""),
     init:()=>`<button class="rtile act" data-act="tsel" data-k="init" title="Jet d'initiative"><b class="num">${sg(D.init)}</b><span class="label">Initiative</span></button>`,
-    vitesse:()=>t(String(D.speed).replace(".",",")+" m","Vitesse"),
+    vitesse:()=>`<button class="rtile" data-act="tpop" data-v="speed" title="Vitesse et autres déplacements"><b class="num">${mFmt(D.speed)} m</b><span class="label">Vitesse</span></button>`,
     dd:()=>D.cast?t(D.cast.dc,"DD des sorts","Degré de difficulté de tes sorts"):"",
     pp:()=>t(D.passive,"Perception passive","10 + ton modificateur de Perception"),
     maitrise:()=>t(sg(D.pb),"Maîtrise","Bonus de maîtrise"),
@@ -502,8 +503,84 @@ function repTileMap(ch,D,size){
     exh:()=>`<button class="rtile" data-act="tpop" data-v="cond" title="Épuisement : toucher pour le modifier"><b class="num">${+ch.exhaustion||0}</b><span class="label">Épuisement</span></button>`,
     search:()=>`<button class="rtile" data-act="tsearch" title="Recherche"><b class="num"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></b><span class="label">Recherche</span></button>`
   };
+  // Toute tuile s'ouvre (décision d'Angle, 11 nov. 2026) : une tuile de valeur devient un bouton « rinfo » qui ouvre son explication,
+  // sans liseré ni dégradé (réservés aux fenêtres où l'on agit). Petite icône dorée au-dessus du chiffre (variante A).
+  for(const id of Object.keys(T)){ const f=T[id]; T[id]=()=>{ let h=f(); if(!h) return h;
+    if(h.startsWith('<span class="rtile"')) h=h.replace('<span class="rtile"',`<button class="rtile rinfo" data-act="tpop" data-v="info:${id}"`).replace(/<\/span>$/,"</button>");
+    return REP_ICON[id]?h.replace('<b class="num',`<svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON[id]}</svg><b class="num`):h; }; }
   return T;
 }
+const mFmt=v=>String(Math.round(v*10)/10).replace(".",",");
+const REP_ICON={
+  ca:'<path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.3 7.5 10 4.3-1.7 7.5-5.4 7.5-10v-6z"/>',
+  init:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  vitesse:'<path d="M7 3h4l1 9 5 3v4H5l1-6z"/><path d="M3 21h18"/>',
+  pp:'<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  ip:'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10.5h.01M12 10.5h.01M15 10.5h.01"/>',
+  ivp:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M8 10.5h5"/>',
+  dd:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  atks:'<path d="m4 20 11-11M15 3v3M15 12v3M12 6h3M18 9h3"/><path d="m17 4 1.5 1.5M17 14l1.5-1.5"/>',
+  maitrise:'<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>',
+  attaques:'<path d="m4 4 10 10M4 4h4M4 4v4M20 4 10 14M20 4h-4M20 4v4M7 17l-3 3M17 17l3 3M8 13l3 3M16 13l-3 3"/>',
+  taille:'<circle cx="12" cy="5" r="2.5"/><path d="M8 9.5h8l-1 6h-1.5L13 21h-2l-.5-5.5H9z"/>',
+  dv:'<path d="M12 2.5 21 7.5v9L12 21.5 3 16.5v-9z"/><path d="m12 2.5-5 12h10zM3 7.5l4 7M21 7.5l-4 7M7 14.5 12 21.5 17 14.5"/>',
+  rage:'<path d="m6 3 3 8M11 2l2 9M17 3l-2 8"/><path d="M5 14c2 1 4 1.5 7 1.5s5-.5 7-1.5c-1 4-3.5 7-7 7s-6-3-7-7z"/>',
+  bard:'<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  ma:'<path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V10m0-4a1.5 1.5 0 0 1 3 0v4m0-3a1.5 1.5 0 0 1 3 0v4m0-1.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6v-3a1.5 1.5 0 0 1 3 0"/>',
+  credo:'<circle cx="12" cy="12" r="9"/><path d="M12 3a4.5 4.5 0 0 1 0 9 4.5 4.5 0 0 0 0 9"/><circle cx="12" cy="7.5" r=".8"/><circle cx="12" cy="16.5" r=".8"/>',
+  sneak:'<path d="M14.5 3 21 3v6.5L9 21.5 2.5 15z"/><path d="m6 12 6 6M3 21l2.5-2.5"/>',
+  malice:'<path d="M14.5 3 21 3v6.5L11 19.5"/><circle cx="7" cy="17" r="4"/><circle cx="7" cy="17" r="1"/>',
+  crit:'<path d="m12 2 2.6 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.4-.5z"/>',
+  aura:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  souffle:'<path d="M12 21c-4 0-7-2.7-7-6.5 0-3 2-5 3-6.5.5 2 1.5 3 2.5 3C10 7 12 4.5 14 3c0 3.5 5 5.5 5 11.5 0 3.8-3 6.5-7 6.5z"/>',
+  insp:'<path d="m12 2 2.6 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.4-.5z"/>',
+  conc:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/>',
+  exh:'<path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/>'
+};
+/* Fenêtre d'explication d'une tuile de valeur : sens de la valeur, puis calcul ligne par ligne avec les chiffres du perso. */
+function skillRows(D,k){ const s=D.skills[k], m=D.mods[s.ab], pr=s.lv*D.pb, r=[[ABN[s.ab],m]]; if(s.lv) r.push([s.lv>1?"Expertise (maîtrise × 2)":"Maîtrise",pr]); if(s.val-m-pr) r.push(["Autres bonus",s.val-m-pr]); return r; }
+function infoData(ch,D,id){
+  const lv="Niveau "+D.L, cv=lab=>colVal(D.cls,lab,D.L), sp=srd("species",ch.species)||hb(ch.species);
+  const passive=(k,title,desc)=>({title,v:10+D.skills[k].val,desc,rows:[["Base",10],...skillRows(D,k)],note:"Avec l'avantage, ajoute 5 ; avec le désavantage, retire 5."});
+  const dcRows=ab=>[["Base",8],["Maîtrise",D.pb],[ABN[ab],D.mods[ab]]];
+  const I={
+    ca:()=>({title:"Classe d'armure",v:D.ac,desc:"Le résultat qu'un jet d'attaque doit atteindre pour te toucher.",rows:D.acParts,note:"L'appli refait le calcul dès que tu changes d'armure ou de bouclier (onglet Feuille)."}),
+    pp:()=>passive("perception","Perception passive","Ce que tu remarques sans chercher : le MJ la compare au DD de ce qui est caché."),
+    ip:()=>passive("intuition","Intuition passive","Ce que tu sens d'une intention ou d'un mensonge sans faire de jet."),
+    ivp:()=>passive("investigation","Investigation passive","Ce que tu déduis des indices sans faire de jet."),
+    dd:()=>D.cast&&({title:"DD des sorts",v:D.cast.dc,desc:"Le résultat qu'une cible doit atteindre à son jet de sauvegarde pour résister à tes sorts.",rows:[...dcRows(D.cast.ability),...(D.cast.dc-8-D.pb-D.mods[D.cast.ability]?[["Autres bonus",D.cast.dc-8-D.pb-D.mods[D.cast.ability]]]:[])]}),
+    atks:()=>D.cast&&({title:"Attaque de sort",v:sg(D.cast.atk),desc:"Ce que tu ajoutes au d20 quand un sort demande un jet d'attaque.",rows:[["Maîtrise",D.pb],[ABN[D.cast.ability],D.mods[D.cast.ability]],...(D.cast.atk-D.pb-D.mods[D.cast.ability]?[["Autres bonus",D.cast.atk-D.pb-D.mods[D.cast.ability]]]:[])]}),
+    maitrise:()=>({title:"Bonus de maîtrise",v:sg(D.pb),desc:"S'ajoute à tout ce que tu maîtrises : attaques avec tes armes, compétences, jets de sauvegarde, sorts. Il monte avec ton niveau.",rows:[[lv,D.pb]],noTotal:true}),
+    attaques:()=>{ const fl=D.cls?D.cls.features.filter(f=>f.level<=D.L&&/attaques? supplémentaires?/i.test(f.name)).map(f=>[f.name,1]):[]; const r=[["Action Attaque",1],...fl]; if(D.atkNpact>D.atkN) r.push(["Lame assoiffée",D.atkNpact-D.atkN]);
+      return {title:"Attaques par action",v:D.atkNpact,desc:"Nombre d'attaques quand tu choisis l'action Attaque à ton tour.",rows:r}; },
+    taille:()=>({title:"Taille",v:esc(String(chSize(ch)).split(" (")[0]),desc:"Ta taille compte pour l'espace que tu occupes, l'agrippement, les montures et certains effets.",rows:[[sp?.name||"Espèce",esc(chSize(ch))]],noTotal:true}),
+    dv:()=>({title:"Dés de vie",v:`${Math.max(0,D.L-(+ch.hdUsed||0))}/${D.L}`,desc:"Pendant un repos court, tu peux en dépenser : lance le dé et ajoute ta Constitution pour récupérer des PV. Le repos long te les rend tous.",rows:[["Dé","d"+D.hd],["Maximum ("+lv.toLowerCase()+")",D.L]],noTotal:true}),
+    rage:()=>({title:"Dégâts de rage",v:cv("Dégâts de Rage"),desc:"Pendant ta Rage, tes attaques qui utilisent la Force infligent ce bonus de dégâts.",rows:[[lv,cv("Dégâts de Rage")]],noTotal:true}),
+    bard:()=>({title:"Dé bardique",v:cv("Dé bardique"),desc:"Le dé que reçoit un allié quand tu lui donnes ton Inspiration bardique : il pourra l'ajouter à un d20.",rows:[[lv,cv("Dé bardique")]],noTotal:true}),
+    ma:()=>({title:"Arts martiaux",v:cv("Arts martiaux"),desc:"Dé de dégâts de tes coups à mains nues et de tes armes de moine ; tu peux y utiliser la Dextérité.",rows:[[lv,cv("Arts martiaux")]],noTotal:true}),
+    credo:()=>({title:"DD du Credo",v:8+D.pb+D.mods.sag,desc:"Le DD des sauvegardes imposées par tes techniques de moine (Frappe étourdissante, par exemple).",rows:dcRows("sag")}),
+    sneak:()=>({title:"Attaque sournoise",v:cv("Attaque sournoise"),desc:"Une fois par tour, dégâts en plus quand tu touches avec une arme de finesse ou à distance, si tu as l'avantage ou si un allié se tient près de la cible (sans désavantage).",rows:[[lv,cv("Attaque sournoise")]],noTotal:true}),
+    malice:()=>({title:"DD Frappe malicieuse",v:8+D.pb+D.mods.dex,desc:"Le DD des sauvegardes imposées par tes Frappes malicieuses, quand tu renonces à des dés d'Attaque sournoise pour un effet.",rows:dcRows("dex")}),
+    crit:()=>({title:"Critique",v:D.L>=15?"18-20":"19-20",desc:"Ton attaque devient un coup critique sur ces résultats du d20.",rows:[[D.L>=15?"Critique supérieur (niveau 15)":"Critique amélioré (niveau 3)",D.L>=15?"18-20":"19-20"]],noTotal:true}),
+    aura:()=>({title:"Aura de protection",v:sg(Math.max(1,D.mods.cha)),desc:`Toi et tes alliés à ${D.L>=18?9:3} m ajoutez ce bonus à vos jets de sauvegarde, tant que tu es conscient.`,rows:[["Charisme (au moins +1)",Math.max(1,D.mods.cha)]],noTotal:true}),
+    souffle:()=>({title:"DD du souffle",v:8+D.pb+D.mods.con,desc:"Ton Souffle remplace une de tes attaques : chaque créature dans la zone fait une sauvegarde de Dextérité contre ce DD.",rows:dcRows("con"),note:`Dégâts : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10, la moitié en cas de réussite.`})
+  };
+  return I[id]?I[id]():null;
+}
+function infoPop(ch,D,id,wrap){ const d=infoData(ch,D,id); if(!d){ S.T.pop=null; return ""; }
+  const num=x=>typeof x==="number"?(x<0?"−"+(-x):String(x)):x, tot=d.rows.filter(r=>typeof r[1]==="number").reduce((t,r)=>t+r[1],0);
+  return wrap(d.title,`<div class="texpl"><div class="tinfotop"><b class="num">${d.v}</b><span class="muted">${d.desc}</span></div>
+    <div class="label">${d.noTotal?"Détail":"Calcul"}</div><div class="tinfocalc">${d.rows.map((r,i)=>`<span>${esc(String(r[0]))}</span><span class="num">${i&&typeof r[1]==="number"?sg(r[1]):num(r[1])}</span>`).join("")}${d.noTotal?"":`<span class="tot">Total</span><span class="num tot">${num(tot)}</span>`}</div>
+    ${d.note?`<div class="muted tinfonote">${d.note}</div>`:""}</div>`); }
+/* Fenêtre Vitesse : calcul, autres déplacements (modifiables) et rappels de règles. */
+const SPD_MODES=[["escalade","Escalade"],["nage","Nage"],["vol","Vol"],["fouissement","Fouissement"]];
+function speedPop(ch,D,wrap){ const v=ch.speeds||{}, fo=+ch.abilities?.for||10, tot=D.speedParts.reduce((t,r)=>t+r[1],0);
+  return wrap("Vitesse",`<div class="texpl"><div class="tinfotop"><b class="num">${mFmt(D.speed)} m</b><span class="muted">La distance que tu peux parcourir à ton tour, en une ou plusieurs fois.</span></div>
+    <div class="label">Calcul</div><div class="tinfocalc">${D.speedParts.map(r=>`<span>${esc(r[0])}</span><span class="num">${r[1]<0?"−"+mFmt(-r[1]):mFmt(r[1])} m</span>`).join("")}<span class="tot">Total</span><span class="num tot">${mFmt(Math.max(0,tot))} m</span></div>
+    <div class="label" style="margin-top:12px">Autres déplacements</div><div class="tspd">${SPD_MODES.map(([k,l])=>`<span>${l}</span><span class="hpstep"><button class="btn stepb" data-act="spdstep" data-k="${k}" data-v="-1.5" aria-label="${l} : retirer 1,5 m" ${+v[k]>0?"":"disabled"}>−</button><b class="num">${+v[k]>0?mFmt(+v[k])+" m":"—"}</b><button class="btn stepb" data-act="spdstep" data-k="${k}" data-v="1.5" aria-label="${l} : ajouter 1,5 m">+</button></span><button class="btn small ghost" data-act="spdset" data-k="${k}" data-v="${+v[k]===D.speed?0:D.speed}">${+v[k]===D.speed?"Aucune":"= vitesse"}</button>`).join("")}</div>
+    <div class="muted tinfonote">Sans vitesse d'escalade ou de nage, chaque mètre grimpé ou nagé en coûte un de plus. Même règle pour ramper et pour le terrain difficile. Se relever quand on est à terre coûte la moitié de ta vitesse.</div>
+    <div class="label" style="margin-top:12px">Sauts (Force ${fo})</div><div class="tinfocalc"><span>En longueur, avec 3 m d'élan</span><span class="num">${mFmt(fo*0.3)} m</span><span>En longueur, sans élan</span><span class="num">${mFmt(fo*0.15)} m</span><span>En hauteur, avec 3 m d'élan</span><span class="num">${mFmt(Math.max(0,3+D.mods.for)*0.3)} m</span><span>En hauteur, sans élan</span><span class="num">${mFmt(Math.max(0,3+D.mods.for)*0.15)} m</span></div>
+    <div class="muted tinfonote">Chaque mètre sauté se paie sur ton déplacement.</div></div>`); }
 /* Repères : rangées équilibrées sur une grille de 12 (4 → 1 rangée ; 5 → 3+2 ; 6 → 3+3 ; 7 → 4+3 ; 8 → 4+4), jamais de case vide. */
 function reperesTiles(ch,D,size){ const T=repTileMap(ch,D,size), h=blockTiles(ch,"reperes").map(id=>T[id]&&T[id]()).filter(Boolean), n=h.length, top=n<=4?n:Math.ceil(n/2);
   return h.map((x,i)=>x.replace(/^<(\w+)/,`<$1 style="grid-column:span ${12/(i<top?top:n-top)}"`)).join(""); }

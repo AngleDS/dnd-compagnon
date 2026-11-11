@@ -176,6 +176,7 @@ function chargeRest(ch,kind){ const log=[];
   return log; }
  
 /* ---------- derived sheet ---------- */
+const colVal=(cls,lab,L)=>{ const c=cls&&(cls.columns||[]).find(x=>x.label===lab); return c?c.values[L-1]:null; };
 function derive(ch){
   const L=Math.max(1,Math.min(20,+ch.level||1)), pb=PB(L);
   const cls=clsOf(ch.classId);
@@ -203,21 +204,30 @@ function derive(ch){
   }
   D.passive=10+D.skills.perception.val;
   D.init=mods.dex+bonus("init");
-  // AC
+  // AC — D.acParts : le détail du calcul, ligne par ligne (fenêtre d'explication de la tuile CA)
   const inv=(ch.invocations||[]);
-  let ac, acNote;
+  let ac, acNote; const acParts=[], fParts=f=>String(f).toLowerCase().split("+").map(x=>x.trim()).map(x=>AB.includes(x)?[ABN[x],mods[x]]:/^\d+$/.test(x)?["Base",+x]:null);
   const arm=ch.armor||"none";
-  if(arm==="mage"){ ac=13+mods.dex; acNote="Armure du mage"; }
-  else if(arm==="custom"){ ac=evalF(ch.acCustom||"10+dex",ctx); acNote="Formule perso"; }
-  else if(arm.startsWith("srd:")){ const a=S.idx.armors[arm.slice(4)]; ac=a.ac+(a.dexMax===0?0:a.dexMax?Math.min(a.dexMax,mods.dex):mods.dex)+bonus("ca_armure"); acNote=a.name; }
-  else { const u=cls&&cls.unarmoredAC; ac=u?evalF(u.replace(/\+/g,"+"),ctx):10+mods.dex; acNote=u?"Défense sans armure":"Sans armure"; }
-  if(ch.shield){ if(!cls||(cls.armor||[]).includes("bouclier")){ ac+=2; acNote+=" + bouclier"; } else acNote+=" (bouclier sans formation : pas de bonus)"; }
+  if(arm==="mage"){ ac=13+mods.dex; acNote="Armure du mage"; acParts.push(["Armure du mage",13],["Dextérité",mods.dex]); }
+  else if(arm==="custom"){ ac=evalF(ch.acCustom||"10+dex",ctx); acNote="Formule perso"; acParts.push(["Formule perso ("+(ch.acCustom||"10+dex")+")",ac]); }
+  else if(arm.startsWith("srd:")){ const a=S.idx.armors[arm.slice(4)], dx=a.dexMax===0?0:a.dexMax?Math.min(a.dexMax,mods.dex):mods.dex, ba=bonus("ca_armure"); ac=a.ac+dx+ba; acNote=a.name;
+    acParts.push([a.name,a.ac]); if(a.dexMax!==0) acParts.push(["Dextérité"+(a.dexMax?" (maximum "+a.dexMax+")":""),dx]); if(ba) acParts.push(["Bonus d'armure",ba]); }
+  else { const u=cls&&cls.unarmoredAC; ac=u?evalF(u.replace(/\+/g,"+"),ctx):10+mods.dex; acNote=u?"Défense sans armure":"Sans armure";
+    const fp=u?fParts(u):null; if(fp&&fp.every(Boolean)) acParts.push(...fp.map(x=>x[0]==="Base"?["Défense sans armure ("+cls.name+")",x[1]]:x)); else if(u) acParts.push(["Défense sans armure",ac]); else acParts.push(["Sans armure",10],["Dextérité",mods.dex]); }
+  if(ch.shield){ if(!cls||(cls.armor||[]).includes("bouclier")){ ac+=2; acNote+=" + bouclier"; acParts.push(["Bouclier",2]); } else { acNote+=" (bouclier sans formation : pas de bonus)"; acParts.push(["Bouclier sans formation",0]); } }
+  for(const e of effs) if(e.t==="bonus"&&e.cible==="ca"){ const v=evalF(e.val,ctx); if(v) acParts.push([e._src||"Effet",v]); }
+  if(+ch.acBonus) acParts.push(["Bonus divers (Feuille)",+ch.acBonus]);
   ac+=bonus("ca")+(+ch.acBonus||0);
-  D.ac=ac; D.acNote=acNote;
-  // speed
-  const sp=hb(ch.species)||srd("species",ch.species);
-  D.speed=(+(sp?.speed)||9)+bonus("vitesse")+(+ch.speedBonus||0);
-  if(arm.startsWith("srd:")){ const a=S.idx.armors[arm.slice(4)]; if(a&&a.strength&&(+ch.abilities?.for||10)<a.strength) D.speed=Math.max(0,D.speed-3); }
+  D.ac=ac; D.acNote=acNote; D.acParts=acParts;
+  // speed — D.speedParts : détail ; Moine (Déplacement sans armure) et Barbare (Déplacement rapide) compris
+  const sp=hb(ch.species)||srd("species",ch.species), spParts=[[sp?.name?"Espèce ("+sp.name+")":"Base",+(sp?.speed)||9]];
+  for(const e of effs) if(e.t==="bonus"&&e.cible==="vitesse"){ const v=evalF(e.val,ctx); if(v) spParts.push([e._src||"Effet",v]); }
+  const armCat=arm.startsWith("srd:")?S.idx.armors[arm.slice(4)]?.category:null;
+  if(cls&&!cls.hb&&cls.id==="moine"&&!armCat&&!ch.shield){ const v=parseFloat(String(colVal(cls,"Déplacement sans armure",L)||"").replace(",",".").replace(/[^\d.]/g,"")); if(v) spParts.push(["Déplacement sans armure",v]); }
+  if(cls&&!cls.hb&&cls.id==="barbare"&&L>=5&&armCat!=="lourde") spParts.push(["Déplacement rapide",3]);
+  if(+ch.speedBonus) spParts.push(["Bonus divers (Feuille)",+ch.speedBonus]);
+  if(arm.startsWith("srd:")){ const a=S.idx.armors[arm.slice(4)]; if(a&&a.strength&&(+ch.abilities?.for||10)<a.strength) spParts.push([a.name+" sans la Force requise",-3]); }
+  D.speed=Math.max(0,spParts.reduce((t,x)=>t+x[1],0)); D.speedParts=spParts;
   // HP
   const hd=cls?cls.hitDie:8;
   D.hd=hd;

@@ -394,8 +394,18 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 /* Tuiles cliquables : liseré doré et léger dégradé, en mode sombre comme en clair ; les tuiles d'information restent unies (demande d'Angle) */
 :root{--tgrad:linear-gradient(150deg,#38342d,#1f2024)}
 :root[data-theme="light"]{--tgrad:linear-gradient(150deg,#d3cbba,#f1ece3)}
-button.rtile:not(.vide),.tpbtn:not(.tplus),.tcell.tact{background:var(--tgrad);border-color:var(--brass)}
-button.rtile:not(.vide):hover,.tpbtn:not(.tplus):hover,.tcell.tact:hover{background:var(--tgrad);filter:brightness(1.08)}
+button.rtile:not(.vide):not(.rinfo),.tpbtn:not(.tplus),.tcell.tact{background:var(--tgrad);border-color:var(--brass)}
+button.rtile:not(.vide):not(.rinfo):hover,.tpbtn:not(.tplus):hover,.tcell.tact:hover{background:var(--tgrad);filter:brightness(1.08)}
+/* Tuile de valeur : s'ouvre sur son explication, sans liseré ni dégradé ; léger retour au toucher */
+button.rtile.rinfo{border-color:var(--line);cursor:pointer}
+button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filter:brightness(1.2)}
+.rtile .rico{width:15px;height:15px;flex-shrink:0;fill:none;stroke:var(--brass);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;opacity:.9;margin-bottom:-1px}
+/* Fenêtres d'explication des tuiles et fenêtre Vitesse */
+.tinfotop{display:flex;align-items:center;gap:12px;margin-bottom:12px}.tinfotop b{font-size:var(--fs-2xl);white-space:nowrap}.tinfotop .muted{font-size:var(--fs-sm)}
+.tinfocalc{display:grid;grid-template-columns:1fr auto;gap:4px 0;font-size:var(--fs-sm);margin-top:4px}.tinfocalc .num{text-align:right;padding-left:12px}
+.tinfocalc .tot{border-top:1px solid var(--line);padding-top:5px;margin-top:2px;font-weight:700}
+.tinfonote{font-size:var(--fs-sm);margin-top:10px}
+.tspd{display:grid;grid-template-columns:1fr auto auto;gap:6px 10px;align-items:center;font-size:var(--fs-sm);margin-top:4px}.tspd .hpstep b{min-width:52px;text-align:center}
 /* Recherche : liste déroulante sous la barre (la tuile ne fait qu'une ligne de haut) */
 .tsearchwrap{position:relative}
 .tresdrop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;max-height:min(60vh,520px);overflow:auto;background:var(--sheet);border:1px solid var(--brass);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.45)}

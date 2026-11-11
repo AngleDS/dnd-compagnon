@@ -212,6 +212,8 @@ document.addEventListener("click",e=>{
     case "exh": ch.exhaustion=Math.max(0,Math.min(6,(+ch.exhaustion||0)+(+t.dataset.v))); touch(S.cur); render(); break;
     case "tsearch": { const q=document.getElementById("tq"); if(q&&!q.closest(".tpop")){ q.scrollIntoView({block:"center",behavior:"smooth"}); q.focus({preventScroll:true}); } else { S.T.pop="search"; render(); setTimeout(()=>document.getElementById("tq")?.focus(),0); } break; }
     case "insp": ch.inspiration=!ch.inspiration; touch(S.cur); render(); break;
+    case "spdstep": case "spdset": if(ch){ const k=t.dataset.k; if(!SPD_MODES.some(m=>m[0]===k)) break; const sp=Object.assign({},ch.speeds), n=a==="spdset"?+t.dataset.v:(+sp[k]||0)+(+t.dataset.v);
+      sp[k]=Math.max(0,Math.min(60,Math.round(n*10)/10)); if(!sp[k]) delete sp[k]; ch.speeds=sp; touch(S.cur); render(); } break;
     case "addAttack": { ch.attacks=ch.attacks||[]; const id=uid(); ch.attacks.push({id,name:"",weapon:"",ability:"auto",prof:true}); touch(S.cur); S.pending={type:"attack",id}; render(); break; }
     case "editAttack": S.pending={type:"attack",id:t.dataset.id}; renderModal(); break;
     case "rmAttack": ch.attacks=(ch.attacks||[]).filter(x=>x.id!==t.dataset.id); S.pending=null; touch(S.cur); render(); break;

@@ -1059,6 +1059,38 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => !tileAvailable(cur(), 'raccourcis', 'crit') && tileAvailable(cur(), 'raccourcis', 'bard')), 'tuiles de classe proposées ailleurs seulement si le perso y a droit');
   });
 
+  await test('Explications et icônes : chaque tuile s’ouvre, calcul de la CA, Vitesse modifiable, Moine et Barbare plus rapides', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await open(p);
+    const mk = (cls, sp, lv, extra) => p.evaluate(([cls, sp, lv, extra]) => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'T' }, { cls: catRes(cls), bg: catRes('srd:soldat'), sp: catRes('srd:' + sp) }); wCreate();
+      Object.assign(cur(), { level: lv }, extra || {}); S.rv = null; renderModal(); S.tab = 'table'; render(); }, [cls, sp, lv, extra]);
+    await mk('moine', 'drakeide', 5);
+    ok(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].every(t => t.tagName === 'BUTTON' && t.querySelector('svg.rico'))), 'toutes les tuiles de Repères : un bouton avec une icône');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile:not(.rinfo)')].map(t => t.querySelector('.label').textContent)), ['Initiative', 'Vitesse'], 'seules Initiative et Vitesse ouvrent une fenêtre où l’on agit (liseré doré)');
+    eq(await p.evaluate(() => { const D = derive(cur()); return [D.speed, D.speedParts.map(r => r[0])]; }), [12, ['Espèce (Drakéide)', 'Déplacement sans armure']], 'moine niveau 5 sans armure : 9 + 3 m');
+    await p.click('.tblk[data-blk="reperes"] [data-v="info:ca"]');
+    const ca = await p.evaluate(() => ({ t: document.querySelector('.tpop .tpophead b').textContent, rows: [...document.querySelectorAll('.tpop .tinfocalc > span')].map(e => e.textContent), ac: derive(cur()).ac, grad: getComputedStyle(document.querySelector('.tblk[data-blk="reperes"] [data-v="info:ca"]')).backgroundImage }));
+    eq(ca.t, 'Classe d\'armure', 'toucher la CA ouvre son explication');
+    eq([ca.rows[0], ca.rows[2], ca.rows[4], ca.rows.slice(-2)], ['Défense sans armure (Moine)', 'Dextérité', 'Sagesse', ['Total', String(ca.ac)]], 'calcul de la CA ligne par ligne, total juste');
+    ok(!/gradient/.test(ca.grad), 'tuile d’explication : pas de dégradé');
+    await p.keyboard.press('Escape');
+    for (const id of ['pp', 'credo', 'souffle', 'attaques', 'ma']) { await p.click(`.tblk[data-blk="reperes"] [data-v="info:${id}"]`);
+      ok(await p.evaluate(() => !!document.querySelector('.tpop .tinfocalc')), 'explication : ' + id); await p.keyboard.press('Escape'); }
+    eq(await p.evaluate(() => { const D = derive(cur()); return [document.querySelector('.tblk[data-blk="reperes"] [data-v="info:attaques"] .num').textContent, D.atkNpact]; }).then(r => r[0] === String(r[1])), true, 'valeur affichée = calcul');
+    await p.click('.tblk[data-blk="reperes"] [data-v="speed"]');
+    eq(await p.evaluate(() => document.querySelector('.tpop .tpophead b').textContent), 'Vitesse', 'Vitesse ouvre sa fenêtre');
+    await p.click('.tpop [data-act="spdstep"][data-k="nage"][data-v="1.5"]'); await p.click('.tpop [data-act="spdstep"][data-k="nage"][data-v="1.5"]'); await p.click('.tpop [data-act="spdset"][data-k="escalade"]');
+    eq(await p.evaluate(() => cur().speeds), { nage: 3, escalade: 12 }, 'nage +1,5 m ×2, escalade = vitesse : enregistrés dans la fiche');
+    await p.click('.tpop [data-act="spdset"][data-k="escalade"]');
+    eq(await p.evaluate(() => cur().speeds), { nage: 3 }, '« Aucune » retire l’escalade');
+    ok(await p.evaluate(() => /Sauts \(Force 15\)/.test(document.querySelector('.tpop').textContent) && /4,5 m/.test(document.querySelector('.tpop').textContent)), 'sauts calculés avec la Force (15 × 0,3 = 4,5 m)');
+    const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { speeds: { vol: 'x' } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
+    ok(/déplacements/.test(bad), 'autres déplacements invalides refusés à l’import');
+    await p.keyboard.press('Escape');
+    await mk('moine', 'humain', 5, { shield: true }); eq(await p.evaluate(() => derive(cur()).speed), 9, 'moine avec bouclier : pas de bonus');
+    await mk('barbare', 'humain', 5); eq(await p.evaluate(() => derive(cur()).speed), 12, 'barbare niveau 5 : Déplacement rapide');
+    await mk('barbare', 'humain', 5, { armor: 'srd:harnois' }); eq(await p.evaluate(() => derive(cur()).speedParts.map(r => r[0]).includes('Déplacement rapide')), false, 'barbare en armure lourde : pas de Déplacement rapide');
+  });
+
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
     await diceTable(p);
     const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));
@@ -1330,7 +1362,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.keyboard.press('Escape');
     ok(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="c_t1aaaaaa"] .ccell').getBoundingClientRect(), g = document.querySelector('.tblk[data-blk="c_t1aaaaaa"] .cgrid').getBoundingClientRect(); return Math.abs(b.width - g.width) < 2 && b.height > 130; }), 'bandeau affiché sur deux lignes et toute la largeur');
     for (const th of ['dark', 'light']) { await p.evaluate(th => { setTheme(th); render(); }, th);
-      eq(await p.evaluate(() => ['.tblk[data-blk="reperes"] button.rtile', '.tblk[data-blk="raccourcis"] .tpbtn:not(.tplus)', '.tblk[data-blk="reperes"] span.rtile'].map(q => /gradient/.test(getComputedStyle(document.querySelector(q)).backgroundImage))), [true, true, false], `dégradé sur les tuiles cliquables seulement (${th})`); }
+      eq(await p.evaluate(() => ['.tblk[data-blk="reperes"] button.rtile:not(.rinfo)', '.tblk[data-blk="raccourcis"] .tpbtn:not(.tplus)', '.tblk[data-blk="reperes"] button.rtile.rinfo'].map(q => /gradient/.test(getComputedStyle(document.querySelector(q)).backgroundImage))), [true, true, false], `dégradé sur les tuiles cliquables seulement (${th})`); }
     await p.evaluate(() => { setTheme('dark'); render(); });
     eq(await p.evaluate(() => { const v = getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpbtn:not(.tplus)')).borderTopColor, t = document.createElement('i'); t.style.color = getComputedStyle(document.documentElement).getPropertyValue('--brass').trim(); document.body.appendChild(t); const c = getComputedStyle(t).color; t.remove(); return v === c; }), true, 'liseré doré sur les tuiles qui ouvrent une action');
   });
