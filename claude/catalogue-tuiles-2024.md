@@ -457,6 +457,8 @@ Toutes les recommandations de Claude sont validées :
 9. Présage : tirage par l'appli ou saisie des dés physiques, selon le réglage des dés.
 10. Multiclasse : une tuile par classe, traité plus tard.
 
+**Précision d'Angle (11 nov. 2026) : « Ce tour » ne sera jamais une tuile.** Il reste un bloc non personnalisable, qu'on peut seulement déplacer ou supprimer ; les mentions de Ce tour en tuile ou en bandeau dans ce document sont caduques.
+
 Ordre de travail : les tuiles d'abord, dans les fenêtres actuelles ; le menu de personnalisation dédié (« À la table » immuable) viendra ensuite et réutilisera la grille et la réserve.
 
 ## 7. Sources

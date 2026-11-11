@@ -1243,6 +1243,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].filter(b => b.querySelector('.tbpen')).map(b => b.dataset.blk)), ['reperes', 'recherche', 'tour', 'raccourcis', 'notes'], 'crayon sur chaque bloc sauf Personnage et PV');
     await p.click('.tblk[data-blk="tour"] .tbpen');
     eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Ce tour'], 'Ce tour : fenêtre du bloc');
+    ok(await p.evaluate(() => /ne se personnalise pas/.test(document.querySelector('.tpop').textContent) && !/deviendra/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Ce tour : ni tuiles ni réserve, seulement déplacer ou supprimer');
     await p.click('.tpop [data-act="blkMove"][data-d="1"]');
     eq((await vis()).slice(3, 6), ['recherche', 'raccourcis', 'tour'], 'descendu d’un cran');
     await p.keyboard.press('Escape');
