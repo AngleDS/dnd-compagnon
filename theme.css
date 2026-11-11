@@ -429,4 +429,8 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .rresstep b{min-width:56px;text-align:center}.rresstep small{font-size:var(--fs-xs);color:var(--muted);font-weight:400}
 .rresopen{gap:2px}
 .rres .pip{width:24px;height:24px}.rres .pips{gap:6px}
-.rres .chg{flex-wrap:wrap;justify-content:center;margin-left:0;gap:6px}
+/* Repères + Ressources côte à côte : une seule grille de 4 colonnes, tuiles de même taille */
+.rpair{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:auto;grid-auto-rows:1fr;gap:8px}.rpair .tbhead{margin-bottom:0}.rpair .rp3{grid-column:span 3}.rpair .rp1{grid-column:span 1}
+.rpair .rp1 .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
+.rrestile .num small{font-size:var(--fs-xs);font-weight:400;color:var(--muted)}.rrestile.vide0{opacity:.6}
+.rrespop .pip{width:28px;height:28px}.rrespop .pips{gap:8px;justify-content:center}

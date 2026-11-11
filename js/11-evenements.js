@@ -141,7 +141,6 @@ document.addEventListener("click",e=>{
     case "pvpad": { const inp=t.closest(".pvpop")?.querySelector("input[data-pvset]"); if(inp) openDicePad(inp,true); break; }
     case "hpask": S.pending={type:"hp",mode:t.dataset.v}; renderModal(); break;
     case "hpquick": hpApply(+t.dataset.v); break;
-    case "chgstep": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(!b) break; const c=Object.assign({},itemCharges(ch,b)); if(!c.max) break; c.used=Math.max(0,Math.min(c.max,(+c.used||0)+(+t.dataset.v))); c.auto=false; b.charges=c; touch(S.cur); render(); break; }
     case "chg": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(!b) break; const c=Object.assign({},itemCharges(ch,b)); const i=+t.dataset.i, left=c.max-(+c.used||0);
       c.used = i<left ? c.max-i : c.max-(i+1); c.auto=false; b.charges=c; touch(S.cur); render(); break; }
     case "itemN": S.T.itemN=+t.dataset.v; render(); break;

@@ -286,6 +286,7 @@ function tPop(ch,D){
   if(k.startsWith("info:")) return infoPop(ch,D,k.slice(5),wrap);
   if(k==="speed") return speedPop(ch,D,wrap);
   if(k==="comp") return compPop(ch,wrap);
+  if(k.startsWith("res:")) return resPop(ch,D,k.slice(4),wrap);
   if(k==="concchk") return ccPop(ch,D,anim);
   if(k==="equip") return wrap("Équipement",eqPop(ch,D)," xl");
   if(k==="hptemp"){ const t=+(ch.hp?.temp||0);
@@ -342,7 +343,8 @@ function viewTable(ch,D,banner=""){
   const otherSlots=slots; // emplacements de pacte compris : bloc « Emplacements et états »
   const overviewSpecies=srd("species",ch.species)||hb(ch.species);
   const overviewSize=String(ch.size||overviewSpecies?.size||"—");
-  const statsBlk=`${tbHead("reperes","Repères","blk:reperes")}<div class="rtiles rauto" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize)}</div>`;
+  const pair=repResPair(ch,D,overviewSize);
+  const statsBlk=pair||`${tbHead("reperes","Repères","blk:reperes")}<div class="rtiles rauto" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize)}</div>`;
   // Emplacements dans la carte PV : rangée présente seulement si le perso en a (classe, sous-classe, niveau) ; une pastille par niveau de sort, ou une pastille « Pacte »
   const slotCells=!D.cast?"":D.cast.type==="pact"?(+D.cast.pactSlots>0?`<span class="hs pact"><span class="hsn">Pacte ${D.cast.pactLevel}</span>${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}</span>`:"")
     :(D.cast.slots||[]).map((n,i)=>n>0?`<span class="hs"><span class="hsn" title="Niveau ${i+1}">${i+1}</span>${pips("slot:"+(i+1),n,+(ch.slotsUsed?.[i+1]||0),true,lk)}</span>`:"").join("");
@@ -371,7 +373,7 @@ function viewTable(ch,D,banner=""){
   const blocks={
     perso:banner,
     reperes:statsBlk,
-    ressources:resBlock(ch,D),
+    ressources:pair?"":resBlock(ch,D),
     pv:`${(+hp.cur||0)<=0?`<div class="tdeath"><div class="row" style="justify-content:space-between"><b>À 0 PV : jets contre la mort</b><span class="muted" style="font-size:var(--fs-sm)">10 ou plus : réussite · 1 : deux échecs · 20 : tu reviens à 1 PV</span></div>
         <div class="row" style="gap:16px"><span class="row" style="gap:6px"><span class="label">Réussites</span>${pips("death.s",3,ch.death?.s||0)}</span><span class="row" style="gap:6px"><span class="label">Échecs</span>${pips("death.f",3,ch.death?.f||0)}</span></div>
         ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
@@ -519,20 +521,27 @@ function repTileMap(ch,D,size){
 /* Bloc Ressources (lot T3b) : une tuile par ressource du perso (classe, sous-classe, dons, objets maison), 2 par rangée.
    Jusqu'à 8 : des ronds à toucher directement ; au-delà : − / + ; réserve de dés et Rouerie magique : leur fiche (dépense guidée).
    Toucher le nom ouvre la fiche de la ressource (description et usage). Bloc absent si le perso n'a aucune ressource. */
-function resBlock(ch,D){ const bagC=(ch.bag||[]).filter(b=>(+b.qty||0)>0&&itemCharges(ch,b)?.max>0), cnts=(ch.counters||[]).filter(c=>(+c.max||0)>0);
-  if(!D.res.length&&!bagC.length&&!cnts.length) return "";
-  const card=r=>{ const it=(S.Titems||[]).find(x=>x.res&&x.res.id===r.id); return it?`data-act="tsel" data-k="${esc(it.key)}"`:""; };
-  const tiles=D.res.map(r=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, c=card(r), sid=esc(r.id);
-    const ctl=r.pool||r.id==="cls:rouerie-magique"?`<button class="btn small rresopen" ${c}><b class="num">${left}</b> / ${r.max}${r.pool?" d"+r.die:""}</button>`
-      :r.max<=8?pips("res:"+r.id,r.max,used,true)
-      :`<span class="hpstep rresstep"><button class="btn stepb" data-act="resstep" data-id="${sid}" data-v="1" aria-label="${esc(r.name)} : dépenser 1" ${left<=0?"disabled":""}>−</button><b class="num">${left}<small> / ${r.max}</small></b><button class="btn stepb" data-act="resstep" data-id="${sid}" data-v="-1" aria-label="${esc(r.name)} : récupérer 1" ${used<=0?"disabled":""}>+</button></span>`;
-    return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${ctl}</div>`; }).join("")
-    // Objets à charges du sac et consommables suivis (Feuille) : mêmes ronds que dans l'inventaire
-    +bagC.map(b=>{ const ch2=itemCharges(ch,b), left=Math.max(0,ch2.max-(+ch2.used||0));
-      return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" data-act="tsel" data-k="bag:${esc(b.id)}" title="Voir l'objet"><span class="label">${esc(b.name)}</span><small class="muted">charges</small></button>${ch2.max<=8?chargePips(ch,b).replace(/<b class="num">[^<]*<\/b>/,""):`<span class="hpstep rresstep"><button class="btn stepb" data-act="chgstep" data-id="${esc(b.id)}" data-v="1" aria-label="${esc(b.name)} : dépenser 1 charge" ${left<=0?"disabled":""}>−</button><b class="num">${left}<small> / ${ch2.max}</small></b><button class="btn stepb" data-act="chgstep" data-id="${esc(b.id)}" data-v="-1" aria-label="${esc(b.name)} : récupérer 1 charge" ${left>=ch2.max?"disabled":""}>+</button></span>`}</div>`; }).join("")
-    +cnts.map(k=>{ const mx=+k.max||0, cu=Math.max(0,Math.min(mx,+k.cur||0));
-      return `<div class="rres${cu<=0?" vide0":""}"><button class="rresname" data-act="tsel" data-k="cnt:${esc(k.id)}" title="Voir le consommable"><span class="label">${esc(k.name)}</span><small class="muted">consommable</small></button>${mx<=8?pips("cnt:"+k.id,mx,mx-cu,true):`<span class="hpstep rresstep"><button class="btn stepb" data-act="cnt" data-id="${esc(k.id)}" data-v="-1" aria-label="${esc(k.name)} : utiliser 1" ${cu<=0?"disabled":""}>−</button><b class="num">${cu}<small> / ${mx}</small></b><button class="btn stepb" data-act="cnt" data-id="${esc(k.id)}" data-v="1" aria-label="${esc(k.name)} : ajouter 1" ${cu>=mx?"disabled":""}>+</button></span>`}</div>`; }).join("");
+function resBlock(ch,D){ if(!D.res.length) return "";
+  const tiles=D.res.map(r=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, c=resCard(r);
+    return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${resCtl(ch,r)}</div>`; }).join("");
   return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid" role="group" aria-label="Ressources">${tiles}</div>`; }
+const resCard=r=>{ const it=(S.Titems||[]).find(x=>x.res&&x.res.id===r.id); return it?`data-act="tsel" data-k="${esc(it.key)}"`:""; };
+/* Commande d'une ressource : ronds (≤ 8), − / + au-delà ; réserve de dés et Rouerie magique : leur fiche (dépense guidée). */
+function resCtl(ch,r){ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, sid=esc(r.id);
+  return r.pool||r.id==="cls:rouerie-magique"?`<button class="btn small rresopen" ${resCard(r)}><b class="num">${left}</b> / ${r.max}${r.pool?" d"+r.die:""}</button>`
+    :r.max<=8?pips("res:"+r.id,r.max,used,true)
+    :`<span class="hpstep rresstep"><button class="btn stepb" data-act="resstep" data-id="${sid}" data-v="1" aria-label="${esc(r.name)} : dépenser 1" ${left<=0?"disabled":""}>−</button><b class="num">${left}<small> / ${r.max}</small></b><button class="btn stepb" data-act="resstep" data-id="${sid}" data-v="-1" aria-label="${esc(r.name)} : récupérer 1" ${used<=0?"disabled":""}>+</button></span>`; }
+/* Repères et Ressources côte à côte (décision d'Angle, 11 nov. 2026) : grille invisible de 4 colonnes sur iPhone.
+   Quand Repères tient sur 3 colonnes (3 ou 6 valeurs) et qu'il y a exactement une ressource par rangée, Ressources prend la 4ᵉ colonne :
+   une seule grille, donc des tuiles de même taille et alignées ; une tuile de ressource ouvre une petite fenêtre pour dépenser. */
+function repResPair(ch,D,size){ const T=repTileMap(ch,D,size), rep=blockTiles(ch,"reperes").map(id=>T[id]&&T[id]()).filter(Boolean), n=rep.length, rows=n/3;
+  if(S.layoutEdit||n%3||!D.res.length||D.res.length!==rows) return "";
+  const rt=D.res.map(r=>{ const left=r.max-Math.min(r.max,+(ch.resUsed?.[r.id]||0));
+    return `<button class="rtile rrestile${left<=0?" vide0":""}" data-act="tpop" data-v="res:${esc(r.id)}" title="${esc(r.name)} : dépenser ou récupérer"><b class="num">${left}/${r.max}${r.pool?`<small> d${r.die}</small>`:""}</b><span class="label">${esc(r.name)}</span></button>`; });
+  let cells=""; for(let k=0;k<rows;k++) cells+=rep.slice(3*k,3*k+3).join("")+rt[k];
+  return `<div class="rpair" role="group" aria-label="Repères et ressources">${tbHead("reperes","Repères","blk:reperes").replace('class="tbhead"','class="tbhead rp3"')}<div class="tbhead rp1"><span class="label">Ressources</span></div>${cells}</div>`; }
+function resPop(ch,D,id,wrap){ const r=D.res.find(x=>x.id===id); if(!r){ S.T.pop=null; return ""; } const c=resCard(r);
+  return wrap(r.name,`<div class="texpl rrespop"><div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Récupération : ${esc(rechargeLabel(r.recharge))}${r.origin?" · "+esc(r.origin):""}</div><div class="row" style="justify-content:center">${resCtl(ch,r)}</div>${c?`<div class="row" style="justify-content:center;margin-top:12px"><button class="btn small ghost" ${c}>Description et usage</button></div>`:""}</div>`); }
 const mFmt=v=>String(Math.round(v*10)/10).replace(".",",");
 const REP_ICON={
   ca:'<path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.3 7.5 10 4.3-1.7 7.5-5.4 7.5-10v-6z"/>',

@@ -1120,7 +1120,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => tableOrder(cur()).slice(0, 5)), ['tour', 'perso', 'pv', 'ressources', 'reperes'], 'ordre déjà enregistré : Ressources se glisse sous PV');
   });
 
-  await test('Tuiles (T4) : ressources d’espèce et de don, objets à charges et consommables dans Ressources, Compagnon, Or', async p => {
+  await test('Tuiles (T4) : ressources d’espèce et de don dans Ressources (pas les objets), Compagnon, Or', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await open(p);
     const mk = (cls, sp, lv, extra) => p.evaluate(([cls, sp, lv, extra]) => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'T' }, { cls: catRes(cls), bg: catRes('srd:soldat'), sp: catRes('srd:' + sp) }); wCreate();
       Object.assign(cur(), { level: lv }, extra || {}); S.rv = null; renderModal(); S.tab = 'table'; render(); }, [cls, sp, lv, extra]);
@@ -1130,15 +1130,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => document.querySelectorAll('.tblk[data-blk="ressources"] .rres:first-child .pip').length), 3, 'Souffle : autant d’usages que la maîtrise (+3)');
     await mk('magicien', 'orc', 1); eq(await p.evaluate(() => derive(cur()).res.map(r => r.name + ':' + r.max + ':' + r.recharge)), ['Poussée d’adrénaline:2:court', 'Acharnement:1:long'], 'orc : Poussée d’adrénaline (repos court) et Acharnement');
     await mk('magicien', 'humain', 1, { counters: [{ id: 'k1', name: 'Flèches', cur: 18, max: 20 }], bag: [{ id: 'b1', name: 'Baguette test', qty: 1, note: '', charges: { max: 7, used: 2, rec: '1d6+1', when: 'long' } }] });
-    eq(await names(), ['Baguette test', 'Flèches'], 'magicien humain 1 : objet à charges et consommable suivi');
-    eq(await p.evaluate(() => [document.querySelectorAll('.tblk[data-blk="ressources"] .rres:first-child .pip:not(.used)').length, document.querySelector('.tblk[data-blk="ressources"] .rres:last-child .rresstep .num').textContent]), [5, '18 / 20'], 'baguette : 5 charges sur 7 ; flèches : 18 / 20');
-    await p.click('.tblk[data-blk="ressources"] .rres:last-child [data-act="cnt"][data-v="-1"]');
-    eq(await p.evaluate(() => cur().counters[0].cur), 17, 'flèche utilisée');
-    await p.click('.tblk[data-blk="ressources"] .rres:first-child .pip:nth-child(5)');
-    eq(await p.evaluate(() => cur().bag[0].charges.used), 3, 'charge de la baguette dépensée');
-    await p.evaluate(() => { cur().bag[0].charges = { max: 10, used: 2, rec: '', when: 'long' }; render(); });
-    await p.click('.tblk[data-blk="ressources"] .rres:first-child [data-act="chgstep"][data-v="1"]');
-    eq(await p.evaluate(() => [cur().bag[0].charges.used, document.querySelector('.tblk[data-blk="ressources"] .rres:first-child .num').textContent, document.documentElement.scrollWidth <= innerWidth]), [3, '7 / 10', true], 'plus de 8 charges : − / +, sans débordement');
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="ressources"]')), 'objets à charges et consommables : pas dans Ressources (ils restent dans l’Inventaire)');
+    ok(await p.evaluate(() => !!S.Titems.find(i => i.key === 'cnt:k1') && !!S.Titems.find(i => i.key === 'bag:b1')), 'toujours accessibles dans la recherche et l’Inventaire');
     // Compagnon et Or dans un bloc créé
     await p.evaluate(() => { const ch = cur(); ch.gold = { po: 12, pa: 15, pp: 1 }; ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t4aaaaaa', name: 'T4', r: 1, c: 4, tiles: [{ id: 'comp', sz: '12', r: 0, c: 0 }, { id: 'or', sz: '1', r: 0, c: 2 }] }] }); render(); });
     eq(await p.evaluate(() => document.querySelector('.tblk[data-blk="c_t4aaaaaa"] [data-v="info:or"] .num').textContent), '23 po', 'Or : 1 pp + 12 po + 15 pa = 23 po');
@@ -1164,7 +1157,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().counters[0].cur, cur().counters[0].spent]), [17, 3], 'trois jets d’attaque : trois flèches en moins (les dégâts ne comptent pas)');
     await p.click('.tcard [data-act="ammoEnd"]');
     eq(await p.evaluate(() => [cur().counters[0].cur, cur().counters[0].spent]), [18, 0], 'fin du combat : la moitié (1 sur 3) récupérée');
-    ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="ressources"]') && [...document.querySelectorAll('.tblk[data-blk="ressources"] .rresname .label')].some(e => e.textContent === 'Flèches')), 'les flèches apparaissent dans Ressources');
+    ok(await p.evaluate(() => ![...document.querySelectorAll('.tblk[data-blk="ressources"] .rresname .label')].some(e => e.textContent === 'Flèches')), 'les flèches restent hors de Ressources (Inventaire)');
     await p.evaluate(() => { tSelect(S.Titems.find(i => i.kind === 'atk' && i.key !== 'atk:arc').key); });
     ok(await p.evaluate(() => !document.querySelector('.tcard .tammo')), 'arme sans munitions : rien');
   });
@@ -1180,6 +1173,23 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const log = await p.evaluate(() => S.log.concat(cur().rollLog || []).map(l => l.bd || '').find(b => /passe|Nouveau dans/.test(b)) || '');
     ok(/Nouveau dans À la table : Repères : Aura de protection/.test(log), 'niveau 6 : « Repères : Aura de protection » annoncé : ' + log);
     ok(await p.evaluate(() => /nouveau dans « À la table » : Repères : Aura de protection/.test(document.getElementById('banner')?.textContent || '')), 'bandeau d’information');
+  });
+
+  await test('Repères et Ressources côte à côte : 6 valeurs + 2 ressources sur une grille de 4, tuiles de même taille, petite fenêtre', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 2; render(); });
+    eq(await p.evaluate(() => [!!document.querySelector('.tblk[data-blk="reperes"] .rpair'), !document.querySelector('.tblk[data-blk="ressources"]')]), [true, true], 'paladin 2 (6 repères, 2 ressources) : un seul bloc, Ressources à droite');
+    const geo = await p.evaluate(() => { const r = [...document.querySelectorAll('.rpair > .rtile')].map(e => e.getBoundingClientRect()); return { n: r.length, w: [...new Set(r.map(x => Math.round(x.width)))], h: [...new Set(r.map(x => Math.round(x.height)))], res: [...document.querySelectorAll('.rpair .rrestile')].map(e => Math.round(e.getBoundingClientRect().left) > Math.round(r[2].left)) }; });
+    eq([geo.n, geo.w.length, geo.h.length, geo.res], [8, 1, 1, [true, true]], 'huit tuiles de même largeur et même hauteur, ressources dans la 4ᵉ colonne : ' + JSON.stringify(geo));
+    ok(await p.evaluate(() => { const l = document.querySelector('.rpair .rp1 .label'); return l.scrollWidth <= l.clientWidth + 1; }), 'titre « Ressources » entier dans sa colonne');
+    await p.click('.rpair .rrestile:last-child');
+    eq(await p.evaluate(() => [S.T.pop.startsWith('res:'), !!document.querySelector('.tpop .pips,.tpop .rresstep,.tpop .rresopen')]), [true, true], 'toucher une ressource ouvre la petite fenêtre');
+    await p.evaluate(() => { S.T.pop = 'res:cls:imposition-des-mains'; render(); }); await p.click('.tpop [data-act="resstep"][data-v="1"]');
+    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], document.querySelector('.rpair .rrestile').querySelector('.num').textContent]), [1, '9/10'], 'dépense dans la fenêtre, tuile à jour');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { cur().level = 3; render(); });
+    ok(await p.evaluate(() => !document.querySelector('.rpair') && !!document.querySelector('.tblk[data-blk="ressources"] .rresgrid')), 'paladin 3 (3 ressources) : Ressources reprend toute la largeur');
+    await p.evaluate(() => { cur().level = 2; S.layoutEdit = true; render(); });
+    ok(await p.evaluate(() => !document.querySelector('.rpair') && !!document.querySelector('.tblk[data-blk="ressources"]')), 'mode disposition : deux blocs séparés, déplaçables');
+    await p.evaluate(() => { S.layoutEdit = false; render(); });
   });
 
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
