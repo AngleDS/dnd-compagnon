@@ -22,6 +22,12 @@ document.addEventListener("click",e=>{
     case "blkDelNow": if(ch){ const id=t.dataset.v; if(BLK_KEEP.includes(id)) break; const label=blkLabel(ch,id), snap=JSON.parse(JSON.stringify(ch.layout||{}));
       if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else setBlkHidden(ch,id,true);
       const u=S.undo={doc:S.cur,layout:snap,label,at:Date.now()}; clearTimeout(S.undoTimer); S.undoTimer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; render(); } },6000); render(); } break;
+    case "blkWidth": if(ch){ const id=t.dataset.v, w=+t.dataset.w, b=customBlocks(ch).find(x=>x.id===id); if(!blkWidths(id,b).includes(w)) break;
+      ch.layout=Object.assign({},ch.layout,{width:Object.assign({},ch.layout?.width,{[id]:w})});
+      // Bloc créé : les tuiles qui ne tiennent plus dans les cases plus étroites retournent dans la réserve
+      if(b){ const list=customCopy(ch), bb=list.find(x=>x.id===id); bb.w=w; const keep=cGrid(bb).tiles.filter(x=>tileFits(x.id,sizeW(x.sz,bb.c,w))), n=cGrid(bb).tiles.length-keep.length;
+        bb.tiles=keep.map(x=>({id:x.id,sz:x.sz,r:x.r,c:x.c})); list.forEach(x=>delete x.w); saveCustom(ch,list); if(n) setBanner(n+" tuile"+(n>1?"s retournent":" retourne")+" dans la réserve : trop large"+(n>1?"s":"")+" pour cette largeur."); }
+      touch(S.cur); render(); } break;
     case "blkUndo": if(ch&&S.undo&&S.undo.doc===S.cur){ ch.layout=S.undo.layout; S.undo=null; clearTimeout(S.undoTimer); touch(S.cur); render(); } break;
     case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; touch(S.cur); } if(S.T) S.T.pop=null; render(); break;
     case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.ctile=null; S.T.pop="tiles:"+t.dataset.blk; render(); break; }
@@ -465,7 +471,8 @@ let BLKD=null, BLKP=null;
 const LONG_PRESS_MS=350; // appui long avant tout glisser au doigt (blocs, tuiles, équipement)
 function blkPlace(){ if(!BLKD) return; const el=BLKD.el, box=el.parentElement; if(!box) return;
   const others=[...box.querySelectorAll(":scope > .tblk")].filter(b=>b!==el);
-  const next=others.find(b=>BLKD.y<layoutTop(b)+b.offsetHeight/2)||null;
+  // Blocs côte à côte (lot 2) : l'ordre se lit ligne par ligne ; dans la rangée du doigt, la moitié gauche d'un bloc passe avant lui
+  const next=others.find(b=>{ const t=layoutTop(b), l=b.getBoundingClientRect().left; return BLKD.y<t||(BLKD.y<t+b.offsetHeight&&BLKD.x<l+b.offsetWidth/2); })||null;
   if(el.nextElementSibling!==next) flipMove(box,()=>box.insertBefore(el,next)); }
 function blkGhostAt(){ if(BLKD&&BLKD.ghost){ BLKD.ghost.style.left=(BLKD.x-BLKD.dx)+"px"; BLKD.ghost.style.top=(BLKD.y-BLKD.dy)+"px"; } }
 function blkLoop(){ if(!BLKD) return; // défilement automatique près des bords, même sans bouger le doigt

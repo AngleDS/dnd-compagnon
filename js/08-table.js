@@ -264,7 +264,7 @@ function tPop(ch,D){
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
   if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
   if(k.startsWith("blk:")){ const id=k.slice(4); if(!TBLK.some(b=>b[0]===id)||BLK_FIXED.includes(id)){ T.pop=null; return ""; }
-    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">${id==="reperes"?"Son contenu s’adapte tout seul à ton personnage (classe, sous-classe, espèce).":id==="ressources"?"Son contenu montre tout seul les ressources de ton personnage (classe, sous-classe, dons).":id==="tour"?"Ce bloc ne se personnalise pas : tu peux seulement le déplacer ou le supprimer.":"Ce bloc deviendra bientôt une tuile, à placer où tu veux."}</div>`); }
+    return wrap("Bloc : "+blkLabel(ch,id),`${blkActions(ch,id)}${widthRow(ch,id)}<div class="muted" style="font-size:var(--fs-sm)">${id==="reperes"?"Son contenu s’adapte tout seul à ton personnage (classe, sous-classe, espèce).":id==="ressources"?"Son contenu montre tout seul les ressources de ton personnage (classe, sous-classe, dons).":id==="tour"?"Ce bloc ne se personnalise pas : tu peux seulement le déplacer ou le supprimer.":"Ce bloc deviendra bientôt une tuile, à placer où tu veux."}</div>`); }
   if(k==="blkadd"){ const gone=TBLK.filter(b=>blkHidden(ch,b[0]));
     return wrap("Ajouter un bloc",`${gone.length?`<div class="label" style="margin-bottom:6px">Blocs retirés</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${gone.map(b=>`<button class="btn small" data-act="blkRestore" data-v="${b[0]}">+ ${esc(b[1])}</button>`).join("")}</div><div class="label" style="margin-bottom:6px">Nouveau bloc</div>`:""}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Choisis la taille du bloc (lignes × colonnes) ; tu y placeras ensuite les tuiles de ton choix.</div>${blkTemplates("blkCreate")}
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn small ghost" data-act="layoutReset">Remettre l’ordre des blocs par défaut</button></div>`); }
@@ -279,7 +279,7 @@ function tPop(ch,D){
     const res=unused.length?unused.map(x=>tileOkInBlk(x,blk)?`<button class="tcell tmini${TILE_META[x]?.act?" tact":""}" data-act="tileAdd" data-blk="${blk}" data-v="${x}" data-tdrag="res" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`
       :`<span class="tcell tmini toff" aria-disabled="true" title="${tileWhy(x,blk)}">${face(x)}<small class="toffwhy">${tileWhy(x,blk)}</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
     const selBar=sel>=0&&arr[sel]?`<div class="row" style="gap:8px;margin-top:8px;align-items:center"><span class="muted" style="font-size:var(--fs-sm)">Case ${sel+1} : ${esc(cat[arr[sel]])}</span><button class="btn small ghost" data-act="tileDel" data-blk="${blk}" data-i="${sel}">Retirer cette tuile</button></div>`:"";
-    return wrap("Bloc : "+TBLK.find(b=>b[0]===blk)[1],`${blkActions(ch,blk)}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Au doigt, appui long sur une tuile puis glisse-la. Glisse une tuile de la réserve vers une case, ou d’une case à l’autre. Glisse-la hors du bloc pour la retirer.</div>
+    return wrap("Bloc : "+TBLK.find(b=>b[0]===blk)[1],`${blkActions(ch,blk)}${widthRow(ch,blk)}<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Au doigt, appui long sur une tuile puis glisse-la. Glisse une tuile de la réserve vers une case, ou d’une case à l’autre. Glisse-la hors du bloc pour la retirer.</div>
       <div class="tpgrid" data-tblk="${blk}" style="grid-template-columns:repeat(${blk==="reperes"?4:2},minmax(0,1fr))">${cells}</div>${selBar}
       <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn small ghost" data-act="tileReset" data-blk="${blk}" title="Remet les tuiles conseillées : Tests, Sauvegardes, États, Inventaire, Équipement, Inspiration">Automatique (recommandé)</button></div>
       <div class="label" style="margin:10px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>
@@ -345,7 +345,7 @@ function viewTable(ch,D,banner=""){
   const overviewSpecies=srd("species",ch.species)||hb(ch.species);
   const overviewSize=String(ch.size||overviewSpecies?.size||"—");
   const pair=repResPair(ch,D,overviewSize);
-  const statsBlk=pair||`${tbHead("reperes","Repères","blk:reperes")}<div class="rtiles rauto" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize)}</div>`;
+  const statsBlk=pair||`${tbHead("reperes","Repères","blk:reperes")}<div class="rtiles rauto" role="group" aria-label="Repères">${reperesTiles(ch,D,overviewSize,blkWidth(ch,"reperes"))}</div>`;
   // Emplacements dans la carte PV : rangée présente seulement si le perso en a (classe, sous-classe, niveau) ; une pastille par niveau de sort, ou une pastille « Pacte »
   const slotCells=!D.cast?"":D.cast.type==="pact"?(+D.cast.pactSlots>0?`<span class="hs pact"><span class="hsn">Pacte ${D.cast.pactLevel}</span>${pips("pact",D.cast.pactSlots,+ch.pactUsed||0,true,lk)}</span>`:"")
     :(D.cast.slots||[]).map((n,i)=>n>0?`<span class="hs"><span class="hsn" title="Niveau ${i+1}">${i+1}</span>${pips("slot:"+(i+1),n,+(ch.slotsUsed?.[i+1]||0),true,lk)}</span>`:"").join("");
@@ -427,7 +427,8 @@ const TILE_META=Object.assign(
 const tileMinW=id=>TILE_W[(TILE_META[id]||{}).min||"E"];
 const tileFits=(id,w)=>w>=tileMinW(id);
 const BLK_CELL_W={reperes:80,raccourcis:170};
-const cellW=(C,span)=>Math.floor((358-8*(C-1))/C*span+8*(span-1)); // largeur réelle d'un groupe de cases sur iPhone
+// Largeur réelle d'un groupe de cases sur iPhone (358 px utiles, grille invisible de 4 colonnes) pour un bloc de W colonnes de page
+const cellW=(C,span,W=4)=>{ const inner=(358-24)/4*W+8*(W-1); return Math.floor((inner-8*(C-1))/C*span+8*(span-1)); };
 const tileOkInBlk=(id,blk)=>!(TILE_META[id]||{}).only&&tileFits(id,BLK_CELL_W[blk]);
 const tileWhy=(id,blk)=>(TILE_META[id]||{}).only?"Seulement dans un bloc créé":"Trop large pour ces cases";
 const chSize=ch=>String(ch.size||(srd("species",ch.species)||hb(ch.species))?.size||"—");
@@ -524,10 +525,14 @@ function repTileMap(ch,D,size){
 /* Bloc Ressources (lot T3b) : une tuile par ressource du perso (classe, sous-classe, dons, objets maison), 2 par rangée.
    Jusqu'à 8 : des ronds à toucher directement ; au-delà : − / + ; réserve de dés et Rouerie magique : leur fiche (dépense guidée).
    Toucher le nom ouvre la fiche de la ressource (description et usage). Bloc absent si le perso n'a aucune ressource. */
-function resBlock(ch,D){ if(!D.res.length) return "";
+function resBlock(ch,D){ if(!D.res.length) return ""; const w=blkWidth(ch,"ressources");
+  // Une colonne : tuiles compactes empilées (même taille que les Repères), un toucher ouvre la petite fenêtre
+  if(w===1) return `<div class="tbhead"><span class="label rp1l">Ressources</span></div><div class="rrescol" role="group" aria-label="Ressources">${resCompact(ch,D)}</div>`;
   const tiles=D.res.map(r=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, c=resCard(r);
     return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${resCtl(ch,r)}</div>`; }).join("");
-  return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid" role="group" aria-label="Ressources">${tiles}</div>`; }
+  return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid${w===2?" one":""}" role="group" aria-label="Ressources">${tiles}</div>`; }
+const resCompact=(ch,D)=>D.res.map(r=>{ const left=r.max-Math.min(r.max,+(ch.resUsed?.[r.id]||0));
+  return `<button class="rtile rrestile${left<=0?" vide0":""}" data-act="tpop" data-v="res:${esc(r.id)}" title="${esc(r.name)} : dépenser ou récupérer"><b class="num">${left}/${r.max}${r.pool?`<small> d${r.die}</small>`:""}</b><span class="label">${esc(r.name)}</span></button>`; }).join("");
 const resCard=r=>{ const it=(S.Titems||[]).find(x=>x.res&&x.res.id===r.id); return it?`data-act="tsel" data-k="${esc(it.key)}"`:""; };
 /* Commande d'une ressource : ronds (≤ 8), − / + au-delà ; réserve de dés et Rouerie magique : leur fiche (dépense guidée). */
 function resCtl(ch,r){ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, sid=esc(r.id);
@@ -538,9 +543,8 @@ function resCtl(ch,r){ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left
    Quand Repères tient sur 3 colonnes (3 ou 6 valeurs) et qu'il y a exactement une ressource par rangée, Ressources prend la 4ᵉ colonne :
    une seule grille, donc des tuiles de même taille et alignées ; une tuile de ressource ouvre une petite fenêtre pour dépenser. */
 function repResPair(ch,D,size){ const T=repTileMap(ch,D,size), rep=blockTiles(ch,"reperes").map(id=>T[id]&&T[id]()).filter(Boolean), n=rep.length, rows=n/3;
-  if(S.layoutEdit||n%3||!D.res.length||D.res.length!==rows) return "";
-  const rt=D.res.map(r=>{ const left=r.max-Math.min(r.max,+(ch.resUsed?.[r.id]||0));
-    return `<button class="rtile rrestile${left<=0?" vide0":""}" data-act="tpop" data-v="res:${esc(r.id)}" title="${esc(r.name)} : dépenser ou récupérer"><b class="num">${left}/${r.max}${r.pool?`<small> d${r.die}</small>`:""}</b><span class="label">${esc(r.name)}</span></button>`; });
+  if(S.layoutEdit||blkWidthSet(ch,"reperes")||blkWidthSet(ch,"ressources")||n%3||!D.res.length||D.res.length!==rows) return "";
+  const rt=resCompact(ch,D).split(/(?=<button class="rtile rrestile)/);
   let cells=""; for(let k=0;k<rows;k++) cells+=rep.slice(3*k,3*k+3).join("")+rt[k];
   return `<div class="rpair" role="group" aria-label="Repères et ressources">${tbHead("reperes","Repères","blk:reperes").replace('class="tbhead"','class="tbhead rp3"')}<div class="tbhead rp1"><span class="label">Ressources</span></div>${cells}</div>`; }
 function resPop(ch,D,id,wrap){ const r=D.res.find(x=>x.id===id); if(!r){ S.T.pop=null; return ""; } const c=resCard(r);
@@ -632,8 +636,10 @@ function speedPop(ch,D,wrap){ const v=ch.speeds||{}, fo=+ch.abilities?.for||10, 
     <div class="label" style="margin-top:12px">Sauts (Force ${fo})</div><div class="tinfocalc"><span>En longueur, avec 3 m d'élan</span><span class="num">${mFmt(fo*0.3)} m</span><span>En longueur, sans élan</span><span class="num">${mFmt(fo*0.15)} m</span><span>En hauteur, avec 3 m d'élan</span><span class="num">${mFmt(Math.max(0,3+D.mods.for)*0.3)} m</span><span>En hauteur, sans élan</span><span class="num">${mFmt(Math.max(0,3+D.mods.for)*0.15)} m</span></div>
     <div class="muted tinfonote">Chaque mètre sauté se paie sur ton déplacement.</div></div>`); }
 /* Repères : rangées équilibrées sur une grille de 12 (4 → 1 rangée ; 5 → 3+2 ; 6 → 3+3 ; 7 → 4+3 ; 8 → 4+4), jamais de case vide. */
-function reperesTiles(ch,D,size){ const T=repTileMap(ch,D,size), h=blockTiles(ch,"reperes").map(id=>T[id]&&T[id]()).filter(Boolean), n=h.length, top=n<=4?n:Math.ceil(n/2);
-  return h.map((x,i)=>x.replace(/^<(\w+)/,`<$1 style="grid-column:span ${12/(i<top?top:n-top)}"`)).join(""); }
+function reperesTiles(ch,D,size,k=4){ const T=repTileMap(ch,D,size), h=blockTiles(ch,"reperes").map(id=>T[id]&&T[id]()).filter(Boolean), n=h.length;
+  // k tuiles au plus par rangée (largeur du bloc) ; rangées équilibrées, la première en a une de plus s'il le faut
+  const rows=Math.max(1,Math.ceil(n/k)), base=Math.floor(n/rows), extra=n%rows, per=[]; for(let r=0;r<rows;r++) per.push(base+(r<extra?1:0));
+  let i=0; return per.flatMap(c=>h.slice(i,i+=c).map(x=>x.replace(/^<(\w+)/,`<$1 style="grid-column:span ${12/c}"`))).join(""); }
 /* Blocs personnalisés (étape 6) : ch.layout.custom = [{id,name,r,c,tiles:[{id,sz}]}] ; taille d'une tuile : "1" (1×1), "2" (2×2), "l" (ligne entière).
    Placement automatique dans l'ordre (les tuiles comblent les trous) ; les cases restantes affichent « + ». */
 /* Modèles de blocs personnalisés : 8 cases au plus (décision d'Angle). */
@@ -645,7 +651,14 @@ function cReformat(b,r,c){ const keep=[], out=[], nb={r,c}; for(const t of cGrid
 /* Tuiles générales (lot T2) : proposées dans tous les blocs selon la largeur. */
 const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",exh:"Épuisement",search:"Recherche",comp:"Compagnon"};
 function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,TILE_GEN,{slots:"Emplacements de sorts"}); }
-function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4):[]; }
+function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4).map(b=>Object.assign({},b,{w:blkWidth(ch,b.id,b)})):[]; }
+/* Largeur des blocs sur la grille invisible de 4 colonnes (lot 2) : ch.layout.width = {id: 1..4}. Personnage et PV restent en pleine largeur. */
+const BLK_WIDTHS={perso:[4],pv:[4],reperes:[2,3,4],ressources:[1,2,4],recherche:[2,4],tour:[2,4],raccourcis:[2,4],notes:[2,4]};
+const blkWidths=(id,b)=>id.startsWith("c_")?[1,2,3,4].filter(w=>w>=(b?.c||1)):(BLK_WIDTHS[id]||[4]);
+function blkWidth(ch,id,b){ const w=+ch.layout?.width?.[id]; return blkWidths(id,b).includes(w)?w:4; }
+const blkWidthSet=(ch,id)=>Number.isInteger(+ch.layout?.width?.[id])&&!!ch.layout.width[id];
+const widthRow=(ch,id,b)=>{ const ws=blkWidths(id,b); if(ws.length<2) return ""; const cur=blkWidth(ch,id,b);
+  return `<div class="label" style="margin:2px 0 6px">Largeur sur la page</div><div class="row bwidth" style="gap:6px;flex-wrap:wrap;margin-bottom:12px">${ws.map(w=>`<button class="chip" data-act="blkWidth" data-v="${id}" data-w="${w}" aria-pressed="${w===cur}">${w} colonne${w>1?"s":""}</button>`).join("")}</div>`; };
 function customCopy(ch){ return customBlocks(ch).map(b=>Object.assign({},b,{tiles:(Array.isArray(b.tiles)?b.tiles:[]).map(t=>Object.assign({},t))})); }
 function saveCustom(ch,list){ ch.layout=Object.assign({},ch.layout,{custom:list}); touch(S.cur); }
 /* Position exacte des tuiles : {id,sz,r,c} (ligne et colonne de la case en haut à gauche). Taille : [hauteur, largeur] en cases. */
@@ -653,9 +666,9 @@ const tileSpan=(sz,R,C)=>sz==="l"?[1,C]:sz==="b"?[Math.min(2,R),C]:sz==="12"&&C>
 /* Tailles : 1×1, 1×2 (une ligne, deux colonnes), 2×2, ligne entière, bandeau (deux lignes sur toute la largeur). */
 const TILE_SIZES=[["1","1×1"],["12","1×2"],["2","2×2"],["l","Ligne"],["b","Bandeau"]];
 const sizeOk=(sz,R,C)=>sz==="1"||(sz==="12"&&C>=3)||(sz==="2"&&R>=2&&C>=2)||(sz==="l"&&C>1)||(sz==="b"&&R>=2);
-const sizeW=(sz,C)=>cellW(C,tileSpan(sz,4,C)[1]);
+const sizeW=(sz,C,W=4)=>cellW(C,tileSpan(sz,4,C)[1],W);
 const tileSizeOk=(id,sz,R,C)=>sizeOk(sz,R,C)&&!((TILE_META[id]||{}).h1&&(sz==="2"||sz==="b"));
-const fitSize=(b,id)=>(TILE_SIZES.map(z=>z[0]).find(z=>tileSizeOk(id,z,b.r,b.c)&&tileFits(id,sizeW(z,b.c))))||null;
+const fitSize=(b,id)=>(TILE_SIZES.map(z=>z[0]).find(z=>tileSizeOk(id,z,b.r,b.c)&&tileFits(id,sizeW(z,b.c,b.w||4))))||null;
 /* Première place libre pour une tuile de cette taille (sans rien recouvrir), à partir de la case n si elle est donnée. */
 function cFreeSpot(b,sz,n){ const R=b.r,C=b.c, {tiles}=cGrid(b), [h,w]=tileSpan(sz,R,C), free=(r,c)=>r+h<=R&&c+w<=C&&!tiles.some(x=>tilesHit(x,{sz,r,c},R,C));
   if(Number.isInteger(n)){ const r=Math.floor(n/C), c=sz==="l"||sz==="b"?0:n%C; if(free(r,c)) return {r,c}; }
@@ -683,14 +696,14 @@ function cMove(b,src,dst){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.
     else return null; }
   if(old) list.splice(src.i,0,t); else list.push(t); return list; }
 function cResize(b,i,sz){ const R=b.r,C=b.c, list=cGrid(b).tiles.map(t=>Object.assign({},t)), t=list[i]; if(!t) return null;
-  if(!tileSizeOk(t.id,sz,R,C)||!tileFits(t.id,sizeW(sz,C))) return null;
+  if(!tileSizeOk(t.id,sz,R,C)||!tileFits(t.id,sizeW(sz,C,b.w||4))) return null;
   const [h,w]=tileSpan(sz,R,C), n=Object.assign({},t,{sz,r:Math.min(t.r,R-h),c:sz==="l"||sz==="b"?0:Math.min(t.c,C-w)});
   if(list.some((y,k)=>k!==i&&tilesHit(n,y,R,C))) return null; list[i]=n; return list; }
 function cUpdate(ch,id,fn){ seeInsp(ch); const list=customCopy(ch), b=list.find(x=>x.id===id); if(!b) return false; const tiles=fn(b); if(!tiles) return false;
   b.tiles=tiles.map(t=>({id:t.id,sz:t.sz||"1",r:t.r,c:t.c})); saveCustom(ch,list); return true; }
 const cellStyle=(t,R,C)=>{ const [h,w]=tileSpan(t.sz,R,C); return `grid-row:${t.r+1}/span ${h};grid-column:${t.c+1}/span ${w}`; };
 function customBlockHtml(ch,D,b,ctx){
-  const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b), wide=t=>sizeW(t.sz,b.c)>=TILE_W.L;
+  const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b), wide=t=>sizeW(t.sz,b.c,b.w||4)>=TILE_W.L;
   const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:t.id==="search"&&wide(t)&&!S.T._tq?searchBar():(wide(t)&&TILE_GEN[t.id]&&Rm[t.id]?Rm[t.id]():((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||""));
     return h?`<div class="ccell" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
   let html=tiles.map(one).join("");
@@ -708,9 +721,9 @@ function customPop(ch,D,id,wrap){
   const res=unused.length?unused.map(x=>fitSize(b,x)?`<button class="tcell tmini${TILE_META[x]?.act?" tact":""}" data-act="ctileAdd" data-v="${id}" data-t="${x}" data-tdrag="cres" data-cblk="${id}" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`
       :`<span class="tcell tmini toff" aria-disabled="true" title="Trop large pour ce bloc">${face(x)}<small class="toffwhy">Trop large pour ce bloc</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
   const t=tiles[selT], sizes=t?TILE_SIZES.filter(([z])=>tileSizeOk(t.id,z,R,C)):[];
-  const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>tileFits(t.id,sizeW(z,C))?`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`:`<span class="chip toff" aria-disabled="true" title="Trop étroit pour cette tuile">${l}</span>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
+  const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>tileFits(t.id,sizeW(z,C,b.w||4))?`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`:`<span class="chip toff" aria-disabled="true" title="Trop étroit pour cette tuile">${l}</span>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
   const del=S.T.cdel===id?`<span class="row" style="gap:6px"><span>Supprimer ce bloc ?</span><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span>`:`<button class="btn small ghost" data-act="cblkDel" data-v="${id}">Supprimer le bloc</button>`;
-  return wrap("Bloc : "+b.name,`${blkActions(ch,id,`<button class="btn small ghost" data-act="tpop" data-v="blkfmt:${id}">Format ${R}×${C}</button>`)}<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
+  return wrap("Bloc : "+b.name,`${blkActions(ch,id,`<button class="btn small ghost" data-act="tpop" data-v="blkfmt:${id}">Format ${R}×${C}</button>`)}${widthRow(ch,id,b)}<label class="field"><span>Nom du bloc</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
     <div class="muted" style="font-size:var(--fs-sm);margin:10px 0">Au doigt, appui long sur une tuile puis glisse-la. Glisse une tuile de la réserve vers une case, ou d’une case à l’autre ; hors du bloc pour la retirer. Touche une tuile posée pour changer sa taille.</div>
     <div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},minmax(60px,auto))">${cells}</div>${selBar}
     <div class="label" style="margin:14px 0 6px">Réserve${!free&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${id}">${res}</div>`);
@@ -725,12 +738,13 @@ function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map
 function tableBlocks(ch,blocks){
   const ed=!!S.layoutEdit, ids=tableOrder(ch).filter(id=>!blkHidden(ch,id)&&(ed||blocks[id])), label=id=>blkLabel(ch,id);
   const charges=chargeRecoveryForms(ch);
-  if(!ed) return `${charges?`<div class="tcharges">${charges}</div>`:""}<div class="tblocks">${ids.map(id=>`<section class="tblk" data-blk="${id}" aria-label="${esc(label(id))}">${blocks[id]}</section>`).join("")}</div>`;
+  const cb=Object.fromEntries(customBlocks(ch).map(b=>[b.id,b])), wcls=id=>{ const w=blkWidth(ch,id,cb[id]); return w<4?` w${w}" style="grid-column:span ${w}`:""; };
+  if(!ed) return `${charges?`<div class="tcharges">${charges}</div>`:""}<div class="tblocks">${ids.map(id=>`<section class="tblk${wcls(id)}" data-blk="${id}" aria-label="${esc(label(id))}">${blocks[id]}</section>`).join("")}</div>`;
   // Mode édition (Menu > Personnaliser l'interface) : page translucide, outils nets sur chaque bloc ; contenu inactif.
   const pen=id=>id==="perso"||id==="pv"?"":`<button class="tedpen" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}" aria-label="Modifier le bloc ${esc(label(id))}" title="Modifier le bloc">${PEN_SVG}</button>`;
   const u=S.undo&&S.undo.doc===S.cur?S.undo:null;
   return `<div class="tlayouttop tedbar" role="status"><span><b>Mode édition</b> · appui long sur ⋮⋮ pour déplacer</span><button class="btn small primary" data-act="layoutDone">Terminé</button></div>
-  <div class="tblocks editing">${ids.map(id=>`<section class="tblk ted" data-blk="${id}" aria-label="${esc(label(id))}">
+  <div class="tblocks editing">${ids.map(id=>`<section class="tblk ted${wcls(id)}" data-blk="${id}" aria-label="${esc(label(id))}">
     <div class="tblkh"><span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span><b>${esc(label(id))}</b>${pen(id)}</div>
     <div class="tblkc" inert>${blocks[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div>
     ${BLK_KEEP.includes(id)?"":`<button class="btn small danger tdel" data-act="blkDelNow" data-v="${id}" aria-label="Supprimer le bloc ${esc(label(id))}">Supprimer</button>`}</section>`).join("")}

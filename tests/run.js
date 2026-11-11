@@ -1206,6 +1206,31 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.layoutEdit = false; render(); });
   });
 
+  await test('Interface lot 2 : largeur des blocs, blocs côte à côte sur 4 colonnes, Ressources en colonne, bloc créé plus étroit', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 2; render(); });
+    await menuClick(p, '[data-act="layoutEdit"]');
+    await p.click('.tblk[data-blk="reperes"] .tedpen');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkWidth"]')].map(b => b.dataset.w + (b.getAttribute('aria-pressed') === 'true' ? '*' : ''))), ['2', '3', '4*'], 'Repères : 2, 3 ou 4 colonnes (4 par défaut)');
+    await p.click('.tpop [data-act="blkWidth"][data-w="3"]'); await p.keyboard.press('Escape');
+    await p.click('.tblk[data-blk="ressources"] .tedpen'); await p.click('.tpop [data-act="blkWidth"][data-w="1"]'); await p.keyboard.press('Escape');
+    eq(await p.evaluate(() => cur().layout.width), { reperes: 3, ressources: 1 }, 'largeurs enregistrées dans la fiche');
+    // Ressources juste après Repères dans l'ordre
+    await p.evaluate(() => { const ch = cur(); ch.layout.order = ['perso', 'reperes', 'ressources', 'pv', 'recherche', 'tour', 'raccourcis', 'notes']; S.layoutEdit = false; render(); });
+    const g = await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="ressources"]').getBoundingClientRect(), t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => Math.round(e.getBoundingClientRect().width)), r = [...document.querySelectorAll('.tblk[data-blk="ressources"] .rtile')].map(e => Math.round(e.getBoundingClientRect().width));
+      return { same: Math.round(a.top) === Math.round(b.top), right: b.left > a.right, rep3: Math.round(a.width / b.width), tw: t[0], rw: r[0], pair: !!document.querySelector('.rpair'), ov: document.documentElement.scrollWidth <= innerWidth }; });
+    eq([g.same, g.right, g.rep3, Math.abs(g.tw - g.rw) <= 1, g.pair, g.ov], [true, true, 3, true, false, true], 'Repères (3) et Ressources (1) côte à côte, tuiles de même largeur, sans débordement : ' + JSON.stringify(g));
+    await p.click('.tblk[data-blk="ressources"] .rrestile'); ok(await p.evaluate(() => S.T.pop.startsWith('res:')), 'Ressources en colonne : un toucher ouvre la petite fenêtre'); await p.keyboard.press('Escape');
+    await p.evaluate(() => { cur().layout.width.raccourcis = 2; cur().layout.width.notes = 2; cur().layout.order = ['raccourcis', 'notes', 'perso', 'reperes', 'ressources', 'pv']; render(); });
+    eq(await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="raccourcis"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="notes"]').getBoundingClientRect(); return [Math.round(a.top) === Math.round(b.top), getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpanels')).gridTemplateColumns.split(' ').length]; }), [true, 1], 'Raccourcis et Notes (2 colonnes chacun) côte à côte, tuiles sur une colonne');
+    // Bloc créé : largeur ≥ nombre de colonnes de tuiles ; une tuile trop large retourne dans la réserve
+    await p.evaluate(() => { const ch = cur(); ch.layout.custom = [{ id: 'c_l2aaaaaa', name: 'Étroit', r: 2, c: 2, tiles: [{ id: 'saves', sz: '1', r: 0, c: 0 }, { id: 'ca', sz: '1', r: 0, c: 1 }] }]; S.T.pop = 'tiles:c_l2aaaaaa'; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkWidth"]')].map(b => b.dataset.w)), ['2', '3', '4'], 'bloc de 2 colonnes de tuiles : 2, 3 ou 4 colonnes de page');
+    await p.click('.tpop [data-act="blkWidth"][data-w="2"]');
+    eq(await p.evaluate(() => [cur().layout.width.c_l2aaaaaa, cur().layout.custom[0].tiles.map(t => t.id)]), [2, ['ca']], 'largeur 2 : Jets de sauvegarde (trop large) retourne dans la réserve, la CA reste');
+    const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { width: { reperes: 9 } } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
+    ok(/largeurs/.test(bad), 'largeur invalide refusée à l’import');
+  });
+
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
     await diceTable(p);
     const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));
