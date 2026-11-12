@@ -533,7 +533,7 @@ function repTileMap(ch,D,size){
     if(h.startsWith('<span class="rtile"')) h=h.replace('<span class="rtile"',`<button class="rtile rinfo" data-act="tpop" data-v="info:${id}"`).replace(/<\/span>$/,"</button>");
     if(Object.prototype.hasOwnProperty.call(TILE_CAT.reperes,id)){
       const label=h.match(/<span class="label">([^<]*)<\/span>/), full=label&&label[1];
-      const compact={ivp:"Invest. passive",harmo:"Harm.",agrip:"Agripper / Bousculer",malice:"DD Frappe malicieuse",aura:"Aura protection",souffle:"DD souffle",vision:full==="Perception des vibrations"?"Percept. vibrations":full==="Vision dans le noir"?"Vision nocturne":full}[id]||full;
+      const compact={ivp:"Invest. passive",harmo:"Harm.",agrip:"Agripper / Bousculer",malice:"DD Frappe malicieuse",aura:"Aura prot.",souffle:"DD souffle",vision:full==="Perception des vibrations"?"Percept. vibrations":full==="Vision dans le noir"?"Vision nocturne":full}[id]||full;
       const value=h.match(/<b class="num">([^<]*)<\/b>/);
       if(full) h=h.replace(label[0],`<span class="label rep-label" data-short="${esc(compact)}"><span class="rep-full">${full}</span></span>`).replace('<button class="rtile',`<button aria-label="${esc(full)} : ${esc(value?value[1]:"")}" class="rtile rep-value-tile`);
       if(id==="ca") h=h.replace(/<b class="num">([\s\S]*?)<\/b>/,`<span class="rep-shield"><svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.ca}</svg><b class="num">$1</b></span>`);
