@@ -1155,18 +1155,22 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await mk('guerrier', 2);
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk).slice(2, 5)), ['pv', 'recherche', 'ressources'], 'bloc sous la carte PV, après la Recherche');
     eq(await tiles(), ['Second souffle:2', 'Fougue:1'], 'guerrier 2 : Second souffle (2 ronds) et Fougue (1 rond)');
-    await p.click('.tblk[data-blk="ressources"] .rres:first-child .pip:nth-child(2)');
+    await p.click('.tblk[data-blk="ressources"] .rres:first-child');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .rrespop button.pip').length]), ['res:cls:second-souffle', 2], 'toucher la tuile ouvre la fenêtre, grandes pastilles');
+    await p.click('.tpop .rrespop button.pip[data-i="1"]');
     eq(await p.evaluate(() => cur().resUsed['cls:second-souffle']), 1, 'un toucher sur le dernier rond plein en dépense un');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { S.T.pop = null; render(); });
     eq(await p.evaluate(() => { const t = [...document.querySelectorAll('.tblk[data-blk="ressources"] .rres')].map(e => e.getBoundingClientRect()); return Math.round(t[0].top) === Math.round(t[1].top); }), true, 'deux tuiles côte à côte');
-    await p.click('.tblk[data-blk="ressources"] .rres:first-child .rresname');
-    ok(await p.evaluate(() => S.T.pop === 'card' && /second souffle/i.test(S.T.sel)), 'toucher le nom ouvre la fiche de la ressource (aptitude de classe)');
+    await p.click('.tblk[data-blk="ressources"] .rres:first-child'); await p.click('.tpop .rrespop [data-act="tsel"]');
+    ok(await p.evaluate(() => S.T.pop === 'card' && /second souffle/i.test(S.T.sel)), '« Description et usage » ouvre la fiche de la ressource (aptitude de classe)');
     await p.keyboard.press('Escape');
     await mk('paladin', 3);
     eq(await tiles(), ['Imposition des mains (PV):15 / 15', 'Conduit divin:2', 'Châtiment divin sans emplacement:1'], 'paladin 3 : réserve de 15 PV en chiffres, Conduit divin et Châtiment gratuit en ronds');
     eq(await p.evaluate(() => getComputedStyle(document.querySelector('.tblk[data-blk="ressources"] .rres:last-child')).gridColumnStart), '1', '3 tuiles : la dernière prend toute la rangée');
-    await p.click('.tblk[data-blk="ressources"] [data-act="resstep"][data-v="1"]'); await p.click('.tblk[data-blk="ressources"] [data-act="resstep"][data-v="1"]');
-    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], document.querySelector('.tblk[data-blk="ressources"] .rresstep .num').textContent]), [2, '13 / 15'], '− dépense 1 (deux fois)');
-    await p.click('.tblk[data-blk="ressources"] [data-act="resstep"][data-v="-1"]');
+    await p.click('.tblk[data-blk="ressources"] .rres:first-child');
+    await p.click('.tpop [data-act="resstep"][data-v="1"]'); await p.click('.tpop [data-act="resstep"][data-v="1"]');
+    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], document.querySelector('.tpop .rresstep .num').textContent, document.querySelector('.tblk[data-blk="ressources"] .rres:first-child .num').textContent]), [2, '13 / 15', '13 / 15'], '− dépense 1 (deux fois), la tuile suit');
+    await p.click('.tpop [data-act="resstep"][data-v="-1"]'); await p.keyboard.press('Escape');
     eq(await p.evaluate(() => cur().resUsed['cls:imposition-des-mains']), 1, '+ en récupère 1');
     await p.evaluate(() => { S.layoutEdit = true; render(); }); await p.click('.tblk[data-blk="ressources"] .tedpen');
     ok(await p.evaluate(() => S.T.pop === 'blk:ressources' && !!document.querySelector('.tpop .bfmt [data-act="blkFmt"]') && !!document.querySelector('.tpop .bprev .rres')), 'Ressources : crayon en mode édition, formats et aperçu dans la fenêtre');
@@ -2306,6 +2310,33 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { S.T.pop = 'skills'; render(); return true; }), 'fenêtre rouverte');
     await p.click('.tpop [data-k="skill:arcanes"]');
     ok(await p.evaluate(() => { const m = document.querySelector('.qmenu').getBoundingClientRect(); return m.left >= 0 && m.right <= innerWidth; }), 'iPhone : le menu tient dans l’écran');
+  });
+
+  await test('Ressources : aucune tuile ne déborde (iPhone 390 et 375 points, plusieurs classes et niveaux)', async p => {
+    const errs = [];
+    for (const w of [390, 375]) {
+      await p.setViewportSize({ width: w, height: 844 }); await open(p);
+      for (const [cls, sp, lv] of [['paladin', 'drakeide', 1], ['paladin', 'drakeide', 6], ['paladin', 'humain', 15], ['guerrier', 'orc', 10], ['moine', 'nain', 12], ['barde', 'goliath', 8], ['occultiste', 'humain', 11]]) {
+        await p.evaluate(([cls, sp, lv]) => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'T' }, { cls: catRes(cls), bg: catRes('srd:soldat'), sp: catRes('srd:' + sp) }); wCreate();
+          cur().level = lv; S.rv = null; renderModal(); S.tab = 'table'; render(); }, [cls, sp, lv]);
+        (await p.evaluate(() => { const bad = []; document.querySelectorAll('.tblk[data-blk="ressources"] :is(.rres,.rrestile)').forEach(e => { if (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1) bad.push(e.textContent.trim().slice(0, 30)); }); return bad; }))
+          .forEach(x => errs.push(w + ' ' + cls + ' ' + lv + ' : ' + x));
+      }
+    }
+    eq(errs, [], 'tuiles de Ressources entières dans leur hauteur de 76 px');
+  });
+
+  await test('Concentration : mini-menu au toucher ; avec un sort en cours, le mode choisi passe à la fenêtre du jet', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { cur().conc = 'Bénédiction'; cur().conditions = []; render(); });
+    await p.click('.health-card .tconcb');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => b.dataset.m || b.dataset.act)), ['a', 'n', 'd', 'tqdet'], 'carte PV : Avantage, Normal, Désavantage, Détails');
+    await p.click('.qmenu [data-m="a"]');
+    eq(await p.evaluate(() => [S.T.pop, S.T.cc && S.T.cc.mode]), ['concchk', 'a'], 'sort en cours : fenêtre du jet de Concentration, avantage déjà choisi');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { cur().conc = ''; S.T.pop = null; S.T.cc = null; setVirtualDice(true); render(); });
+    await p.click('.health-card .tconcb'); await p.click('.qmenu [data-m="n"]');
+    eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label]), ['qroll', 'Concentration'], 'sans sort : jet direct de sauvegarde de Constitution');
   });
 
   if (BROWSER) await BROWSER.close();

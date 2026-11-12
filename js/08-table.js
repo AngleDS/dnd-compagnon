@@ -358,7 +358,7 @@ function viewTable(ch,D,banner=""){
       <button class="health-detail health-adjust" data-act="tpop" data-v="hpmax" title="Modifier les PV maximum"><span class="label">PV max ±</span><b class="num">${D.hpBonus?sg(D.hpBonus):0}</b></button>
       <div class="health-detail health-dice" title="Dés de vie restants : à dépenser pendant un repos court (bouton Repos)"><span class="label">Dés de vie</span><span><b class="num">${Math.max(0,D.L-(+ch.hdUsed||0))} / ${D.L}</b> <small>d${D.hd}</small></span></div>
     </div>${slotsRow}
-  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span></div></section></div>`;
+  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="tqroll" data-r="d20" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span></div></section></div>`;
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tqroll" data-r="d20" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
@@ -476,7 +476,7 @@ function racTileMap(ch,D){
     rest:()=>`<button class="tpbtn" data-act="restOpen" data-v=""><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/></svg>Repos<small class="tpsub">Court ou long</small></button>`,
     hist:()=>`<button class="tpbtn" data-act="tpop" data-v="hist"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historique des jets<small class="tpsub">${(ch.rollLog||[]).length} jet${(ch.rollLog||[]).length>1?"s":""}</small></button>`,
     insp:()=>`<button class="tpbtn" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg>Inspiration héroïque<small class="tpsub">${ch.inspiration?"Disponible ✓":"Pas d'inspiration"}</small></button>`,
-    conc:()=>`<button class="tpbtn" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></svg>Concentration<small class="tpsub">${ch.conc?esc(ch.conc):"Aucun sort"}</small></button>`,
+    conc:()=>`<button class="tpbtn" data-act="tqroll" data-r="d20" data-k="conc"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></svg>Concentration<small class="tpsub">${ch.conc?esc(ch.conc):"Aucun sort"}</small></button>`,
     comp:()=>{ const c=ch.companion; return `<button class="tpbtn" data-act="tpop" data-v="comp"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.comp}</svg>${c&&c.name?esc(c.name):"Compagnon"}<small class="tpsub">${c?`${+c.hp?.cur||0}/${+c.hp?.max||0} PV · CA ${+c.ac||10}`:"Ajouter un compagnon"}</small></button>`; },
     sorts:()=>`<button class="tpbtn" data-act="tpop" data-v="list:sorts"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="m12 6 1 2 2 .5-1.5 1.5.5 2-2-1-2 1 .5-2L9 8.5l2-.5z"/></svg>Sorts<small class="tpsub">${S.Titems?S.Titems.filter(i=>i.kind==="spell").length:0} prêts</small></button>`,
     atkl:()=>`<button class="tpbtn" data-act="tpop" data-v="list:atk"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.attaques}</svg>Attaques<small class="tpsub">${S.Titems?S.Titems.filter(i=>i.kind==="atk").length:0} au choix</small></button>`,
@@ -523,7 +523,7 @@ function repTileMap(ch,D,size){
     port:()=>t(chCarry(ch,D)+" kg","Charge","Poids que tu peux porter"),
     harmo:()=>t(`${(ch.attuned||[]).filter(id=>(ch.bag||[]).some(b=>b.id===id)).length}/3`,"Harmonisation","Objets magiques harmonisés (3 au plus)"),
     insp:()=>`<button class="rtile" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Inspiration héroïque : toucher pour l'utiliser ou la regagner"><b class="num">${ch.inspiration?"✓":"—"}</b><span class="label">Inspiration</span></button>`,
-    conc:()=>`<button class="rtile" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="Concentration"><b class="num tconcv">${ch.conc?esc(ch.conc):"—"}</b><span class="label">Concentration</span></button>`,
+    conc:()=>`<button class="rtile" data-act="tqroll" data-r="d20" data-k="conc" title="Concentration"><b class="num tconcv">${ch.conc?esc(ch.conc):"—"}</b><span class="label">Concentration</span></button>`,
     ...ctrMap(ch,false),
     search:()=>`<button class="rtile" data-act="tsearch" title="Recherche"><b class="num"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></b><span class="label">Recherche</span></button>`
   };
@@ -549,8 +549,11 @@ function repTileMap(ch,D,size){
 function resBlock(ch,D){ if(!D.res.length) return ""; const w=blkWidth(ch,"ressources"), n=blkCols(ch,"ressources",w), cs=`style="grid-template-columns:repeat(${n},minmax(0,1fr))"`;
   // Cases étroites : tuiles compactes (même taille que les Repères), un toucher ouvre la petite fenêtre ; sinon tuiles complètes avec leurs boutons
   if(cellW(n,1,w)<TILE_W.L) return `<div class="rrescol" ${cs} role="group" aria-label="Ressources">${resCompact(ch,D)}</div>`;
-  const tiles=D.res.map(r=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, c=resCard(r);
-    return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${resCtl(ch,r)}</div>`; }).join("");
+  // Tuile large (décision d'Angle, 12 nov. 2026, comme les compteurs) : nom et petites pastilles si elles tiennent, sinon chiffres ;
+  // un toucher ouvre la fenêtre de la ressource (grandes pastilles ou − / +, récupération, description). La hauteur fixe de 76 px est respectée.
+  const N=D.res.length, tiles=D.res.map((r,k)=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, span=n===2&&N%2===1&&k===N-1?2:1, cap=ctrCap(cellW(n,span,w),"1");
+    const nums=r.pool||r.id==="cls:rouerie-magique"||r.max>cap;
+    return `<button class="rres rresw${left<=0?" vide0":""}" data-act="tpop" data-v="res:${esc(r.id)}" aria-label="${esc(r.name)} : ${left} sur ${r.max}${r.pool?" d"+r.die:""}"><span class="rresname"><span class="label">${esc(r.name)}</span></span>${nums?`<b class="num">${left}<small> / ${r.max}${r.pool?" d"+r.die:""}</small></b>`:`<span class="ctrdots" aria-hidden="true">${pips("",r.max,used,true,true)}</span>`}</button>`; }).join("");
   return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid" ${cs} role="group" aria-label="Ressources">${tiles}</div>`; }
 const resCompact=(ch,D)=>D.res.map(r=>{ const left=r.max-Math.min(r.max,+(ch.resUsed?.[r.id]||0));
   return `<button class="rtile rrestile${left<=0?" vide0":""}" ${resCard(r)||`data-act="tpop" data-v="res:${esc(r.id)}"`} title="${esc(r.name)} : dépenser ou récupérer"><b class="num">${left}/${r.max}${r.pool?`<small> d${r.die}</small>`:""}</b><span class="label">${esc(r.name)}</span></button>`; }).join("");
@@ -1345,7 +1348,9 @@ function qMenuOpen(btn){ qMenuClose(); const k=btn.dataset.k, r=btn.dataset.r, f
 document.addEventListener("pointerdown",e=>{ if(QMENU&&!e.target.closest(".qmenu")&&!e.target.closest('[data-act="tqroll"]')) qMenuClose(); },true);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&QMENU){ qMenuClose(); e.stopPropagation(); } },true);
 function qBack(){ const T=S.T; if(T.pop&&T.pop!=="qroll"&&T.pop!=="card") T.qrBack=T.pop; else if(T.pop!=="qroll") T.qrBack=null; }
-function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch) return; qBack();
+function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch) return;
+  if(r==="d20"&&key==="conc"&&ch.conc){ T.cc={dmg:0,mode:m==="a"||m==="d"?m:"n",d1:"",d2:"",res:null}; T.pop="concchk"; render(); return; } // sort en cours : dégâts subis, DD, puis le jet
+  qBack();
   const keep=from==="cast"&&T.castDone===key; // jets d'un sort qui vient d'être lancé : on ne relance pas le sort
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,itemUseReceipt:null,mode:r==="hit"||r==="d20"?(m==="a"||m==="d"?m:"n"):"n"}); if(!keep) T.castDone=null;
   T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);

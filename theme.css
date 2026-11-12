@@ -389,6 +389,11 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .rresstep b{min-width:56px;text-align:center}.rresstep small{font-size:var(--fs-xs);color:var(--muted);font-weight:400}
 .rresopen{gap:2px}
 .rres .pip{width:24px;height:24px}.rres .pips{gap:6px}
+/* Ressources, tuile large : bouton entier, nom sur deux lignes au plus, petites pastilles ou chiffres (hauteur fixe de 76 px) */
+button.rres.rresw{gap:4px;padding:6px 4px;color:var(--ink);font:inherit;cursor:pointer;border-color:var(--brass);overflow:hidden}
+.rresw .rresname .label{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rresw .num{font-size:var(--fs-lg);line-height:1}.rresw .num small{font-size:var(--fs-xs);font-weight:400;color:var(--muted)}
+.rresw .ctrdots .pips{margin-top:0}
 /* Repères + Ressources côte à côte : une seule grille de 4 colonnes, tuiles de même taille */
 .rrestile .num small{font-size:var(--fs-xs);font-weight:400;color:var(--muted)}.rrestile.vide0{opacity:.6}
 /* Tuiles de compteur (objets du sac, compteurs maison) : vides en grisé ; nom sur deux lignes au plus */
