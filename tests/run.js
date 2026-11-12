@@ -1549,6 +1549,50 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => !!document.querySelector('[data-act="portrait"]')), 'onglet Fiche : le portrait reste modifiable');
   });
 
+  await test('Lancer un sort depuis sa ligne, enchaîner Toucher / Dégâts, retour à la liste, totaux contrôlés, message au premier plan', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    // retour à la fenêtre d'origine après un jet
+    await p.evaluate(() => { setVirtualDice(true); cur().turn = {}; S.T.pop = 'list:atk'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    eq(await p.evaluate(() => S.T.pop), 'qroll', 'résultat affiché');
+    await p.keyboard.press('Escape'); eq(await p.evaluate(() => S.T.pop), 'list:atk', 'Échap : retour à la liste d’attaques');
+    await p.locator('.tpop .trow .tkb[data-r="dmg"]').first().click(); await p.click('.qmenu [data-m="c"]');
+    ok(await p.evaluate(() => { const b = document.querySelector('.tpop .qbd'); return !!b && /^Critique · \d+d\d+ \[\d+(, \d+)+\]/.test(b.textContent); }), 'critique virtuel : le détail de chaque dé est affiché');
+    await p.click('.tpop [data-act="tpopclose"].btn, .tpop .tpophead [data-act="tpopclose"]'); eq(await p.evaluate(() => S.T.pop), 'list:atk', '× : retour à la liste');
+    // contrôle du total en dés physiques
+    await p.evaluate(() => { setVirtualDice(false); cur().turn = {}; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="dmg"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    const rg = await p.evaluate(() => { const i = document.getElementById('t-dmg'); return [+i.min, +i.max, /\(\d+ à \d+\)/.test(i.closest('label').textContent)]; });
+    ok(rg[0] >= 1 && rg[1] > rg[0] && rg[2], 'dés physiques : plage indiquée et imposée ' + rg);
+    const n0 = await p.evaluate(() => cur().rollLog.length);
+    await padNumber(p, rg[1] + 5);
+    ok(await p.evaluate(() => /Saisis un entier de/.test(document.getElementById('dice-pad-error').textContent)), 'total impossible refusé par le pavé');
+    await p.evaluate(() => { const i = document.getElementById('t-dmg'); closeDicePad(false); i.value = '999'; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); });
+    eq(await p.evaluate(() => cur().rollLog.length), n0, 'total hors plage jamais enregistré');
+    await p.keyboard.press('Escape'); await p.keyboard.press('Escape');
+    // lancer un sort
+    await newWizardChar(p, { cls: 'magicien', bg: 'srd:sage', sp: 'srd:humain' });
+    await p.evaluate(() => { const ch = cur(); ch.level = 3; ch.spells = [{ prepared: true, ref: 'srd:mains-brulantes' }, { prepared: true, ref: 'srd:bouclier' }, { prepared: true, ref: 'srd:lumiere' }, { prepared: true, ref: 'srd:trait-de-feu' }]; ch.turn = {}; S.rv = null; renderModal(); S.tab = 'table'; setVirtualDice(true); S.T.pop = 'list:sorts'; render(); });
+    const row = n => p.locator('.tpop .trow', { hasText: n }).first();
+    ok(await row('Mains brûlantes').locator('.tkcast').count() === 1 && await row('Mains brûlantes').locator('.tkb[data-r="dmg"]').count() === 0, 'sort de niveau 1 : un bouton « Lancer », pas de dégâts sans emplacement');
+    ok(await row('Trait de feu').locator('.tkb[data-r="hit"]').count() === 1 && await row('Trait de feu').locator('.tkcast').count() === 0, 'sort mineur avec jet : Toucher / Dégâts directs');
+    ok(await row('Lumière').locator('.tkcast').count() === 1, 'sort mineur sans jet : « Lancer »');
+    await row('Mains brûlantes').locator('.tkcast').click();
+    const opts = await p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => b.dataset.m + (b.disabled ? '-' : '')));
+    eq(opts, ['slot:1', 'slot:2'], 'menu : niveaux d’emplacement disponibles (magicien 3)');
+    const used0 = await p.evaluate(() => JSON.stringify(cur().slotsUsed || {}));
+    await p.click('.qmenu [data-m="slot:2"]');
+    eq(await p.evaluate(() => [S.T.pop, cur().slotsUsed[2], /Lancé au niveau 2/.test(document.querySelector('.tpop').textContent), /DD \d+/.test(document.querySelector('.tpop').textContent), !!document.querySelector('.tpop .qchain[data-r="dmg"]')]), ['qroll', 1, true, true, true], 'lancé au niveau 2 : emplacement dépensé, DD affiché, bouton Dégâts');
+    eq(await p.evaluate(() => document.querySelector('.tpop .qchain[data-r="dmg"] b').textContent), '4d6', 'dégâts au niveau 2 (3d6 + 1d6)');
+    await p.click('.tpop .qchain[data-r="dmg"]'); await p.click('.qmenu [data-m="n"]');
+    eq(await p.evaluate(() => [S.T.pop, cur().slotsUsed[2], /Mains brûlantes · dégâts/.test(cur().rollLog[0].label), /^4d6/.test(cur().rollLog[0].bd)]), ['qroll', 1, true, true], 'dégâts lancés sans redépenser d’emplacement');
+    await p.keyboard.press('Escape'); eq(await p.evaluate(() => S.T.pop), 'list:sorts', 'retour à la liste des sorts');
+    await row('Lumière').locator('.tkcast').click();
+    eq(await p.evaluate(() => [S.T.pop, !document.querySelector('.qmenu'), /Sort mineur lancé/.test(document.querySelector('.tpop').textContent)]), ['qroll', true, true], 'sort mineur sans jet : lancé directement');
+    // message au premier plan
+    ok(await p.evaluate(() => { const t = document.createElement('div'); t.className = 'toast'; document.body.append(t); const z = +getComputedStyle(t).zIndex, zp = +getComputedStyle(document.querySelector('.tpopback')).zIndex; t.remove(); return z > zp && z > 10000; }), 'message en bas de l’écran au-dessus des fenêtres et du pavé');
+  });
+
   await test('Grande case 2×2 : la tuile occupe vraiment deux rangées', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_grand000', name: 'Grand', r: 2, c: 2, ag: 'g', tiles: [{ id: 'ca', sz: '2', r: 0, c: 0 }] }] }); render(); });
@@ -1908,7 +1952,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   }
   async function commitDamage(p,virtual,crit=false) {
     if(virtual) await p.click('[data-act="tvdmg"]'+(crit?'[data-crit="1"]':':not([data-crit])'));
-    else await physType(p,'#t-dmg','7');
+    else await physType(p,'#t-dmg',String(await p.evaluate(()=>{ const i=document.getElementById('t-dmg'); return Math.max(+i.min||0,Math.min(i.max===''?7:+i.max,7)); }))); // total possible pour ces dés (contrôle de plage)
   }
 
   for(const virtual of [false,true]) await test('Tour : attaque '+(virtual?'virtuelle':'physique')+', résultat conservé, relances, dégâts et annulation',async p=>{

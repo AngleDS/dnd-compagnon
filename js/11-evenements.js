@@ -185,7 +185,7 @@ document.addEventListener("click",e=>{
       addLog({label:"Rouerie magique",total:"+"+gain,bd:gain+" emplacement(s) de pacte récupéré(s). Utilisable à nouveau après un repos long.",kind:"info"}); touch(S.cur); render(); break; }
     case "tsel": tSelect(t.dataset.k); break;
     case "tqroll": qMenuOpen(t); break; // jet direct depuis une ligne : d'abord le mini-menu (avantage… ou critique)
-    case "tqgo": qMenuClose(); quickRoll(t.dataset.k,t.dataset.r,t.dataset.m); break;
+    case "tqgo": qMenuClose(); if(t.dataset.r==="cast") quickCast(t.dataset.k,t.dataset.m); else quickRoll(t.dataset.k,t.dataset.r,t.dataset.m,t.dataset.from); break;
     case "saveApp": saveApp(); break;
     case "hpmaxb": hpMaxAdd(ch,+t.dataset.v); render(); break;
     case "pvpad": { const inp=t.closest(".pvpop")?.querySelector("input[data-pvset]"); if(inp) openDicePad(inp,true); break; }
@@ -217,7 +217,7 @@ document.addEventListener("click",e=>{
     case "restLong": applyRest("long"); S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": applyRest("court"); S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
     case "tpop": S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
-    case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="card") S.T.q=""; S.T.pop=null; render(); } break;
+    case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); break; } if(S.T.pop==="card") S.T.q=""; S.T.pop=null; render(); } break;
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
     case "tvroll": { if(!ensureTableRollUse()) break; const T=S.T; T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; if(logD20(false)) tableRollCommitted("d20"); render(); break; }
@@ -389,7 +389,7 @@ document.addEventListener("change",e=>{
   // Une seule validation : un jet physique complet (pavé validé ou saisie terminée) est enregistré et compte pour le tour.
   if(t.dataset.tin&&S.T){ if(virtualDiceEnabled()) return; const T=S.T, kind=t.dataset.tin==="dmg"?"dmg":"d20";
     if(T.pop==="qroll"&&t.dataset.tin==="d1"&&T.mode!=="n"&&validDie(T.d1,20)&&!validDie(T.d2,20)){ render(); const d2=document.getElementById("t-d2"); if(d2) openDicePad(d2); return; }
-    if(kind==="d20"?(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))):!validDiceTotal(T.dmg)) return;
+    if(kind==="d20"?(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))):(!validDiceTotal(T.dmg)||!dmgInRange(T.dmg))) return;
     if(ensureTableRollUse()&&(kind==="d20"?logD20(true):logDmg(true))) tableRollCommitted(kind);
     render(); return; }
   if(!t.dataset.bind) return;

@@ -79,7 +79,7 @@ function placeTip(tip,anchor){
   const th=tip.offsetHeight; let top=r.bottom+8; if(top+th>H-16) top=Math.max(16,r.top-th-8); tip.style.top=top+"px";
 }
 function closeTip(){ const t=document.getElementById("tip"); if(t&&!t.hidden){ t.hidden=true; S.tipKey=null; } }
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ const tp=document.getElementById("tip"); if(tp&&!tp.hidden) closeTip(); else if(S.T&&S.T.pop){ if(S.T.pop==="concchk"&&!(S.T.cc&&S.T.cc.res)) return; if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); return; } if(S.T.pop==="card") S.T.q=""; S.T.pop=null; render(); } } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ const tp=document.getElementById("tip"); if(tp&&!tp.hidden) closeTip(); else if(S.T&&S.T.pop){ if(S.T.pop==="concchk"&&!(S.T.cc&&S.T.cc.res)) return; if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); return; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); return; } if(S.T.pop==="card") S.T.q=""; S.T.pop=null; render(); } } });
 document.addEventListener("click",e=>{ const t=document.getElementById("tip"); if(t&&!t.hidden&&!e.target.closest("#tip")){ e.preventDefault(); e.stopPropagation(); closeTip(); } },true);
 window.addEventListener("scroll",()=>closeTip(),{passive:true});
  

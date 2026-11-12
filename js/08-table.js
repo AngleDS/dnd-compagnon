@@ -996,8 +996,11 @@ function tRow(i,first,inEco){
   let right="";
   if(i.kind==="atk") right=kb("Toucher",sg(i.mod),"hit")+kb("Dégâts",i.dmg,"dmg");
   else if(i.kind==="spell"){
-    if(i.roll) right+= i.roll.startsWith("DD") ? kv("DD",i.roll.slice(3)) : kb("Toucher",i.roll,"hit");
-    if(i.dice){ const D=S.Tderived; const b=(i.sp.level===0&&i.m&&i.m.beams&&D)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1; right+=kb(i.heal?"Soins":"Dégâts",(b>1?b+" × ":"")+i.dice,"dmg"); }
+    // Sort de niveau 1+ : un seul bouton « Lancer » (emplacement choisi dans le mini-menu, puis jets dans la fenêtre de résultat) ; sort mineur : Toucher / Dégâts, ou « Lancer » s'il n'a pas de jet
+    const lv=i.sp.level>0, cl=`<span class="tk tkb tkcast" role="button" tabindex="0" data-act="tqroll" data-k="${esc(i.key)}" data-r="cast" aria-label="Lancer ${esc(i.name)}" title="Lancer le sort"><b>Lancer</b></span>`;
+    if(i.roll) right+= i.roll.startsWith("DD") ? kv("DD",i.roll.slice(3)) : (lv?kv("Toucher",i.roll):kb("Toucher",i.roll,"hit"));
+    if(i.dice){ const D=S.Tderived; const b=(i.sp.level===0&&i.m&&i.m.beams&&D)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1; const t=(b>1?b+" × ":"")+i.dice; right+=lv?kv(i.heal?"Soins":"Dégâts",t):kb(i.heal?"Soins":"Dégâts",t,"dmg"); }
+    if(lv||(!i.dice&&!(i.roll&&!i.roll.startsWith("DD")))) right+=cl;
     right+=`<span class="tklvl">${i.sp.level?"niv. "+i.sp.level:"mineur"}</span>`;
   }
   else if(i.mod!==undefined) right=`<b class="num tkv">${sg(i.mod)}</b>`;
@@ -1051,7 +1054,7 @@ function tCard(ch,D){
     const re1=type==="soins"&&D.guerisseur, r1=re1?' data-re1="1"':"";
     return `<div class="tdmg">${noBig?"":`<div class="tbig"><span class="num">${esc(expr)}</span><span class="muted">${esc(type||"")}</span></div>`}
       ${crit?`<div class="muted" style="font-size:var(--fs-sm)">Critique : lance ${esc(doubleDice(dice))}${flat?" "+sg(flat):""}</div>`:""}
-      <div class="row tin"><label class="field"><span>Total de tes dés</span><input id="t-dmg" type="number" min="0" step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label>
+      ${(()=>{ const rg=diceRange(dice), rc=crit?diceRange(doubleDice(dice)):rg; return `<div class="row tin"><label class="field"><span>Total de tes dés${rg?` (${rg[0]} à ${rc[1]}${crit?", critique compris":""})`:""}</span><input id="t-dmg" type="number" min="${rg?rg[0]:0}"${rg?` max="${rc[1]}"`:""} step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label>`; })()}
       <div class="ttotal" id="t-dtot" data-flat="${flat}">${damageTotalHtml(T.dmg,flat)}</div>
       <button class="btn small vroll" data-virtual data-act="tvdmg" data-e="${esc(dice)}"${r1} title="Lance ${esc(dice)} à ta place">Lancer ${esc(dice)}</button>
       ${crit?`<button class="btn small ghost vroll" data-virtual data-act="tvdmg" data-e="${esc(doubleDice(dice))}" data-crit="1" title="Lance ${esc(doubleDice(dice))} à ta place">Critique</button>`:""}</div>
@@ -1171,24 +1174,34 @@ function smiteBlock(ch,D,i){
    puis une petite fenêtre qui ne montre que le résultat. Dés physiques : le pavé demande le ou les dés d'abord. */
 let QMENU=null;
 function qMenuClose(){ if(QMENU){ QMENU.remove(); QMENU=null; } }
-function qMenuOpen(btn){ qMenuClose(); const k=btn.dataset.k, r=btn.dataset.r, i=(S.Titems||[]).find(x=>x.key===k), ch=cur(); if(!i||!ch) return;
+function castOpts(ch,D,i){ const sp=i.sp, out=[], al=arcLevel(D,i.ref), fr=(D.res||[]).find(r=>r.freeSpell===i.ref), pl=n=>n+" restant"+(n>1?"s":"");
+  if(al){ const used=+(ch.resUsed?.["arc:"+al]||0)>=1; out.push(["arc:"+al,`Arcanum mystique (niv. ${al})${used?" · déjà utilisé":""}`,used]); return out; }
+  if(fr){ const left=fr.max-(+ch.resUsed?.[fr.id]||0); out.push(["free:"+fr.id,`Sans emplacement (${left}/${fr.max})`,left<=0]); }
+  if(!D.cast) return out;
+  if(D.cast.type==="pact"){ if(D.cast.pactLevel>=sp.level){ const left=Math.max(0,(D.cast.pactSlots||0)-(+ch.pactUsed||0)); out.push(["slot:"+D.cast.pactLevel,`Niv. ${D.cast.pactLevel} · pacte (${pl(left)})`,left<=0]); } }
+  else (D.cast.slots||[]).forEach((n,k)=>{ const l=k+1; if(l<sp.level||!n) return; const left=Math.max(0,n-(+ch.slotsUsed?.[l]||0)); out.push(["slot:"+l,`Niv. ${l} (${pl(left)})`,left<=0]); });
+  return out; }
+function qMenuOpen(btn){ qMenuClose(); const k=btn.dataset.k, r=btn.dataset.r, from=btn.dataset.from||"", i=(S.Titems||[]).find(x=>x.key===k), ch=cur(); if(!i||!ch) return;
+  if(r==="cast"&&i.sp&&i.sp.level===0){ quickCast(k,"slot:0"); return; }
   const adv=r==="hit"?condAdvice(ch,i.kind==="atk"?"atk":"spellatk",i.ab):{mode:"n"}, forced=adv.mode==="a"||adv.mode==="d"?adv.mode:null;
-  const opts=r==="hit"?[["a","Avantage","˄"],["n","Normal","–"],["d","Désavantage","˅"]]:[["n","Normal","–"],["c","Critique (dés doublés)","×2"]];
-  const m=document.createElement("div"); m.className="qmenu"; m.setAttribute("role","menu"); m.setAttribute("aria-label",(r==="hit"?"Jet d'attaque : ":"Dégâts : ")+i.name);
-  m.innerHTML=opts.map(([v,l,ic])=>`<button role="menuitem" class="qm-${v}" data-act="tqgo" data-k="${esc(k)}" data-r="${r}" data-m="${v}"${forced&&forced!==v?" disabled":""}${forced===v?' aria-current="true"':""}><span class="qmi" aria-hidden="true">${ic}</span>${l}</button>`).join("")+(forced?`<div class="qmnote">${forced==="a"?"Avantage":"Désavantage"} imposé par ton état</div>`:"");
+  const opts=r==="cast"?castOpts(ch,derive(ch),i).map(([v,l,dis])=>[v,l,"✦",dis]):r==="hit"?[["a","Avantage","˄"],["n","Normal","–"],["d","Désavantage","˅"]]:[["n","Normal","–"],["c","Critique (dés doublés)","×2"]];
+  const m=document.createElement("div"); m.className="qmenu"; m.setAttribute("role","menu"); m.setAttribute("aria-label",(r==="cast"?"Lancer : ":r==="hit"?"Jet d'attaque : ":"Dégâts : ")+i.name);
+  m.innerHTML=(opts.length?opts.map(([v,l,ic,dis])=>`<button role="menuitem" class="qm-${v.split(":")[0]}" data-act="tqgo" data-k="${esc(k)}" data-r="${r}" data-m="${esc(v)}" data-from="${esc(from)}"${dis||(forced&&forced!==v)?" disabled":""}${forced===v?' aria-current="true"':""}><span class="qmi" aria-hidden="true">${ic}</span>${esc(l)}</button>`).join(""):`<div class="qmnote">Aucun emplacement pour ce sort.</div>`)+(forced?`<div class="qmnote">${forced==="a"?"Avantage":"Désavantage"} imposé par ton état</div>`:"");
   document.body.append(m); QMENU=m;
   const b=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
   m.style.left=Math.max(8,Math.min(innerWidth-w-8,b.right-w))+"px"; m.style.top=(b.bottom+6+h>innerHeight-8?Math.max(8,b.top-6-h):b.bottom+6)+"px";
   (m.querySelector("[aria-current]")||m.querySelector("button:not([disabled])"))?.focus(); }
 document.addEventListener("pointerdown",e=>{ if(QMENU&&!e.target.closest(".qmenu")&&!e.target.closest('[data-act="tqroll"]')) qMenuClose(); },true);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&QMENU){ qMenuClose(); e.stopPropagation(); } },true);
-function quickRoll(key,r,m){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch) return;
-  Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,castDone:null,itemUseReceipt:null,mode:r==="hit"?(m==="a"||m==="d"?m:"n"):"n"});
+function qBack(){ const T=S.T; if(T.pop&&T.pop!=="qroll"&&T.pop!=="card") T.qrBack=T.pop; else if(T.pop!=="qroll") T.qrBack=null; }
+function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch) return; qBack();
+  const keep=from==="cast"&&T.castDone===key; // jets d'un sort qui vient d'être lancé : on ne relance pas le sort
+  Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,itemUseReceipt:null,mode:r==="hit"?(m==="a"||m==="d"?m:"n"):"n"}); if(!keep) T.castDone=null;
   T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);
   const D=derive(ch), exh=2*(+ch.exhaustion||0), heal=!!i.heal;
   if(r==="hit"){ const mod=(i.kind==="atk"?+i.mod:parseInt(i.roll,10)||0)-exh; T.qr={k:key,r,mode:T.mode,mod,label:i.name+" — toucher"}; }
   else { const b=(i.kind==="spell"&&i.sp&&i.sp.level===0&&i.m&&i.m.beams)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1;
-    const expr=String(i.kind==="atk"?i.dmg:i.dice||""), mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0);
+    const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,T.castRit?i.sp.level:T.castLvl,D):i.dice)||""), mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0);
     T.qr={k:key,r,crit:m==="c",dice:m==="c"?doubleDice(dice):dice,flat,heal,beams:b,re1:heal&&!!D.guerisseur}; }
   T.pop="qroll"; render();
   if(virtualDiceEnabled()){ if(!ensureTableRollUse()){ render(); return; }
@@ -1196,14 +1209,32 @@ function quickRoll(key,r,m){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.k
     else { const x=rollExpr(T.qr.dice,T.qr.re1); T.dmg=String(x.total); T.dmgBd=(T.qr.crit?"Critique · ":"")+x.bd; render(); if(logDmg(false)) tableRollCommitted("dmg"); }
     render(); }
   else { const inp=document.getElementById(r==="hit"?"t-d1":"t-dmg"); if(inp) openDicePad(inp); } }
+function quickCast(key,m){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch||!i.sp) return; qMenuClose(); qBack();
+  Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,castDone:null,itemUseReceipt:null,mode:"n"});
+  T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);
+  const [kind,v]=String(m||"slot:0").split(":"), data={ref:i.ref,k:key,l:String(i.sp.level===0?0:i.sp.level)};
+  if(kind==="slot"&&i.sp.level>0) data.l=String(+v||i.sp.level); if(kind==="free") data.free=v; if(kind==="arc") data.arc=v;
+  const ok=performTableCast(data); T.qr={k:key,r:"cast",ok}; T.pop="qroll"; render(); }
 function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x.key===q.k); if(!i){ T.pop=null; return ""; }
   const phys=!virtualDiceEnabled(), ML={n:"Normal",a:"Avantage",d:"Désavantage"};
+  if(q.r==="cast"){ const sp=i.sp, m=i.m||{}, done=T.castDone===q.k, L=T.castRit?sp.level:T.castLvl, last=(ch.rollLog||[])[0]||{};
+    if(!done) return wrap(esc(i.name)+" · Lancer",`<div class="qres"><div class="tnotes">${esc(last.label||"Lancement impossible")}${last.bd?" : "+esc(last.bd):""}</div></div>`);
+    const ex=diceAt(m,sp,L,D), btn=(r,l,v)=>`<button class="btn qchain" data-act="tqroll" data-k="${esc(q.k)}" data-r="${r}" data-from="cast"><span class="tkl">${l}</span> <b class="num">${esc(v)}</b></button>`;
+    return wrap(esc(i.name)+" · Lancé",`<div class="qres"><div class="qmode label">${sp.level?"Lancé au niveau "+L:"Sort mineur lancé"}</div>
+      <div class="muted" style="font-size:var(--fs-sm)">${sp.level&&!T.castRit?(T.castArc?"Arcanum mystique utilisé.":T.castFree?"Lancer gratuit utilisé.":"Emplacement dépensé."):"Aucun emplacement dépensé."}${sp.concentration?` Concentration : <b>${esc(sp.name)}</b>.`:""}</div>
+      ${m.save?`<div class="tbig"><span class="num">DD ${D.cast.dc}</span><span class="muted">JS de ${esc(m.save)}</span></div>`:""}
+      ${T.castTemp?`<div class="muted">PV temporaires : ${T.castTemp.v}${T.castTemp.b0>=T.castTemp.v?" (tu en avais déjà autant ou plus)":""}</div>`:""}
+      ${m.attack||ex?`<div class="row qchains">${m.attack?btn("hit","Toucher",sg(D.cast.atk)):""}${ex?btn("dmg",m.heal?"Soins":"Dégâts",ex):""}</div>`:""}</div>`); }
   if(q.r==="hit") return wrap(esc(i.name)+" · Toucher",`<div class="qres"><div class="qmode label">${ML[q.mode]}</div>
     ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
     <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div></div>`);
   return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un rayon sur ${q.beams}`:""}</div>
-    ${phys?`<div class="row tin"><label class="field"><span>Total de tes dés (${esc(q.dice)})</span><input id="t-dmg" type="number" min="0" step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`:""}
+    ${phys?(()=>{ const rg=diceRange(q.dice); return `<div class="row tin"><label class="field"><span>Total de tes ${esc(q.dice)}${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`; })():""}
+    ${!phys&&T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}
     <div class="ttotal qtot" id="t-dtot" data-flat="${q.flat}">${damageTotalHtml(T.dmg,q.flat)}</div></div>`); }
+/* Plage d'un total de dés (2d8 : 2 à 16 ; 1d8+1d6 : 2 à 14) ; les nombres fixes ne comptent pas */
+function diceRange(expr){ let lo=0,hi=0; for(const m of String(expr||"").matchAll(/(\d*)d(\d+)/gi)){ const n=+m[1]||1, f=+m[2]; lo+=n; hi+=n*f; } return hi?[lo,hi]:null; }
+function dmgInRange(v){ const inp=document.getElementById("t-dmg"); if(!inp||inp.max==="") return true; return +v>=+inp.min&&+v<=+inp.max; }
 function selName(){ const i=(S.Titems||[]).find(x=>x.key===S.T.sel); return i?i.name:"Jet"; }
 // Un jet physique déjà journalisé (même carte, mêmes dés) ne l'est pas une seconde fois ; une nouvelle saisie efface la marque.
 function physLogged(phys,sig){ const T=S.T; if(!phys) return false; if(T.logSig===sig) return true; T.logSig=sig; return false; }
@@ -1211,7 +1242,7 @@ function logD20(phys){ if(phys&&virtualDiceEnabled()) return; const T=S.T, tt=do
   if(physLogged(phys,["d20",S.cur,T.sel,T.mode,T.d1,T.mode==="n"?"":T.d2].join("|"))) return;
   const d=T.mode==="n"?a:(T.mode==="a"?Math.max(a,b):Math.min(a,b));
   addLog({label:tt.dataset.label||selName(),total:d+mod,bd:(T.mode==="n"?"d20 "+a:(T.mode==="a"?"avantage ":"désavantage ")+a+" / "+b)+" "+sg(mod)+(phys?" · dés physiques":""),crit:d===20,fumble:d===1,quiet:true}); return true; }
-function logDmg(phys){ if(phys&&virtualDiceEnabled()) return; const T=S.T, dt=document.getElementById("t-dtot"); if(!validDiceTotal(T.dmg)) return; const f=dt?+dt.dataset.flat:0;
+function logDmg(phys){ if(phys&&virtualDiceEnabled()) return; const T=S.T, dt=document.getElementById("t-dtot"); if(!validDiceTotal(T.dmg)||(phys&&!dmgInRange(T.dmg))) return; const f=dt?+dt.dataset.flat:0;
   if(physLogged(phys,["dmg",S.cur,T.sel,T.dmg].join("|"))) return;
   const sit=(S.Titems||[]).find(x=>x.key===T.sel); const isHeal=(sit&&sit.kind==="spell"&&sit.m&&sit.m.heal)||(T.poolKey&&T.poolKey===T.sel);
   addLog({label:selName()+(isHeal?" · soins":" · dégâts"),total:(+T.dmg)+f,bd:(T.dmgBd||"dés "+T.dmg)+(f?" "+sg(f):"")+(phys?" · dés physiques":""),quiet:true}); return true; }
