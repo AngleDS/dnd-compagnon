@@ -455,7 +455,7 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 :root{--th:76px}
 .tblocks.tfree{display:block;position:relative;max-width:860px;margin:0 auto;padding:0;min-height:40px}
 .tblocks.tfree>.tblk,.tblocks.tfree.editing>.tblk.ted{position:absolute;top:0;left:0;box-sizing:border-box;padding:0 7px 7px;border:1px solid var(--line);border-radius:12px;outline:0;background:transparent;margin:0;width:100%}
-.tblocks.tfree>.tblk>.tband{display:flex;align-items:center;justify-content:space-between;gap:8px;height:24px;line-height:22px;padding:0 1px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tblocks.tfree>.tblk>.tband{display:flex;align-items:center;justify-content:space-between;gap:8px;height:24px;line-height:22px;padding:0 1px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);font-family:var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tblocks.tfree .rtiles,.tblocks.tfree .rresgrid,.tblocks.tfree .rrescol,.tblocks.tfree .cgrid{gap:12px;grid-auto-rows:var(--th)}
 .tblocks.tfree .rrescol{grid-auto-rows:var(--th)}
 .tblocks.tfree .rtile{min-height:0;height:100%;box-sizing:border-box}
@@ -491,7 +491,7 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .tblocks.tfree.tprev>.tblk{position:relative;left:auto;top:auto}
 .bfmtsum{margin-top:8px;font-size:var(--fs-sm);color:var(--muted);text-align:center}
 .blkghost>.tblk{padding:0 7px 7px}
-.blkghost>.tblk>.tband{height:24px;line-height:22px;padding:0 38px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blkghost>.tblk>.tband{height:24px;line-height:22px;padding:0 38px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);font-family:var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .blkghost .tblkgrip,.blkghost .tedpen,.blkghost .tdel{display:none}
 /* Chaque bloc a un seul fond, bande de titre comprise (demande d'Angle) : les cartes intérieures n'ont plus ni fond propre ni trait */
 .tblocks.tfree>.tblk{background:var(--sheet)}

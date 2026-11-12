@@ -1493,6 +1493,11 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().layout.custom[0].name, !document.querySelector('.tblk[data-blk="c_fmt12345"] .tbhead')]), ['', true], 'titre vide : le bloc n’a pas de titre');
   });
 
+  await test('Titres des blocs : même police et même couleur que les autres titres', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin');
+    const r = await p.evaluate(() => { const t = document.querySelector('.tblocks.tfree .tband'); if (!t) return null; const pr = document.createElement('span'); pr.style.color = 'var(--ink)'; document.body.append(pr); const ink = getComputedStyle(pr).color; pr.remove(); const c = getComputedStyle(t); return { font: c.fontFamily, color: c.color, ink }; });
+    ok(r, 'aucun bloc à tuiles affiché'); ok(/IM Fell/.test(r.font), 'police des titres de bloc : ' + r.font); ok(r.color === r.ink, 'couleur des titres de bloc : ' + r.color + ' (attendu ' + r.ink + ')');
+  });
   await test('Formats des blocs de base : largeur × tuiles par rangée (Ressources, Ce tour), agencements sans doublon, import', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 3; render(); });
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="ressources"] .tedpen');
