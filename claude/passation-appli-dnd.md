@@ -1,5 +1,3 @@
-> **Ce tour — design Arsenal (12 nov. 2026)** : ancien titre « Combat! » renommé « Ce tour » par défaut ; tuiles interactives dorées, icônes en médaillon et angles gravés, états consommés conservés. Titres personnalisés et dimensions existantes préservés.
-
 # Passation technique — D&D Compagnon
 
 État au 10 novembre 2026. Fusion de la passation historique (versions 112 à 118 de l'artefact) et de la passation de la reprise menée hors de Claude (sauvegardes, isolation de Claude, dés virtuels, pavé numérique, suivi du tour).
@@ -474,6 +472,10 @@ Avec la piste 1 et un quota de 6 : Roublard 3 obligatoires / 3 libres ; Magicien
 
 - **Repères — design validé par Angle (12 nov. 2026)** : bouclier autour de la CA, icônes de repères, dégradé et flèche pour Initiative et Vitesse, libellés abrégés uniquement en format compact ; nom complet et valeur accessibles. Les raccourcis ne changent pas. Gabarit 76 px conservé.
 - **Icônes Repères (12 nov. 2026)** : les icônes validées par Angle sont intégrées depuis Lucide ; la CA conserve son bouclier. Les anciennes icônes restent utilisées ailleurs et les licences sont embarquées dans le module.
+
+**Design de « Ce tour » (ChatGPT, 12 nov. 2026, commit `5a4f915`, non publié)**
+
+- **Ce tour — design Arsenal (12 nov. 2026)** : ancien titre « Combat! » renommé « Ce tour » par défaut ; tuiles interactives dorées, icônes en médaillon et angles gravés, états consommés conservés. Titres personnalisés et dimensions existantes préservés. Vérifié par Claude : suite complète 135/135, aucun débordement à 390 et 375 points, thèmes sombre et clair. Le titre par défaut revient à « Ce tour » (il était « Combat! » depuis la v160, graphie d'Angle) : un titre personnalisé déjà enregistré est conservé.
 
 ## 16. Chantier à venir : onglet « Feuille » (ex-onglet « Jeu »)
 
