@@ -133,7 +133,7 @@ function viewSheet(){
           <div><span class="label">Joueur·se</span><span>${esc(ch.player||"—")}</span></div>
         </div>${ch.alignment?`<div class="meta">${esc(ch.alignment)}</div>`:""}
       </div>
-      ${S.tab==="table"?``:`<div class="row" style="margin-left:auto"><span class="label">Bonus de maîtrise</span><b class="num">${sg(D.pb)}</b>${D.cls&&D.L<20?`<button class="btn small" data-act="lvlUp" title="Assistant de montée de niveau">Niveau ${D.L+1} ↑</button>`:""}</div>`}
+      ${S.tab==="table"?`<div class="character-rest"><button class="btn hprest hpsearch" data-act="tsearch" aria-label="Recherche" title="Recherche : jet, action, sort…"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button></div>`:`<div class="row" style="margin-left:auto"><span class="label">Bonus de maîtrise</span><b class="num">${sg(D.pb)}</b>${D.cls&&D.L<20?`<button class="btn small" data-act="lvlUp" title="Assistant de montée de niveau">Niveau ${D.L+1} ↑</button>`:""}</div>`}
     </div>`;
   return `${S.tab==="table"?"":banner}
     ${S.tab==="table"?"":`<div class="tabs sheettabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}</div>`}

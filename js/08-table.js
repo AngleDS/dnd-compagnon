@@ -312,7 +312,7 @@ function tPop(ch,D){
         ${S.T.hdLast?`<div class="tnotes">${esc(S.T.hdLast)}</div>`:""}</div>
       <div class="lusec"><div class="label">À la fin du repos</div><ul class="lul"><li>${D.cast&&D.cast.type==="pact"?"Emplacements de pacte récupérés":"Pas d'emplacement récupéré (repos long)"}</li>${shortRes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
       <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button></div>`); }
-  if(k==="search") return wrap("Recherche",searchBar());
+  if(k==="search") return wrap("Recherche",searchBar()," tsearchpop");
   if(k==="notes") return wrap("Notes de partie",`<textarea id="t-notes" data-bind="sessionNotes" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="min-height:260px;width:100%">${esc(ch.sessionNotes||"")}</textarea><div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Séparées des notes du personnage. Enregistrées au fil de la frappe.</div>`);
   if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } return wrap("Détails",c," wide"); }
   if(k==="hist") return wrap("Historique des jets", histBody(ch));
@@ -1127,8 +1127,10 @@ function autoLayout(ch){ const D=derive(ch), n=reperesAuto(ch,D).length, nr=D.re
 /* Blocs retirés (ch.layout.hidden) : tous sauf Personnage et Points de vie ; on les remet par « Ajouter un bloc ». */
 const BLK_FIXED=["perso","pv"];
 const BLK_KEEP=["pv"]; // seul Points de vie ne se supprime pas (décision d'Angle) ; les autres se remettent par « + Ajouter un bloc »
-const blkHidden=(ch,id)=>!BLK_KEEP.includes(id)&&Array.isArray(ch.layout?.hidden)&&ch.layout.hidden.includes(id);
-function setBlkHidden(ch,id,on){ const h=(Array.isArray(ch.layout?.hidden)?ch.layout.hidden:[]).filter(x=>x!==id); if(on&&!BLK_KEEP.includes(id)) h.push(id); ch.layout=Object.assign({},ch.layout,{hidden:h}); touch(S.cur); }
+/* Recherche (décision d'Angle, 12 nov. 2026) : la loupe du bandeau du personnage ouvre la recherche en haut de l'écran ;
+   le bloc Recherche est retiré par défaut et revient seulement si le joueur le rajoute (ch.layout.shown). */
+const blkHidden=(ch,id)=>!BLK_KEEP.includes(id)&&(id==="recherche"?!(Array.isArray(ch.layout?.shown)&&ch.layout.shown.includes(id)):Array.isArray(ch.layout?.hidden)&&ch.layout.hidden.includes(id));
+function setBlkHidden(ch,id,on){ if(id==="recherche"){ const sh=(Array.isArray(ch.layout?.shown)?ch.layout.shown:[]).filter(x=>x!==id); if(!on) sh.push(id); ch.layout=Object.assign({},ch.layout,{shown:sh}); touch(S.cur); return; } const h=(Array.isArray(ch.layout?.hidden)?ch.layout.hidden:[]).filter(x=>x!==id); if(on&&!BLK_KEEP.includes(id)) h.push(id); ch.layout=Object.assign({},ch.layout,{hidden:h}); touch(S.cur); }
 function saveTableOrder(ch,order){ ch.layout=Object.assign({},ch.layout,{order}); touch(S.cur); }
 function moveTableBlock(ch,id,d){ const o=tableOrder(ch), vis=o.filter(x=>!blkHidden(ch,x)), i=vis.indexOf(id), j=i+d; if(i<0||j<0||j>=vis.length) return; [vis[i],vis[j]]=[vis[j],vis[i]]; let k=0; saveTableOrder(ch,o.map(x=>blkHidden(ch,x)?x:vis[k++])); }
 function hpStepper(ch,D){

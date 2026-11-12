@@ -541,3 +541,9 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .health-card.hc3>.hcside>.rtile{height:100%;min-height:0;box-sizing:border-box}
 .health-card.hc3 .hcrest .rico{width:24px;height:24px}.health-card.hc3 .hcrest .label{font-size:var(--fs-sm)}
 .health-card.hc3>.hslots,.health-card.hc3>.health-footer{grid-column:1/-1}
+
+/* Loupe du bandeau (décision d'Angle, 12 nov. 2026) : la recherche s'ouvre en haut de l'écran */
+.tblk .character-banner .character-identity h1{padding-right:56px}
+.character-rest .hpsearch{width:44px;padding:0}
+.tpopback:has(.tsearchpop){place-items:start center;padding-top:12px}
+.tsearchpop .tpopbody{padding-top:8px}

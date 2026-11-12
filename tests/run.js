@@ -200,6 +200,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await open(p);
     await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
+    await p.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); }); // bloc Recherche remis (retiré par défaut depuis la loupe du bandeau)
     const r = await p.evaluate(() => { const i = document.querySelector('#tq'); return { ph: i && i.placeholder, label: i && i.getAttribute('aria-label') }; });
     eq(r, { ph: 'Jet, action, sort…', label: 'Recherche rapide' }, 'texte de la recherche');
     ok(await p.evaluate(() => !document.body.innerHTML.includes('Que fais-tu')), 'ancien texte absent');
@@ -709,6 +710,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Dés physiques : Frappe occulte et champs numériques en largeur iPhone', async p => {
     await p.setViewportSize({width:390,height:844});
     await diceTable(p,'occultiste');
+    await p.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); }); // bloc Recherche remis (retiré par défaut depuis la loupe du bandeau)
     await p.evaluate(() => {
       const ch=cur(); ch.level=5; ch.invocations=['frappe-occulte']; ch.turn={smite:true}; render();
       // Render the same smite section used by pact weapon cards.
@@ -789,6 +791,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
       await diceTable(t);
+    await t.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); }); // bloc Recherche remis (retiré par défaut depuis la loupe du bandeau)
       await t.fill('#tq','second souffle');
       ok(!await t.locator('#tres .trow [data-act="tip"]:not(.tinfo)').count(),'le nom n’est plus une cible de règle');
       await t.click('#tres .trow .tname b');
@@ -806,6 +809,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Recherche : états et repos trouvés, règle d’un état sans le cocher', async p => {
     await diceTable(p);
+    await p.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); }); // bloc Recherche remis (retiré par défaut depuis la loupe du bandeau)
     await p.fill('#tq','empois');
     ok((await p.innerText('#tres')).includes('Empoisonné'),'état trouvé par la recherche');
     await p.click('#tres .trow .tname b');
@@ -896,6 +900,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('iPhone : texte de recherche entier, fondu en bas d’une popup qui continue', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); }); // bloc Recherche remis (retiré par défaut depuis la loupe du bandeau)
     const fits = await p.evaluate(() => { const i = document.getElementById('tq'), st = getComputedStyle(i), c = document.createElement('canvas').getContext('2d');
       c.font = st.fontStyle + ' ' + st.fontWeight + ' ' + st.fontSize + ' ' + st.fontFamily;
       return c.measureText(i.placeholder).width <= i.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight); });
@@ -934,10 +939,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('À la table en blocs : ordre par défaut, ordre du perso, ordre abîmé ignoré, import', async p => {
     await diceTable(p);
     const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
-    eq(await order(), ['perso','reperes','pv','recherche','ressources','tour','raccourcis','notes'], 'ordre par défaut (bloc Emplacements et états vide : masqué)');
-    ok(await p.isVisible('.tblk[data-blk="perso"] .character-banner') && await p.isVisible('.tblk[data-blk="recherche"] #tq') && await p.isVisible('.tblk[data-blk="tour"] .tturnb'), 'contenu dans les bons blocs');
+    eq(await order(), ['perso','reperes','pv','ressources','tour','raccourcis','notes'], 'ordre par défaut (bloc Emplacements et états vide : masqué ; Recherche : loupe du bandeau)');
+    ok(await p.isVisible('.tblk[data-blk="perso"] .character-banner') && await p.isVisible('.tblk[data-blk="perso"] .hpsearch') && await p.isVisible('.tblk[data-blk="tour"] .tturnb'), 'contenu dans les bons blocs');
     await p.evaluate(() => { cur().layout = { order: ['tour','inconnu','recherche'] }; render(); });
-    eq(await order(), ['tour','recherche','perso','reperes','pv','ressources','raccourcis','notes'], 'ordre du perso, bloc inconnu ignoré, blocs manquants à la suite');
+    eq(await order(), ['tour','perso','reperes','pv','ressources','raccourcis','notes'], 'ordre du perso, bloc inconnu ignoré, blocs manquants à la suite (Recherche retirée par défaut)');
     await p.evaluate(() => { cur().layout = { order: 'abîmé' }; render(); });
     eq((await order())[0], 'perso', 'ordre illisible : ordre par défaut');
     const res = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); ch.layout = { order: ['notes','perso'] };
@@ -953,7 +958,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
     ok(!await p.locator('[data-blkgrip],[data-act="blkMove"],.tbpen,.tedpen,.tdel,[data-act="tilePick"]').count(), 'en jeu : ni poignée, ni crayon, ni « + »');
     await menuClick(p, '[data-act="layoutEdit"]');
-    eq(await order(), ['perso','reperes','pv','recherche','ressources','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
+    eq(await order(), ['perso','reperes','pv','ressources','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides (Recherche retirée par défaut)');
     ok(await p.evaluate(() => [...document.querySelectorAll('.tblkc')].every(c => c.inert && +getComputedStyle(c).opacity < .6)), 'contenu inactif et translucide');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tdel')).map(b => b.dataset.blk)), ['pv'], 'Supprimer sur chaque bloc sauf Points de vie');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tedpen')).map(b => b.dataset.blk)), ['perso'], 'crayon sur chaque bloc sauf Personnage (Points de vie : choix de sa tuile)');
@@ -965,7 +970,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await p.mouse.down();
     await p.mouse.move(top.x + 40, top.y + 10, { steps: 5 }); await p.mouse.up();
     eq((await vis())[0], 'notes', 'bloc glissé tout en haut par sa poignée');
-    eq(await p.evaluate(() => [cur().layout.pos.notes.t, cur().layout.pos.notes.c, Object.keys(cur().layout.pos).length, cur().layout.order[0]]), ['top', 0, 8, 'notes'], 'position enregistrée comme relation (« en haut »), les autres blocs figés à leur place');
+    eq(await p.evaluate(() => [cur().layout.pos.notes.t, cur().layout.pos.notes.c, Object.keys(cur().layout.pos).length, cur().layout.order[0]]), ['top', 0, 7, 'notes'], 'position enregistrée comme relation (« en haut »), les autres blocs figés à leur place (7 blocs visibles, Recherche retirée par défaut)');
     ok(await noOverlap(), 'aucun bloc ne se chevauche (les autres descendent)');
     const band = await p.locator('.tblk[data-blk="pv"] > .tband').boundingBox(), first = await p.locator('.tblk[data-blk="notes"]').boundingBox();
     await p.mouse.move(band.x + 80, band.y + 8); await p.mouse.down();
@@ -988,7 +993,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tblk[data-blk="reperes"] .tdel');
     ok(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].length === 0 && cur().layout.hidden.includes('reperes')), 'Repères aussi se supprime');
     await p.click('[data-v="blkadd"]');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['reperes'], '« + Ajouter un bloc » propose de le remettre');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['reperes', 'recherche'], '« + Ajouter un bloc » propose de le remettre (et la Recherche, retirée par défaut)');
     await p.click('.tpop [data-act="blkRestore"][data-v="reperes"]');
     ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="reperes"]')), 'Repères remis');
     ok(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="tour"]'), d = b.querySelector('.tdel').getBoundingClientRect(), r = b.getBoundingClientRect(); return d.right <= r.right && d.bottom <= r.bottom && d.left > r.left + r.width / 2; }), 'Supprimer en bas à droite du bloc');
@@ -1013,7 +1018,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Placement libre : relations entre blocs, écarts égaux, aimant et tassement activables, import', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
-    await p.evaluate(() => { const ch = cur(); ch.layout = { width: { recherche: 2, notes: 2 }, pos: { perso: { c: 0, t: 'top', px: 0 }, recherche: { c: 0, t: 'below', a: 'perso', px: 0 }, notes: { c: 2, t: 'same', a: 'recherche', px: 0 }, pv: { c: 0, t: 'below', a: 'notes', px: 0 } }, hidden: ['reperes', 'ressources', 'tour', 'raccourcis'] }; render(); });
+    await p.evaluate(() => { const ch = cur(); ch.layout = { shown: ['recherche'], width: { recherche: 2, notes: 2 }, pos: { perso: { c: 0, t: 'top', px: 0 }, recherche: { c: 0, t: 'below', a: 'perso', px: 0 }, notes: { c: 2, t: 'same', a: 'recherche', px: 0 }, pv: { c: 0, t: 'below', a: 'notes', px: 0 } }, hidden: ['reperes', 'ressources', 'tour', 'raccourcis'] }; render(); });
     const g = () => p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.tblocks > .tblk')].map(e => [e.dataset.blk, { y: e.offsetTop, x: e.offsetLeft, h: e.offsetHeight, w: e.offsetWidth }])));
     let G = await g();
     eq([G.recherche.y - (G.perso.y + G.perso.h), G.notes.y === G.recherche.y, G.notes.x - (G.recherche.x + G.recherche.w)], [16, true, 4], 'Recherche sous Personnage avec une marge de 16 px (par défaut), Notes en face, 4 px entre deux colonnes');
@@ -1153,7 +1158,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const tiles = () => p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="ressources"] .rres')].map(t => t.querySelector('.rresname .label').textContent + ':' + (t.querySelectorAll('.pip').length || t.querySelector('.num')?.textContent)));
     await mk('magicien', 1); ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="ressources"]')), 'magicien niveau 1 : pas de ressource, pas de bloc');
     await mk('guerrier', 2);
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk).slice(2, 5)), ['pv', 'recherche', 'ressources'], 'bloc sous la carte PV, après la Recherche');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk).slice(2, 5)), ['pv', 'ressources', 'tour'], 'bloc sous la carte PV (Recherche retirée par défaut), après la Recherche');
     eq(await tiles(), ['Second souffle:2', 'Fougue:1'], 'guerrier 2 : Second souffle (2 ronds) et Fougue (1 rond)');
     await p.click('.tblk[data-blk="ressources"] .rres:first-child');
     eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .rrespop button.pip').length]), ['res:cls:second-souffle', 2], 'toucher la tuile ouvre la fenêtre, grandes pastilles');
@@ -1586,6 +1591,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
   await test('Jets directs : mini-menu (avantage imposé par un état, critique), petite fenêtre de résultat, dés physiques et virtuels, Recherche', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); }); // bloc Recherche remis (retiré par défaut depuis la loupe du bandeau)
     await p.evaluate(() => { S.T.pop = 'list:atk'; render(); });
     ok(await p.locator('.tpop .trow .tkb[data-r="hit"]').count() > 0 && await p.locator('.tpop .trow .tkb[data-r="dmg"]').count() > 0, 'Toucher et Dégâts sont des boutons dans les lignes');
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();
@@ -1694,6 +1700,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Garde-fous : PV vidés, Échap sur les fenêtres, montant refusé, repos à 0 PV, recherche gardée, niveau et or bornés', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p); await p.evaluate(() => { cur().level = 3; render(); });
+    await p.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); }); // bloc Recherche remis (retiré par défaut depuis la loupe du bandeau)
     // PV vidés : on annule, rien ne change
     await p.evaluate(() => { cur().hp = { cur: 10, temp: 0 }; render(); }); await p.click('.health-card [data-act="hpedit"]'); await p.fill('#hp-set', ''); await p.press('#hp-set', 'Enter');
     eq(await p.evaluate(() => cur().hp.cur), 10, 'champ des PV vidé puis validé : les PV restent à 10');
@@ -1945,13 +1952,14 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.keyboard.press('Escape');
     await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); }); await p.click('.tpop [data-act="tileCell"][data-i="5"]'); await p.click('.tpop [data-act="tileDel"][data-i="5"]');
     await p.keyboard.press('Escape'); eq(await p.evaluate(() => blockTiles(cur(), 'raccourcis')[5]), '', 'retirée par le joueur : elle ne revient pas');
+    await p.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); }); // bloc Recherche remis (retiré par défaut depuis la loupe du bandeau)
     await p.fill('#tq', 'rep');
     eq(await p.evaluate(() => { const d = document.getElementById('tres'); return [getComputedStyle(d).position, getComputedStyle(d).display !== 'none', d.querySelectorAll('.trow').length > 0]; }), ['absolute', true, true], 'Recherche : résultats dans une liste déroulante');
     await p.evaluate(() => { const b = document.querySelector('.brand').getBoundingClientRect(); document.querySelector('.brand').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: b.x + 5, clientY: b.y + 5 })); });
     ok(await p.evaluate(() => getComputedStyle(document.getElementById('tres')).display === 'none'), 'toucher ailleurs replie la liste');
     await p.click('#tq'); ok(await p.evaluate(() => getComputedStyle(document.getElementById('tres')).display !== 'none'), 'revenir dans la barre la rouvre');
     await p.fill('#tq', '');
-    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t2aaaaaa', name: 'T2', r: 2, c: 4, tiles: [] }], hidden: ['recherche'], pvTile: '' }); S.T.pop = 'tiles:c_t2aaaaaa'; render(); });
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t2aaaaaa', name: 'T2', r: 2, c: 4, tiles: [] }], hidden: ['recherche'], shown: [], pvTile: '' }); S.T.pop = 'tiles:c_t2aaaaaa'; render(); });
     for (const v of ['search', 'conc', 'insp']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
     eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}`)), ['search:1', 'conc:12', 'insp:1'], 'Recherche 1×1, Concentration en 1×2 d’office (tuile moyenne), Inspiration 1×1');
     await p.click('.tpop [data-act="ctileSel"][data-i="0"]');
@@ -2304,10 +2312,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.keyboard.press('Escape');
     // Recherche : la valeur d'un test, d'une sauvegarde et de l'Initiative se lance directement
     await p.evaluate(() => { cur().conditions = []; S.T.pop = null; render(); });
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="recherche"]') && !!document.querySelector('.tblk[data-blk="perso"] .hpsearch')), 'Recherche : loupe dans le bandeau, plus de bloc par défaut');
+    await p.click('.tblk[data-blk="perso"] .hpsearch');
+    ok(await p.evaluate(() => S.T.pop === 'search' && document.activeElement && document.activeElement.id === 'tq' && document.querySelector('.tpop').getBoundingClientRect().top < 40), 'la loupe ouvre la recherche en haut de l’écran, clavier prêt');
     await p.fill('#tq', 'Discrétion');
-    ok(await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-k="skill:discretion"][data-r="d20"]').first().isVisible(), 'Recherche : Discrétion se lance depuis sa valeur');
+    ok(await p.locator('.tpop .trow .tkb[data-k="skill:discretion"][data-r="d20"]').first().isVisible(), 'Recherche : Discrétion se lance depuis sa valeur');
     await p.fill('#tq', 'Initiative');
-    await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-k="init"][data-r="d20"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    await p.locator('.tpop .trow .tkb[data-k="init"][data-r="d20"]').first().click(); await p.click('.qmenu [data-m="n"]');
     eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label]), ['qroll', 'Initiative'], 'Recherche : Initiative lancée en deux touchers');
     // Écran tactile : menu et cases de 44 px, rien hors écran
     ok(await p.evaluate(() => { S.T.pop = 'skills'; render(); return true; }), 'fenêtre rouverte');
