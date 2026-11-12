@@ -246,7 +246,7 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 .bannerx{flex:none;background:none;border:0;color:var(--muted);font-size:var(--fs-xl);line-height:1;width:32px;height:32px;border-radius:50%;cursor:pointer;display:grid;place-items:center}
 .bannerx:hover{color:var(--ink);background:var(--sheet2)}
 /* Croix de fermeture : une seule taille partout (popups, bulles, pavé numérique, bannière) */
-.tpophead [data-act="tpopclose"],.tiphead [data-act="tipclose"],#dice-pad .small[data-pad="cancel"],.bannerx{font-size:var(--fs-2xl);line-height:1;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;display:inline-grid;place-items:center}
+.tpophead [data-act="tpopclose"],.tiphead [data-act="tipclose"],.bannerx{font-size:var(--fs-2xl);line-height:1;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;display:inline-grid;place-items:center}
 @media(max-width:720px){.top{grid-template-areas:"brand menu" "nav char"}.top .nav{grid-area:nav}}
 /* Bouton Repos à côté d'Inspiration héroïque ; popup de choix en deux cartes séparées. */
 .health-dice{cursor:default}
@@ -315,8 +315,6 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 .pvpop .label{margin-bottom:6px}
 .pvline{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .pvval{font-size:var(--fs-2xl);min-width:2.2em;text-align:center}
-.pvkbd{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0}
-.pvkbd svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .pvinfo{margin-top:10px;font-size:var(--fs-sm);color:var(--muted)}.pvinfo b{color:var(--ink)}
 .pvquick{margin-top:12px;gap:6px}.pvnote{font-size:var(--fs-sm);margin-top:10px}
 /* Fenêtre des États : 2 colonnes, « i » au bout de chaque case */
@@ -490,3 +488,7 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .qchains{gap:8px}.qchain{display:inline-flex;align-items:baseline;gap:6px}.qchain b{color:var(--brass)}
 .qbd{font-size:var(--fs-sm)}
 .toast{z-index:10001}
+
+/* Dés physiques sans pavé : message sous la case, champ de valeur des fenêtres PV temp. / PV max (12 nov. 2026) */
+.dicerr{flex-basis:100%;font-size:var(--fs-sm)}
+.pvset{width:120px;min-height:44px;font-size:var(--fs-lg);text-align:center}

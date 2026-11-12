@@ -5,7 +5,7 @@ function keepAnchor(t){ if(!S.T) return; const sel='[data-act="'+t.dataset.act+'
 /* Liste des résultats de recherche : se replie quand on touche ailleurs, se rouvre en revenant dans la barre. */
 document.addEventListener("pointerdown",e=>{ if(!S.T) return; const inside=e.target.closest&&e.target.closest(".tsearchwrap");
   // Un jet direct lancé depuis un résultat (mini-menu, pavé, fenêtre de résultat) ne replie pas la liste
-  if(e.target.closest&&(e.target.closest(".qmenu,.dice-pad-back")||(S.T.pop==="qroll"&&e.target.closest(".tpopback")))) return;
+  if(e.target.closest&&(e.target.closest(".qmenu")||(S.T.pop==="qroll"&&e.target.closest(".tpopback")))) return;
   const d=document.getElementById("tres"); if(!d) return; if(inside){ S.T.qOpen=true; d.classList.remove("closed"); } else if(!e.target.closest(".tpop")||!d.closest(".tpop")){ S.T.qOpen=false; d.classList.add("closed"); } },true);
 /* Menu déroulant : se ferme au choix d'un élément, au clic ailleurs et avec Échap. */
 document.addEventListener("click",e=>{ if(!S.menuOpen) return; const inMenu=e.target.closest&&e.target.closest("#hmenu");
@@ -183,7 +183,6 @@ document.addEventListener("click",e=>{
     case "tqgo": qMenuClose(); if(t.dataset.r==="cast") quickCast(t.dataset.k,t.dataset.m); else quickRoll(t.dataset.k,t.dataset.r,t.dataset.m,t.dataset.from); break;
     case "saveApp": saveApp(); break;
     case "hpmaxb": hpMaxAdd(ch,+t.dataset.v); render(); break;
-    case "pvpad": { const inp=t.closest(".pvpop")?.querySelector("input[data-pvset]"); if(inp) openDicePad(inp,true); break; }
     case "hpask": S.pending={type:"hp",mode:t.dataset.v}; renderModal(); break;
     case "hpquick": hpApply(+t.dataset.v); break;
     case "chg": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(!b) break; const c=Object.assign({},itemCharges(ch,b)); const i=+t.dataset.i, left=c.max-(+c.used||0);
@@ -374,7 +373,7 @@ document.addEventListener("change",e=>{
   if(t.dataset.actChange==="compType"){ S.comp.type=t.value; render(); return; }
   // Une seule validation : un jet physique complet (pavé validé ou saisie terminée) est enregistré et compte pour le tour.
   if(t.dataset.tin&&S.T){ if(virtualDiceEnabled()) return; const T=S.T, kind=t.dataset.tin==="dmg"?"dmg":"d20";
-    if(T.pop==="qroll"&&t.dataset.tin==="d1"&&T.mode!=="n"&&validDie(T.d1,20)&&!validDie(T.d2,20)){ render(); const d2=document.getElementById("t-d2"); if(d2) openDicePad(d2); return; }
+    if(T.pop==="qroll"&&t.dataset.tin==="d1"&&T.mode!=="n"&&validDie(T.d1,20)&&!validDie(T.d2,20)){ render(); const d2=document.getElementById("t-d2"); if(d2) d2.focus(); return; }
     if(kind==="d20"?(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))):(!validDiceTotal(T.dmg)||!dmgInRange(T.dmg))) return;
     if(ensureTableRollUse()&&(kind==="d20"?logD20(true):logDmg(true))) tableRollCommitted(kind);
     render(); return; }
@@ -454,38 +453,15 @@ new MutationObserver(()=>{ if(document.getElementById("dice")&&!document.getElem
  
 boot();
 
-// Capture avant les événements de carte : le pavé ne ferme jamais la carte du jet.
-document.addEventListener('pointerdown',e=>{
-  const input=e.target.closest(DICE_INPUTS);
-  if(input&&!input.disabled&&!input.readOnly){ e.preventDefault(); openDicePad(input); }
-},true);
-document.addEventListener('click',e=>{
-  const pad=e.target.closest('#dice-pad');
-  if(pad){
-    e.preventDefault(); e.stopImmediatePropagation();
-    const key=e.target.closest('[data-pad]')?.dataset.pad;
-    if(key) dicePadKey(key); else if(e.target===pad) closeDicePad();
-    return;
-  }
-  const input=e.target.closest(DICE_INPUTS);
-  if(input&&!input.disabled&&!input.readOnly){ e.preventDefault(); e.stopImmediatePropagation(); if(dicePad?.target!==input) openDicePad(input); }
-},true);
+// Champs de dés (dés physiques) : Entrée valide la case ; pas de flèches (↑/↓ enregistreraient un faux jet) ; valeur hors limites refusée avec un message.
 document.addEventListener('keydown',e=>{
-  if(!dicePad){
-    if((e.key==='Enter'||e.key===' ')&&e.target.matches(DICE_INPUTS)){ e.preventDefault(); e.stopImmediatePropagation(); openDicePad(e.target); }
-    // Pas de flèches : ↑/↓ modifieraient la valeur, donc enregistreraient un faux jet.
-    else if((e.key==='ArrowUp'||e.key==='ArrowDown')&&e.target.matches(DICE_INPUTS)) e.preventDefault();
-    return;
-  }
-  if(e.key==='Tab'){
-    const buttons=[...document.querySelectorAll('#dice-pad button')], first=buttons[0], last=buttons[buttons.length-1];
-    if(e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); }
-    else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
-    e.stopImmediatePropagation(); return;
-  }
-  const key=/^\d$/.test(e.key)?e.key:({Enter:'ok',Escape:'cancel',Backspace:'back',Delete:'clear'})[e.key];
-  if(key){ e.preventDefault(); e.stopImmediatePropagation(); dicePadKey(key); }
+  if(e.key==='Enter'&&e.target.matches&&e.target.matches('input[data-pvset]')){ e.preventDefault(); e.target.dispatchEvent(new Event('change',{bubbles:true})); return; }
+  if(!e.target.matches||!e.target.matches(DICE_INPUTS)) return;
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); return; }
+  if(e.key==='Enter'&&!e.target.closest('form')){ e.preventDefault(); e.target.dispatchEvent(new Event('change',{bubbles:true})); }
 },true);
+document.addEventListener('change',e=>{ const t=e.target; if(!t.matches||!t.matches(DICE_INPUTS)||virtualDiceEnabled()) return; const m=diceFieldError(t); showDiceErr(t,m); if(m) e.stopImmediatePropagation(); },true);
+document.addEventListener('submit',e=>{ const f=e.target; if(!f.querySelectorAll||virtualDiceEnabled()) return; let bad=false; f.querySelectorAll(DICE_INPUTS).forEach(i=>{ const m=diceFieldError(i); showDiceErr(i,m); if(m) bad=true; }); if(bad){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
 
 // Molette sur un champ de dés : la page défile, la valeur ne change pas.
 document.addEventListener('wheel',e=>{ if(e.target.matches?.(DICE_INPUTS)&&document.activeElement===e.target) e.target.blur(); },{passive:true});

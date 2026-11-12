@@ -32,7 +32,6 @@ function renderNav(){
   document.getElementById("hchar").innerHTML="";
 }
 function render(){
-  closeDicePad(false);
   applyDicePreference();
   applyTheme();
   if(!S.C) return;

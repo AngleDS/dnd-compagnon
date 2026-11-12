@@ -958,11 +958,10 @@ function hpStepper(ch,D){
   }
   return `<span class="hpstep"><button class="btn stepb hpdmgb" data-act="hpask" data-v="dmg" aria-label="Dégâts" title="Saisir des dégâts">Dégâts</button>${val}${S.tab==="table"?`<button class="hpmaxb num${D.hpBonus>0?" up":D.hpBonus<0?" down":""}" data-act="tpop" data-v="hpmax" title="Modifier les PV max (sort, objet, effet)">/ ${D.hpMax}${D.hpBonus?` <small>(${sg(D.hpBonus)})</small>`:""}</button>`:`<span class="muted num">/ ${D.hpMax}${D.hpBonus?` (${sg(D.hpBonus)})`:""}</span>`}<button class="btn stepb hphealb" data-act="hpask" data-v="heal" aria-label="Soins" title="Saisir des soins">Soins</button></span>`;
 }
-/* Fenêtres PV temp. et PV max ± : même présentation ; l'icône clavier ouvre le pavé numérique (saisie directe, pratique au doigt). */
-const KBD_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M6.5 14h11"/></svg>`;
+/* Fenêtres PV temp. et PV max ± : même présentation ; un champ numérique permet de saisir la valeur directement. */
 function pvPop(wrap,o){ return wrap(o.title,`<div class="pvpop"><div class="label">${o.label}</div>
   <div class="pvline"><span class="hpstep"><button class="btn stepb" data-act="${o.act}" data-v="-1" aria-label="Retirer 1" ${o.minusOff?"disabled":""}>−</button><b class="num pvval">${o.val}</b><button class="btn stepb" data-act="${o.act}" data-v="1" aria-label="Ajouter 1">+</button></span>
-  <button class="btn pvkbd" data-act="pvpad" aria-label="Saisir la valeur au pavé numérique" title="Saisir la valeur au pavé numérique">${KBD_SVG}</button><input type="number" hidden data-pvset="${o.kind}" min="${o.min}" max="999" aria-label="${esc(o.label)}"></div>
+  <input type="number" inputmode="numeric" class="pvset" data-pvset="${o.kind}" min="${o.min}" max="999" placeholder="Valeur" aria-label="${esc(o.label)} : saisir une valeur"></div>
   ${o.info?`<div class="pvinfo">${o.info}</div>`:""}<div class="row pvquick">${o.quick}</div><div class="muted pvnote">${o.note}</div></div>`); }
 function hpMaxAdd(ch,d){ const D=derive(ch); ch.hpMaxBonus=(+ch.hpMaxBonus||0)+d; if(D.hpBase+ch.hpMaxBonus<1) ch.hpMaxBonus=1-D.hpBase; const real=ch.hpMaxBonus-D.hpBonus; ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const D2=derive(ch); ch.hp.cur=Math.max(0,Math.min(D2.hpMax,(+ch.hp.cur||0)+(real>0?real:0))); touch(S.cur); }
 function tempStepper(ch){
@@ -1196,7 +1195,7 @@ function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x
     if(r==="hit"){ T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; render(); if(logD20(false)) tableRollCommitted("d20"); }
     else { const x=rollExpr(T.qr.dice,T.qr.re1); T.dmg=String(x.total); T.dmgBd=(T.qr.crit?"Critique · ":"")+x.bd; render(); if(logDmg(false)) tableRollCommitted("dmg"); }
     render(); }
-  else { const inp=document.getElementById(r==="hit"?"t-d1":"t-dmg"); if(inp) openDicePad(inp); } }
+  else { const inp=document.getElementById(r==="hit"?"t-d1":"t-dmg"); if(inp) inp.focus(); } } // dés physiques : la case est active, le clavier sort
 function quickCast(key,m){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch||!i.sp) return; qMenuClose(); qBack();
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,castDone:null,itemUseReceipt:null,mode:"n"});
   T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);
@@ -1272,55 +1271,11 @@ function applyChargeRecovery(ch,id,total,virtual=false){
 
 /* Pavé de saisie des dés physiques, commun aux deux modes de dés. */
 const DICE_INPUTS='input[data-tin],#cc-d1,#cc-d2,#t-hd,#t-death,input[data-w^="dice."],input[data-lu="roll"],[data-form="smitePhysical"] input[name="total"],[data-form="chargeRecovery"] input[name="total"],[data-form="free"] input[name="physical"]';
-const PAD_SUBMIT_FORMS=["cc","hdroll","death","chargeRecovery","smitePhysical","free"];
-let dicePad=null;
-function closeDicePad(restore=true){
-  const target=dicePad?.target; dicePad=null;
-  document.getElementById("dice-pad")?.remove();
-  if(restore&&target?.isConnected) target.focus({preventScroll:true});
-}
-function openDicePad(target,force=false){
-  if((!force&&virtualDiceEnabled())||target.disabled||target.readOnly) return;
-  closeDicePad(false);
-  const label=target.closest('label')?.textContent.trim()||target.getAttribute('aria-label')||'Résultat des dés';
-  dicePad={target,value:target.value,fresh:true};
-  const back=document.createElement('div'); back.id='dice-pad'; back.className='dice-pad-back';
-  back.innerHTML=`<section class="dice-pad" role="dialog" aria-modal="true" aria-labelledby="dice-pad-title"><div class="row" style="justify-content:space-between"><b id="dice-pad-title">${esc(label)}</b><button class="btn small ghost" type="button" data-pad="cancel" aria-label="Fermer le pavé numérique">×</button></div><output id="dice-pad-value" aria-live="polite"></output><div id="dice-pad-error" role="status"></div><div class="dice-pad-keys">${['7','8','9','4','5','6','1','2','3',Number(target.min)<0?'neg':'clear','0','back'].map(k=>`<button type="button" class="btn" data-pad="${k}"${k==='back'?' aria-label="Effacer le dernier chiffre"':k==='neg'?' aria-label="Changer le signe"':''}>${k==='clear'?'Effacer':k==='back'?'⌫':k==='neg'?'±':k}</button>`).join('')}</div><div class="row dice-pad-actions"><button type="button" class="btn" data-pad="cancel">Annuler</button><button type="button" class="btn primary" data-pad="ok">Valider</button></div></section>`;
-  document.body.appendChild(back); updateDicePad();
-  back.querySelector('[data-pad="7"]').focus({preventScroll:true});
-}
-function updateDicePad(){
-  document.getElementById('dice-pad-value').textContent=dicePad.value||'—';
-  document.getElementById('dice-pad-error').textContent='';
-}
-function dicePadKey(key){
-  if(!dicePad) return;
-  const P=dicePad;
-  if(key==='cancel'){ closeDicePad(); return; }
-  if(key==='ok'){
-    const target=P.target, value=Number(P.value), min=target.min===''?0:Number(target.min), max=target.max===''?Number.MAX_SAFE_INTEGER:Number(target.max);
-    if(P.value===''||!Number.isSafeInteger(value)||value<min||value>max){
-      document.getElementById('dice-pad-error').textContent=max===Number.MAX_SAFE_INTEGER?`Saisis un entier à partir de ${min}.`:`Saisis un entier de ${min} à ${max}.`; return;
-    }
-    closeDicePad(false);
-    if(!target.isConnected) return;
-    target.value=String(value);
-    target.dispatchEvent(new Event('input',{bubbles:true}));
-    target.dispatchEvent(new Event('change',{bubbles:true}));
-    // Une seule validation : le Valider du pavé applique aussi la saisie dès que tous les dés du formulaire sont remplis.
-    const form=target.isConnected&&target.closest('form[data-form]');
-    if(form&&PAD_SUBMIT_FORMS.includes(form.dataset.form)&&[...form.querySelectorAll(DICE_INPUTS)].every(x=>x.value!=="")){
-      form.requestSubmit(form.querySelector('button[type="submit"]:not([data-virtual])')||undefined); return; }
-    if(target.isConnected) target.focus({preventScroll:true});
-    return;
-  }
-  if(key==='clear') P.value='';
-  else if(key==='neg') P.value=P.fresh?'-':(P.value.startsWith('-')?P.value.slice(1):'-'+P.value);
-  else if(key==='back') P.value=P.value.slice(0,-1);
-  else if(/^\d$/.test(key)) P.value=P.fresh?key:(P.value+key).slice(0,10);
-  P.fresh=false; updateDicePad();
-}
-
+/* Dés physiques (décision d'Angle, 12 nov. 2026) : plus de pavé à l'écran. Les cases de dés sont des champs numériques
+   (clavier numérique sur iPhone / iPad, clavier normal sur ordinateur) ; une valeur hors limites affiche un message et n'est pas enregistrée. */
+function diceFieldError(inp){ const v=String(inp.value||"").trim(); if(v==="") return ""; const n=Number(v), min=inp.min===""?0:Number(inp.min), max=inp.max===""?Infinity:Number(inp.max);
+  return (!Number.isSafeInteger(n)||n<min||n>max)?(max===Infinity?`Saisis un entier à partir de ${min}.`:`Saisis un entier de ${min} à ${max}.`):""; }
+function showDiceErr(inp,msg){ const host=inp.closest("label")||inp; let el=host.nextElementSibling; if(!(el&&el.classList.contains("dicerr"))){ if(!msg) return; el=document.createElement("div"); el.className="dicerr warntxt"; el.setAttribute("role","alert"); host.after(el); } if(msg) el.textContent=msg; else el.remove(); }
 function syncDiceInputMode(){
   const virtual=virtualDiceEnabled();
   document.querySelectorAll(DICE_INPUTS).forEach(input=>{

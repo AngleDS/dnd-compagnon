@@ -377,7 +377,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       (await closeSizes(t)).forEach(x => closes.add(x));
       eq([...bad], [], 'cibles tactiles trop petites');
       eq([...closes], ['44×44 28px'], 'croix de fermeture (popups et pavé numérique)');
-      await t.evaluate(() => { closeDicePad && closeDicePad(); S.T.pop = 'inv'; render(); });
+      await t.evaluate(() => { S.T.pop = 'inv'; render(); });
       const del = await t.evaluate(() => [...document.querySelectorAll('.btndel')].map(b => [!!b.querySelector('svg.ico'), b.textContent.includes('×')]));
       ok(del.length > 0 && del.every(([svg, x]) => svg && !x), 'suppression par une corbeille : ' + JSON.stringify(del));
       await t.evaluate(() => { S.T.pop = null; S.tab = 'jeu'; render(); });
@@ -747,28 +747,27 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.hdrop ' + sel);
   }
 
+  // Plus de pavé à l'écran (12 nov. 2026) : on tape la valeur dans la case de dés active, puis Entrée.
   async function padNumber(p, value) {
-    for(const digit of String(value)) await p.click('[data-pad="'+digit+'"]');
-    await p.click('[data-pad="ok"]');
+    const k = await p.evaluate(() => { const a = document.activeElement; if (!a || !a.matches || !a.matches(DICE_INPUTS)) return null; a.dataset.zzk = String(Math.random()).slice(2); return a.dataset.zzk; });
+    if (!k) throw new Error('aucune case de dés active');
+    await p.fill(`[data-zzk="${k}"]`, String(value)); await p.press(`[data-zzk="${k}"]`, 'Enter');
   }
 
-  await test('Pavé numérique : d20 physique, bornes et annulation sans journaliser', async p => {
+  await test('Champs de dés : d20 physique au clavier, bornes contrôlées, pas de pavé à l’écran', async p => {
     await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
     const before=await p.evaluate(() => (cur().rollLog||[]).length);
     await p.click('#t-d1');
-    ok(await p.isVisible('#dice-pad [role="dialog"]'),'pavé ouvert au clic');
+    eq(await p.evaluate(() => [document.activeElement.id, !!document.getElementById('dice-pad'), document.getElementById('t-d1').getAttribute('inputmode')]),['t-d1',false,'numeric'],'case active au clic, clavier numérique, pas de pavé à l’écran');
     await padNumber(p,21);
-    ok((await p.innerText('#dice-pad-error')).includes('1 à 20'),'borne contrôlée');
-    eq(await p.evaluate(() => S.T.d1),'','pas de valeur invalide appliquée');
-    await p.click('[data-pad="clear"]'); await padNumber(p,13);
+    ok((await p.innerText('.tpop .dicerr')).includes('1 à 20'),'borne contrôlée, message sous la case');
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),before,'valeur invalide jamais enregistrée');
+    await p.click('#t-d1'); await padNumber(p,13);
     eq(await p.inputValue('#t-d1'),'13','résultat validé');
+    ok(!await p.locator('.tpop .dicerr').count(),'message retiré');
     ok((await p.innerText('#t-tot')).includes('Total : 17'),'bonus appliqué');
-    eq(await p.evaluate(() => cur().rollLog.length),before+1,'une seule ligne de jet');
-    await p.click('#t-d1'); await p.click('[data-pad="9"]'); await p.click('[data-pad="cancel"]');
-    eq(await p.inputValue('#t-d1'),'13','annulation conserve la valeur');
-    eq(await p.evaluate(() => cur().rollLog.length),before+1,'aucune ligne lors de l’annulation');
-    ok(await p.isVisible('.tpop'),'carte toujours ouverte');
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),before+1,'une seule ligne de jet');
   });
 
   await test('Jet physique : une seule validation au pavé, une seule ligne par jet', async p => {
@@ -1417,8 +1416,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(new Set(sans.tops).size === 1, 'les trois valeurs sont alignées : ' + sans.tops);
     await p.click('.health-card [data-v="hptemp"]');
     eq(await p.evaluate(() => S.T.pop), 'hptemp', 'toucher PV temp. ouvre la saisie');
-    await p.click('.tpop [data-act="pvpad"]'); ok(await p.isVisible('#dice-pad'), 'icône clavier : pavé numérique, même en dés virtuels');
-    await padNumber(p, 12);
+    ok(await p.isVisible('.tpop .pvset'), 'case de saisie directe, même en dés virtuels');
+    await p.fill('.tpop .pvset', '12'); await p.press('.tpop .pvset', 'Enter');
     eq(await p.evaluate(() => [cur().hp.temp, document.querySelector('.health-card [data-v="hptemp"] b').textContent]), [12, '12'], 'valeur saisie');
     await p.click('.tpop [data-act="tmpstep"][data-v="-12"]'); eq(await p.evaluate(() => cur().hp.temp), 0, 'remise à zéro'); await p.keyboard.press('Escape');
     await newWizardChar(p, { cls: 'magicien', bg: 'srd:sage', sp: 'srd:humain' });
@@ -1450,13 +1449,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.health-card [data-v="hptemp"]'); const s1 = await shape();
     await p.keyboard.press('Escape'); await p.click('.health-card [data-v="hpmax"]'); const s2 = await shape();
     eq(s1.replace('pvinfo,', ''), s2.replace('pvinfo,', ''), 'même présentation (PV max ajoute la ligne Base / Maximum)');
-    await p.click('.tpop [data-act="pvpad"]');
-    ok(await p.evaluate(() => !!document.querySelector('#dice-pad [data-pad="neg"]')), 'touche ± pour un malus');
-    eq(await p.evaluate(() => { const [a, v] = ['.dice-pad-actions [data-pad="cancel"]', '.dice-pad-actions [data-pad="ok"]'].map(q => getComputedStyle(document.querySelector(q)).fontSize); return a === v; }), true, 'Annuler et Valider dans la même taille');
-    await p.click('[data-pad="neg"]'); await padNumber(p, 3);
-    eq(await p.evaluate(() => [derive(cur()).hpBonus, document.querySelector('.tpop .pvval').textContent]), [-3, '-3'], 'malus de 3 saisi au pavé');
-    await p.click('.tpop [data-act="pvpad"]'); await padNumber(p, 5);
-    eq(await p.evaluate(() => derive(cur()).hpBonus), 5, 'bonus de 5 saisi au pavé');
+    await p.fill('.tpop .pvset', '-3'); await p.press('.tpop .pvset', 'Enter');
+    eq(await p.evaluate(() => [derive(cur()).hpBonus, document.querySelector('.tpop .pvval').textContent]), [-3, '-3'], 'malus de 3 saisi dans la case');
+    await p.fill('.tpop .pvset', '5'); await p.press('.tpop .pvset', 'Enter');
+    eq(await p.evaluate(() => derive(cur()).hpBonus), 5, 'bonus de 5 saisi dans la case');
     await p.keyboard.press('Escape');
     await p.evaluate(() => { S.T.pop = 'cond'; render(); });
     const g = await p.evaluate(() => { const rows = [...document.querySelectorAll('.tpop .condgrid .condpick')]; const cols = new Set(rows.map(r => Math.round(r.getBoundingClientRect().left)));
@@ -1505,14 +1501,14 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();
     eq(await p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => b.dataset.m + (b.disabled ? '-' : ''))), ['a', 'n', 'd'], 'Toucher : menu Avantage, Normal, Désavantage');
     await p.click('.qmenu [data-m="n"]');
-    eq(await p.evaluate(() => [S.T.pop, !!document.querySelector('.qmenu'), !!document.querySelector('#dice-pad'), dicePad && dicePad.target.id, !!document.querySelector('.tpop .tcard,.tpop .tparts')]), ['qroll', false, true, 't-d1', false], 'dés physiques : petite fenêtre de résultat (pas la fiche détaillée), pavé sur le d20');
+    eq(await p.evaluate(() => [S.T.pop, !!document.querySelector('.qmenu'), true, document.activeElement && document.activeElement.id, !!document.querySelector('.tpop .tcard,.tpop .tparts')]), ['qroll', false, true, 't-d1', false], 'dés physiques : petite fenêtre de résultat (pas la fiche détaillée), case du d20 active');
     await padNumber(p, 12);
     eq(await p.evaluate(() => [S.T.pop, /toucher/.test(cur().rollLog[0].label), cur().rollLog[0].total === 12 + S.Titems.find(i => i.key === S.T.sel).mod, /Total/.test(document.querySelector('.tpop .qtot').textContent)]), ['qroll', true, true, true], 'valeur saisie : jet enregistré, total affiché, la fenêtre reste ouverte');
     await p.keyboard.press('Escape'); await p.evaluate(() => { cur().turn = {}; S.T.pop = 'list:atk'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="a"]');
-    eq(await p.evaluate(() => [!!document.querySelector('#dice-pad'), dicePad && dicePad.target.id]), [true, 't-d1'], 'avantage en dés physiques : le pavé demande le 1er d20');
+    eq(await p.evaluate(() => [true, document.activeElement && document.activeElement.id]), [true, 't-d1'], 'avantage en dés physiques : la case du 1er d20 est active');
     await padNumber(p, 5);
-    eq(await p.evaluate(() => [!!document.querySelector('#dice-pad'), dicePad && dicePad.target.id]), [true, 't-d2'], 'puis le 2e d20');
+    eq(await p.evaluate(() => [true, document.activeElement && document.activeElement.id]), [true, 't-d2'], 'puis celle du 2e d20');
     await padNumber(p, 17);
     eq(await p.evaluate(() => [/^avantage 5 \/ 17/.test(cur().rollLog[0].bd), cur().rollLog[0].total === 17 + S.Titems.find(i => i.key === S.T.sel).mod]), [true, true], 'avantage : le meilleur des deux d20');
     await p.keyboard.press('Escape');
@@ -1570,8 +1566,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(rg[0] >= 1 && rg[1] > rg[0] && rg[2], 'dés physiques : plage indiquée et imposée ' + rg);
     const n0 = await p.evaluate(() => cur().rollLog.length);
     await padNumber(p, rg[1] + 5);
-    ok(await p.evaluate(() => /Saisis un entier de/.test(document.getElementById('dice-pad-error').textContent)), 'total impossible refusé par le pavé');
-    await p.evaluate(() => { const i = document.getElementById('t-dmg'); closeDicePad(false); i.value = '999'; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); });
+    ok(await p.evaluate(() => /Saisis un entier de/.test((document.querySelector('.tpop .dicerr') || {}).textContent || '')), 'total impossible refusé, message sous la case');
+    await p.evaluate(() => { const i = document.getElementById('t-dmg'); i.value = '999'; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); });
     eq(await p.evaluate(() => cur().rollLog.length), n0, 'total hors plage jamais enregistré');
     await p.keyboard.press('Escape'); await p.keyboard.press('Escape');
     // lancer un sort
@@ -1893,13 +1889,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       eq(await p.evaluate(() => { const bad = []; if (document.documentElement.scrollWidth > innerWidth) bad.push('page'); document.querySelectorAll('.tblk[data-blk="reperes"] .rtile .label, .tblk[data-blk="reperes"] .rtile .num').forEach(e => { if (e.scrollWidth > e.clientWidth + 1) bad.push(e.textContent.trim()); }); return bad; }), [], `Repères de ${cls} niveau 15 : textes entiers à 375 points`); }
   });
 
-  await test('Pavé numérique : deux dés physiques puis passage au mode virtuel exclusif', async p => {
+  await test('Champs de dés : deux dés physiques puis passage au mode virtuel exclusif', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     await p.evaluate(() => { cur().abilities.dex=18; render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
     await p.click('[data-act="tmode"][data-v="d"]');
     await p.click('#t-d1'); await padNumber(p,13);
     await p.click('#t-d2');
-    ok(await p.evaluate(() => {const r=document.querySelector('.dice-pad').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}),'pavé contenu dans l’écran iPhone');
+    eq(await p.evaluate(() => document.activeElement.id),'t-d2','case du 2e dé active');
     await padNumber(p,7);
     ok((await p.innerText('#t-tot')).includes('Total : 11'),'bon dé retenu');
     await p.evaluate(() => { setVirtualDice(true); render(); });
@@ -1907,21 +1903,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => cur().rollLog[0].total),11,'journal physique');
   });
 
-  await test('Pavé numérique : dégâts, correction et raccourcis clavier', async p => {
+  await test('Champs de dés : dégâts au clavier, correction, Entrée valide', async p => {
     await diceTable(p);
     await p.evaluate(() => tSelect(S.Titems.find(i=>i.kind==='atk').key));
-    await p.locator('#t-dmg').focus(); await p.keyboard.press('Enter');
+    await p.locator('#t-dmg').focus();
     await p.keyboard.type('19'); await p.keyboard.press('Backspace'); await p.keyboard.type('2');
-    eq(await p.innerText('#dice-pad-value'),'12','correction au clavier');
+    eq(await p.inputValue('#t-dmg'),'12','correction au clavier');
     await p.keyboard.press('Enter');
     const flat=await p.evaluate(() => +document.getElementById('t-dtot').dataset.flat);
-    eq(await p.inputValue('#t-dmg'),'12','dégâts validés');
-    eq(await p.evaluate(() => cur().rollLog[0].total),12+flat,'bonus aux dégâts');
-    await p.click('#t-dmg'); await p.keyboard.press('Escape');
-    ok(!await p.locator('#dice-pad').count()&&await p.isVisible('.tpop'),'Échap ferme uniquement le pavé');
+    eq(await p.evaluate(() => cur().rollLog[0].total),12+flat,'Entrée valide : dégâts enregistrés avec le bonus');
+    ok(await p.isVisible('.tpop'),'la fiche reste ouverte');
   });
 
-  await test('Pavé numérique : jet libre et jet contre la mort appliqués dès le Valider du pavé', async p => {
+  await test('Champs de dés : jet libre et jet contre la mort appliqués avec Entrée', async p => {
     await diceTable(p);
     await p.evaluate(() => { S.tab='jeu'; render(); renderDice(); });
     const n0=await p.evaluate(() => S.log.length);
@@ -1935,7 +1929,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => cur().death),{s:1,f:0},'jet contre la mort appliqué sans Appliquer');
   });
 
-  await test('Pavé numérique : concentration et dé de vie physiques', async p => {
+  await test('Champs de dés : concentration et dé de vie physiques', async p => {
     await diceTable(p);
     await p.evaluate(() => { cur().conc='Sort test'; S.T.cc={dmg:10,mode:'n',d1:'',d2:'',res:null}; S.T.pop='concchk'; render(); });
     await p.click('#cc-d1'); await padNumber(p,18);
@@ -1959,7 +1953,6 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
         tSelect(item.key);
         for(const input of document.querySelectorAll(DICE_INPUTS)){
           fields++; if(!input.disabled||getComputedStyle(input.closest('label')||input).display!=='none') throw new Error('Saisie physique exposée');
-          openDicePad(input); if(dicePad) throw new Error('Pavé ouvert en mode virtuel');
         }
       }
       tSelect(S.Titems.find(i=>i.kind==='init').key);
@@ -1974,7 +1967,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => !S.T.cc.res),'soumission physique bloquée');
     await p.evaluate(() => { S.T.pop=null; setVirtualDice(false); render(); tSelect(S.Titems.find(i=>i.kind==='init').key); });
     ok(await p.isVisible('#t-d1')&&!await p.isVisible('[data-act="tvroll"]'),'retour en mode physique');
-    await p.click('#t-d1'); ok(await p.isVisible('#dice-pad'),'pavé rétabli');
+    await p.click('#t-d1'); eq(await p.evaluate(() => [document.activeElement.id, document.getElementById('t-d1').disabled]),['t-d1',false],'saisie rétablie');
   });
 
 
@@ -2024,9 +2017,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(()=>S.T.pop),'card','carte toujours ouverte');
   });
 
-  await test('Tour : le Valider du pavé valide le jet ; fermer sans saisir ne consomme rien',async p=>{
+  await test('Tour : la saisie valide le jet ; fermer sans saisir ne consomme rien',async p=>{
     const key=await turnAttack(p,false);
-    await p.click('#t-d1'); await p.click('[data-pad="1"]'); await p.click('[data-pad="cancel"]');
+    await p.click('#t-d1');
     await p.click('.tpophead [data-act="tpopclose"]');
     eq(await p.evaluate(()=>cur().turn||{}),{},'pavé annulé puis carte fermée : rien de consommé');
     await p.evaluate(k=>tSelect(k),key);

@@ -460,14 +460,6 @@ html:not([data-virtual-dice="on"]) .rollbtn[data-virtual]{display:inline-block!i
 /* Champs de dés (même liste que DICE_INPUTS) : pas de flèches haut/bas, la saisie passe par le pavé. */
 input[data-tin],#cc-d1,#cc-d2,#t-hd,#t-death,input[data-w^="dice."],input[data-lu="roll"],[data-form="smitePhysical"] input[name="total"],[data-form="chargeRecovery"] input[name="total"],[data-form="free"] input[name="physical"]{appearance:textfield;-moz-appearance:textfield}
 input[data-tin]::-webkit-inner-spin-button,input[data-tin]::-webkit-outer-spin-button,#cc-d1::-webkit-inner-spin-button,#cc-d1::-webkit-outer-spin-button,#cc-d2::-webkit-inner-spin-button,#cc-d2::-webkit-outer-spin-button,#t-hd::-webkit-inner-spin-button,#t-hd::-webkit-outer-spin-button,#t-death::-webkit-inner-spin-button,#t-death::-webkit-outer-spin-button,input[data-w^="dice."]::-webkit-inner-spin-button,input[data-w^="dice."]::-webkit-outer-spin-button,input[data-lu="roll"]::-webkit-inner-spin-button,input[data-lu="roll"]::-webkit-outer-spin-button,[data-form="smitePhysical"] input[name="total"]::-webkit-inner-spin-button,[data-form="smitePhysical"] input[name="total"]::-webkit-outer-spin-button,[data-form="chargeRecovery"] input[name="total"]::-webkit-inner-spin-button,[data-form="chargeRecovery"] input[name="total"]::-webkit-outer-spin-button,[data-form="free"] input[name="physical"]::-webkit-inner-spin-button,[data-form="free"] input[name="physical"]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}
-.dice-pad-back{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.65)}
-.dice-pad{width:min(100%,320px);max-height:calc(100dvh - 32px);overflow:auto;background:var(--sheet);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 16px 60px rgba(0,0,0,.4)}
-.dice-pad output{display:block;min-height:56px;text-align:right;font-size:36px;font-variant-numeric:tabular-nums;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:12px}
-.dice-pad-keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.dice-pad-keys .btn{min-height:54px;font-size:var(--fs-xl);touch-action:manipulation;justify-content:center}
-.dice-pad-keys [data-pad="clear"]{font-size:var(--fs-sm)}
-.dice-pad-actions{gap:8px;margin-top:12px}.dice-pad-actions .btn{flex:1;min-height:46px;justify-content:center}
-#dice-pad-error{min-height:24px;color:var(--blood);font-size:var(--fs-sm);padding:4px 0}
 
 /* Les deux modes de jets sont exclusifs. */
 html[data-virtual-dice="on"] [data-physical]{display:none!important}
