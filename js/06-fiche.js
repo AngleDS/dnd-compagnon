@@ -122,10 +122,10 @@ function viewSheet(){
   else body=tabBuild(ch,D);
   const portrait=typeof ch.portrait==="string"&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(ch.portrait)?ch.portrait:"";
   const banner=`<div class="sheet-head character-banner">
-      <button class="character-portrait" data-act="portrait" aria-label="${portrait?"Changer":"Ajouter"} le portrait de ${esc(ch.name||"ce personnage")}" title="${portrait?"Changer":"Ajouter"} le portrait">
+      ${S.tab==="table"?`<div class="character-portrait">`:`<button class="character-portrait" data-act="portrait" aria-label="${portrait?"Changer":"Ajouter"} le portrait de ${esc(ch.name||"ce personnage")}" title="${portrait?"Changer":"Ajouter"} le portrait">`}
         ${portrait?`<img src="${esc(portrait)}" alt="Portrait de ${esc(ch.name||"ce personnage")}">`:`<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="23" r="11"/><path d="M12 57c0-13 8-21 20-21s20 8 20 21"/></svg>`}
-        <span class="portrait-edit" aria-hidden="true">+</span>
-      </button>
+        ${S.tab==="table"?"</div>":`<span class="portrait-edit" aria-hidden="true">+</span>
+      </button>`}
       <div class="character-identity"><h1>${esc(ch.name||"Sans nom")}</h1>
         <div class="character-facts">
           <div><span class="label">Classe</span><span>${esc(D.cls?D.cls.name+" "+D.L:"Classe à choisir")}${sub?" · "+esc(sub):""}</span></div>
@@ -134,7 +134,7 @@ function viewSheet(){
           <div><span class="label">Joueur·se</span><span>${esc(ch.player||"—")}</span></div>
         </div>${ch.alignment?`<div class="meta">${esc(ch.alignment)}</div>`:""}
       </div>
-      ${S.tab==="table"?`<div class="character-rest"><button class="btn hprest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg></button></div>`:`<div class="row" style="margin-left:auto"><span class="label">Bonus de maîtrise</span><b class="num">${sg(D.pb)}</b>${D.cls&&D.L<20?`<button class="btn small" data-act="lvlUp" title="Assistant de montée de niveau">Niveau ${D.L+1} ↑</button>`:""}</div>`}
+      ${S.tab==="table"?`<div class="character-rest"><button class="btn hprest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg><span>Repos</span></button></div>`:`<div class="row" style="margin-left:auto"><span class="label">Bonus de maîtrise</span><b class="num">${sg(D.pb)}</b>${D.cls&&D.L<20?`<button class="btn small" data-act="lvlUp" title="Assistant de montée de niveau">Niveau ${D.L+1} ↑</button>`:""}</div>`}
     </div>`;
   return `${S.tab==="table"?"":banner}
     ${S.tab==="table"?"":`<div class="tabs sheettabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}</div>`}

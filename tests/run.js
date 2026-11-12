@@ -1534,6 +1534,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.T.pop, /toucher/.test(cur().rollLog[0].label)]), ['qroll', true], 'Recherche : même menu, même petite fenêtre');
   });
 
+  await test('Bandeau, repos et tuiles : libellé Repos, dés de vie toujours visibles, plus de tuile Épuisement, portrait figé à la table', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    ok(await p.evaluate(() => /Repos/.test(document.querySelector('.character-rest [data-act="restOpen"]').textContent)), 'bouton du bandeau avec son libellé « Repos »');
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="perso"] [data-act="portrait"]') && !document.querySelector('.tblk[data-blk="perso"] .portrait-edit') && !!document.querySelector('.tblk[data-blk="perso"] .character-portrait')), 'à la table : portrait affiché, pas modifiable');
+    await p.evaluate(() => { S.T.pop = 'rest'; render(); });
+    eq(await p.evaluate(() => [!!document.querySelector('[data-form="hdroll"]'), document.querySelector('[data-form="hdroll"] button[type="submit"]').disabled, !!document.querySelector('.hdfull')]), [true, true, true], 'PV pleins : dés de vie visibles, bouton grisé avec explication');
+    await p.evaluate(() => { cur().hp.cur = 3; render(); });
+    eq(await p.evaluate(() => [document.querySelector('[data-form="hdroll"] button[type="submit"]').disabled, !!document.querySelector('.hdfull')]), [false, false], 'PV entamés : on peut dépenser un dé');
+    await p.keyboard.press('Escape');
+    eq(await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { inspSeen: true, tiles: { raccourcis: ['exh', 'cond', '', '', '', ''] } }); return blockTiles(ch, 'raccourcis')[0]; }), '', 'ancienne tuile Épuisement : la case redevient libre');
+    ok(await p.evaluate(() => !customCat().exh), 'Épuisement n’est plus proposé (doublon des États)');
+    await p.evaluate(() => { S.tab = 'build'; render(); });
+    ok(await p.evaluate(() => !!document.querySelector('[data-act="portrait"]')), 'onglet Fiche : le portrait reste modifiable');
+  });
+
   await test('Grande case 2×2 : la tuile occupe vraiment deux rangées', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_grand000', name: 'Grand', r: 2, c: 2, ag: 'g', tiles: [{ id: 'ca', sz: '2', r: 0, c: 0 }] }] }); render(); });
@@ -1767,14 +1782,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('#tq'); ok(await p.evaluate(() => getComputedStyle(document.getElementById('tres')).display !== 'none'), 'revenir dans la barre la rouvre');
     await p.fill('#tq', '');
     await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t2aaaaaa', name: 'T2', r: 2, c: 4, tiles: [] }], hidden: ['recherche'] }); S.T.pop = 'tiles:c_t2aaaaaa'; render(); });
-    for (const v of ['search', 'conc', 'exh']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
-    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}`)), ['search:1', 'conc:12', 'exh:1'], 'Recherche 1×1, Concentration en 1×2 d’office (tuile moyenne), Épuisement 1×1');
+    for (const v of ['search', 'conc', 'insp']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}`)), ['search:1', 'conc:12', 'insp:1'], 'Recherche 1×1, Concentration en 1×2 d’office (tuile moyenne), Inspiration 1×1');
     await p.click('.tpop [data-act="ctileSel"][data-i="0"]');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="ctileSize"]')].map(c => c.dataset.z)), ['1', '12', 'l'], 'Recherche : une seule ligne de haut (1, 2 ou 4 colonnes)');
     await p.keyboard.press('Escape'); await p.evaluate(() => { setBlkHidden(cur(), 'recherche', false); render(); });
     await p.click('.tblk[data-blk="c_t2aaaaaa"] [data-act="tsearch"]');
     ok(await p.evaluate(() => !S.T.pop && document.activeElement && document.activeElement.id === 'tq'), 'loupe : va à la barre du bloc Recherche');
-    await p.click('.tblk[data-blk="c_t2aaaaaa"] [data-act="tpop"][data-v="cond"]'); eq(await p.evaluate(() => S.T.pop), 'cond', 'tuile Épuisement : ouvre la fenêtre des états'); await p.keyboard.press('Escape');
     await p.evaluate(() => { setBlkHidden(cur(), 'recherche', true); render(); });
     await p.click('.tblk[data-blk="c_t2aaaaaa"] [data-act="tsearch"]');
     ok(await p.evaluate(() => S.T.pop === 'search' && !!document.querySelector('.tpop #tq') && document.querySelectorAll('#tq').length === 1), 'sans barre à l’écran : la loupe ouvre la recherche dans une fenêtre');

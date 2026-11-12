@@ -299,8 +299,8 @@ function tPop(ch,D){
       <div class="row" style="gap:18px;align-items:flex-end"><div><div class="label">Points de vie</div><b class="num" style="font-size:var(--fs-2xl)">${cur0}</b><span class="muted num"> / ${D.hpMax}</span></div>
       <div><div class="label">Dés de vie restants</div><b class="num" style="font-size:var(--fs-2xl)">${hdLeft}</b><span class="muted num"> / ${D.L} · d${D.hd} ${sg(D.mods.con)}</span></div></div>
       <div class="lusec"><div class="label">Dépenser un dé de vie</div>
-        ${hdLeft>0&&cur0<D.hpMax?`<form class="row" data-form="hdroll" style="gap:8px"><label class="row" style="gap:6px">Ton d${D.hd}<input id="t-hd" type="number" inputmode="numeric" min="1" max="${D.hd}" style="width:70px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="hdvirt">Lancer virtuellement</button></form>
-        <div class="muted" style="font-size:var(--fs-sm)">Chaque dé rend son résultat ${sg(D.mods.con)} PV (minimum 1). Tu peux en dépenser plusieurs, un par un.</div>`:`<div class="muted" style="font-size:var(--fs-sm)">${hdLeft<=0?"Plus de dé de vie : ils reviennent au repos long.":"Tes PV sont au maximum."}</div>`}
+        ${hdLeft>0?`${cur0>=D.hpMax?`<div class="muted hdfull" style="font-size:var(--fs-sm)">PV déjà au maximum : dépenser un dé maintenant ne rendrait rien.</div>`:""}<form class="row" data-form="hdroll"${cur0>=D.hpMax?" data-full":""} style="gap:8px"><label class="row" style="gap:6px">Ton d${D.hd}<input id="t-hd" type="number" inputmode="numeric" min="1" max="${D.hd}" style="width:70px;font-size:var(--fs-lg)"${cur0>=D.hpMax?" disabled":""}></label><button class="btn primary" type="submit"${cur0>=D.hpMax?" disabled":""}>Appliquer</button><button class="btn" type="button" data-virtual data-act="hdvirt"${cur0>=D.hpMax?" disabled":""}>Lancer virtuellement</button></form>
+        <div class="muted" style="font-size:var(--fs-sm)">Chaque dé rend son résultat ${sg(D.mods.con)} PV (minimum 1). Tu peux en dépenser plusieurs, un par un.</div>`:`<div class="muted" style="font-size:var(--fs-sm)">Plus de dé de vie : ils reviennent au repos long.</div>`}
         ${S.T.hdLast?`<div class="tnotes">${esc(S.T.hdLast)}</div>`:""}</div>
       <div class="lusec"><div class="label">À la fin du repos</div><ul class="lul"><li>${D.cast&&D.cast.type==="pact"?"Emplacements de pacte récupérés":"Pas d'emplacement récupéré (repos long)"}</li>${shortRes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
       <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button></div>`); }
@@ -420,7 +420,7 @@ const TILE_META=Object.assign(
   Object.fromEntries(Object.keys(TILE_CAT.reperes).map(id=>[id,{kind:"V",min:"E",act:id==="init"}])),
   Object.fromEntries(Object.keys(TILE_CAT.raccourcis).map(id=>[id,{kind:"Pop",min:"M",act:true}])),
   {slots:{kind:"K",min:"L",act:false,only:"custom"},
-   insp:{kind:"B",min:"E",act:true}, conc:{kind:"V",min:"M",act:true}, exh:{kind:"V",min:"E",act:true},
+   insp:{kind:"B",min:"E",act:true}, conc:{kind:"V",min:"M",act:true}, 
    search:{kind:"Pop",min:"E",act:true,h1:true}, comp:{kind:"Pop",min:"E",act:true}}); // h1 : une seule ligne de haut (Recherche : 1, 2 ou 4 colonnes)
 const tileMinW=id=>TILE_W[(TILE_META[id]||{}).min||"E"];
 const tileFits=(id,w)=>w>=tileMinW(id);
@@ -475,7 +475,6 @@ function racTileMap(ch,D){
     hist:()=>`<button class="tpbtn" data-act="tpop" data-v="hist"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historique des jets<small class="tpsub">${(ch.rollLog||[]).length} jet${(ch.rollLog||[]).length>1?"s":""}</small></button>`,
     insp:()=>`<button class="tpbtn" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Toucher pour l'utiliser ou la regagner"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 21 7.5v9L12 22l-9-5.5v-9Z"/><path d="m12 2.5-5 12h10ZM3 7.5l4 7 5 7.5 5-7.5 4-7M7 14.5h10"/></svg>Inspiration héroïque<small class="tpsub">${ch.inspiration?"Disponible ✓":"Pas d'inspiration"}</small></button>`,
     conc:()=>`<button class="tpbtn" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></svg>Concentration<small class="tpsub">${ch.conc?esc(ch.conc):"Aucun sort"}</small></button>`,
-    exh:()=>`<button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/></svg>Épuisement<small class="tpsub">${+ch.exhaustion?"Niveau "+ch.exhaustion:"Aucun"}</small></button>`,
     comp:()=>{ const c=ch.companion; return `<button class="tpbtn" data-act="tpop" data-v="comp"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.comp}</svg>${c&&c.name?esc(c.name):"Compagnon"}<small class="tpsub">${c?`${+c.hp?.cur||0}/${+c.hp?.max||0} PV · CA ${+c.ac||10}`:"Ajouter un compagnon"}</small></button>`; },
     sorts:()=>`<button class="tpbtn" data-act="tpop" data-v="list:sorts"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="m12 6 1 2 2 .5-1.5 1.5.5 2-2-1-2 1 .5-2L9 8.5l2-.5z"/></svg>Sorts<small class="tpsub">${S.Titems?S.Titems.filter(i=>i.kind==="spell").length:0} prêts</small></button>`,
     atkl:()=>`<button class="tpbtn" data-act="tpop" data-v="list:atk"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.attaques}</svg>Attaques<small class="tpsub">${S.Titems?S.Titems.filter(i=>i.kind==="atk").length:0} au choix</small></button>`,
@@ -522,7 +521,6 @@ function repTileMap(ch,D,size){
     harmo:()=>t(`${(ch.attuned||[]).filter(id=>(ch.bag||[]).some(b=>b.id===id)).length}/3`,"Harmonisation","Objets magiques harmonisés (3 au plus)"),
     insp:()=>`<button class="rtile" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Inspiration héroïque : toucher pour l'utiliser ou la regagner"><b class="num">${ch.inspiration?"✓":"—"}</b><span class="label">Inspiration</span></button>`,
     conc:()=>`<button class="rtile" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="Concentration"><b class="num tconcv">${ch.conc?esc(ch.conc):"—"}</b><span class="label">Concentration</span></button>`,
-    exh:()=>`<button class="rtile" data-act="tpop" data-v="cond" title="Épuisement : toucher pour le modifier"><b class="num">${+ch.exhaustion||0}</b><span class="label">Épuisement</span></button>`,
     search:()=>`<button class="rtile" data-act="tsearch" title="Recherche"><b class="num"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></b><span class="label">Recherche</span></button>`
   };
   // Toute tuile s'ouvre (décision d'Angle, 11 nov. 2026) : une tuile de valeur devient un bouton « rinfo » qui ouvre son explication,
@@ -702,7 +700,7 @@ function reperesTiles(ch,D,size,k=4){ const T=repTileMap(ch,D,size), h=blockTile
 function cReformat(b,r,c){ const keep=[], out=[], nb={r,c}; for(const t of cGrid(b).tiles){ const [h,w]=tileSpan(t.sz,r,c), n=Object.assign({},t,{c:t.sz==="l"?0:t.c});
     if(n.r+h<=r&&n.c+w<=c&&!keep.some(k=>tilesHit(k,n,r,c))) keep.push(n); else out.push(t.id); } return [keep,out]; }
 /* Tuiles générales (lot T2) : proposées dans tous les blocs selon la largeur. */
-const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",exh:"Épuisement",search:"Recherche",comp:"Compagnon"};
+const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",search:"Recherche",comp:"Compagnon"};
 function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,TILE_GEN,{slots:"Emplacements de sorts"}); }
 function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4).map(b=>Object.assign({},b,{w:blkWidth(ch,b.id,b)})):[]; }
 /* Largeur des blocs sur la grille invisible de 4 colonnes (lot 2) : ch.layout.width = {id: 1..4}. Personnage et PV restent en pleine largeur. */
@@ -809,7 +807,7 @@ const tilesHit=(a,b,R,C)=>{ const [ha,wa]=tileSpan(a.sz,R,C),[hb,wb]=tileSpan(b.
 /* Tuiles posées d'un bloc : les positions enregistrées d'abord, puis (anciens blocs v128 ou position invalide) au premier trou, dans l'ordre ; une tuile sans place est écartée. */
 function cGrid(b){ const R=b.r,C=b.c, out=[], seen=new Set();
   const fits=t=>{ const [h,w]=tileSpan(t.sz,R,C); return t.r>=0&&t.c>=0&&t.r+h<=R&&t.c+w<=C&&!out.some(o=>tilesHit(o,t,R,C)); };
-  const src=(Array.isArray(b.tiles)?b.tiles:[]).filter(t=>t&&typeof t.id==="string"&&!seen.has(t.id)&&seen.add(t.id)).map(t=>({id:t.id,sz:["1","12","2","l","b"].includes(t.sz)?t.sz:"1",r:t.r,c:t.c}));
+  const src=(Array.isArray(b.tiles)?b.tiles:[]).filter(t=>t&&typeof t.id==="string"&&t.id!=="exh"&&!seen.has(t.id)&&seen.add(t.id)) /* exh : tuile Épuisement retirée (doublon des États) */.map(t=>({id:t.id,sz:["1","12","2","l","b"].includes(t.sz)?t.sz:"1",r:t.r,c:t.c}));
   src.forEach(t=>{ if(t.sz==="l"||t.sz==="b") t.c=0; if(Number.isInteger(t.r)&&Number.isInteger(t.c)&&fits(t)){ out.push(t); t.ok=1; } });
   src.forEach(t=>{ if(t.ok) return; for(let r=0;r<R;r++) for(let c=0;c<C;c++){ const n={id:t.id,sz:t.sz,r,c}; if(fits(n)){ out.push(n); return; } } });
   const occ=Array.from({length:R},()=>Array(C).fill(-1));
@@ -1310,10 +1308,10 @@ function syncDiceInputMode(){
     if(input.dataset.w?.startsWith('dice.')){ input.readOnly=virtual||!!S.W?.rolled; return; }
     input.dataset.physical='';
     const label=input.closest('label'); if(label) label.dataset.physical='';
-    input.disabled=virtual;
+    input.disabled=virtual||!!input.closest("[data-full]");
   });
   document.querySelectorAll('[data-form="cc"],[data-form="hdroll"],[data-form="death"],[data-form="chargeRecovery"],[data-form="free"]').forEach(form=>{
-    form.querySelectorAll('button[type="submit"]:not([data-virtual])').forEach(button=>{ button.dataset.physical=''; button.disabled=virtual; });
+    form.querySelectorAll('button[type="submit"]:not([data-virtual])').forEach(button=>{ button.dataset.physical=''; button.disabled=virtual||form.hasAttribute("data-full"); });
   });
   document.querySelectorAll('[data-form="smitePhysical"]').forEach(form=>{ form.dataset.physical=''; });
 }

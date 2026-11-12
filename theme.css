@@ -320,8 +320,8 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 
 /* Carte PV : PV temp., PV max ±, dés de vie et Repos alignés ; emplacements de sorts qui s'adaptent au perso */
 .health-details .health-detail{align-self:start;align-content:start}
-.character-banner{position:relative}.character-rest{position:absolute;top:0;right:0;margin:0}.tblk .character-banner .character-identity h1{padding-right:52px}
-.character-rest .hprest{display:inline-flex;align-items:center;justify-content:center;width:44px;height:36px;min-height:36px;padding:0}
+.character-banner{position:relative}.character-rest{position:absolute;top:0;right:0;margin:0}.tblk .character-banner .character-identity h1{padding-right:96px}
+.character-rest .hprest{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;height:36px;min-height:36px;padding:0 12px;font-size:var(--fs-sm)}
 .character-rest .hprest .tpi{width:20px;height:20px;stroke:var(--brass)}
 @media (pointer:coarse){.character-rest .hprest{height:44px;min-height:44px}}
 @media(max-width:720px){.health-details{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -522,3 +522,4 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .qres{display:grid;gap:10px}.qres .qtot{font-size:var(--fs-lg)}.qres .qtot .tot{font-size:40px}
 body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,left .15s ease}
 .tblocks.tfree>.tblk.dragging{opacity:0}
+[data-form="hdroll"][data-full] .btn,[data-form="hdroll"][data-full] input{opacity:.4;cursor:not-allowed}
