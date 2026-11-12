@@ -1872,7 +1872,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.mouse.click(220, 45); ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'clic ailleurs : Menu fermé');
     await menuClick(p, '[data-act="layoutEdit"]');
     await p.click('.tblk[data-blk="tour"] .tedpen');
-    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Combat!'], 'Ce tour : fenêtre du bloc');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Ce tour'], 'Ce tour : fenêtre du bloc');
     ok(await p.evaluate(() => /ne se personnalise pas/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Ce tour : ni tuiles ni réserve');
     await p.keyboard.press('Escape');
     await p.click('.tblk[data-blk="reperes"] .tedpen');
@@ -2337,6 +2337,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { cur().conc = ''; S.T.pop = null; S.T.cc = null; setVirtualDice(true); render(); });
     await p.click('.health-card .tconcb'); await p.click('.qmenu [data-m="n"]');
     eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label]), ['qroll', 'Concentration'], 'sans sort : jet direct de sauvegarde de Constitution');
+  });
+
+  await test('Ce tour : design Arsenal, titre et états accessibles en clair et sombre', async p => {
+    await p.setViewportSize({width:390,height:844}); await diceTable(p);
+    for(const light of [false,true]){
+      if(light) await menuClick(p, '[data-act="theme"]');
+      const start=await p.evaluate(() => { const b=document.querySelector('.tblk[data-blk="tour"]');return [b.querySelector('.tbandt').textContent,[...b.querySelectorAll('.tturnbtn')].map(x=>[Math.round(x.getBoundingClientRect().height),!!x.querySelector('.tturn-icon svg'),x.getAttribute('aria-pressed')])]; });
+      eq(start,['Ce tour',Array.from({length:5},()=>[76,true,'false'])],'titre, cinq tuiles et icônes');
+      await p.click('.tturnbtn[data-v="move"]');
+      eq(await p.evaluate(()=>[cur().turn.move,document.querySelector('.tturnbtn[data-v="move"]').getAttribute('aria-pressed'),document.querySelector('.tturnbtn[data-v="move"]').innerText.includes('Mouvement terminé')]),[true,'true',true],'état terminé lisible et conservé');
+      await p.click('.tturnbtn[data-v="move"]');
+    }
   });
 
   if (BROWSER) await BROWSER.close();

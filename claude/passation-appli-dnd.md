@@ -1,3 +1,5 @@
+> **Ce tour — design Arsenal (12 nov. 2026)** : ancien titre « Combat! » renommé « Ce tour » par défaut ; tuiles interactives dorées, icônes en médaillon et angles gravés, états consommés conservés. Titres personnalisés et dimensions existantes préservés.
+
 # Passation technique — D&D Compagnon
 
 État au 10 novembre 2026. Fusion de la passation historique (versions 112 à 118 de l'artefact) et de la passation de la reprise menée hors de Claude (sauvegardes, isolation de Claude, dés virtuels, pavé numérique, suivi du tour).

@@ -366,7 +366,8 @@ function viewTable(ch,D,banner=""){
   const tn=blkCols(ch,"tour"), tspan=Math.max(1,tn-((TT.length-1)%tn));
   const turnBtns=TT.map(([k,l])=>{ const used=!!turn[k], n=items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length;
     const label=used?"✓ "+TURN_DONE[k]:({action:"Actions",bonus:"Actions bonus",reaction:"Réactions"}[k]||l), cnt=!used&&n&&TURN_COSTS.includes(k)?`<small class="tturnn">${n} option${n>1?"s":""}</small>`:"";
-    return `<button class="tturnbtn" aria-pressed="${used}" data-act="${k==="move"?"tturn":"tpop"}" data-v="${k==="move"?"move":"eco:"+k}"${k==="autre"&&tspan>1?` style="grid-column:span ${tspan}"`:""} title="${k==="move"?(used?"Annuler":"Marquer le mouvement terminé"):"Options disponibles"}"><span class="tturnl">${label}</span>${cnt}${used&&k==="move"?`<span class="tused">Annuler</span>`:""}</button>`; }).join("");
+    const icon={action:REP_DESIGN_ICON.attaques,bonus:REP_DESIGN_ICON.init,reaction:REP_ICON.ca,move:REP_DESIGN_ICON.vitesse,autre:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'}[k];
+    return `<button class="tturnbtn" aria-pressed="${used}" data-act="${k==="move"?"tturn":"tpop"}" data-v="${k==="move"?"move":"eco:"+k}"${k==="autre"&&tspan>1?` style="grid-column:span ${tspan}"`:""} title="${k==="move"?(used?"Annuler":"Marquer le mouvement terminé"):"Options disponibles"}"><span class="tturn-icon" aria-hidden="true"><svg viewBox="0 0 24 24">${icon}</svg></span><span class="tturnl">${label}</span>${cnt}${used&&k==="move"?`<span class="tused">Annuler</span>`:""}</button>`; }).join("");
   const ecoBtns=Object.entries(ECO).map(([k,l])=>`<button class="teco" aria-pressed="${T.eco===k}" data-act="teco" data-v="${k}">${l}<span class="muted num">${items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length}</span></button>`).join("");
   const recent=T.recent.map(k=>items.find(i=>i.key===k)).filter(Boolean).map(i=>`<button class="chip" data-act="tsel" data-k="${esc(i.key)}">${esc(i.name)}</button>`).join("");
   const blocks={
@@ -1027,7 +1028,7 @@ function customPop(ch,D,id,wrap){
     <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkDup" data-v="${id}">Dupliquer le bloc</button></div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
-const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["recherche","Recherche"],["ressources","Ressources"],["tour","Combat!"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
+const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["recherche","Recherche"],["ressources","Ressources"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
 function blkLabel(ch,id){ const d=(TBLK.find(b=>b[0]===id)||[])[1]; if(d) return blkTitle(ch,id,d)||d; const c=customBlocks(ch).find(b=>b.id===id); return c?(c.name||"Bloc sans titre"):id; }
 function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map(b=>b.id)]; const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[];
   // Ressources (lot T3b) arrive après un ordre déjà enregistré : on le place sous la carte PV, pas en bas de page

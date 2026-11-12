@@ -516,3 +516,16 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .rtile.rep-value-tile .rep-shield .num{position:relative;z-index:1}
 .rtile.rep-value-tile:not(.rinfo)::after{content:'↗';position:absolute;right:5px;top:2px;color:var(--brass);font-size:var(--fs-xs)}
 @container (max-width: 90px){.rtile.rep-value-tile .num{font-size:var(--fs-lg)}.rtile.rep-value-tile .rep-full{display:none}.rtile.rep-value-tile .rep-label::after{display:inline}}
+
+/* Ce tour : design Arsenal, contrasté dans les deux thèmes. */
+:root{--turn-fill:linear-gradient(145deg,#614a33,#302820 78%);--turn-rim:#aa8658;--turn-icon:#30261e}
+:root[data-theme="light"]{--turn-fill:linear-gradient(145deg,#e9cf9f,#e6ddd0 80%);--turn-rim:#9d7846;--turn-icon:#f4e9d5}
+.tblocks.tfree>.tblk[data-blk="tour"]{border-color:var(--turn-rim)}
+.tblocks.tfree>.tblk[data-blk="tour"]>.tband{color:var(--brass)}
+.tblocks.tfree .tturnbtn{position:relative;gap:1px;border:1px solid var(--turn-rim);border-radius:4px 13px 4px 13px;background:var(--turn-fill);color:var(--ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brass) 25%,transparent)}
+.tblocks.tfree .tturnbtn::before{content:'◆';position:absolute;top:4px;left:6px;font-size:var(--fs-xs);color:var(--brass);line-height:1}
+.tblocks.tfree .tturnbtn .tturn-icon{width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--brass);border-radius:50%;background:var(--turn-icon);flex-shrink:0}
+.tturn-icon svg{width:15px;height:15px;fill:none;stroke:var(--brass);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.tblocks.tfree .tturnbtn[aria-pressed="true"]{background:var(--turn-fill);color:var(--ink);box-shadow:inset 0 0 0 2px var(--brass)}
+.tblocks.tfree .tturnbtn[aria-pressed="true"] .tturn-icon{opacity:.65}
+.tblocks.tfree .tturnbtn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
