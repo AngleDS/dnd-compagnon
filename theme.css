@@ -320,12 +320,12 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 
 /* Carte PV : PV temp., PV max ±, dés de vie et Repos alignés ; emplacements de sorts qui s'adaptent au perso */
 .health-details .health-detail{align-self:start;align-content:start}
-.health-rest{justify-items:start}
-.health-rest .hprest{display:inline-flex;align-items:center;justify-content:center;width:44px;height:36px;min-height:36px;padding:0}
-.health-rest .hprest .tpi{width:20px;height:20px;stroke:var(--brass)}
-@media (pointer:coarse){.health-rest .hprest{height:44px;min-height:44px}}
-@media(max-width:720px){.health-details{grid-template-columns:repeat(3,minmax(0,1fr)) auto}}
-@media(max-width:340px){.health-details{grid-template-columns:1fr 1fr}.health-dice{grid-column:auto}}
+.character-rest{margin-left:auto;align-self:center;display:grid;justify-items:center;gap:4px}
+.character-rest .hprest{display:inline-flex;align-items:center;justify-content:center;width:44px;height:36px;min-height:36px;padding:0}
+.character-rest .hprest .tpi{width:20px;height:20px;stroke:var(--brass)}
+@media (pointer:coarse){.character-rest .hprest{height:44px;min-height:44px}}
+@media(max-width:720px){.health-details{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:340px){.health-details{grid-template-columns:1fr 1fr}.health-dice{grid-column:1/-1}}
 .hslots{grid-column:1/-1;border-top:1px solid var(--df-50463b,var(--line));padding-top:10px;min-width:0}
 .hshead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;min-height:28px}
 .hshead .label{font-size:var(--fs-xs);letter-spacing:.08em}

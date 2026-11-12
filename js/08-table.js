@@ -353,7 +353,6 @@ function viewTable(ch,D,banner=""){
       <button class="health-detail health-adjust" data-act="tpop" data-v="hptemp" title="PV temporaires : toucher pour les modifier"><span class="label">PV temp.</span><b class="num">${+(ch.hp?.temp||0)}</b></button>
       <button class="health-detail health-adjust" data-act="tpop" data-v="hpmax" title="Modifier les PV maximum"><span class="label">PV max ±</span><b class="num">${D.hpBonus?sg(D.hpBonus):0}</b></button>
       <div class="health-detail health-dice" title="Dés de vie restants : à dépenser pendant un repos court (bouton Repos)"><span class="label">Dés de vie</span><span><b class="num">${Math.max(0,D.L-(+ch.hdUsed||0))} / ${D.L}</b> <small>d${D.hd}</small></span></div>
-      <div class="health-detail health-rest"><span class="label">Repos</span><button class="btn hprest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg></button></div>
     </div>${slotsRow}
   <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span></div></section></div>`;
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
@@ -870,7 +869,7 @@ function customPop(ch,D,id,wrap){
     <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkDup" data-v="${id}">Dupliquer le bloc</button></div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
-const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["ressources","Ressources"],["recherche","Recherche"],["tour","Ce tour"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
+const TBLK=[["perso","Personnage"],["reperes","Repères"],["pv","Points de vie"],["recherche","Recherche"],["ressources","Ressources"],["tour","Combat!"],["raccourcis","Raccourcis"],["notes","Notes et historique"]];
 function blkLabel(ch,id){ const d=(TBLK.find(b=>b[0]===id)||[])[1]; if(d) return blkTitle(ch,id,d)||d; const c=customBlocks(ch).find(b=>b.id===id); return c?(c.name||"Bloc sans titre"):id; }
 function tableOrder(ch){ const ids=[...TBLK.map(b=>b[0]),...customBlocks(ch).map(b=>b.id)]; const saved=Array.isArray(ch.layout?.order)?ch.layout.order.filter(id=>ids.includes(id)):[];
   // Ressources (lot T3b) arrive après un ordre déjà enregistré : on le place sous la carte PV, pas en bas de page
@@ -941,9 +940,9 @@ window.addEventListener("resize",()=>{ if(S.view==="sheet"&&S.tab==="table") tab
    sinon pleine largeur ; Raccourcis conseillés ; Recherche et Notes côte à côte en bas ; les blocs créés sont retirés (décision d'Angle ; « Annuler » les rend). Titres d'origine. */
 function autoLayout(ch){ const D=derive(ch), n=reperesAuto(ch,D).length, nr=D.res.length, cb=[];
   const width={recherche:2,notes:2}, order=["perso"];
-  if(nr&&n<=6&&nr===Math.ceil(n/3)){ width.reperes=3; width.ressources=1; order.push("reperes","ressources","pv"); }
-  else { order.push("reperes","pv"); if(nr) order.push("ressources"); }
-  order.push("tour","raccourcis","recherche","notes",...cb);
+  if(nr&&n<=6&&nr===Math.ceil(n/3)){ width.reperes=3; width.ressources=1; order.push("reperes","ressources","pv","recherche"); }
+  else { order.push("reperes","pv","recherche"); if(nr) order.push("ressources"); }
+  order.push("tour","raccourcis","notes",...cb);
   for(const id of cb){ const b=customBlocks(ch).find(x=>x.id===id); width[id]=blkWidth(ch,id,b); }
   const tiles=Object.assign({},ch.layout?.tiles); delete tiles.raccourcis;
   ch.layout=Object.assign({},ch.layout,{order,width,hidden:[],titles:{},tiles,custom:[],pos:{},cols:{},inspSeen:true}); touch(S.cur); }

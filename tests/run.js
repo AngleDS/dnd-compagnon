@@ -420,8 +420,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="restOpen"][data-v=""]'); await p.click('[data-act="restKind"][data-v="long"]'); await p.click('[data-act="restLong"]');
     eq(await p.evaluate(() => [cur().hp.cur === derive(cur()).hpMax, cur().hdUsed, S.T.pop]), [true, 0, null], 'repos long : PV et dés de vie');
     await p.click('.health-dice'); ok(await p.evaluate(() => !S.T.pop), 'toucher les dés de vie n’ouvre rien');
-    ok(await p.evaluate(() => !!document.querySelector('.health-details .health-rest [data-act="restOpen"]') && !document.querySelector('.health-footer [data-act="restOpen"]') && !document.querySelector('.tpanels [data-act="restOpen"]')), 'bouton Repos en 4e colonne de la carte PV, plus de tuile');
-    await p.click('.health-rest [data-act="restOpen"]'); ok(await p.evaluate(() => document.querySelectorAll('.restpick .restcard').length === 2), 'deux cartes séparées');
+    ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="perso"] .character-banner .character-rest [data-act="restOpen"]') && !document.querySelector('.health-card [data-act="restOpen"]') && !document.querySelector('.tpanels [data-act="restOpen"]')), 'bouton Repos à droite du bandeau du personnage, plus dans la carte PV');
+    await p.click('.character-rest [data-act="restOpen"]'); ok(await p.evaluate(() => document.querySelectorAll('.restpick .restcard').length === 2), 'deux cartes séparées');
   });
  
   await test('Portrait : image réduite et enregistrée dans la fiche', async p => {
@@ -934,7 +934,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('À la table en blocs : ordre par défaut, ordre du perso, ordre abîmé ignoré, import', async p => {
     await diceTable(p);
     const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
-    eq(await order(), ['perso','reperes','pv','ressources','recherche','tour','raccourcis','notes'], 'ordre par défaut (bloc Emplacements et états vide : masqué)');
+    eq(await order(), ['perso','reperes','pv','recherche','ressources','tour','raccourcis','notes'], 'ordre par défaut (bloc Emplacements et états vide : masqué)');
     ok(await p.isVisible('.tblk[data-blk="perso"] .character-banner') && await p.isVisible('.tblk[data-blk="recherche"] #tq') && await p.isVisible('.tblk[data-blk="tour"] .tturnb'), 'contenu dans les bons blocs');
     await p.evaluate(() => { cur().layout = { order: ['tour','inconnu','recherche'] }; render(); });
     eq(await order(), ['tour','recherche','perso','reperes','pv','ressources','raccourcis','notes'], 'ordre du perso, bloc inconnu ignoré, blocs manquants à la suite');
@@ -953,7 +953,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const order = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
     ok(!await p.locator('[data-blkgrip],[data-act="blkMove"],.tbpen,.tedpen,.tdel,[data-act="tilePick"]').count(), 'en jeu : ni poignée, ni crayon, ni « + »');
     await menuClick(p, '[data-act="layoutEdit"]');
-    eq(await order(), ['perso','reperes','pv','ressources','recherche','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
+    eq(await order(), ['perso','reperes','pv','recherche','ressources','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
     ok(await p.evaluate(() => [...document.querySelectorAll('.tblkc')].every(c => c.inert && +getComputedStyle(c).opacity < .6)), 'contenu inactif et translucide');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tdel')).map(b => b.dataset.blk)), ['pv'], 'Supprimer sur chaque bloc sauf Points de vie');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tedpen')).map(b => b.dataset.blk)), ['perso', 'pv'], 'crayon sur chaque bloc sauf Personnage et Points de vie (lot 3)');
@@ -1151,7 +1151,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const tiles = () => p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="ressources"] .rres')].map(t => t.querySelector('.rresname .label').textContent + ':' + (t.querySelectorAll('.pip').length || t.querySelector('.num')?.textContent)));
     await mk('magicien', 1); ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="ressources"]')), 'magicien niveau 1 : pas de ressource, pas de bloc');
     await mk('guerrier', 2);
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk).slice(2, 4)), ['pv', 'ressources'], 'bloc juste sous la carte PV');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk).slice(2, 5)), ['pv', 'recherche', 'ressources'], 'bloc sous la carte PV, après la Recherche');
     eq(await tiles(), ['Second souffle:2', 'Fougue:1'], 'guerrier 2 : Second souffle (2 ronds) et Fougue (1 rond)');
     await p.click('.tblk[data-blk="ressources"] .rres:first-child .pip:nth-child(2)');
     eq(await p.evaluate(() => cur().resUsed['cls:second-souffle']), 1, 'un toucher sur le dernier rond plein en dépense un');
@@ -1411,9 +1411,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const card = () => p.evaluate(() => { const c = document.querySelector('.health-card'), h = c.querySelector('.hslots');
       const tops = [...c.querySelectorAll('.health-details > .health-detail b.num')].map(b => Math.round(b.getBoundingClientRect().top));
       return { row: !!h, cells: h ? [...h.querySelectorAll('.hs')].map(x => x.querySelector('.hsn').textContent + ':' + x.querySelectorAll('.pip').length) : [], tops, cols: c.querySelectorAll('.health-details > .health-detail').length,
-        rest: !!c.querySelector('.health-rest .hprest'), over: document.documentElement.scrollWidth > innerWidth, h: Math.round(c.getBoundingClientRect().height) }; });
+        rest: !!c.querySelector('[data-act="restOpen"]'), over: document.documentElement.scrollWidth > innerWidth, h: Math.round(c.getBoundingClientRect().height) }; });
     const sans = await card();
-    eq([sans.row, sans.cols, sans.rest, sans.over], [false, 4, true, false], 'sans sorts : pas de rangée Emplacements ; PV temp., PV max ±, dés de vie et Repos');
+    eq([sans.row, sans.cols, sans.rest, sans.over], [false, 3, false, false], 'sans sorts : pas de rangée Emplacements ; PV temp., PV max ± et dés de vie (Repos dans le bandeau)');
     ok(new Set(sans.tops).size === 1, 'les trois valeurs sont alignées : ' + sans.tops);
     await p.click('.health-card [data-v="hptemp"]');
     eq(await p.evaluate(() => S.T.pop), 'hptemp', 'toucher PV temp. ouvre la saisie');
@@ -1565,7 +1565,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 2; cur().layout = { order: ['notes', 'perso'], hidden: ['tour'], titles: { notes: 'X' } }; render(); });
     ok(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].every(b => getComputedStyle(b).borderTopStyle === 'solid' && parseFloat(getComputedStyle(b).borderTopWidth) >= 1)), 'en jeu, chaque bloc a un liseré');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-act="layoutAuto"]');
-    eq(await p.evaluate(() => [cur().layout.order.slice(0, 7), cur().layout.width, cur().layout.hidden, cur().layout.titles]), [['perso', 'reperes', 'ressources', 'pv', 'tour', 'raccourcis', 'recherche'], { recherche: 2, notes: 2, reperes: 3, ressources: 1 }, [], {}],
+    eq(await p.evaluate(() => [cur().layout.order.slice(0, 7), cur().layout.width, cur().layout.hidden, cur().layout.titles]), [['perso', 'reperes', 'ressources', 'pv', 'recherche', 'tour', 'raccourcis'], { recherche: 2, notes: 2, reperes: 3, ressources: 1 }, [], {}],
       'paladin 2 (6 repères, 2 ressources) : Ressources à droite de Repères, Recherche et Notes côte à côte, tout remis');
     ok(await p.evaluate(() => /Disposition automatique appliquée/.test(document.querySelector('.tundo').textContent)), 'bandeau « Annuler »');
     await p.click('.tundo [data-act="blkUndo"]');
@@ -1575,7 +1575,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const r = [...document.querySelectorAll('.tedbar .tedl2 > button')].map(b => b.getBoundingClientRect()); return !document.querySelector('.tedtop') && r.every(x => Math.abs(x.top - r[0].top) < 2 && Math.abs(x.height - r[0].height) < 1); }), 'quatre boutons de même forme sur une ligne, plus de boutons sous le bandeau');
     await p.evaluate(() => { cur().level = 6; render(); }); await p.click('[data-act="layoutAuto"]');
     eq(await p.evaluate(() => cur().layout.custom), [], 'les blocs créés sont retirés');
-    eq(await p.evaluate(() => [cur().layout.order.slice(0, 4), cur().layout.width.reperes]), [['perso', 'reperes', 'pv', 'ressources'], undefined], 'paladin 6 (8 repères, 3 ressources) : Repères en pleine largeur, Ressources sous la carte PV');
+    eq(await p.evaluate(() => [cur().layout.order.slice(0, 5), cur().layout.width.reperes]), [['perso', 'reperes', 'pv', 'recherche', 'ressources'], undefined], 'paladin 6 (8 repères, 3 ressources) : Repères en pleine largeur, Recherche sous la carte PV puis Ressources');
   });
 
   await test('Blocs de base : titre modifiable (vide = masqué), formats en miniatures, aperçu à la taille réelle, remettre comme à l’origine', async p => {
@@ -1607,7 +1607,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.mouse.click(20, 600); ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'clic ailleurs : Menu fermé');
     await menuClick(p, '[data-act="layoutEdit"]');
     await p.click('.tblk[data-blk="tour"] .tedpen');
-    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Ce tour'], 'Ce tour : fenêtre du bloc');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Combat!'], 'Ce tour : fenêtre du bloc');
     ok(await p.evaluate(() => /ne se personnalise pas/.test(document.querySelector('.tpop').textContent) && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Ce tour : ni tuiles ni réserve');
     await p.keyboard.press('Escape');
     await p.click('.tblk[data-blk="reperes"] .tedpen');
