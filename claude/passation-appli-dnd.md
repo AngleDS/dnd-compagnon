@@ -1,3 +1,5 @@
+> **Icônes Repères (12 nov. 2026)** : les icônes validées par Angle sont intégrées depuis Lucide ; la CA conserve son bouclier. Les anciennes icônes restent utilisées ailleurs et les licences sont embarquées dans le module.
+
 > **Repères — design validé par Angle (12 nov. 2026)** : bouclier autour de la CA, icônes de repères, dégradé et flèche pour Initiative et Vitesse, libellés abrégés uniquement en format compact ; nom complet et valeur accessibles. Les raccourcis ne changent pas. Gabarit 76 px conservé.
 
 # Passation technique — D&D Compagnon

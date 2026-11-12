@@ -2246,6 +2246,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(r,[true,false,['none','Investigation passive : 11','Harm.'],'inline'],'bouclier, vitesse interactive, libellés selon la largeur et nom accessible');
   });
 
+  await test('Repères : icônes validées, bouclier CA et autres familles préservées', async p => {
+    await diceTable(p, 'barbare');
+    const r=await p.evaluate(() => {
+      const ch=cur(); ch.species='srd:drakeide'; const T=repTileMap(ch,derive(ch),chSize(ch));
+      const box=document.createElement('div'); box.innerHTML=T.ca()+T.rage()+T.souffle()+T.vitesse()+T.insp(); document.body.appendChild(box);
+      const svg=id=>box.querySelector(`[data-v="info:${id}"] svg.rico`);
+      const expected=id=>{const el=document.createElementNS('http://www.w3.org/2000/svg','svg');el.innerHTML=REP_DESIGN_ICON[id];return el.innerHTML;};
+      const result=[svg('rage')?.innerHTML===expected('rage'),svg('souffle')?.innerHTML===expected('souffle'),!!box.querySelector('[data-v="info:ca"] .rep-shield svg.rico'),box.querySelector('[data-act="tpop"][data-v="speed"] svg.rico')?.innerHTML===expected('vitesse'),box.querySelector('[data-act="insp"] svg.rico')?.innerHTML!==expected('crit'),Object.keys(TILE_CAT.reperes).filter(id=>id!=='ca'&&!REP_DESIGN_ICON[id])];
+      box.remove(); return result;
+    });
+    eq(r,[true,true,true,true,true,[]],'icônes de la maquette pour tous les repères, CA en bouclier et Inspiration inchangée');
+  });
+
   if (BROWSER) await BROWSER.close();
   const ko = results.filter(r => !r[1]).length;
   if (ONLY.length) {
