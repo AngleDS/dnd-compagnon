@@ -284,6 +284,7 @@ function tPop(ch,D){
       quick:`<button class="btn small" data-act="hpmaxb" data-v="5">+5 (Aide)</button><button class="btn small" data-act="hpmaxb" data-v="10">+10</button>${b?`<button class="btn small ghost" data-act="hpmaxb" data-v="${-b}">Remettre à zéro</button>`:""}`,
       info:`Base <b class="num">${D.hpBase}</b> · Maximum actuel <b class="num">${D.hpMax}</b>`,
       note:"Un bonus augmente aussi tes PV actuels du même montant (comme le sort Aide). Un malus les plafonne au nouveau maximum. Tout revient à la normale au repos long."}); }
+  if(k==="qroll") return qrollPop(ch,D,wrap);
   if(k==="insp"){ const human=(()=>{ const sp=srd("species",ch.species); return !!(sp&&sp.traits.some(t=>t.name==="Ingénieux")); })();
     return wrap("Inspiration héroïque",`<div class="texpl inspgain"><p>Tu as déjà utilisé ton Inspiration héroïque.</p><p class="muted">${human?"Tu la regagnes à la fin de ton prochain repos long (Ingénieux). ":""}Le MJ peut aussi t'en accorder une. On n'en a qu'une à la fois.</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="inspGain">Le MJ me l'accorde</button></div></div>`); }
   if(k==="rest"){ const hdLeft=Math.max(0,D.L-(+ch.hdUsed||0)), cur0=+(ch.hp?.cur||0);
@@ -1167,6 +1168,44 @@ function smiteBlock(ch,D,i){
     <div class="row" style="margin-top:6px">${left>0?`<button class="btn small" data-act="smite">Frappe occulte · emplacement niv. ${lv}</button><span class="muted" style="font-size:var(--fs-sm)">${left} emplacement${left>1?"s":""} de pacte</span>`:`<span class="muted">Plus d'emplacement de pacte.</span>`}</div>`;
   return `<section class="tsec"><h3 class="tsech">Frappe occulte</h3>${x}</section>`;
 }
+/* Jets directs (demande d'Angle) : un toucher sur Toucher ou Dégâts dans une ligne ouvre un mini-menu
+   (Toucher : avantage, normal, désavantage — imposé par un état, les autres grisés ; Dégâts : normal ou critique),
+   puis une petite fenêtre qui ne montre que le résultat. Dés physiques : le pavé demande le ou les dés d'abord. */
+let QMENU=null;
+function qMenuClose(){ if(QMENU){ QMENU.remove(); QMENU=null; } }
+function qMenuOpen(btn){ qMenuClose(); const k=btn.dataset.k, r=btn.dataset.r, i=(S.Titems||[]).find(x=>x.key===k), ch=cur(); if(!i||!ch) return;
+  const adv=r==="hit"?condAdvice(ch,i.kind==="atk"?"atk":"spellatk",i.ab):{mode:"n"}, forced=adv.mode==="a"||adv.mode==="d"?adv.mode:null;
+  const opts=r==="hit"?[["a","Avantage","˄"],["n","Normal","–"],["d","Désavantage","˅"]]:[["n","Normal","–"],["c","Critique (dés doublés)","×2"]];
+  const m=document.createElement("div"); m.className="qmenu"; m.setAttribute("role","menu"); m.setAttribute("aria-label",(r==="hit"?"Jet d'attaque : ":"Dégâts : ")+i.name);
+  m.innerHTML=opts.map(([v,l,ic])=>`<button role="menuitem" class="qm-${v}" data-act="tqgo" data-k="${esc(k)}" data-r="${r}" data-m="${v}"${forced&&forced!==v?" disabled":""}${forced===v?' aria-current="true"':""}><span class="qmi" aria-hidden="true">${ic}</span>${l}</button>`).join("")+(forced?`<div class="qmnote">${forced==="a"?"Avantage":"Désavantage"} imposé par ton état</div>`:"");
+  document.body.append(m); QMENU=m;
+  const b=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
+  m.style.left=Math.max(8,Math.min(innerWidth-w-8,b.right-w))+"px"; m.style.top=(b.bottom+6+h>innerHeight-8?Math.max(8,b.top-6-h):b.bottom+6)+"px";
+  (m.querySelector("[aria-current]")||m.querySelector("button:not([disabled])"))?.focus(); }
+document.addEventListener("pointerdown",e=>{ if(QMENU&&!e.target.closest(".qmenu")&&!e.target.closest('[data-act="tqroll"]')) qMenuClose(); },true);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&QMENU){ qMenuClose(); e.stopPropagation(); } },true);
+function quickRoll(key,r,m){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch) return;
+  Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,castDone:null,itemUseReceipt:null,mode:r==="hit"?(m==="a"||m==="d"?m:"n"):"n"});
+  T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);
+  const D=derive(ch), exh=2*(+ch.exhaustion||0), heal=!!i.heal;
+  if(r==="hit"){ const mod=(i.kind==="atk"?+i.mod:parseInt(i.roll,10)||0)-exh; T.qr={k:key,r,mode:T.mode,mod,label:i.name+" — toucher"}; }
+  else { const b=(i.kind==="spell"&&i.sp&&i.sp.level===0&&i.m&&i.m.beams)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1;
+    const expr=String(i.kind==="atk"?i.dmg:i.dice||""), mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0);
+    T.qr={k:key,r,crit:m==="c",dice:m==="c"?doubleDice(dice):dice,flat,heal,beams:b,re1:heal&&!!D.guerisseur}; }
+  T.pop="qroll"; render();
+  if(virtualDiceEnabled()){ if(!ensureTableRollUse()){ render(); return; }
+    if(r==="hit"){ T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; render(); if(logD20(false)) tableRollCommitted("d20"); }
+    else { const x=rollExpr(T.qr.dice,T.qr.re1); T.dmg=String(x.total); T.dmgBd=(T.qr.crit?"Critique · ":"")+x.bd; render(); if(logDmg(false)) tableRollCommitted("dmg"); }
+    render(); }
+  else { const inp=document.getElementById(r==="hit"?"t-d1":"t-dmg"); if(inp) openDicePad(inp); } }
+function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x.key===q.k); if(!i){ T.pop=null; return ""; }
+  const phys=!virtualDiceEnabled(), ML={n:"Normal",a:"Avantage",d:"Désavantage"};
+  if(q.r==="hit") return wrap(esc(i.name)+" · Toucher",`<div class="qres"><div class="qmode label">${ML[q.mode]}</div>
+    ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
+    <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div></div>`);
+  return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un rayon sur ${q.beams}`:""}</div>
+    ${phys?`<div class="row tin"><label class="field"><span>Total de tes dés (${esc(q.dice)})</span><input id="t-dmg" type="number" min="0" step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`:""}
+    <div class="ttotal qtot" id="t-dtot" data-flat="${q.flat}">${damageTotalHtml(T.dmg,q.flat)}</div></div>`); }
 function selName(){ const i=(S.Titems||[]).find(x=>x.key===S.T.sel); return i?i.name:"Jet"; }
 // Un jet physique déjà journalisé (même carte, mêmes dés) ne l'est pas une seconde fois ; une nouvelle saisie efface la marque.
 function physLogged(phys,sig){ const T=S.T; if(!phys) return false; if(T.logSig===sig) return true; T.logSig=sig; return false; }

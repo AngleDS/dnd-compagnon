@@ -184,11 +184,8 @@ document.addEventListener("click",e=>{
       const gain=D.L>=20?spent:Math.min(spent,Math.ceil(D.cast.pactSlots/2)); ch.pactUsed=spent-gain; ch.resUsed=ch.resUsed||{}; ch.resUsed["cls:rouerie-magique"]=1;
       addLog({label:"Rouerie magique",total:"+"+gain,bd:gain+" emplacement(s) de pacte récupéré(s). Utilisable à nouveau après un repos long.",kind:"info"}); touch(S.cur); render(); break; }
     case "tsel": tSelect(t.dataset.k); break;
-    case "tqroll": { // jet direct depuis une ligne : la fiche s'ouvre et le jet part (dés virtuels) ou le pavé s'ouvre (dés physiques)
-      const r=t.dataset.r; tSelect(t.dataset.k); const pop=document.querySelector(".tpop"); if(!pop) break;
-      if(virtualDiceEnabled()){ const b=pop.querySelector(r==="hit"?'[data-act="tvroll"]':'[data-act="tvdmg"]:not([data-crit])'); if(b) b.click(); }
-      else { const inp=pop.querySelector(r==="hit"?"#t-d1":"#t-dmg"); if(inp){ inp.scrollIntoView({block:"center"}); openDicePad(inp); } }
-      break; }
+    case "tqroll": qMenuOpen(t); break; // jet direct depuis une ligne : d'abord le mini-menu (avantage… ou critique)
+    case "tqgo": qMenuClose(); quickRoll(t.dataset.k,t.dataset.r,t.dataset.m); break;
     case "saveApp": saveApp(); break;
     case "hpmaxb": hpMaxAdd(ch,+t.dataset.v); render(); break;
     case "pvpad": { const inp=t.closest(".pvpop")?.querySelector("input[data-pvset]"); if(inp) openDicePad(inp,true); break; }
@@ -391,6 +388,7 @@ document.addEventListener("change",e=>{
   if(t.dataset.actChange==="compType"){ S.comp.type=t.value; render(); return; }
   // Une seule validation : un jet physique complet (pavé validé ou saisie terminée) est enregistré et compte pour le tour.
   if(t.dataset.tin&&S.T){ if(virtualDiceEnabled()) return; const T=S.T, kind=t.dataset.tin==="dmg"?"dmg":"d20";
+    if(T.pop==="qroll"&&t.dataset.tin==="d1"&&T.mode!=="n"&&validDie(T.d1,20)&&!validDie(T.d2,20)){ render(); const d2=document.getElementById("t-d2"); if(d2) openDicePad(d2); return; }
     if(kind==="d20"?(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))):!validDiceTotal(T.dmg)) return;
     if(ensureTableRollUse()&&(kind==="d20"?logD20(true):logDmg(true))) tableRollCommitted(kind);
     render(); return; }
@@ -516,7 +514,7 @@ const LONG_PRESS_MS=350; // appui long avant tout glisser au doigt (blocs, tuile
    Au lâcher, on enregistre une relation (« sous tel bloc », « même hauteur », « rangée 2 »…) plutôt que des pixels. */
 const SNAP=22;
 function blkDeps(ch,id){ const pos=ch.layout?.pos||{}, out=new Set([id]); let more=true; while(more){ more=false; for(const k in pos) if(!out.has(k)&&out.has(pos[k]?.a)){ out.add(k); more=true; } } return out; }
-function blkSnap(ch,id,c,y,cache){ const L=S.TL, me=L.list.find(b=>b.id===id), g=L.g, BAND=TL.BAND, M=TL.M, GAP=tlGapV(ch), TH=TH_PX(), dep=blkDeps(ch,id);
+function blkSnap(ch,id,c,y,cache){ const L=S.TL, me=L.list.find(b=>b.id===id), g=(cache&&cache.g)||L.g, BAND=TL.BAND, M=TL.M, GAP=tlGapV(ch), TH=TH_PX(), dep=cache&&cache.g?new Set([id]):blkDeps(ch,id);
   // Les positions possibles ne dépendent que de la colonne : calculées une fois par colonne pendant un glisser
   let cands=cache&&cache[c];
   if(!cands){ cands=[{y:0,rel:{t:"top",px:0},lab:"en haut"}];
@@ -526,10 +524,20 @@ function blkSnap(ch,id,c,y,cache){ const L=S.TL, me=L.list.find(b=>b.id===id), g
     const rows=document.querySelector(`.tblocks.tfree>[data-blk="${o.id}"] .rtile`)?Math.round((o.h-BAND-M-1+TL.G)/(TH+TL.G)):0;
     for(let k=1;k<rows;k++) cands.push({y:oy+k*(TH+TL.G),rel:{t:"row",a:o.id,k},lab:"rangée "+(k+1)+" de « "+nm+" »"}); }
   if(cache) cache[c]=cands; }
-  if(ch.layout?.mag!==false){ let best=null; for(const k of cands){ const d=Math.abs(k.y-y); if(d<=SNAP&&(!best||d<best.d)) best=Object.assign({d},k); } if(best) return best; }
+  if(ch.layout?.mag!==false){ let best=null; for(const k of cands){ const d=Math.abs(k.y-y); if((cache||d<=SNAP)&&(!best||d<best.d)) best=Object.assign({d},k); } if(best) return best; } // pendant un glisser, Aimant : toujours la position la plus proche (plus d'écart libre)
   // Sans aimant : sous le bloc le plus bas qui le précède dans ses colonnes, avec l'écart choisi
   let a=null, ab=0; for(const o of L.list){ if(dep.has(o.id)||!g[o.id]) continue; const oc=g[o.id].c, b=g[o.id].y+o.h+GAP; if(c<oc+o.w&&oc<c+me.w&&b<=y+1&&b>=ab){ a=o.id; ab=b; } }
   y=Math.max(0,Math.round(y)); return {y,rel:a?{t:"below",a,px:y-ab}:{t:"top",px:y},lab:""}; }
+/* Retirer un bloc de sa pile : les blocs accrochés à lui prennent sa relation (ils remontent à sa place). */
+function blkDetach(pos,bid){ const o=pos[bid]||{t:"top",px:0};
+  for(const x in pos){ const p=pos[x]; if(x===bid||!p||p.a!==bid) continue; const n={c:p.c,t:o.t,px:+o.px||0}; if(o.a) n.a=o.a; if(o.t==="row") n.k=o.k; if(o.t==="bottom") delete n.px; pos[x]=n; }
+  delete pos[bid]; return pos; }
+/* Poser un bloc : sous A (ou en haut), les blocs qui étaient juste sous A dans ses colonnes passent sous lui (insertion entre deux blocs). */
+function blkInsert(pos,bid,drop,w){ const r=drop.rel; pos[bid]=Object.assign({c:drop.c},r); if(r.t!=="below"&&r.t!=="top") return pos;
+  const L=S.TL, c0=drop.c, c1=drop.c+w;
+  for(const x in pos){ const p=pos[x], b=L&&L.list.find(o=>o.id===x); if(x===bid||!p||!b) continue; const xc=+p.c||0; if(!(xc<c1&&c0<xc+b.w)) continue;
+    if(r.t==="below"?(p.t==="below"&&p.a===r.a):(p.t==="top"&&(+p.px||0)<=1)) pos[x]={c:p.c,t:"below",a:bid,px:r.t==="below"?(+p.px||0):0}; }
+  return pos; }
 /* Avant le premier déplacement, les blocs encore rangés « dans l'ordre » reçoivent leur relation, pour que rien d'autre ne bouge. */
 function blkFreeze(ch){ const L=S.TL, pos=Object.assign({},ch.layout?.pos), order=tableOrder(ch).filter(id=>L.g[id]);
   for(const id of [...order].sort((a,b)=>L.g[a].y-L.g[b].y)){ if(pos[id]) continue; const me=L.list.find(b=>b.id===id), c=L.g[id].c, y=L.g[id].y; let a=null, ab=0;
@@ -539,8 +547,13 @@ function blkFreeze(ch){ const L=S.TL, pos=Object.assign({},ch.layout?.pos), orde
 function blkPlace(){ if(!BLKD||!S.TL) return; const ch=cur(), box=BLKD.el.parentElement; if(!ch||!box) return;
   const r=box.getBoundingClientRect(), L=S.TL, me=L.list.find(b=>b.id===BLKD.bid), x=BLKD.x-r.left-BLKD.dx, y=BLKD.y-r.top-BLKD.dy;
   const c=Math.max(0,Math.min(4-me.w,Math.round(x/(L.CW+TL.FG)))), s=blkSnap(ch,BLKD.bid,c,y,BLKD.cache); BLKD.drop={c,y:s.y,rel:s.rel};
-  const gh=BLKD.ph; gh.style.left=(c*(L.CW+TL.FG))+"px"; gh.style.top=s.y+"px"; gh.style.width=BLKD.el.offsetWidth+"px"; gh.style.height=me.h+"px";
-  BLKD.guide.style.top=s.y+"px"; BLKD.guide.style.display=s.lab?"":"none"; BLKD.guide.firstChild.textContent=s.lab; }
+  // Aperçu : les autres blocs s'écartent en direct pour montrer la place (recalculé seulement quand la cible change)
+  const pk=c+"|"+JSON.stringify(s.rel); if(pk!==BLKD.pk){ BLKD.pk=pk; const pos=blkInsert(JSON.parse(JSON.stringify(BLKD.posB)),BLKD.bid,{c,rel:s.rel},me.w), g2=tableGeom({layout:Object.assign({},ch.layout,{pos})},L.list,tableOrder(ch)); let bot=0;
+    for(const el of box.querySelectorAll(":scope > .tblk")){ const p=g2[el.dataset.blk]; if(!p) continue; if(el!==BLKD.el){ el.style.top=p.y+"px"; el.style.left=(p.c*(L.CW+TL.FG))+"px"; } bot=Math.max(bot,p.y+el.offsetHeight); }
+    BLKD.py=g2[BLKD.bid]?g2[BLKD.bid].y:s.y; box.style.height=(bot+120)+"px"; }
+  BLKD.drop.y=BLKD.py;
+  const gh=BLKD.ph; gh.style.left=(c*(L.CW+TL.FG))+"px"; gh.style.top=BLKD.py+"px"; gh.style.width=BLKD.el.offsetWidth+"px"; gh.style.height=me.h+"px";
+  BLKD.guide.style.top=BLKD.py+"px"; BLKD.guide.style.display=s.lab?"":"none"; BLKD.guide.firstChild.textContent=s.lab; }
 function blkGhostAt(){ if(BLKD&&BLKD.ghost){ BLKD.ghost.style.left=(BLKD.x-BLKD.dx)+"px"; BLKD.ghost.style.top=(BLKD.y-BLKD.dy)+"px"; } }
 const BLK_ZONE=100, BLK_VMAX=3000; // zone de défilement près des bords (px) ; vitesse au bord (px par seconde)
 function blkLoop(ts){ if(!BLKD) return; // défilement automatique près des bords, même sans bouger ; un seul placement par image
@@ -563,7 +576,8 @@ document.addEventListener("pointerdown",e=>{
 function blkStart(el,g,pid,x,y){ if(!el.isConnected||!S.TL) return; const box=el.parentElement;
   const {g:ghost,r}=dragGhost(el,"blkghost"), ph=document.createElement("div"), guide=document.createElement("div");
   ph.className="tlghost"; guide.className="tlguide"; guide.innerHTML="<span></span>"; box.append(ph,guide);
-  BLKD={el,bid:el.dataset.blk,id:pid,ghost,ph,guide,x,y,dx:x-r.left,dy:y-r.top,cache:{},sy:scrollY,acc:0,t:0,dirty:false};
+  const ch0=cur(), bid0=el.dataset.blk, posB=blkDetach(blkFreeze(ch0),bid0), gB=tableGeom({layout:Object.assign({},ch0.layout,{pos:posB})},S.TL.list.filter(b=>b.id!==bid0),tableOrder(ch0));
+  BLKD={el,bid:bid0,id:pid,ghost,ph,guide,x,y,dx:x-r.left,dy:y-r.top,cache:{g:gB},posB,pk:"",sy:scrollY,acc:0,t:0,dirty:false};
   blkGhostAt(); el.classList.add("dragging"); document.body.classList.add("blkdragging");
   try{ g.setPointerCapture(pid); }catch(err){}
   blkPlace(); BLKD.raf=requestAnimationFrame(blkLoop); }
@@ -576,7 +590,7 @@ document.addEventListener("pointermove",e=>{
 });
 function blkDragEnd(e){ if(!BLKD||e.pointerId!==BLKD.id) return; if(BLKD.dirty){ BLKD.dirty=false; blkPlace(); } const D0=BLKD; BLKD=null;
   cancelAnimationFrame(D0.raf); D0.ghost.remove(); D0.ph.remove(); D0.guide.remove(); D0.el.classList.remove("dragging"); document.body.classList.remove("blkdragging");
-  const ch=cur(); if(ch&&D0.drop){ const pos=blkFreeze(ch); pos[D0.bid]=Object.assign({c:D0.drop.c},D0.drop.rel);
+  const ch=cur(); if(ch&&D0.drop){ const me=S.TL.list.find(b=>b.id===D0.bid), pos=blkInsert(blkDetach(blkFreeze(ch),D0.bid),D0.bid,D0.drop,me?me.w:4);
     // À hauteur égale, le bloc posé passe devant : il remonte dans l'ordre avant le premier bloc qui n'est pas plus haut que lui (tient après rechargement)
     const g=S.TL.g, o=tableOrder(ch).filter(id=>id!==D0.bid), k=o.findIndex(id=>g[id]&&g[id].y>=D0.drop.y-1); o.splice(k<0?o.length:k,0,D0.bid);
     ch.layout=Object.assign({},ch.layout,{pos,order:o}); touch(S.cur); }

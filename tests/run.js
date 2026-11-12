@@ -1498,29 +1498,40 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const r = await p.evaluate(() => { const t = document.querySelector('.tblocks.tfree .tband'); if (!t) return null; const pr = document.createElement('span'); pr.style.color = 'var(--ink)'; document.body.append(pr); const ink = getComputedStyle(pr).color; pr.remove(); const c = getComputedStyle(t); return { font: c.fontFamily, color: c.color, ink }; });
     ok(r, 'aucun bloc à tuiles affiché'); ok(/IM Fell/.test(r.font), 'police des titres de bloc : ' + r.font); ok(r.color === r.ink, 'couleur des titres de bloc : ' + r.color + ' (attendu ' + r.ink + ')');
   });
-  await test('Jets directs : Toucher et Dégâts depuis une ligne (dés physiques et virtuels), aussi dans la Recherche', async p => {
+  await test('Jets directs : mini-menu (avantage imposé par un état, critique), petite fenêtre de résultat, dés physiques et virtuels, Recherche', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     await p.evaluate(() => { S.T.pop = 'list:atk'; render(); });
     ok(await p.locator('.tpop .trow .tkb[data-r="hit"]').count() > 0 && await p.locator('.tpop .trow .tkb[data-r="dmg"]').count() > 0, 'Toucher et Dégâts sont des boutons dans les lignes');
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();
-    eq(await p.evaluate(() => [S.T.pop, !!document.querySelector('#dice-pad'), dicePad && dicePad.target.id]), ['card', true, 't-d1'], 'dés physiques : la fiche s’ouvre avec le pavé sur le d20');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => b.dataset.m + (b.disabled ? '-' : ''))), ['a', 'n', 'd'], 'Toucher : menu Avantage, Normal, Désavantage');
+    await p.click('.qmenu [data-m="n"]');
+    eq(await p.evaluate(() => [S.T.pop, !!document.querySelector('.qmenu'), !!document.querySelector('#dice-pad'), dicePad && dicePad.target.id, !!document.querySelector('.tpop .tcard,.tpop .tparts')]), ['qroll', false, true, 't-d1', false], 'dés physiques : petite fenêtre de résultat (pas la fiche détaillée), pavé sur le d20');
     await padNumber(p, 12);
-    eq(await p.evaluate(() => [S.T.d1, /toucher/.test(cur().rollLog[0].label), cur().rollLog[0].total === 12 + S.Titems.find(i => i.key === S.T.sel).mod]), ['12', true, true], 'valeur saisie, jet enregistré');
-    await p.keyboard.press('Escape');
-    await p.evaluate(() => { setVirtualDice(true); cur().turn = {}; S.T.pop = 'list:atk'; render(); });
-    const n0 = await p.evaluate(() => cur().rollLog.length);
-    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();
-    eq(await p.evaluate(n0 => [S.T.pop, +S.T.d1 >= 1 && +S.T.d1 <= 20, cur().rollLog.length === n0 + 1, /toucher/.test(cur().rollLog[0].label), !!document.querySelector('#dice-pad')], n0), ['card', true, true, true, false], 'dés virtuels : un toucher lance l’attaque, résultat dans la fiche');
-    ok(await p.evaluate(() => !!document.querySelector('.tpop [data-act="tvdmg"]')), 'les dégâts s’enchaînent depuis la même fiche');
+    eq(await p.evaluate(() => [S.T.pop, /toucher/.test(cur().rollLog[0].label), cur().rollLog[0].total === 12 + S.Titems.find(i => i.key === S.T.sel).mod, /Total/.test(document.querySelector('.tpop .qtot').textContent)]), ['qroll', true, true, true], 'valeur saisie : jet enregistré, total affiché, la fenêtre reste ouverte');
     await p.keyboard.press('Escape'); await p.evaluate(() => { cur().turn = {}; S.T.pop = 'list:atk'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="a"]');
+    eq(await p.evaluate(() => [!!document.querySelector('#dice-pad'), dicePad && dicePad.target.id]), [true, 't-d1'], 'avantage en dés physiques : le pavé demande le 1er d20');
+    await padNumber(p, 5);
+    eq(await p.evaluate(() => [!!document.querySelector('#dice-pad'), dicePad && dicePad.target.id]), [true, 't-d2'], 'puis le 2e d20');
+    await padNumber(p, 17);
+    eq(await p.evaluate(() => [/^avantage 5 \/ 17/.test(cur().rollLog[0].bd), cur().rollLog[0].total === 17 + S.Titems.find(i => i.key === S.T.sel).mod]), [true, true], 'avantage : le meilleur des deux d20');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { setVirtualDice(true); cur().turn = {}; cur().conditions = ['Empoisonné']; S.T.pop = 'list:atk'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();
+    eq(await p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => b.dataset.m + (b.disabled ? '-' : '') + (b.getAttribute('aria-current') ? '*' : ''))), ['a-', 'n-', 'd*'], 'Empoisonné : Désavantage imposé, les autres grisés');
+    const n0 = await p.evaluate(() => cur().rollLog.length);
+    await p.click('.qmenu [data-m="d"]');
+    eq(await p.evaluate(n0 => [S.T.pop, S.T.mode, +S.T.d1 >= 1 && +S.T.d2 >= 1, cur().rollLog.length === n0 + 1, /^désavantage/.test(cur().rollLog[0].bd), !!document.querySelector('#dice-pad')], n0), ['qroll', 'd', true, true, true, false], 'dés virtuels : le jet part, résultat dans la petite fenêtre');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { cur().conditions = []; cur().turn = {}; S.T.pop = 'list:atk'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="dmg"]').first().click();
-    eq(await p.evaluate(() => [S.T.pop, S.T.dmg !== '', /dégâts/i.test(cur().rollLog[0].label)]), ['card', true, true], 'dés virtuels : un toucher sur Dégâts lance les dégâts');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => b.dataset.m)), ['n', 'c'], 'Dégâts : Normal ou Critique');
+    await p.click('.qmenu [data-m="c"]');
+    eq(await p.evaluate(() => [S.T.pop, S.T.dmg !== '', /dégâts/i.test(cur().rollLog[0].label), /^Critique · /.test(cur().rollLog[0].bd)]), ['qroll', true, true, true], 'critique : dés doublés, enregistré');
     await p.keyboard.press('Escape'); await p.evaluate(() => { cur().turn = {}; S.T.pop = null; render(); });
     const nm = await p.evaluate(() => S.Titems.find(i => i.kind === 'atk').name);
     await p.fill('#tq', nm);
-    ok(await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-r="hit"]').count() > 0, 'Recherche : la ligne trouvée a les mêmes boutons');
-    await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-r="hit"]').first().click();
-    eq(await p.evaluate(() => [S.T.pop, /toucher/.test(cur().rollLog[0].label)]), ['card', true], 'Recherche : Toucher lance le jet directement');
+    await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    eq(await p.evaluate(() => [S.T.pop, /toucher/.test(cur().rollLog[0].label)]), ['qroll', true], 'Recherche : même menu, même petite fenêtre');
   });
 
   await test('Grande case 2×2 : la tuile occupe vraiment deux rangées', async p => {
@@ -1529,6 +1540,23 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const g = await p.evaluate(() => { const c = document.querySelector('.tblk[data-blk="c_grand000"] .ccell[data-sz="2"]'); if (!c) return null; const t = c.firstElementChild.getBoundingClientRect(), th = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--th')); return [Math.round(t.height), Math.round(c.getBoundingClientRect().height), 2 * th + 12]; });
     ok(g, 'la grande case est affichée');
     eq([g[0], g[1]], [g[2], g[2]], 'tuile 2×2 : hauteur de deux tuiles plus l’écart, sans vide dessous');
+  });
+
+  await test('Glisser un bloc entre deux autres : insertion, écarts normaux, aperçu en direct', async p => {
+    await p.setViewportSize({ width: 390, height: 2400 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
+    const G = () => p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.tblocks > .tblk')].map(e => [e.dataset.blk, { y: e.offsetTop, h: e.offsetHeight, x: e.offsetLeft }])));
+    const g0 = await G(); const band = await p.locator('.tblk[data-blk="notes"] > .tband').boundingBox(), rep = await p.locator('.tblk[data-blk="reperes"]').boundingBox();
+    await p.mouse.move(band.x + 80, band.y + 8); await p.mouse.down();
+    const ty = rep.y + rep.height + 16 + 8 + 3;
+    for (let i = 1; i <= 15; i++) await p.mouse.move(band.x + 80, band.y + 8 + (ty - band.y - 8) * i / 15);
+    await p.waitForTimeout(80);
+    const live = await p.evaluate(() => { const pv = document.querySelector('.tblk[data-blk="pv"]'), r = document.querySelector('.tblk[data-blk="reperes"]'); return pv.offsetTop - (r.offsetTop + r.offsetHeight); });
+    await p.mouse.up();
+    const g = await G();
+    ok(g.notes.y === g.reperes.y + g.reperes.h + 16 && g.pv.y === g.notes.y + g.notes.h + 16, 'Notes inséré entre Repères et PV, écarts de 16 px : ' + JSON.stringify([g.reperes, g.notes, g.pv]));
+    ok(live > 100, 'pendant le glisser, PV s’écarte pour montrer la place (' + live + ' px)');
+    eq(await p.evaluate(() => [cur().layout.pos.notes.t, cur().layout.pos.notes.a, cur().layout.pos.pv.a]), ['below', 'reperes', 'notes'], 'relations : Notes sous Repères, PV sous Notes');
+    const ys = Object.values(g).map(b => b.y).sort((a, b) => a - b); ok(ys.every((y, k) => k === 0 || y - ys[k - 1] < 1200), 'aucun trou énorme');
   });
 
   await test('Glisser un bloc : attrapé par son contenu, défilement automatique rapide, un seul calcul par image', async p => {
