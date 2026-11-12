@@ -15,6 +15,8 @@ Document de recherche, 11 novembre 2026. Rien n'est codé ni décidé : c'est un
 
 ## 2. Légende des formats
 
+> **Périmé (12 nov. 2026)** : les mesures des sections 2.1 et 2.2 datent d'avant le placement libre. Les valeurs à jour sont dans `claude/gabarit-tuiles.md`.
+
 ### 2.1 Largeurs réelles sur iPhone (390 px, 358 px utiles, espacement 8 px)
 
 | Format (lignes × colonnes) | Bloc à 4 col. | 3 col. | 2 col. | 1 col. | Repères | Raccourcis |
