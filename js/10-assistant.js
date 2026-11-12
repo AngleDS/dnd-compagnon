@@ -174,6 +174,7 @@ function applyRest(kind){
     ch.hpMaxBonus=0; ch.slotsUsed={}; ch.hp={cur:D.hpBase,temp:0}; ch.hdUsed=0; ch.exhaustion=Math.max(0,(+ch.exhaustion||0)-1); ch.death={s:0,f:0};
     const sp=srd("species",ch.species); if(sp&&sp.traits.some(t=>t.name==="Ingénieux")) ch.inspiration=true;
   }
+  for(const c of ch.counters||[]) if(c&&(c.recharge==="court"||(kind==="long"&&c.recharge==="long"))) c.cur=+c.max||0; // compteurs maison
   const cl=chargeRest(ch,kind); if(cl.length) addLog({label:"Charges récupérées",total:"✓",bd:cl.join(", "),kind:"info",quiet:true});
   addLog({label:kind==="long"?"Repos long terminé":"Repos court terminé",total:"✓",bd:kind==="long"?"PV, dés de vie, emplacements et ressources restaurés.":"Emplacements de pacte et ressources de repos court restaurés.",kind:"info"});
 }
@@ -235,6 +236,7 @@ function validateImportPack(pack){
   if(Array.isArray(ch.layout?.custom)&&ch.layout.custom.some(b=>plainObject(b)&&b.park!==undefined&&(!Array.isArray(b.park)||b.park.length>16||b.park.some(x=>typeof x!=="string")))) importFail("Les blocs personnalisés d'« À la table » sont invalides.");
   for(const k of ["mag","grav"]) if(ch.layout?.[k]!==undefined&&typeof ch.layout[k]!=="boolean") importFail("Les réglages de placement d'« À la table » sont invalides.");
   if(ch.layout?.custom!==undefined&&(!Array.isArray(ch.layout.custom)||ch.layout.custom.length>20||ch.layout.custom.some(b=>!plainObject(b)||typeof b.id!=="string"||typeof b.name!=="string"||b.name.length>60||!Array.isArray(b.tiles||[])||(b.tiles||[]).length>16))) importFail("Les blocs personnalisés d'« À la table » sont invalides.");
+  if(Array.isArray(ch.counters)&&(ch.counters.length>100||ch.counters.some(c=>!plainObject(c)||typeof c.id!=="string"||!c.id||typeof c.name!=="string"||c.name.length>60||!Number.isFinite(+c.cur)||+c.cur<0||!Number.isFinite(+c.max)||+c.max<0||(c.recharge!==undefined&&!["court","long"].includes(c.recharge))))) importFail("Les compteurs sont invalides.");
   if(ch.hp!==undefined&&(!plainObject(ch.hp)||!Number.isFinite(+ch.hp.cur)||+ch.hp.cur<0||!Number.isFinite(+(ch.hp.temp||0))||+(ch.hp.temp||0)<0)) importFail("Les points de vie sont invalides.");
   const hb=pack.hb===undefined?[]:pack.hb; if(!Array.isArray(hb)||hb.length>500) importFail("Le contenu personnalisé est invalide ou trop volumineux.");
   const ids=new Set(); for(const h of hb){

@@ -338,7 +338,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       await p.evaluate(() => { S.rv = null; renderModal(); });
       const bad = new Set();
       for (const t of ['jeu', 'comp', 'sorts', 'apt', 'inv', 'notes', 'build', 'table']) { await p.evaluate(t => { S.tab = t; render(); }, t); (await fsOutside(p)).forEach(x => bad.add(t + ' : ' + x)); }
-      for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'hptemp', 'rest']) { await p.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await fsOutside(p)).forEach(x => bad.add(k + ' : ' + x)); }
+      for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'hptemp', 'rest', 'ctr:obj:z3', 'ctr:obj:z4', 'ctr:obj:z5', 'ctr:cnt:k1']) { await p.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await fsOutside(p)).forEach(x => bad.add(k + ' : ' + x)); }
       await p.evaluate(() => { S.T.pop = null; S.view = 'list'; render(); }); (await fsOutside(p)).forEach(x => bad.add('liste : ' + x));
       eq([...bad], [], 'tailles hors échelle en ' + vp.width + ' px');
     }
@@ -369,7 +369,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       await newWizardChar(t, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
       await t.evaluate(() => { S.rv = null; renderModal(); const ch = cur();
         ch.bag = [{ id: 'z1', name: 'Dague', qty: 2 }, { id: 'z2', name: 'Trousseau de clés de la mine de l’Œil-de-Pierre (à rendre à la guilde)', qty: 1 }, { id: 'z3', name: 'Trousse de soins', qty: 1, charges: { auto: false, max: 10, rec: '', used: 0, when: 'long' } }, ...(ch.bag || [])];
-        ch.rollLog = [{ label: 'Initiative', total: 12, bd: 'd20 11 +1', t: Date.now() }]; ch.conditions = ['Empoisonné']; });
+        ch.rollLog = [{ label: 'Initiative', total: 12, bd: 'd20 11 +1', t: Date.now() }]; ch.conditions = ['Empoisonné']; ch.counters = [{ id: 'k1', name: 'Eau', cur: 2, max: 4, recharge: 'court' }];
+        ch.bag.push({ id: 'z4', name: 'Torche', qty: 3 }, { id: 'z5', name: 'Lanterne à capote', qty: 1 }); });
       const bad = new Set(), closes = new Set();
       for (const tab of ['jeu', 'comp', 'sorts', 'apt', 'inv', 'notes', 'build', 'table']) { await t.evaluate(tab => { S.T && (S.T.pop = null); S.tab = tab; render(); }, tab); (await touchSmall(t)).forEach(x => bad.add(tab + ' : ' + x)); }
       for (const k of ['skills', 'saves', 'cond', 'inv', 'notes', 'hist', 'equip', 'hpmax', 'hptemp', 'rest']) { await t.evaluate(k => { S.T.pop = k; S.T.eqSlot = null; render(); }, k); (await touchSmall(t)).forEach(x => bad.add(k + ' : ' + x)); (await closeSizes(t)).forEach(x => closes.add(x)); }
@@ -1199,19 +1200,89 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(/compagnon/i.test(bad), 'compagnon invalide refusé à l’import');
   });
 
-  await test('Munitions : arme reliée au consommable, une de moins par jet d’attaque, moitié récupérée en fin de combat', async p => {
+  await test('Munitions : comptées sur l’objet du sac, une de moins par jet d’attaque, moitié récupérée ; un ancien compteur reste prioritaire', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
-    await p.evaluate(() => { const ch = cur(); ch.attacks.push({ id: 'arc', name: 'Arc long', weapon: 'srd:arc-long', ability: 'auto', prof: true }); render(); tSelect('atk:arc'); });
-    ok(await p.evaluate(() => /tire des flèches/.test(document.querySelector('.tcard .tammo')?.textContent || '')), 'arc long : propose de suivre les flèches');
+    await p.evaluate(() => { const ch = cur(); ch.bag = (ch.bag || []).filter(b => !/^fl[eè]ch/i.test(b.name)); ch.attacks.push({ id: 'arc', name: 'Arc long', weapon: 'srd:arc-long', ability: 'auto', prof: true }); render(); tSelect('atk:arc'); });
+    ok(await p.evaluate(() => /tire des flèches/.test(document.querySelector('.tcard .tammo')?.textContent || '')), 'arc long sans flèches : propose d’en ajouter au sac');
     await p.click('.tcard [data-act="ammoNew"]');
-    eq(await p.evaluate(() => cur().counters.map(c => c.name + ':' + c.cur + '/' + c.max)), ['Flèches:20/20'], 'consommable Flèches créé (20 par défaut)');
+    eq(await p.evaluate(() => [(cur().counters || []).length, cur().bag.filter(b => b.name === 'Flèches').map(b => b.qty)]), [0, [20]], 'Flèches ×20 ajoutées au sac, aucun compteur à part');
     await p.evaluate(() => { tableRollCommitted('d20'); tableRollCommitted('d20'); tableRollCommitted('d20'); tableRollCommitted('dmg'); render(); });
-    eq(await p.evaluate(() => [cur().counters[0].cur, cur().counters[0].spent]), [17, 3], 'trois jets d’attaque : trois flèches en moins (les dégâts ne comptent pas)');
+    eq(await p.evaluate(() => { const b = cur().bag.find(b => b.name === 'Flèches'); return [b.qty, b.spent]; }), [17, 3], 'trois jets d’attaque : trois flèches en moins dans le sac (les dégâts ne comptent pas)');
     await p.click('.tcard [data-act="ammoEnd"]');
-    eq(await p.evaluate(() => [cur().counters[0].cur, cur().counters[0].spent]), [18, 0], 'fin du combat : la moitié (1 sur 3) récupérée');
-    ok(await p.evaluate(() => ![...document.querySelectorAll('.tblk[data-blk="ressources"] .rresname .label')].some(e => e.textContent === 'Flèches')), 'les flèches restent hors de Ressources (Inventaire)');
-    await p.evaluate(() => { tSelect(S.Titems.find(i => i.kind === 'atk' && i.key !== 'atk:arc').key); });
+    eq(await p.evaluate(() => { const b = cur().bag.find(b => b.name === 'Flèches'); return [b.qty, b.spent]; }), [18, 0], 'fin du combat : la moitié (1 sur 3) revient dans le sac');
+    ok(await p.evaluate(() => ![...document.querySelectorAll('.tblk[data-blk="ressources"] .rresname .label')].some(e => e.textContent === 'Flèches')), 'les flèches restent hors de Ressources');
+    // Ancien compteur de munitions : il reste celui qui est dépensé
+    await p.evaluate(() => { cur().counters = [{ id: 'k1', name: 'Flèches', cur: 10, max: 20 }]; tableRollCommitted('d20'); render(); });
+    eq(await p.evaluate(() => [cur().counters[0].cur, cur().bag.find(b => b.name === 'Flèches').qty]), [9, 18], 'ancien compteur prioritaire : le sac n’est pas touché');
+    const bid = await p.evaluate(() => cur().bag.find(b => b.name === 'Flèches').id);
+    await p.evaluate(id => { S.T.pop = 'ctr:obj:' + id; render(); }, bid);
+    ok(await p.evaluate(() => /compteur « Flèches »/.test(document.querySelector('.tpop .ctrpop')?.textContent || '')), 'la fenêtre de l’objet signale l’ancien compteur');
+    await p.evaluate(() => { S.T.pop = null; tSelect(S.Titems.find(i => i.kind === 'atk' && i.key !== 'atk:arc').key); });
     ok(await p.evaluate(() => !document.querySelector('.tcard .tammo')), 'arme sans munitions : rien');
+  });
+
+  await test('Compteurs : objets du sac en tuiles (quantité, charges), lumière, rations, retrait sans erreur', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { const ch = cur(); ch.bag = [{ id: 'to', name: 'Torche', qty: 5 }, { id: 'ra', name: 'Rations', qty: 3 }, { id: 'tr', name: 'Trousse de soins', qty: 1, charges: { auto: false, max: 10, rec: '', used: 3, when: 'long' } },
+      { id: 'la', name: 'Lanterne à capote', qty: 1 }, { id: 'hu', name: 'Huile', qty: 2 }, { id: 'co', name: 'Corde', qty: 1 }, { id: 'da', name: 'Dague', qty: 2 }];
+      ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_ctraaaa', name: 'Sac', r: 2, c: 4, tiles: [{ id: 'obj:to', sz: '1', r: 0, c: 0 }, { id: 'obj:tr', sz: '1', r: 0, c: 1 }, { id: 'obj:la', sz: '12', r: 0, c: 2 }] }] });
+      ch.layout.order = [...tableOrder(ch).filter(x => x !== 'c_ctraaaa'), 'c_ctraaaa']; S.T.pop = 'tiles:c_ctraaaa'; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .ctrres .tname')].map(e => e.textContent).sort()), ['Dague', 'Huile', 'Rations'], 'réserve : objets comptables non posés (la corde seule n’y est pas)');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="c_ctraaaa"] .rctr .num')].map(e => e.textContent)), ['×5', '7/10'], 'tuiles étroites : quantité et charges restantes');
+    ok(await p.evaluate(() => /Lanterne à capote/.test(document.querySelector('.tblk[data-blk="c_ctraaaa"] .rctrw')?.textContent || '')), 'case 1×2 : tuile large');
+    await p.click('.tpop [data-act="ctileAdd"][data-t="obj:ra"]');
+    eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => t.id)), ['obj:to', 'obj:tr', 'obj:la', 'obj:ra'], 'Rations posées depuis la réserve');
+    await p.evaluate(() => { S.T.pop = null; render(); });
+    await p.click('.tblk[data-blk="c_ctraaaa"] [data-v="ctr:obj:to"]');
+    ok(await p.evaluate(() => /6 m/.test(document.querySelector('.tpop .ctrpop').textContent)), 'torche : rayons de lumière affichés');
+    await p.click('.tpop [data-act="ctrUse"]');
+    eq(await p.evaluate(() => [cur().bag.find(b => b.id === 'to').qty, S.log[0].label]), [4, 'Torche allumée'], 'allumer : une torche de moins, notée dans l’historique');
+    await p.click('.tpop .ctrstep [data-v="-1"]'); await p.click('.tpop .ctrstep [data-v="1"]'); await p.click('.tpop .ctrstep [data-v="1"]');
+    eq(await p.evaluate(() => cur().bag.find(b => b.id === 'to').qty), 5, '− puis + + : quantité corrigée');
+    ok(await p.evaluate(() => { const t = document.querySelector('.tpop'); return t.scrollWidth <= t.clientWidth + 1 && t.getBoundingClientRect().right <= innerWidth + 1; }), 'iPhone : la fenêtre ne déborde pas');
+    await p.evaluate(() => { S.T.pop = 'ctr:obj:la'; render(); }); await p.click('.tpop [data-act="ctrUse"]');
+    eq(await p.evaluate(() => cur().bag.find(b => b.id === 'hu').qty), 1, 'lanterne : remettre de l’huile retire une flasque');
+    await p.evaluate(() => { S.T.pop = 'ctr:obj:ra'; render(); }); await p.click('.tpop [data-act="ctrUse"]');
+    eq(await p.evaluate(() => cur().bag.find(b => b.id === 'ra').qty), 2, 'rations : un jour passe');
+    await p.evaluate(() => { S.T.pop = 'ctr:obj:tr'; render(); });
+    ok(await p.evaluate(() => document.querySelectorAll('.tpop .ctrpop .pip').length === 10), 'objet à charges : ses 10 charges');
+    await p.evaluate(() => { cur().bag.find(b => b.id === 'ra').qty = 0; S.T.pop = null; render(); });
+    ok(await p.evaluate(() => document.querySelector('.tblk[data-blk="c_ctraaaa"] [data-v="ctr:obj:ra"]').classList.contains('vide0')), 'à 0 : la tuile reste, grisée');
+    // Raccourcis : tuile large ; objet retiré du sac : les tuiles s'effacent sans erreur
+    await p.evaluate(() => { const ch = cur(); const arr = blockTiles(ch, 'raccourcis'); arr[arr.indexOf('') >= 0 ? arr.indexOf('') : 0] = 'obj:da'; setBlockTiles(ch, 'raccourcis', arr); render(); });
+    ok(await p.evaluate(() => /Dague[\s\S]*×2/.test(document.querySelector('.tblk[data-blk="raccourcis"] [data-v="ctr:obj:da"]')?.textContent || '')), 'Raccourcis : tuile large de l’objet');
+    const errs = []; p.on('pageerror', e => errs.push(e.message));
+    await p.evaluate(() => { const ch = cur(); ch.bag = ch.bag.filter(b => b.id !== 'to' && b.id !== 'da'); render(); S.T.pop = 'tiles:c_ctraaaa'; render(); S.T.pop = 'tiles:raccourcis'; render(); });
+    eq(await p.evaluate(() => [!!document.querySelector('[data-v="ctr:obj:to"]'), !!document.querySelector('[data-v="ctr:obj:da"]'), blockTiles(cur(), 'raccourcis').includes('obj:da')]), [false, false, false], 'objets supprimés : plus de tuile');
+    eq(errs, [], 'aucune erreur');
+  });
+
+  await test('Compteurs maison : création à la table, tuile, recharge au repos court ou long, import contrôlé, corbeille', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { cur().counters = []; S.T.pop = 'inv'; render(); });
+    await p.fill('.tpop .cntform .cnt-name', 'Eau'); await p.fill('.tpop .cntform .cnt-max', '4'); await p.selectOption('.tpop .cntform .cnt-rec', 'court'); await p.click('.tpop .cntform [type="submit"]');
+    await p.evaluate(() => { S.T.pop = 'inv'; render(); });
+    await p.fill('.tpop .cntform .cnt-name', 'Trophées'); await p.fill('.tpop .cntform .cnt-max', '3'); await p.selectOption('.tpop .cntform .cnt-rec', 'long'); await p.click('.tpop .cntform [type="submit"]');
+    eq(await p.evaluate(() => cur().counters.map(c => [c.name, c.cur, c.max, c.recharge])), [['Eau', 4, 4, 'court'], ['Trophées', 3, 3, 'long']], 'deux compteurs créés avec leur récupération');
+    const [e, t] = await p.evaluate(() => cur().counters.map(c => 'cnt:' + c.id));
+    await p.evaluate(([e, t]) => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_cntaaaa', name: 'Maison', r: 1, c: 2, tiles: [{ id: e, sz: '1', r: 0, c: 0 }, { id: t, sz: '1', r: 0, c: 1 }] }] });
+      ch.layout.order = [...tableOrder(ch).filter(x => x !== 'c_cntaaaa'), 'c_cntaaaa']; S.T.pop = 'ctr:' + e; render(); }, [e, t]);
+    await p.click('.tpop .ctrstep [data-v="-1"]'); await p.click('.tpop .ctrstep [data-v="-1"]'); await p.click('.tpop .ctrstep [data-v="-1"]');
+    await p.evaluate(t => { S.T.pop = 'ctr:' + t; render(); }, t); await p.click('.tpop .ctrstep [data-v="-1"]');
+    ok(await p.evaluate(() => document.querySelector('.tpop .ctrstep [data-v="1"]').disabled === false && /repos long/.test(document.querySelector('.tpop .ctrpop').textContent)), 'fenêtre : récupération indiquée');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="c_cntaaaa"] :is(.rctr,.rctrw) .num')].map(e => e.textContent)), ['1/4', '2/3'], 'tuiles : valeurs à jour');
+    await p.evaluate(() => { S.T.pop = null; applyRest('court'); render(); });
+    eq(await p.evaluate(() => cur().counters.map(c => c.cur)), [4, 2], 'repos court : seul le compteur « repos court » revient');
+    await p.evaluate(() => { applyRest('long'); render(); });
+    eq(await p.evaluate(() => cur().counters.map(c => c.cur)), [4, 3], 'repos long : les deux reviennent');
+    await p.evaluate(() => { cur().counters.push({ id: 'old', name: 'Ancien', cur: 1, max: 5 }); applyRest('long'); });
+    eq(await p.evaluate(() => cur().counters.find(c => c.id === 'old').cur), 1, 'ancien compteur sans récupération : inchangé');
+    const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); ch.counters = [{ id: 'x', name: 'X', cur: 1, max: 2, recharge: 'aube' }]; try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
+    ok(/compteurs/i.test(bad), 'import : récupération inconnue refusée');
+    await p.evaluate(() => { S.T.pop = null; S.tab = 'inv'; render(); });
+    ok(await p.evaluate(() => document.querySelectorAll('[data-act="cntRm"].btndel svg').length === 3 && document.querySelectorAll('.cntrec [aria-pressed="true"]').length === 3), 'fiche : corbeille et récupération pour chaque compteur');
+    await p.click('[data-act="cntRec"][data-v="long"]');
+    eq(await p.evaluate(() => cur().counters[0].recharge), 'long', 'fiche : récupération modifiable');
   });
 
   await test('T5 : « Automatique (recommandé) » remet les Raccourcis conseillés ; la montée de niveau dit ce qui entre dans À la table', async p => {

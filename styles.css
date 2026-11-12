@@ -281,8 +281,8 @@ button.rtile{border-color:var(--brass);cursor:pointer}
 .tcell.on{outline:2px solid var(--brass);outline-offset:1px}.tcell:hover{border-color:var(--brass)}
 .tface{display:flex;align-items:center;justify-content:center;min-height:22px}.tface .num{font-size:var(--fs-md)}.tface svg{width:20px;height:20px;fill:none;stroke:var(--brass);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
 .tname{overflow-wrap:anywhere;hyphens:auto}
-.tres{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;min-height:64px;padding:8px;border:1px dashed var(--line);border-radius:10px}
-.tdsrc{opacity:.35}.tover{outline:3px solid var(--ok,#2f7d4f)!important;outline-offset:1px}.tres.tover{background:color-mix(in srgb,var(--blood) 12%,transparent);outline-color:var(--blood)!important}
+.tres,.ctrres{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;min-height:64px;padding:8px;border:1px dashed var(--line);border-radius:10px}
+.tdsrc{opacity:.35}.tover{outline:3px solid var(--ok,#2f7d4f)!important;outline-offset:1px}.tres.tover,.ctrres.tover{background:color-mix(in srgb,var(--blood) 12%,transparent);outline-color:var(--blood)!important}
 body.tdragging{cursor:grabbing;user-select:none;-webkit-user-select:none}
 /* Blocs personnalisés */
 .cgrid{display:grid;gap:8px}

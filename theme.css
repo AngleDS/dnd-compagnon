@@ -391,6 +391,10 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .rres .pip{width:24px;height:24px}.rres .pips{gap:6px}
 /* Repères + Ressources côte à côte : une seule grille de 4 colonnes, tuiles de même taille */
 .rrestile .num small{font-size:var(--fs-xs);font-weight:400;color:var(--muted)}.rrestile.vide0{opacity:.6}
+/* Tuiles de compteur (objets du sac, compteurs maison) : vides en grisé ; nom sur deux lignes au plus */
+.rctr.vide0,.rctrw.vide0{opacity:.6}
+.ctrstep .num{font-size:var(--fs-xl);min-width:2.5ch;text-align:center}
+.rctr .label{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rrespop .pip{width:28px;height:28px}.rrespop .pips{gap:8px;justify-content:center}
 /* Fenêtre du crayon (lot 3) : formats en miniatures, aperçu à la taille réelle */
 .bpats{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}

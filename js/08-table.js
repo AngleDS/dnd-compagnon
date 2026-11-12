@@ -273,6 +273,7 @@ function tPop(ch,D){
   if(k==="speed") return speedPop(ch,D,wrap);
   if(k==="comp") return compPop(ch,wrap);
   if(k.startsWith("res:")) return resPop(ch,D,k.slice(4),wrap);
+  if(k.startsWith("ctr:")) return ctrPop(ch,D,k.slice(4),wrap);
   if(k==="concchk") return ccPop(ch,D,anim);
   if(k==="equip") return wrap("Équipement",eqPop(ch,D)," xl");
   if(k==="hptemp"){ const t=+(ch.hp?.temp||0);
@@ -288,12 +289,12 @@ function tPop(ch,D){
   if(k==="insp"){ const human=(()=>{ const sp=srd("species",ch.species); return !!(sp&&sp.traits.some(t=>t.name==="Ingénieux")); })();
     return wrap("Inspiration héroïque",`<div class="texpl inspgain"><p>Tu as déjà utilisé ton Inspiration héroïque.</p><p class="muted">${human?"Tu la regagnes à la fin de ton prochain repos long (Ingénieux). ":""}Le MJ peut aussi t'en accorder une. On n'en a qu'une à la fois.</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="inspGain">Le MJ me l'accorde</button></div></div>`); }
   if(k==="rest"){ const hdLeft=Math.max(0,D.L-(+ch.hdUsed||0)), cur0=+(ch.hp?.cur||0);
-    const shortRes=D.res.filter(r=>r.recharge==="court"||r.recharge==="long_court1"||r.recharge==="court_partiel"||(r.recharge==="long_court5"&&D.L>=5)).map(r=>r.name);
+    const shortRes=[...D.res.filter(r=>r.recharge==="court"||r.recharge==="long_court1"||r.recharge==="court_partiel"||(r.recharge==="long_court5"&&D.L>=5)).map(r=>r.name),...(ch.counters||[]).filter(c=>c&&c.recharge==="court").map(c=>c.name)];
     const kind=S.T.restKind||"court";
     const pick=`<div class="adv" role="group" aria-label="Type de repos" style="margin-bottom:12px;grid-template-columns:repeat(2,1fr)"><button aria-pressed="${kind==="court"}" data-act="restKind" data-v="court">Repos court</button><button aria-pressed="${kind==="long"}" data-act="restKind" data-v="long">Repos long</button></div><div class="muted restwhat" style="font-size:var(--fs-sm);margin:-4px 0 12px">${kind==="long"?"8 heures au moins. Tout revient : PV, dés de vie, emplacements et ressources ; l'épuisement baisse d'un niveau.":`1 heure au moins. Tu peux dépenser des dés de vie (${hdLeft} restant${hdLeft>1?"s":""}) ; ${D.cast&&D.cast.type==="pact"?"tes emplacements de pacte reviennent, ":""}ainsi que les ressources de repos court.`}</div>`;
     if(kind==="long"){ const human=(()=>{ const sp=srd("species",ch.species); return !!(sp&&sp.traits.some(t=>t.name==="Ingénieux")); })();
       return wrap("Repos",pick+`<div class="row" style="gap:18px;align-items:flex-end"><div><div class="label">Points de vie</div><b class="num" style="font-size:var(--fs-2xl)">${cur0}</b><span class="muted num"> / ${D.hpBase}</span></div><div><div class="label">Dés de vie restants</div><b class="num" style="font-size:var(--fs-2xl)">${hdLeft}</b><span class="muted num"> / ${D.L}</span></div></div>
-        <div class="lusec"><div class="label">À la fin du repos long</div><ul class="lul"><li>PV au maximum (${D.hpBase})${D.hpBonus?", bonus de PV max temporaire retiré":""}</li><li>Tous les dés de vie récupérés</li><li>${D.cast?"Tous les emplacements de sorts récupérés":"Ressources récupérées"}</li>${D.res.length?`<li>${D.res.map(r=>esc(r.name)).join(", ")}</li>`:""}${+ch.exhaustion?`<li>Épuisement : ${+ch.exhaustion} → ${+ch.exhaustion-1}</li>`:""}${human?"<li>Inspiration héroïque regagnée (Ingénieux)</li>":""}</ul></div>
+        <div class="lusec"><div class="label">À la fin du repos long</div><ul class="lul"><li>PV au maximum (${D.hpBase})${D.hpBonus?", bonus de PV max temporaire retiré":""}</li><li>Tous les dés de vie récupérés</li><li>${D.cast?"Tous les emplacements de sorts récupérés":"Ressources récupérées"}</li>${D.res.length?`<li>${D.res.map(r=>esc(r.name)).join(", ")}</li>`:""}${(ch.counters||[]).some(c=>c&&c.recharge)?`<li>${(ch.counters||[]).filter(c=>c&&c.recharge).map(c=>esc(c.name)).join(", ")}</li>`:""}${+ch.exhaustion?`<li>Épuisement : ${+ch.exhaustion} → ${+ch.exhaustion-1}</li>`:""}${human?"<li>Inspiration héroïque regagnée (Ingénieux)</li>":""}</ul></div>
         ${cur0<=0?`<div class="tnotes" style="color:var(--blood)">Il faut au moins 1 PV pour commencer un repos long.</div>`:""}<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="restLong" ${cur0<=0?"disabled":""}>Terminer le repos long</button></div>`); }
     return wrap("Repos",pick+`${cur0<=0?`<div class="tnotes" style="color:var(--blood)">Il faut au moins 1 PV pour commencer un repos court.</div>`:""}
       <div class="row" style="gap:18px;align-items:flex-end"><div><div class="label">Points de vie</div><b class="num" style="font-size:var(--fs-2xl)">${cur0}</b><span class="muted num"> / ${D.hpMax}</span></div>
@@ -318,11 +319,12 @@ function tPop(ch,D){
   if(k.startsWith("eco:")){ const e=k.slice(4); T.eco=e; const used=!!(ch.turn||{})[e];
     return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop" role="dialog" aria-modal="true" aria-label="${ECO[e]}" data-act="noop"><div class="tpophead"><b>${ECO[e]}</b><span class="row" style="gap:6px"><button class="btn small" data-act="tturn" data-v="${e}">${used?"Annuler":e==="autre"?"Marquer Autre terminé":"Marquer comme consommée"}</button><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></span></div><div class="tpopbody">${used?`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">✓ ${TURN_DONE[e]}</div>`:""}${tEco(ch,D)}</div></div></div>`; }
   const B={skills:["Tests de caractéristique",`<div class="tabil">${AB.map(a=>`<div class="tabrow"><button class="tabhead ${sgc(D.mods[a])}" data-act="tsel" data-k="abil:${a}"><span>${ABN[a]}</span><b class="num">${sg(D.mods[a])}</b></button><div class="tabsk">${S.C.skills.filter(s=>s.ability===a).map(s=>`<button class="tskc ${sgc(D.skills[s.id].val)}" data-act="tsel" data-k="skill:${s.id}">${D.skills[s.id].lv?`<span class="pdot p${D.skills[s.id].lv}" title="${D.skills[s.id].lv>1?"Expertise":"Maîtrise"}"></span>`:""}${esc(s.name)} <b class="num">${sg(D.skills[s.id].val)}</b></button>`).join("")||`<span class="muted" style="font-size:var(--fs-sm)">Aucune compétence</span>`}</div></div>`).join("")}</div>${pLegend(true)}`],saves:["Jets de sauvegarde",`<div class="tsavegrid">${saves}</div>${pLegend(false)}`],cond:["États",`<div class="condgrid">${CONDS.map(c=>`<span class="condpick"><button class="chip" aria-pressed="${(ch.conditions||[]).includes(c)}" data-act="cond" data-v="${esc(c)}">${esc(c)}</button>${S.idx.cond[c]?`<span class="tinfo" role="button" data-act="tip" data-k="rule:${esc(S.idx.cond[c].id)}" aria-label="Règle : ${esc(c)}" title="Règle">i</span>`:""}</span>`).join("")}</div>
-        <div class="row"><span class="label">Épuisement</span><span class="hpstep"><button class="btn small stepq" data-act="exh" data-v="-1" aria-label="Retirer un niveau">−</button><b class="num">${+ch.exhaustion||0}</b><button class="btn small stepq" data-act="exh" data-v="1" aria-label="Ajouter un niveau">+</button></span>${+ch.exhaustion?`<span class="muted" style="font-size:var(--fs-sm)">−${2*ch.exhaustion} aux tests d20, vitesse −${String(1.5*ch.exhaustion).replace(".",",")} m</span>`:""}</div>`],inv:["Inventaire",`${(ch.counters||[]).map(c=>`<div class="res"><b class="tipl" data-act="tip" data-k="cnt:${esc(c.id)}">${esc(c.name)}</b><div class="row">${(+c.max||0)<=20?pips("cnt:"+c.id,+c.max||0,(+c.max||0)-(+c.cur||0),true):""}<span class="muted num" style="font-size:var(--fs-sm)">${+c.cur||0}/${+c.max||0}</span></div></div>`).join("")}
+        <div class="row"><span class="label">Épuisement</span><span class="hpstep"><button class="btn small stepq" data-act="exh" data-v="-1" aria-label="Retirer un niveau">−</button><b class="num">${+ch.exhaustion||0}</b><button class="btn small stepq" data-act="exh" data-v="1" aria-label="Ajouter un niveau">+</button></span>${+ch.exhaustion?`<span class="muted" style="font-size:var(--fs-sm)">−${2*ch.exhaustion} aux tests d20, vitesse −${String(1.5*ch.exhaustion).replace(".",",")} m</span>`:""}</div>`],inv:["Inventaire",`${(ch.counters||[]).map(c=>`<div class="res"><b class="tipl" data-act="tip" data-k="cnt:${esc(c.id)}">${esc(c.name)}</b><div class="row">${(+c.max||0)<=20?pips("cnt:"+c.id,+c.max||0,(+c.max||0)-(+c.cur||0),true):""}<span class="muted num" style="font-size:var(--fs-sm)">${+c.cur||0}/${+c.max||0}</span>${c.recharge?`<span class="muted" style="font-size:var(--fs-sm)">· ${esc(rechargeLabel(c.recharge))}</span>`:""}</div></div>`).join("")}
         <div class="tbag">${(ch.bag||[]).map(b=>`<div class="tbagrow${(+b.qty||0)>0?"":" empty"}"><span>${itemName(b)}${b.note?` <span class="muted" style="font-size:var(--fs-sm)">· ${esc(b.note)}</span>`:""}${(b.ref||matchItem(b.name))?"":` <button class="btn small ghost infob mk" data-act="mkItem" data-id="${b.id}" title="Créer la fiche de cet objet dans Mes contenus">+ fiche</button>`}${chargePips(ch,b)}<button class="btn small ghost chgb" data-act="chgedit" data-id="${b.id}" title="${itemCharges(ch,b)?"Modifier le compteur":"Ajouter un compteur (charges, utilisations)"}">${itemCharges(ch,b)?"⚙":"+ compteur"}</button></span><span class="hpstep"><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="-1" aria-label="Utiliser un">−</button><b class="num">${+b.qty||0}</b><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="1" aria-label="Ajouter un">+</button>${S.bagDel===b.id?`<button class="btn small danger" data-act="bagrm" data-id="${b.id}">Supprimer</button>`:`<button class="btn small ghost btndel" data-act="bagdel" data-id="${b.id}" aria-label="Supprimer ${esc(b.name)}" title="Supprimer de l'inventaire">${ICON_TRASH}</button>`}</span></div>`).join("")||`<div class="muted" style="font-size:var(--fs-sm)">Le sac est vide.</div>`}</div>
         <form class="row" data-form="bag" style="margin-top:8px;gap:6px"><input id="bag-new" type="text" list="bag-dl" placeholder="Ajouter un objet" aria-label="Nouvel objet" style="flex:1;min-width:140px"><input id="bag-newq" type="number" min="1" value="1" aria-label="Quantité" style="width:60px"><button class="btn small" type="submit">Ajouter</button></form>
         <datalist id="bag-dl">${[...hbs("objet"),...S.C.items,...S.C.weapons,...S.C.armors].map(w=>`<option value="${esc(w.name)}">`).join("")}</datalist>
-        <div class="row" style="gap:12px;margin-top:6px">${["pp","po","pe","pa","pc"].filter(k=>+ch.gold?.[k]).map(k=>`<span class="num"><b>${ch.gold[k]}</b> ${k}</span>`).join("")}</div>`]}[k];
+        <div class="row" style="gap:12px;margin-top:6px">${["pp","po","pe","pa","pc"].filter(k=>+ch.gold?.[k]).map(k=>`<span class="num"><b>${ch.gold[k]}</b> ${k}</span>`).join("")}</div>
+        <div class="cntnew lusec"><div class="label">Nouveau compteur</div><div class="muted" style="font-size:var(--fs-sm)">Pour ce qui n'est pas un objet du sac (eau, trophées…). Un objet du sac se compte déjà avec sa quantité. Pose ensuite le compteur dans un bloc avec le crayon.</div>${cntForm("t")}</div>`]}[k];
   if(!B) return "";
   return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop" role="dialog" aria-modal="true" aria-label="${B[0]}" data-act="noop"><div class="tpophead"><b>${B[0]}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${B[1]}</div></div></div>`;
 }
@@ -433,7 +435,7 @@ const tileWhy=(id,blk)=>(TILE_META[id]||{}).only?"Seulement dans un bloc créé"
 const chSize=ch=>String(ch.size||(srd("species",ch.species)||hb(ch.species))?.size||"—");
 function blockTiles(ch,blk){
   if(blk==="reperes") return reperesAuto(ch,derive(ch));
-  const def=RACC_DEFAUT, cat=customCat(), saved=ch.layout?.tiles?.[blk];
+  const def=RACC_DEFAUT, cat=customCat(ch), saved=ch.layout?.tiles?.[blk];
   const arr=Array.isArray(saved)?saved.slice(0,def.length).map(x=>typeof x==="string"&&cat[x]&&tileOkInBlk(x,blk)?x:""):def.slice();
   while(arr.length<def.length) arr.push("");
   // Inspiration héroïque quitte la carte PV : ajoutée une fois dans une case libre des Raccourcis tant que le joueur n'a pas retouché ses tuiles
@@ -444,7 +446,7 @@ function blockTiles(ch,blk){
   return arr;
 }
 const REP_CLS=["rage","bard","ma","credo","sneak","malice","crit","aura","souffle"];
-const tileAvailable=(ch,blk,id)=>{ const D=derive(ch); if((id==="dd"||id==="atks"||id==="slots"||id==="sorts")&&!D.cast) return false; if(id==="bottes"&&!bottesN(D)) return false; return !REP_CLS.includes(id)||repWants(ch,D).includes(id); };
+const tileAvailable=(ch,blk,id)=>{ if(isCtr(id)){ const b=id.startsWith("obj:")&&(ch.bag||[]).find(x=>x.id===id.slice(4)); return id.startsWith("cnt:")||!!(b&&ctrOffer(ch,b)); } const D=derive(ch); if((id==="dd"||id==="atks"||id==="slots"||id==="sorts")&&!D.cast) return false; if(id==="bottes"&&!bottesN(D)) return false; return !REP_CLS.includes(id)||repWants(ch,D).includes(id); };
 const inspInRep=ch=>Array.isArray(ch.layout?.tiles?.reperes)&&ch.layout.tiles.reperes.includes("insp");
 function inspPlaced(ch){ return customBlocks(ch).some(b=>(b.tiles||[]).some(x=>x&&x.id==="insp")); }
 function seeInsp(ch){ if(ch.layout?.inspSeen&&!inspInRep(ch)) return; const r=blockTiles(ch,"raccourcis"); ch.layout=Object.assign({},ch.layout,{inspSeen:true}); ch.layout.tiles=Object.assign({},ch.layout.tiles,{raccourcis:r});
@@ -480,6 +482,7 @@ function racTileMap(ch,D){
     atkl:()=>`<button class="tpbtn" data-act="tpop" data-v="list:atk"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.attaques}</svg>Attaques<small class="tpsub">${S.Titems?S.Titems.filter(i=>i.kind==="atk").length:0} au choix</small></button>`,
     actions:()=>`<button class="tpbtn" data-act="tpop" data-v="list:actions"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-3.5a1.5 1.5 0 0 1 3 0V11m0-2a1.5 1.5 0 0 1 3 0v5a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14.5V12a1.5 1.5 0 0 1 3 0v1"/></svg>Actions<small class="tpsub">Ce que je peux faire</small></button>`,
     search:()=>`<button class="tpbtn" data-act="tsearch"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>Recherche<small class="tpsub">Jet, action, sort…</small></button>`,
+    ...ctrMap(ch,true),
     notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
   };
 }
@@ -521,6 +524,7 @@ function repTileMap(ch,D,size){
     harmo:()=>t(`${(ch.attuned||[]).filter(id=>(ch.bag||[]).some(b=>b.id===id)).length}/3`,"Harmonisation","Objets magiques harmonisés (3 au plus)"),
     insp:()=>`<button class="rtile" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Inspiration héroïque : toucher pour l'utiliser ou la regagner"><b class="num">${ch.inspiration?"✓":"—"}</b><span class="label">Inspiration</span></button>`,
     conc:()=>`<button class="rtile" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="Concentration"><b class="num tconcv">${ch.conc?esc(ch.conc):"—"}</b><span class="label">Concentration</span></button>`,
+    ...ctrMap(ch,false),
     search:()=>`<button class="rtile" data-act="tsearch" title="Recherche"><b class="num"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></b><span class="label">Recherche</span></button>`
   };
   // Toute tuile s'ouvre (décision d'Angle, 11 nov. 2026) : une tuile de valeur devient un bouton « rinfo » qui ouvre son explication,
@@ -697,8 +701,75 @@ function reperesTiles(ch,D,size,k=4){ const T=repTileMap(ch,D,size), h=blockTile
    Placement automatique dans l'ordre (les tuiles comblent les trous) ; les cases restantes affichent « + ». */
 /* Tuiles générales (lot T2) : proposées dans tous les blocs selon la largeur. */
 const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",search:"Recherche",comp:"Compagnon"};
-function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,TILE_GEN,{slots:"Emplacements de sorts"}); }
-function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4).map(b=>Object.assign({},b,{w:blkWidth(ch,b.id,b)})):[]; }
+function customCat(ch=cur()){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,TILE_GEN,{slots:"Emplacements de sorts"},ctrCat(ch)); }
+function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4).map(b=>Object.assign({},b,{w:blkWidth(ch,b.id,b)},Array.isArray(b.tiles)?{tiles:b.tiles.filter(t=>!(t&&isCtr(t.id))||ctrGet(ch,t.id))}:{})):[]; }
+/* Compteurs (chantier 1, 12 nov. 2026, décisions d'Angle) : un objet du sac (quantité ou charges) ou un compteur maison devient une tuile.
+   Tuile « obj:<id> » (objet du sac) ou « cnt:<id> » (compteur maison, ch.counters) ; un toucher ouvre sa petite fenêtre « ctr:<tuile> ».
+   Lumière, rations et munitions sont reconnues au nom de l'objet. Une tuile dont l'objet ou le compteur a disparu s'efface d'elle-même.
+   Un compteur ne modifie aucune autre valeur de la fiche. */
+const isCtr=id=>typeof id==="string"&&/^(obj|cnt):/.test(id);
+function objKind(b){ const n=norm(b&&b.name);
+  if(/^torche/.test(n)) return "torche"; if(/^bougie/.test(n)) return "bougie";
+  if(/^(flasques? d'huile|huile)(\s*\(|$)/.test(n)) return "huile"; if(/^lanterne/.test(n)) return "lanterne";
+  if(/^rations?(\s|\(|$)/.test(n)) return "rations"; if(/^(fleche|carreau|bille|balle|aiguille)/.test(n)) return "munitions"; return ""; }
+const CTR_ICON={torche:'<path d="M12 3c2.5 3 3.5 5 3.5 7a3.5 3.5 0 0 1-7 0c0-1.5.8-2.8 1.8-3.8.2 1.3.9 2.1 1.7 2.3C12 7 11.5 5 12 3z"/><path d="M10 14h4l-1 7h-2z"/>',
+  rations:'<path d="M4 13h16a8 8 0 0 1-16 0z"/><path d="M8 10c0-2 1-2 1-4M12 10c0-2 1-2 1-4M16 10c0-2 1-2 1-4"/>',
+  munitions:'<path d="M4 20 18 6"/><path d="M14 5h5v5"/><path d="M4 20l1-4M4 20l4-1M7 17l-2-2M9 15l-2-2"/>',
+  charges:'<path d="m12 3 2.5 6H20l-4.5 3.8 1.7 6.2L12 15.5 6.8 19l1.7-6.2L4 9h5.5z"/>',
+  qte:'<rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V5h6v2M8 12h8"/>',
+  cnt:'<path d="M5 5v14M9 5v14M13 5v14M17 5v14M3 15l18-6"/>'};
+CTR_ICON.bougie=CTR_ICON.huile=CTR_ICON.lanterne=CTR_ICON.torche;
+// Objets proposés dans la réserve : lumière, rations, munitions, objets à charges ou en plusieurs exemplaires
+const ctrOffer=(ch,b)=>!!(objKind(b)||itemCharges(ch,b)||(+b.qty||0)>1);
+function ctrCat(ch){ if(!ch) return {}; const o={};
+  for(const b of ch.bag||[]) if(b&&b.id) o["obj:"+b.id]=String(b.name||"Objet");
+  for(const c of ch.counters||[]) if(c&&c.id) o["cnt:"+c.id]=String(c.name||"Compteur");
+  return o; }
+const LIGHT_TXT={torche:"Lumière vive sur 6 m et faible sur 6 m de plus, pendant 1 heure.",bougie:"Lumière vive sur 1,5 m et faible sur 1,5 m de plus, pendant 1 heure.",
+  huile:"Une flasque brûle 6 heures dans une lampe ou une lanterne."};
+const lanternTxt=b=>{ const n=norm(b.name); return (/sourde/.test(n)?"Lumière vive sur un cône de 18 m et faible sur 18 m de plus.":/capote|capuchon/.test(n)?"Lumière vive sur 9 m et faible sur 9 m de plus.":"Brûle de l'huile.")+" Une flasque d'huile la fait brûler 6 heures."; };
+const oilOf=ch=>(ch.bag||[]).find(x=>objKind(x)==="huile"&&(+x.qty||0)>0);
+/* Données d'une tuile de compteur : nom, valeur affichée, sous-titre, icône, vide. */
+function ctrGet(ch,id){ if(!ch||!isCtr(id)) return null; const k=id.slice(4);
+  if(id.startsWith("cnt:")){ const c=(ch.counters||[]).find(x=>x.id===k); if(!c) return null; const cur0=+c.cur||0, max=+c.max||0;
+    return {c,name:String(c.name||"Compteur"),val:`${cur0}/${max}`,sub:c.recharge?"revient au "+rechargeLabel(c.recharge):"compteur",icon:CTR_ICON.cnt,empty:cur0<=0}; }
+  const b=(ch.bag||[]).find(x=>x.id===k); if(!b) return null; const kind=objKind(b), chg=itemCharges(ch,b), q=+b.qty||0;
+  if(chg&&chg.max){ const left=chg.max-(+chg.used||0); return {b,kind,chg,name:String(b.name),val:`${left}/${chg.max}`,sub:"charges",icon:CTR_ICON.charges,empty:left<=0}; }
+  const sub={torche:"vive 6 m",bougie:"vive 1,5 m",huile:"6 h de lumière",lanterne:/sourde/.test(norm(b.name))?"cône 18 m":"vive 9 m",rations:"1 par jour",munitions:"1 par attaque"}[kind]||"quantité";
+  return {b,kind,name:String(b.name),val:"×"+q,sub,icon:CTR_ICON[kind]||CTR_ICON.qte,empty:q<=0&&kind!=="lanterne"}; }
+/* Tuile : étroite (valeur au-dessus du nom) ou large (icône, nom et sous-titre), comme les autres tuiles. */
+function ctrTile(ch,id,wide){ const x=ctrGet(ch,id); if(!x) return "";
+  return wide?`<button class="tpbtn rctrw${x.empty?" vide0":""}" data-act="tpop" data-v="ctr:${esc(id)}"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${x.icon}</svg>${esc(x.name)}<small class="tpsub"><b class="num">${esc(x.val)}</b> · ${esc(x.sub)}</small></button>`
+    :`<button class="rtile rctr${x.empty?" vide0":""}" data-act="tpop" data-v="ctr:${esc(id)}" title="${esc(x.name)} : ${esc(x.sub)}"><svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${x.icon}</svg><b class="num">${esc(x.val)}</b><span class="label">${esc(x.name)}</span></button>`; }
+const ctrMap=(ch,wide)=>Object.fromEntries(Object.keys(ctrCat(ch)).map(id=>[id,()=>ctrTile(ch,id,wide)]));
+/* Fenêtre d'un compteur : − / + (ou les charges), et l'action propre à l'objet. */
+function ctrPop(ch,D,id,wrap){ const x=ctrGet(ch,id); if(!x){ S.T.pop=null; return ""; }
+  const step=(act,attr,v,max,lab)=>`<span class="hpstep ctrstep"><button class="btn stepb" data-act="${act}" ${attr} data-v="-1" aria-label="${esc(lab)} : retirer 1" ${v<=0?"disabled":""}>−</button><b class="num">${v}${max!=null?`<small> / ${max}</small>`:""}</b><button class="btn stepb" data-act="${act}" ${attr} data-v="1" aria-label="${esc(lab)} : ajouter 1" ${max!=null&&v>=max?"disabled":""}>+</button></span>`;
+  const note=t=>`<div class="muted" style="font-size:var(--fs-sm);margin-top:10px">${t}</div>`, btn=(t,dis,extra="")=>`<div class="row" style="justify-content:center;margin-top:12px"><button class="btn primary" data-act="ctrUse" data-v="${esc(id)}"${extra} ${dis?"disabled":""}>${t}</button></div>`;
+  let h="";
+  if(x.c){ const c=x.c, mx=+c.max||0, v=+c.cur||0;
+    h=`<div class="row" style="justify-content:center">${step("cnt",`data-id="${esc(c.id)}"`,v,mx,c.name)}</div>${note("Récupération : "+(c.recharge?rechargeLabel(c.recharge):"aucune (tu le remets à jour toi-même)")+".")}`; }
+  else { const b=x.b, q=+b.qty||0, lab=b.name;
+    h=x.chg?`<div class="label" style="text-align:center;margin-bottom:6px">Charges</div><div class="row" style="justify-content:center">${chargePips(ch,b)}</div>`
+      :`<div class="label" style="text-align:center;margin-bottom:6px">Quantité</div><div class="row" style="justify-content:center">${step("bagq",`data-id="${esc(b.id)}"`,q,null,lab)}</div>`;
+    if(x.kind==="torche"||x.kind==="bougie") h+=note(LIGHT_TXT[x.kind])+btn(x.kind==="torche"?"Allumer une torche":"Allumer une bougie",q<=0);
+    else if(x.kind==="huile") h+=note(LIGHT_TXT.huile)+btn("Remplir une lanterne",q<=0);
+    else if(x.kind==="lanterne"){ const oil=oilOf(ch); h+=note(lanternTxt(b))+(oil?note("Dans ton sac : "+esc(oil.name)+" ×"+(+oil.qty||0)+".")+btn("Remettre de l'huile",false):note("Pas d'huile dans le sac.")); }
+    else if(x.kind==="rations") h+=note("Une ration nourrit pendant une journée.")+btn("Un jour passe",q<=0);
+    else if(x.kind==="munitions"){ const old=(ch.counters||[]).find(c=>norm(c.name||"").startsWith(norm(b.name).slice(0,5)));
+      h+=old?note("Tes attaques retirent des munitions de ton compteur « "+esc(old.name)+" », pas de cet objet.")
+        :note("Chaque jet d'attaque d'une arme qui les tire en retire une. Après le combat, en passant une minute à chercher, tu récupères la moitié de ce que tu as tiré.")+(+b.spent?`<div class="row" style="justify-content:center;margin-top:12px"><button class="btn primary" data-act="ammoEnd" data-obj="${esc(b.id)}">Fin du combat : récupérer ${Math.floor((+b.spent||0)/2)} sur ${+b.spent}</button></div>`:""); } }
+  return wrap(x.name,`<div class="texpl ctrpop">${h}</div>`); }
+/* Réserve des compteurs dans la fenêtre d'un bloc : objets du sac et compteurs maison, plus « Nouveau compteur » (fenêtre Inventaire). */
+function ctrRes(ch,cat,ids,attrs,face,blk){ const cells=ids.map(x=>{ const a=attrs(x); return a?`<button class="tcell tmini" ${a} aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`:`<span class="tcell tmini toff" aria-disabled="true" title="Trop large pour cette case">${face(x)}<small class="toffwhy">Trop large</small></span>`; }).join("");
+  return `<div class="label" style="margin:10px 0 6px">Objets et compteurs</div><div class="ctrres" data-tres="${esc(blk)}">${cells||`<span class="muted" style="font-size:var(--fs-sm)">Aucun objet à compter dans ton sac (lumière, rations, munitions, objets à charges ou en plusieurs exemplaires).</span>`}</div>
+    <div class="row" style="margin-top:8px"><button class="btn small ghost" data-act="tpop" data-v="inv">Nouveau compteur…</button></div>`; }
+/* Action propre à un objet compté : allumer, remplir, un jour passe. Renvoie le message du journal, ou "" si rien n'a changé. */
+function ctrUse(ch,id){ const x=ctrGet(ch,id); if(!x||!x.b) return "";
+  if(x.kind==="lanterne"){ const oil=oilOf(ch); if(!oil) return ""; oil.qty=(+oil.qty||0)-1; touch(S.cur);
+    addLog({label:"Huile remise dans "+x.name.toLowerCase(),total:"6 h",bd:"Il reste "+oil.qty+" "+oil.name.toLowerCase()+".",kind:"info"}); return "ok"; }
+  const L={torche:"Torche allumée",bougie:"Bougie allumée",huile:"Lanterne remplie",rations:"Un jour passe"}[x.kind]; if(!L||(+x.b.qty||0)<=0) return "";
+  x.b.qty=(+x.b.qty||0)-1; touch(S.cur); addLog({label:L,total:"−1",bd:"Il reste "+x.b.qty+" × "+x.name+".",kind:"info"}); return "ok"; }
 /* Largeur des blocs sur la grille invisible de 4 colonnes (lot 2) : ch.layout.width = {id: 1..4}. Personnage et PV restent en pleine largeur. */
 const BLK_WIDTHS={perso:[4],pv:[4],reperes:[2,3,4],ressources:[1,2,3,4],recherche:[2,3,4],tour:[2,3,4],raccourcis:[2,3,4],notes:[2,3,4]};
 const blkWidths=(id,b)=>id.startsWith("c_")?[1,2,3,4].filter(w=>w>=(b?.c||1)):(BLK_WIDTHS[id]||[4]);
@@ -769,7 +840,7 @@ function builtinPop(ch,D,id,wrap){ const def=(TBLK.find(b=>b[0]===id)||[])[1]||i
       <div class="bfmtsum">${w} colonne${w>1?"s":""}${id==="reperes"?" · "+rangLab(Math.max(1,Math.ceil(cnt/w))):""}</div>`:"";
   const note={reperes:"Son contenu s’adapte tout seul à ton personnage (classe, sous-classe, espèce).",ressources:"Son contenu montre tout seul les ressources de ton personnage (classe, sous-classe, dons).",tour:"Ce bloc ne se personnalise pas, en dehors de son titre et de sa largeur."}[id];
   let body;
-  if(id==="raccourcis"){ const T=S.T, blk=id, cat=customCat(), arr=blockTiles(ch,blk), free=arr.indexOf(""), onPage=tilesOnPage(ch,D,blk), unused=Object.keys(cat).filter(x=>!arr.includes(x)&&!onPage.has(x)&&tileAvailable(ch,blk,x)).sort((a,c)=>!tileOkInBlk(a,blk)-!tileOkInBlk(c,blk)), sel=Number.isInteger(T.tileSlot)?T.tileSlot:-1;
+  if(id==="raccourcis"){ const T=S.T, blk=id, cat=customCat(ch), arr=blockTiles(ch,blk), free=arr.indexOf(""), onPage=tilesOnPage(ch,D,blk), unused=Object.keys(cat).filter(x=>!isCtr(x)&&!arr.includes(x)&&!onPage.has(x)&&tileAvailable(ch,blk,x)).sort((a,c)=>!tileOkInBlk(a,blk)-!tileOkInBlk(c,blk)), sel=Number.isInteger(T.tileSlot)?T.tileSlot:-1;
     const face=x=>`<span class="tface">${tileFace(ch,D,blk,x)}</span><span class="tname">${esc(cat[x])}</span>`;
     const cells=arr.map((x,i)=>x?`<button class="tcell${sel===i?" on":""}${TILE_META[x]?.act?" tact":""}" data-act="tileCell" data-blk="${blk}" data-i="${i}" data-tslot="${i}" data-tdrag="cell" aria-pressed="${sel===i}" aria-label="Case ${i+1} : ${esc(cat[x])}">${face(x)}</button>`
       :`<button class="tcell libre${sel===i?" on":""}" data-act="tileCell" data-blk="${blk}" data-i="${i}" data-tslot="${i}" aria-pressed="${sel===i}" aria-label="Case ${i+1} libre">+</button>`).join("");
@@ -779,7 +850,8 @@ function builtinPop(ch,D,id,wrap){ const def=(TBLK.find(b=>b[0]===id)||[])[1]||i
     body=`<div class="label" style="margin:14px 0 6px">Tuiles <span class="muted" style="text-transform:none;letter-spacing:0">· aperçu à la taille réelle</span></div>
       <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-tblk="${blk}" style="grid-template-columns:repeat(${blkCols(ch,blk,w)},minmax(0,1fr))">${cells}</div></div>${selBar}
       <div class="row" style="justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">Touche une case puis une tuile de la réserve, ou glisse-la.</span><button class="btn small ghost" data-act="tileReset" data-blk="${blk}" title="Remet les tuiles conseillées : Tests, Sauvegardes, États, Inventaire, Équipement, Inspiration">Automatique (recommandé)</button></div>
-      <div class="label" style="margin:10px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>`; }
+      <div class="label" style="margin:10px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>
+      ${ctrRes(ch,cat,Object.keys(cat).filter(x=>isCtr(x)&&!arr.includes(x)&&!onPage.has(x)&&tileAvailable(ch,blk,x)),x=>`data-act="tileAdd" data-blk="${blk}" data-v="${esc(x)}" data-tdrag="res"`,face,blk)}`; }
   // Aperçu fidèle : le bloc dessiné avec les styles de la page (marge de 8 px, tuiles, largeur réelle sur 4 colonnes)
   else body=`<div class="label" style="margin:14px 0 6px">Aperçu <span class="muted" style="text-transform:none;letter-spacing:0">· taille réelle</span></div><div class="bprev bprevc" inert><div class="tblocks tfree tprev"><section class="tblk w${w}" style="width:calc((100% - 12px) * ${w} / 4 + ${4*(w-1)}px)"><div class="tband"><span class="tbandt">${esc(blkTitle(ch,id,def))}</span></div><div class="tblkc">${(S.Tblocks||{})[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section></div></div>${note?`<div class="muted" style="font-size:var(--fs-sm);margin-top:8px">${note}</div>`:""}`;
   return wrap("Bloc : "+def,`${title}${pats}${body}<div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkResetOne" data-v="${id}">Remettre comme à l’origine</button></div>`); }
@@ -828,7 +900,7 @@ function cUpdate(ch,id,fn){ seeInsp(ch); const list=customCopy(ch), b=list.find(
 const cellStyle=(t,R,C)=>{ const [h,w]=tileSpan(t.sz,R,C); return `grid-row:${t.r+1}/span ${h};grid-column:${t.c+1}/span ${w}`; };
 function customBlockHtml(ch,D,b,ctx){
   const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b), wide=t=>sizeW(t.sz,b.c,b.w||4)>=TILE_W.L;
-  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:t.id==="search"&&wide(t)&&!S.T._tq?searchBar():(wide(t)&&TILE_GEN[t.id]&&Rm[t.id]?Rm[t.id]():((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||""));
+  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:t.id==="search"&&wide(t)&&!S.T._tq?searchBar():(wide(t)&&(TILE_GEN[t.id]||isCtr(t.id))&&Rm[t.id]?Rm[t.id]():((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||""));
     return h?`<div class="ccell" data-sz="${esc(t.sz)}" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
   let html=tiles.map(one).join("");
   occ.forEach((row,r)=>row.forEach((k,c)=>{ if(k<0) html+=`<div class="ccell" style="grid-row:${r+1};grid-column:${c+1}">${plusTile(b.id,r*b.c+c,"rtile vide")}</div>`; }));
@@ -836,7 +908,7 @@ function customBlockHtml(ch,D,b,ctx){
 }
 function customPop(ch,D,id,wrap){
   const b=customBlocks(ch).find(x=>x.id===id); if(!b){ S.T.pop=null; return ""; }
-  const cat=customCat(), {tiles,occ}=cGrid(b), R=b.r, C=b.c, selT=Number.isInteger(S.T.ctile)&&tiles[S.T.ctile]?S.T.ctile:-1, selC=Number.isInteger(S.T.tileSlot)?S.T.tileSlot:-1;
+  const cat=customCat(ch), {tiles,occ}=cGrid(b), R=b.r, C=b.c, selT=Number.isInteger(S.T.ctile)&&tiles[S.T.ctile]?S.T.ctile:-1, selC=Number.isInteger(S.T.tileSlot)?S.T.tileSlot:-1;
   const face=x=>`<span class="tface">${tileFace(ch,D,"",x)}</span><span class="tname">${esc(cat[x]||x)}</span>`;
   let cells=tiles.map((t,i)=>`<button class="tcell${selT===i?" on":""}${TILE_META[t.id]?.act?" tact":""}" style="${cellStyle(t,R,C)}" data-act="ctileSel" data-v="${id}" data-i="${i}" data-tslot="" data-tdrag="ctile" data-cblk="${id}" aria-pressed="${selT===i}" aria-label="${esc(cat[t.id]||t.id)}">${face(t.id)}</button>`).join("");
   // Cases libres selon l'agencement : une case n'apparaît que si aucune de ses cellules n'est prise ; sinon ses cellules libres restent simples
@@ -847,7 +919,7 @@ function customPop(ch,D,id,wrap){
   occ.forEach((row,r)=>row.forEach((k,c)=>{ const n=r*C+c; if(k<0&&!done[r][c]) cells+=`<button class="tcell libre${selC===n?" on":""}" style="grid-row:${r+1};grid-column:${c+1}" data-act="ctileCell" data-v="${id}" data-cell="${n}" data-tslot="" aria-pressed="${selC===n}" aria-label="Case libre, ligne ${r+1}, colonne ${c+1}">+</button>`; }));
   const selSlot=selC>=0?slotAt(b,Math.floor(selC/C),selC%C):null, okT=x=>selSlot?slotOk(b,x,selSlot):!!fitSize(b,x);
   const free=occ.flat().some(k=>k<0);
-  const onPage=tilesOnPage(ch,D,id), unused=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&!onPage.has(x)&&tileAvailable(ch,"",x)).sort((a,c)=>!okT(a)-!okT(c));
+  const onPage=tilesOnPage(ch,D,id), unused=Object.keys(cat).filter(x=>!isCtr(x)&&!tiles.some(t=>t.id===x)&&!onPage.has(x)&&tileAvailable(ch,"",x)).sort((a,c)=>!okT(a)-!okT(c));
   const res=unused.length?unused.map(x=>okT(x)?`<button class="tcell tmini${TILE_META[x]?.act?" tact":""}" data-act="ctileAdd" data-v="${id}" data-t="${x}" data-tdrag="cres" data-cblk="${id}" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`
       :`<span class="tcell tmini toff" aria-disabled="true" title="Trop large pour ${selSlot?"cette case":"ce bloc"}">${face(x)}<small class="toffwhy">Trop large pour ${selSlot?"cette case":"ce bloc"}</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
   const t=tiles[selT], sizes=t?TILE_SIZES.filter(([z])=>tileSizeOk(t.id,z,R,C)):[];
@@ -860,6 +932,7 @@ function customPop(ch,D,id,wrap){
     <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},var(--th))">${cells}</div></div>${selBar}
     <div class="muted" style="font-size:var(--fs-sm);margin:8px 0">Touche une case libre puis une tuile de la réserve, ou glisse une tuile (au doigt : appui long). Touche une tuile posée pour changer sa taille ; glisse-la hors du bloc pour la retirer.</div>
     <div class="label" style="margin:10px 0 6px">Réserve${!free&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${id}">${res}</div>
+    ${ctrRes(ch,cat,Object.keys(cat).filter(x=>isCtr(x)&&!tiles.some(t=>t.id===x)&&!onPage.has(x)&&tileAvailable(ch,"",x)),x=>okT(x)?`data-act="ctileAdd" data-v="${id}" data-t="${esc(x)}" data-tdrag="cres" data-cblk="${id}"`:"",face,id)}
     <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkDup" data-v="${id}">Dupliquer le bloc</button></div>`);
 }
 /* Blocs d'« À la table » : ordre enregistré dans la fiche (ch.layout.order) ; un bloc vide n'est pas affiché. */
@@ -1329,11 +1402,19 @@ function tableRollCommitted(kind){
 /* Munitions (lot T4, demande d'Angle) : une arme à munitions est reliée au consommable du même type (Flèches, Carreaux, Billes, Balles).
    Chaque jet d'attaque en retire une ; « Fin du combat » rend la moitié des munitions tirées depuis (arrondi à l'inférieur). */
 function ammoType(i){ const w=i&&i.wref&&i.wref.startsWith("srd:")?S.idx.weapons?.[i.wref.slice(4)]:null; const m=w&&String(w.properties||"").match(/Munitions \([^;)]*;\s*([^)]+)\)/i); return m?m[1].trim():""; }
+/* Chantier Compteurs (12 nov. 2026) : les munitions se comptent sur l'objet du sac (Flèches ×20) ; un ancien compteur de munitions reste prioritaire. */
 function ammoCounter(ch,type){ const k=norm(type).slice(0,5); return k?(ch.counters||[]).find(c=>norm(c.name||"").startsWith(k)):null; }
-function ammoSpend(ch,i){ const c=ammoCounter(ch,ammoType(i)); if(!ch||!c) return; if((+c.cur||0)<=0){ addLog({label:"Plus de "+c.name.toLowerCase(),total:"0",bd:"Ton consommable « "+c.name+" » est vide.",kind:"info"}); return; }
-  c.cur=(+c.cur||0)-1; c.spent=(+c.spent||0)+1; touch(S.cur); }
+function ammoItem(ch,type){ const k=norm(type).slice(0,5); return k?(ch.bag||[]).find(b=>norm(b.name||"").startsWith(k)):null; }
+function ammoSpend(ch,i){ if(!ch) return; const type=ammoType(i), c=ammoCounter(ch,type)||ammoItem(ch,type); if(!c) return; const isC=c.max!==undefined&&(ch.counters||[]).includes(c), f=isC?"cur":"qty";
+  if((+c[f]||0)<=0){ addLog({label:"Plus de "+String(c.name).toLowerCase(),total:"0",bd:(isC?"Ton consommable « ":"Ton objet « ")+c.name+" » est vide.",kind:"info"}); return; }
+  c[f]=(+c[f]||0)-1; c.spent=(+c.spent||0)+1; touch(S.cur); }
 function ammoBlock(ch,i){ const type=ammoType(i); if(!type) return ""; const c=ammoCounter(ch,type), T=type.charAt(0).toUpperCase()+type.slice(1);
-  if(!c) return `<div class="tnotes tammo" style="margin-top:6px">Cette arme tire des ${esc(type)}. <button class="btn small" data-act="ammoNew" data-v="${esc(T)}">Suivre mes ${esc(type)}</button></div>`;
+  if(!c){ const b=ammoItem(ch,type);
+    if(!b) return `<div class="tnotes tammo" style="margin-top:6px">Cette arme tire des ${esc(type)}, mais ton sac n'en contient pas. <button class="btn small" data-act="ammoNew" data-v="${esc(T)}">Ajouter 20 ${esc(type)} au sac</button></div>`;
+    const q=+b.qty||0, back=Math.floor((+b.spent||0)/2);
+    return `<div class="tnotes tammo" style="margin-top:6px"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(b.name)}</b><span class="hpstep"><button class="btn stepb" data-act="bagq" data-id="${esc(b.id)}" data-v="-1" aria-label="Retirer 1" ${q<=0?"disabled":""}>−</button><b class="num">${q}</b><button class="btn stepb" data-act="bagq" data-id="${esc(b.id)}" data-v="1" aria-label="Ajouter 1">+</button></span></div>
+    <div class="muted" style="font-size:var(--fs-sm);margin-top:4px">Chaque jet d'attaque en retire une de ton sac. Après le combat, en passant une minute à chercher, tu récupères la moitié de ce que tu as tiré. Pour les voir en permanence, pose la tuile « ${esc(b.name)} » dans un bloc (crayon).</div>
+    ${+b.spent?`<button class="btn small" style="margin-top:6px" data-act="ammoEnd" data-obj="${esc(b.id)}">Fin du combat : récupérer ${back} sur ${+b.spent}</button>`:""}</div>`; }
   const back=Math.floor((+c.spent||0)/2);
   return `<div class="tnotes tammo" style="margin-top:6px"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(c.name)}</b><span class="hpstep"><button class="btn stepb" data-act="cnt" data-id="${esc(c.id)}" data-v="-1" aria-label="Retirer 1" ${(+c.cur||0)<=0?"disabled":""}>−</button><b class="num">${+c.cur||0} / ${+c.max||0}</b><button class="btn stepb" data-act="cnt" data-id="${esc(c.id)}" data-v="1" aria-label="Ajouter 1">+</button></span></div>
     <div class="muted" style="font-size:var(--fs-sm);margin-top:4px">Chaque jet d'attaque en retire une. Après le combat, en passant une minute à chercher, tu récupères la moitié de ce que tu as tiré.</div>

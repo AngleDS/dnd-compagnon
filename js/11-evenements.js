@@ -164,10 +164,11 @@ document.addEventListener("click",e=>{
       else { nv = cv===i+1 ? i : i+1; }
       if(k==="pact") ch.pactUsed=nv; else if(k.startsWith("slot:")){ ch.slotsUsed=ch.slotsUsed||{}; ch.slotsUsed[k.slice(5)]=nv; } else if(k.startsWith("res:")){ ch.resUsed=ch.resUsed||{}; ch.resUsed[k.slice(4)]=nv; } else setPath(ch,k,nv);
       touch(S.cur); render(); break; }
-    case "ammoNew": if(ch){ const name=String(t.dataset.v||"Munitions").slice(0,40); if(!ammoCounter(ch,name)){ const bagN=(ch.bag||[]).map(b=>String(b.name)).find(n=>norm(n).startsWith(norm(name).slice(0,5)));
-      const n=+((bagN||"").match(/\((\d+)\)/)||[])[1]||20; ch.counters=[...(ch.counters||[]),{id:uid(),name,cur:n,max:n}]; touch(S.cur); } render(); } break;
-    case "ammoEnd": if(ch){ const c=(ch.counters||[]).find(x=>x.id===t.dataset.id); if(!c) break; const back=Math.floor((+c.spent||0)/2); c.cur=Math.min(+c.max||Infinity,(+c.cur||0)+back); c.spent=0;
+    case "ammoNew": if(ch){ const name=String(t.dataset.v||"Munitions").slice(0,40); if(!ammoCounter(ch,name)&&!ammoItem(ch,name)){ ensureBag(ch); ch.bag.push({id:uid(),name,qty:20,note:""}); touch(S.cur); } render(); } break;
+    case "ammoEnd": if(ch){ const c=t.dataset.obj?(ch.bag||[]).find(x=>x.id===t.dataset.obj):(ch.counters||[]).find(x=>x.id===t.dataset.id); if(!c) break; const back=Math.floor((+c.spent||0)/2);
+      if(t.dataset.obj) c.qty=(+c.qty||0)+back; else c.cur=Math.min(+c.max||Infinity,(+c.cur||0)+back); c.spent=0;
       addLog({label:c.name+" récupérées",total:back,bd:"Moitié des munitions tirées pendant le combat",kind:"info"}); touch(S.cur); render(); } break;
+    case "ctrUse": if(ch&&ctrUse(ch,t.dataset.v)) render(); break;
     case "compstep": if(ch){ const c=JSON.parse(JSON.stringify(ch.companion||{name:"",ac:10,hp:{cur:10,max:10}})); c.hp=c.hp||{cur:0,max:0}; const d=+t.dataset.v, k=t.dataset.k;
       if(k==="ac") c.ac=Math.max(0,Math.min(40,(+c.ac||10)+d)); else if(k==="max"){ c.hp.max=Math.max(1,Math.min(999,(+c.hp.max||0)+d)); c.hp.cur=Math.min(c.hp.cur,c.hp.max); } else if(k==="cur") c.hp.cur=Math.max(0,Math.min(+c.hp.max||0,(+c.hp.cur||0)+d));
       ch.companion=c; touch(S.cur); render(); } break;
@@ -242,6 +243,7 @@ document.addEventListener("click",e=>{
     case "tpoolself": { const D=derive(ch); const dt=document.getElementById("t-dtot"); const v=(+S.T.dmg||0)+(dt?+dt.dataset.flat||0:0); if(!v) break; ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const before=+ch.hp.cur||0; ch.hp.cur=Math.min(D.hpMax,before+v); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0}; addLog({label:"Soins reçus",total:"+"+(ch.hp.cur-before),bd:"PV "+ch.hp.cur+" / "+D.hpMax,quiet:true}); touch(S.cur); render(); break; }
     case "cnt": { const c=(ch.counters||[]).find(x=>x.id===t.dataset.id); if(!c) break; c.cur=Math.max(0,Math.min(+c.max||Infinity,(+c.cur||0)+(+t.dataset.v))); touch(S.cur); render(); break; }
     case "cntRm": ch.counters=(ch.counters||[]).filter(x=>x.id!==t.dataset.id); touch(S.cur); render(); break;
+    case "cntRec": { const c=(ch.counters||[]).find(x=>x.id===t.dataset.id); if(!c) break; const v=t.dataset.v; if(v==="court"||v==="long") c.recharge=v; else delete c.recharge; touch(S.cur); render(); break; }
     case "bagq": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(b){ b.qty=Math.max(0,(+b.qty||0)+(+t.dataset.v)); touch(S.cur); render(); } break; }
     case "mkItem": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(!b) break; const id="hb_"+uid(); S.docs[id]={type:"hb",kind:"objet",name:b.name.replace(/\s*\(.*?\)\s*/g," ").trim()||b.name,label:"",text:"",effects:[],updatedAt:Date.now()}; touch(id); b.ref="hb:"+id; touch(S.cur); S.view="hb"; S.hbSel=id; render(); window.scrollTo(0,0); break; }
     case "bagdel": S.bagDel=t.dataset.id; render(); break;
@@ -444,7 +446,8 @@ document.addEventListener("submit",e=>{
     if(r===20){ ch.hp.cur=1; ch.death={s:0,f:0}; } else if(r===1) ch.death.f=Math.min(3,ch.death.f+2); else if(r>=10) ch.death.s=Math.min(3,ch.death.s+1); else ch.death.f=Math.min(3,ch.death.f+1);
     touch(S.cur); render(); return; }
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
-  if(f.dataset.form==="cnt"){ const ch=cur(); const n=document.getElementById("cnt-name").value.trim(); const mx=+document.getElementById("cnt-max").value||0; if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; ch.counters.push({id:uid(),name:n,cur:mx,max:mx}); touch(S.cur); render(); } }
+  if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
+    if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
   if(f.dataset.form==="tq"){ const r=searchItems(S.Titems||[],S.T.q); if(r[0]){ S.T.q=""; tSelect(r[0].key); } return; }
   if(f.dataset.form==="comp"){ S.comp.q=document.getElementById("compQ").value; render(); }
   if(f.dataset.form==="spellq"){ S.pending.q=document.getElementById("spellQ").value; renderModal(); }
