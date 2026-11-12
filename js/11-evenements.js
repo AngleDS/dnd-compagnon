@@ -207,6 +207,7 @@ document.addEventListener("click",e=>{
     case "bannerClose": { const k=t.dataset.k; if(k){ try{ localStorage.setItem("registre-banner-"+k,"1"); }catch(e){} } setBanner(""); break; }
     case "menuToggle": S.menuOpen=!S.menuOpen; render(); break;
     case "theme": setTheme(curTheme()==="dark"?"light":"dark"); render(); break;
+    case "pvTileSet": if(ch){ const v=t.dataset.v; ch.layout=Object.assign({},ch.layout); if(v==="__def") delete ch.layout.pvTile; else ch.layout.pvTile=String(v).slice(0,80); touch(S.cur); render(); } break;
     case "restOpen": S.T=S.T||{}; S.T.restKind=t.dataset.v||""; S.T.pop="rest"; render(); break;
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
     case "restLong": if(applyRest("long")===false){ render(); break; } S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;

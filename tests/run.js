@@ -421,8 +421,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="restOpen"][data-v=""]'); await p.click('[data-act="restKind"][data-v="long"]'); await p.click('[data-act="restLong"]');
     eq(await p.evaluate(() => [cur().hp.cur === derive(cur()).hpMax, cur().hdUsed, S.T.pop]), [true, 0, null], 'repos long : PV et dés de vie');
     await p.click('.health-dice'); ok(await p.evaluate(() => !S.T.pop), 'toucher les dés de vie n’ouvre rien');
-    ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="perso"] .character-banner .character-rest [data-act="restOpen"]') && !document.querySelector('.health-card [data-act="restOpen"]') && !document.querySelector('.tpanels [data-act="restOpen"]')), 'bouton Repos à droite du bandeau du personnage, plus dans la carte PV');
-    await p.click('.character-rest [data-act="restOpen"]'); ok(await p.evaluate(() => S.T.pop === 'rest' && !document.querySelector('.restpick') && document.querySelectorAll('.tpop [data-act="restKind"]').length === 2 && !!document.querySelector('.tpop [data-act="restShort"]')), 'une seule fenêtre : choix Court / Long et détail du repos court');
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="perso"] [data-act="restOpen"]') && !!document.querySelector('.health-card .hcside .hcrest[data-act="restOpen"]') && !document.querySelector('.tpanels [data-act="restOpen"]')), 'Repos dans la carte PV (colonne de droite), plus dans le bandeau');
+    await p.click('.health-card .hcrest'); ok(await p.evaluate(() => S.T.pop === 'rest' && !document.querySelector('.restpick') && document.querySelectorAll('.tpop [data-act="restKind"]').length === 2 && !!document.querySelector('.tpop [data-act="restShort"]')), 'une seule fenêtre : choix Court / Long et détail du repos court');
   });
  
   await test('Portrait : image réduite et enregistrée dans la fiche', async p => {
@@ -956,7 +956,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await order(), ['perso','reperes','pv','recherche','ressources','tour','raccourcis','notes'], 'en édition, tous les blocs, même vides');
     ok(await p.evaluate(() => [...document.querySelectorAll('.tblkc')].every(c => c.inert && +getComputedStyle(c).opacity < .6)), 'contenu inactif et translucide');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tdel')).map(b => b.dataset.blk)), ['pv'], 'Supprimer sur chaque bloc sauf Points de vie');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tedpen')).map(b => b.dataset.blk)), ['perso', 'pv'], 'crayon sur chaque bloc sauf Personnage et Points de vie (lot 3)');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks.editing > .tblk')].filter(b => !b.querySelector('.tedpen')).map(b => b.dataset.blk)), ['perso'], 'crayon sur chaque bloc sauf Personnage (Points de vie : choix de sa tuile)');
     ok(!await p.locator('[data-act="blkMove"]').count(), 'plus de flèches : on glisse');
     // Placement libre (lot B) : l'ordre visible se lit de haut en bas, puis de gauche à droite
     const vis = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].sort((a, b) => a.offsetTop - b.offsetTop || a.offsetLeft - b.offsetLeft).map(b => b.dataset.blk));
@@ -1362,7 +1362,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Raccourcis : 5 tuiles qui ouvrent leur popup et une case libre « + »', async p => {
     await diceTable(p);
     const cells = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpanels > *')].map(e => e.classList.contains('tplus') ? '+' : (e.dataset.v || e.dataset.act)));
-    eq(cells, ['skills','saves','cond','inv','equip','insp'], 'six cases, Inspiration héroïque dans la dernière');
+    eq(cells, ['skills','saves','cond','inv','equip','+'], 'six cases ; Inspiration héroïque est dans la carte PV (humain) : sa case des Raccourcis reste libre, sans doublon');
     for (const v of ['skills','saves','cond','inv','equip']) {
       await p.click(`.tblk[data-blk="raccourcis"] [data-v="${v}"]`);
       ok(await p.isVisible('.tpop'), 'popup ' + v); await p.keyboard.press('Escape');
@@ -1500,8 +1500,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       return { row: !!h, cells: h ? [...h.querySelectorAll('.hs')].map(x => x.querySelector('.hsn').textContent + ':' + x.querySelectorAll('.pip').length) : [], tops, cols: c.querySelectorAll('.health-details > .health-detail').length,
         rest: !!c.querySelector('[data-act="restOpen"]'), over: document.documentElement.scrollWidth > innerWidth, h: Math.round(c.getBoundingClientRect().height) }; });
     const sans = await card();
-    eq([sans.row, sans.cols, sans.rest, sans.over], [false, 3, false, false], 'sans sorts : pas de rangée Emplacements ; PV temp., PV max ± et dés de vie (Repos dans le bandeau)');
-    ok(new Set(sans.tops).size === 1, 'les trois valeurs sont alignées : ' + sans.tops);
+    eq([sans.row, sans.cols, sans.rest, sans.over], [false, 3, true, false], 'sans sorts : pas de rangée Emplacements ; PV temp., PV max ± et dés de vie ; Repos dans la carte');
+    ok(sans.tops.length === 3 && sans.tops[0] < sans.tops[1] && sans.tops[1] < sans.tops[2], 'les trois valeurs l’une sous l’autre (colonne du milieu) : ' + sans.tops);
     await p.click('.health-card [data-v="hptemp"]');
     eq(await p.evaluate(() => S.T.pop), 'hptemp', 'toucher PV temp. ouvre la saisie');
     ok(await p.isVisible('.tpop .pvset'), 'case de saisie directe, même en dés virtuels');
@@ -1515,7 +1515,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const m10 = await card(); eq(m10.cells, ['1:4', '2:3', '3:3', '4:3', '5:2'], 'niveau 10 : cinq niveaux de sort');
     await p.evaluate(() => { cur().level = 20; render(); });
     const m20 = await card(); eq(m20.cells.length, 9, 'niveau 20 : neuf niveaux'); ok(m20.h > m10.h && m10.h > m1.h && !m20.over, 'la carte grandit avec le niveau, sans débordement : ' + [m1.h, m10.h, m20.h]);
-    ok(new Set(m20.tops).size === 1, 'valeurs toujours alignées');
+    ok(m20.tops.length === 3 && m20.tops[0] < m20.tops[1] && m20.tops[1] < m20.tops[2], 'valeurs toujours l’une sous l’autre');
     eq(await p.evaluate(() => document.querySelectorAll('.hslots .pip').length && [...document.querySelectorAll('.hslots .pip')].every(x => x.tagName === 'SPAN')), true, 'verrouillé : ronds en lecture seule');
     await p.click('.hslots [data-act="lockSlots"]');
     await p.click('.hslots .hs:first-child button.pip >> nth=3');
@@ -1624,7 +1624,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Bandeau, repos et tuiles : libellé Repos, dés de vie toujours visibles, plus de tuile Épuisement, portrait figé à la table', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
-    ok(await p.evaluate(() => /Repos/.test(document.querySelector('.character-rest [data-act="restOpen"]').textContent)), 'bouton du bandeau avec son libellé « Repos »');
+    ok(await p.evaluate(() => /Repos/.test(document.querySelector('.health-card .hcrest').textContent)), 'case Repos de la carte PV avec son libellé « Repos »');
     ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="perso"] [data-act="portrait"]') && !document.querySelector('.tblk[data-blk="perso"] .portrait-edit') && !!document.querySelector('.tblk[data-blk="perso"] .character-portrait')), 'à la table : portrait affiché, pas modifiable');
     await p.evaluate(() => { S.T.pop = 'rest'; render(); });
     eq(await p.evaluate(() => [!!document.querySelector('[data-form="hdroll"]'), document.querySelector('[data-form="hdroll"] button[type="submit"]').disabled, !!document.querySelector('.hdfull')]), [true, true, true], 'PV pleins : dés de vie visibles, bouton grisé avec explication');
@@ -1925,7 +1925,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Tuiles (T2) : Inspiration hors de la carte PV, Concentration, Épuisement, Recherche en tuile, Notes en tuiles', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
-    ok(await p.evaluate(() => !document.querySelector('.health-card [data-act="insp"]') && !!document.querySelector('.health-card .tconcb')), 'carte PV : plus d’Inspiration, Concentration toujours là');
+    ok(await p.evaluate(() => !!document.querySelector('.health-card .hcside [data-act="insp"]') && !document.querySelector('.health-card .tconcb')), 'carte PV : Inspiration sous Repos pour un humain, pas de Concentration sans sort qui en demande');
+    await p.evaluate(() => { cur().layout = Object.assign({}, cur().layout, { pvTile: '' }); render(); });
     await p.click('.tblk[data-blk="raccourcis"] [data-act="insp"]');
     eq(await p.evaluate(() => [!!cur().inspiration, S.T.pop, /repos long/.test(document.querySelector('.tpop').textContent)]), [false, 'insp', true], 'tuile Inspiration dépensée : un toucher ne la rend pas, il explique (repos long ou MJ)');
     await p.click('.tpop [data-act="inspGain"]');
@@ -1948,7 +1949,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => getComputedStyle(document.getElementById('tres')).display === 'none'), 'toucher ailleurs replie la liste');
     await p.click('#tq'); ok(await p.evaluate(() => getComputedStyle(document.getElementById('tres')).display !== 'none'), 'revenir dans la barre la rouvre');
     await p.fill('#tq', '');
-    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t2aaaaaa', name: 'T2', r: 2, c: 4, tiles: [] }], hidden: ['recherche'] }); S.T.pop = 'tiles:c_t2aaaaaa'; render(); });
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_t2aaaaaa', name: 'T2', r: 2, c: 4, tiles: [] }], hidden: ['recherche'], pvTile: '' }); S.T.pop = 'tiles:c_t2aaaaaa'; render(); });
     for (const v of ['search', 'conc', 'insp']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
     eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => `${t.id}:${t.sz}`)), ['search:1', 'conc:12', 'insp:1'], 'Recherche 1×1, Concentration en 1×2 d’office (tuile moyenne), Inspiration 1×1');
     await p.click('.tpop [data-act="ctileSel"][data-i="0"]');
@@ -2328,6 +2329,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Concentration : mini-menu au toucher ; avec un sort en cours, le mode choisi passe à la fenêtre du jet', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    ok(await p.evaluate(() => !document.querySelector('.health-card .tconcb')), 'guerrier sans sort : pas de rangée Concentration');
+    await diceTable(p, 'clerc');
+    await p.evaluate(() => { const ch = cur(); ch.spells = [...(ch.spells || []).filter(s => s.ref !== 'srd:benediction'), { ref: 'srd:benediction', prepared: true }]; ch.conc = ''; render(); });
+    ok(await p.evaluate(() => !!document.querySelector('.health-card .tconcb')), 'clerc avec Bénédiction préparée : rangée Concentration');
     await p.evaluate(() => { cur().conc = 'Bénédiction'; cur().conditions = []; render(); });
     await p.click('.health-card .tconcb');
     eq(await p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => b.dataset.m || b.dataset.act)), ['a', 'n', 'd', 'tqdet'], 'carte PV : Avantage, Normal, Désavantage, Détails');
@@ -2349,6 +2354,38 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       eq(await p.evaluate(()=>[cur().turn.move,document.querySelector('.tturnbtn[data-v="move"]').getAttribute('aria-pressed'),document.querySelector('.tturnbtn[data-v="move"]').innerText.includes('Mouvement terminé')]),[true,'true',true],'état terminé lisible et conservé');
       await p.click('.tturnbtn[data-v="move"]');
     }
+  });
+
+  await test('Carte PV : trois colonnes, Repos fixe, tuile au choix (défaut selon le perso, crayon, sans doublon, import)', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await open(p);
+    const mk = (cls, sp) => p.evaluate(([cls, sp]) => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'T' }, { cls: catRes(cls), bg: catRes('srd:soldat'), sp: catRes('srd:' + sp) }); wCreate(); S.rv = null; renderModal(); S.tab = 'table'; render(); }, [cls, sp]);
+    const side = () => p.evaluate(() => [...document.querySelectorAll('.health-card .hcside > *')].map(e => e.classList.contains('hcrest') ? 'repos' : (e.dataset.v || e.dataset.act || e.className)));
+    await mk('guerrier', 'humain');
+    eq(await side(), ['repos', 'insp'], 'humain : Repos puis Inspiration héroïque');
+    ok(await p.evaluate(() => { const c = document.querySelector('.health-card'), r = s => c.querySelector(s).getBoundingClientRect(); return r('.health-main').right <= r('.health-details').left + 1 && r('.health-details').right <= r('.hcside').left + 1 && r('.hcside').right <= c.getBoundingClientRect().right + 1 && document.documentElement.scrollWidth <= innerWidth; }), 'trois colonnes côte à côte, rien hors écran');
+    await mk('guerrier', 'nain');
+    eq(await side(), ['repos', 'res:cls:second-souffle'], 'nain guerrier : sa ressource de classe (Second souffle)');
+    await p.click('.health-card .hcside [data-v="res:cls:second-souffle"]');
+    eq(await p.evaluate(() => S.T.pop), 'res:cls:second-souffle', 'la tuile ouvre la fenêtre de la ressource');
+    await p.keyboard.press('Escape');
+    // Crayon en mode Personnaliser : choisir Initiative, puis par défaut, puis vide
+    await p.evaluate(() => { S.T.pop = null; S.layoutEdit = true; render(); });
+    await p.click('.tblk[data-blk="pv"] .tedpen');
+    ok(await p.evaluate(() => S.T.pop === 'pvtile' && !!document.querySelector('.tpop [data-act="pvTileSet"][data-v="maitrise"]') && !document.querySelector('.tpop [data-act="pvTileSet"][data-v="init"]') && !document.querySelector('.tpop [data-act="pvTileSet"][data-v="search"]')), 'crayon : fenêtre de choix (tuiles 1×1, sans celles déjà à l’écran)');
+    await p.click('.tpop [data-act="pvTileSet"][data-v="maitrise"]');
+    eq([await p.evaluate(() => cur().layout.pvTile), await side()], ['maitrise', ['repos', 'info:maitrise']], 'Maîtrise choisie (Initiative, déjà dans les Repères, n’est pas proposée)');
+    await p.click('.tpop [data-act="pvTileSet"][data-v=""]');
+    eq(await side(), ['repos', 'pvtile'], 'laisser vide : « + » en mode Personnaliser');
+    await p.evaluate(() => { S.T.pop = null; S.layoutEdit = false; render(); });
+    eq(await side(), ['repos', 'rtile tvoid'], 'vide : case invisible en jeu');
+    await p.evaluate(() => { S.layoutEdit = true; S.T.pop = 'pvtile'; render(); }); await p.click('.tpop [data-act="pvTileSet"][data-v="__def"]');
+    eq([await p.evaluate(() => cur().layout.pvTile === undefined), await side()], [true, ['repos', 'res:cls:second-souffle']], 'remettre par défaut');
+    await p.evaluate(() => { S.T.pop = null; S.layoutEdit = false; render(); });
+    // Sans doublon : Inspiration choisie pour la carte PV quitte les Raccourcis
+    await p.evaluate(() => { cur().layout.pvTile = 'insp'; render(); });
+    ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="raccourcis"] [data-act="insp"]') && !!document.querySelector('.health-card [data-act="insp"]')), 'Inspiration dans la carte PV, plus dans les Raccourcis');
+    const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); ch.layout.pvTile = 5; try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
+    ok(/Points de vie/.test(bad), 'import : tuile de la carte PV invalide refusée');
   });
 
   if (BROWSER) await BROWSER.close();

@@ -274,6 +274,13 @@ function tPop(ch,D){
   if(k==="comp") return compPop(ch,wrap);
   if(k.startsWith("res:")) return resPop(ch,D,k.slice(4),wrap);
   if(k.startsWith("ctr:")) return ctrPop(ch,D,k.slice(4),wrap);
+  if(k==="pvtile"){ const T=pvTileMap(ch,D), cur0=pvTile(ch,D), def=pvTileDef(ch,D), cat=customCat(ch), onPage=tilesOnPage(ch,D,"pv");
+    const name=id=>id.startsWith("res:")?(D.res.find(r=>"res:"+r.id===id)||{}).name||id:cat[id]||id;
+    const ids=Object.keys(T).filter(id=>(id===cur0||!onPage.has(id)||id==="insp")&&tileAvailable(ch,"",id)&&T[id]());
+    const face=id=>`<span class="tface">${(T[id]().match(/<b class="num[^"]*">([\s\S]*?)<\/b>/)||["",""])[0]}</span><span class="tname">${esc(name(id))}</span>`;
+    return wrap("Carte Points de vie",`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Sous Repos, une tuile au choix. Par défaut : ${esc(name(def))}.</div>
+      <div class="tres">${ids.map(id=>`<button class="tcell tmini${id===cur0?" on":""}" data-act="pvTileSet" data-v="${esc(id)}" aria-pressed="${id===cur0}" aria-label="Choisir : ${esc(name(id))}">${face(id)}</button>`).join("")}</div>
+      <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn small ghost" data-act="pvTileSet" data-v="__def">Remettre par défaut</button><button class="btn small ghost" data-act="pvTileSet" data-v="">Laisser vide</button></div>`); }
   if(k==="concchk") return ccPop(ch,D,anim);
   if(k==="equip") return wrap("Équipement",eqPop(ch,D)," xl");
   if(k==="hptemp"){ const t=+(ch.hp?.temp||0);
@@ -350,15 +357,17 @@ function viewTable(ch,D,banner=""){
   // États actifs sous la barre de PV (décision d'Angle) : tous visibles, la rangée entière ouvre la fenêtre des états
   const condList=[...(ch.conditions||[]),...(+ch.exhaustion?["Épuisement "+ch.exhaustion]:[])];
   const condRow=condList.length?`<button class="hpconds" data-act="tpop" data-v="cond" aria-label="États actifs : ${esc(condList.join(", "))}. Toucher pour les modifier" title="États actifs : toucher pour les modifier">${condList.map(c=>`<span class="hpcond">${esc(c)}</span>`).join("")}</button>`:"";
+  const pvT=pvTile(ch,D), needConc=!!ch.conc||items.some(i=>i.kind==="spell"&&i.sp&&i.sp.concentration);
+  const pvSide=`<div class="hcside"><button class="rtile hcrest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou long"><svg class="rico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/></svg><span class="label">Repos</span></button>${(pvT&&pvTileMap(ch,D)[pvT]?.())||(S.layoutEdit?`<button class="rtile vide hcplus" data-act="tpop" data-v="pvtile" aria-label="Choisir une tuile">+</button>`:`<span class="rtile tvoid" aria-hidden="true"></span>`)}</div>`;
   const healthBlk=`<div class="table-overview tb-solo">
-    <section class="health-card" aria-label="Santé du personnage">
+    <section class="health-card hc3" aria-label="Santé du personnage">
     <div class="health-main">${hpStepper(ch,D).replace('</span><span class="table-hp-actions">',condRow+'</span><span class="table-hp-actions">')}</div>
     <div class="health-details">
       <button class="health-detail health-adjust" data-act="tpop" data-v="hptemp" title="PV temporaires : toucher pour les modifier"><span class="label">PV temp.</span><b class="num">${+(ch.hp?.temp||0)}</b></button>
       <button class="health-detail health-adjust" data-act="tpop" data-v="hpmax" title="Modifier les PV maximum"><span class="label">PV max ±</span><b class="num">${D.hpBonus?sg(D.hpBonus):0}</b></button>
       <div class="health-detail health-dice" title="Dés de vie restants : à dépenser pendant un repos court (bouton Repos)"><span class="label">Dés de vie</span><span><b class="num">${Math.max(0,D.L-(+ch.hdUsed||0))} / ${D.L}</b> <small>d${D.hd}</small></span></div>
-    </div>${slotsRow}
-  <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="tqroll" data-r="d20" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span></div></section></div>`;
+    </div>${pvSide}${slotsRow}
+  ${needConc?`<div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="tqroll" data-r="d20" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span></div>`:""}</section></div>`;
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tqroll" data-r="d20" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
@@ -446,6 +455,16 @@ function blockTiles(ch,blk){
   if(!derive(ch).cast) return arr.map(x=>x==="dd"||x==="atks"?"":x);
   return arr;
 }
+/* Carte PV (décision d'Angle, 12 nov. 2026) : Repos fixe, puis une tuile 1×1 au choix (ch.layout.pvTile).
+   Par défaut : Inspiration héroïque pour un humain (Ingénieux), le don Musicien ou une inspiration en cours ; sinon la première ressource du perso (« res:<id> ») ; sinon Inspiration. */
+function pvTileMap(ch,D){ const T=Object.assign({},repTileMap(ch,D,chSize(ch)));
+  for(const r of D.res){ const left=r.max-Math.min(r.max,+(ch.resUsed?.[r.id]||0));
+    T["res:"+r.id]=()=>`<button class="rtile rrestile${left<=0?" vide0":""}" data-act="tpop" data-v="res:${esc(r.id)}" title="${esc(r.name)} : dépenser ou récupérer"><b class="num">${left}/${r.max}${r.pool?`<small> d${r.die}</small>`:""}</b><span class="label">${esc(r.name)}</span></button>`; }
+  delete T.search; delete T.conc; return T; }
+function pvTileDef(ch,D){ const sp=srd("species",ch.species)||hb(ch.species), human=!!(sp&&(sp.traits||[]).some(t=>t.name==="Ingénieux"));
+  const musicien=(ch.feats||[]).some(r=>/musicien/.test(norm((hb(r)||srd("feats",r)||{}).name||r)));
+  return human||musicien||ch.inspiration||!D.res.length?"insp":"res:"+D.res[0].id; }
+function pvTile(ch,D){ const v=ch.layout?.pvTile; if(v==="") return ""; const T=pvTileMap(ch,D); return typeof v==="string"&&T[v]&&T[v]()?v:pvTileDef(ch,D); }
 const REP_CLS=["rage","bard","ma","credo","sneak","malice","crit","aura","souffle"];
 const tileAvailable=(ch,blk,id)=>{ if(isCtr(id)){ const b=id.startsWith("obj:")&&(ch.bag||[]).find(x=>x.id===id.slice(4)); return id.startsWith("cnt:")||!!(b&&ctrOffer(ch,b)); } const D=derive(ch); if((id==="dd"||id==="atks"||id==="slots"||id==="sorts")&&!D.cast) return false; if(id==="bottes"&&!bottesN(D)) return false; return !REP_CLS.includes(id)||repWants(ch,D).includes(id); };
 const inspInRep=ch=>Array.isArray(ch.layout?.tiles?.reperes)&&ch.layout.tiles.reperes.includes("insp");
@@ -487,7 +506,7 @@ function racTileMap(ch,D){
     notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
   };
 }
-function raccourcisTiles(ch,D){ const R=racTileMap(ch,D), T=repTileMap(ch,D,chSize(ch)); return blockTiles(ch,"raccourcis").map((id,i)=>(id&&(R[id]?R[id]():T[id]&&T[id]()))||plusTile("raccourcis",i,"tpbtn tplus")).join(""); }
+function raccourcisTiles(ch,D){ const R=racTileMap(ch,D), T=repTileMap(ch,D,chSize(ch)), pv=blkHidden(ch,"pv")?"":pvTile(ch,D); return blockTiles(ch,"raccourcis").map(id=>id===pv?"":id).map((id,i)=>(id&&(R[id]?R[id]():T[id]&&T[id]()))||plusTile("raccourcis",i,"tpbtn tplus")).join(""); }
 function repTileMap(ch,D,size){
   let wl; const want=id=>(wl||(wl=repWants(ch,D))).includes(id);
   const t=(v,l,title)=>`<span class="rtile"${title?` title="${esc(title)}"`:""}><b class="num">${v}</b><span class="label">${l}</span></span>`;
@@ -878,6 +897,7 @@ function tilesOnPage(ch,D,except){ const on=new Set(), vis=id=>id!==except&&!blk
   if(vis("raccourcis")) blockTiles(ch,"raccourcis").forEach(id=>id&&on.add(id));
   if(vis("notes")) ["notes","hist"].forEach(id=>on.add(id));
   if(vis("recherche")) on.add("search");
+  if(vis("pv")){ const v=pvTile(ch,D); if(v) on.add(v); }
   for(const b of customBlocks(ch)) if(b.id!==except) cGrid(b).tiles.forEach(t=>on.add(t.id));
   return on; }
 /* Nombre d'éléments d'un bloc de base (miniatures des formats) */
@@ -1044,7 +1064,7 @@ function tableBlocks(ch,blocks){
   const charges=chargeRecoveryForms(ch);
   const cb=Object.fromEntries(customBlocks(ch).map(b=>[b.id,b]));
   const title=id=>id==="perso"||id==="pv"?"":id.startsWith("c_")?(cb[id]?.name||""):blkTitle(ch,id,(TBLK.find(b=>b[0]===id)||[])[1]||"");
-  const pen=id=>id==="perso"||id==="pv"?"":`<button class="tedpen" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}" aria-label="Modifier le bloc ${esc(label(id))}" title="Modifier le bloc">${PEN_SVG}</button>`;
+  const pen=id=>id==="perso"?"":id==="pv"?`<button class="tedpen" data-act="tpop" data-v="pvtile" aria-label="Choisir la tuile de la carte Points de vie" title="Modifier le bloc">${PEN_SVG}</button>`:`<button class="tedpen" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}" aria-label="Modifier le bloc ${esc(label(id))}" title="Modifier le bloc">${PEN_SVG}</button>`;
   const sec=id=>`<section class="tblk${ed?" ted":""} w${blkWidth(ch,id,cb[id])}" data-blk="${id}" data-w="${blkWidth(ch,id,cb[id])}" aria-label="${esc(label(id))}">
     <div class="tband"><span class="tbandt">${esc(title(id))}</span></div>${ed?`<span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span>${pen(id)}${BLK_KEEP.includes(id)?"":`<button class="tdel" data-act="blkDelNow" data-v="${id}" aria-label="Supprimer le bloc ${esc(label(id))}" title="Supprimer le bloc">✕</button>`}`:""}
     <div class="tblkc"${ed?" inert":""}>${blocks[id]||(ed?`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`:"")}</div></section>`;

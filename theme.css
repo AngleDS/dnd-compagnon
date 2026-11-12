@@ -286,7 +286,7 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 
 /* Carte PV : PV temp., PV max ±, dés de vie et Repos alignés ; emplacements de sorts qui s'adaptent au perso */
 .health-details .health-detail{align-self:start;align-content:start}
-.character-banner{position:relative}.character-rest{position:absolute;top:0;right:0;margin:0}.tblk .character-banner .character-identity h1{padding-right:96px}
+.character-banner{position:relative}.character-rest{position:absolute;top:0;right:0;margin:0}
 .character-rest .hprest{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;height:36px;min-height:36px;padding:0 12px;font-size:var(--fs-sm)}
 .character-rest .hprest .tpi{width:20px;height:20px;stroke:var(--brass)}
 @media (pointer:coarse){.character-rest .hprest{height:44px;min-height:44px}}
@@ -529,3 +529,15 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .tblocks.tfree .tturnbtn[aria-pressed="true"]{background:var(--turn-fill);color:var(--ink);box-shadow:inset 0 0 0 2px var(--brass)}
 .tblocks.tfree .tturnbtn[aria-pressed="true"] .tturn-icon{opacity:.65}
 .tblocks.tfree .tturnbtn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+/* Carte PV en trois colonnes (décision d'Angle, 12 nov. 2026) : PV et Dégâts / Soins | PV temp., PV max, dés de vie | Repos et une tuile au choix */
+.table-overview>.health-card.hc3{grid-template-columns:minmax(0,1fr) minmax(96px,auto) 88px;column-gap:0;row-gap:10px;align-items:stretch}
+.health-card.hc3>.health-main{grid-column:1;flex-direction:column;align-items:stretch;gap:8px;padding-right:12px;border-right:1px solid var(--line);min-width:0}
+.health-card.hc3>.health-main .table-hp-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:0;max-width:320px}
+.health-card.hc3>.health-main .table-hp-actions .stepb{min-width:0;padding-left:4px;padding-right:4px}
+.table-overview>.health-card.hc3>.health-details{grid-column:2;display:flex;flex-direction:column;justify-content:space-between;gap:4px;padding:0 12px;margin:0;border:0;border-right:1px solid var(--line)}
+.health-card.hc3>.health-details>.health-detail{white-space:nowrap}
+.health-card.hc3>.hcside{grid-column:3;display:grid;grid-template-rows:var(--th,76px) var(--th,76px);gap:8px;padding-left:12px;min-width:0}
+.health-card.hc3>.hcside>.rtile{height:100%;min-height:0;box-sizing:border-box}
+.health-card.hc3 .hcrest .rico{width:24px;height:24px}.health-card.hc3 .hcrest .label{font-size:var(--fs-sm)}
+.health-card.hc3>.hslots,.health-card.hc3>.health-footer{grid-column:1/-1}
