@@ -306,6 +306,13 @@ function tPop(ch,D){
   if(k==="notes") return wrap("Notes de partie",`<textarea id="t-notes" data-bind="sessionNotes" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="min-height:260px;width:100%">${esc(ch.sessionNotes||"")}</textarea><div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Séparées des notes du personnage. Enregistrées au fil de la frappe.</div>`);
   if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } return wrap("Détails",c," wide"); }
   if(k==="hist") return wrap("Historique des jets", histBody(ch));
+  // Raccourcis Sorts, Attaques, Actions (lot T5) : listes de ce que le perso peut faire, un toucher ouvre la fiche (jet, dégâts)
+  if(k.startsWith("list:")){ const w=k.slice(5), it=S.Titems||[], grp=(title,list)=>list.length?`<div class="tgrp"><div class="label">${esc(title)}</div><div class="tlist">${list.map(i=>tRow(i,false,false)).join("")}</div></div>`:"";
+    if(w==="sorts"){ const sp=it.filter(i=>i.kind==="spell"), lv=[...new Set(sp.map(i=>i.sp.level))].sort((a,b)=>a-b);
+      return wrap("Sorts",lv.map(l=>grp(l?"Niveau "+l:"Sorts mineurs",sp.filter(i=>i.sp.level===l))).join("")||`<div class="muted">Aucun sort préparé.</div>`); }
+    if(w==="atk") return wrap("Attaques",grp("Armes et attaques",it.filter(i=>i.kind==="atk"))||`<div class="muted">Aucune attaque dans la fiche : ajoute tes armes dans l'onglet Feuille.</div>`);
+    if(w==="actions") return wrap("Actions",`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">À ton tour : une action, une action bonus si une aptitude t'en donne une, ton déplacement, et une réaction avant ton prochain tour.</div>${it.some(i=>i.kind==="basic")?`<div class="tgrp"><div class="label">Actions de base</div><div class="tlist">${it.filter(i=>i.kind==="basic").map(i=>tRow(i,false,true)).join("")}</div></div>`:""}${grp("Réaction",it.filter(i=>i.kind==="rule"&&i.cost==="reaction"))}`);
+    T.pop=null; return ""; }
   if(k.startsWith("eco:")){ const e=k.slice(4); T.eco=e; const used=!!(ch.turn||{})[e];
     return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop" role="dialog" aria-modal="true" aria-label="${ECO[e]}" data-act="noop"><div class="tpophead"><b>${ECO[e]}</b><span class="row" style="gap:6px"><button class="btn small" data-act="tturn" data-v="${e}">${used?"Annuler":e==="autre"?"Marquer Autre terminé":"Marquer comme consommée"}</button><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></span></div><div class="tpopbody">${used?`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">✓ ${TURN_DONE[e]}</div>`:""}${tEco(ch,D)}</div></div></div>`; }
   const B={skills:["Tests de caractéristique",`<div class="tabil">${AB.map(a=>`<div class="tabrow"><button class="tabhead ${sgc(D.mods[a])}" data-act="tsel" data-k="abil:${a}"><span>${ABN[a]}</span><b class="num">${sg(D.mods[a])}</b></button><div class="tabsk">${S.C.skills.filter(s=>s.ability===a).map(s=>`<button class="tskc ${sgc(D.skills[s.id].val)}" data-act="tsel" data-k="skill:${s.id}">${D.skills[s.id].lv?`<span class="pdot p${D.skills[s.id].lv}" title="${D.skills[s.id].lv>1?"Expertise":"Maîtrise"}"></span>`:""}${esc(s.name)} <b class="num">${sg(D.skills[s.id].val)}</b></button>`).join("")||`<span class="muted" style="font-size:var(--fs-sm)">Aucune compétence</span>`}</div></div>`).join("")}</div>${pLegend(true)}`],saves:["Jets de sauvegarde",`<div class="tsavegrid">${saves}</div>${pLegend(false)}`],cond:["États",`<div class="condgrid">${CONDS.map(c=>`<span class="condpick"><button class="chip" aria-pressed="${(ch.conditions||[]).includes(c)}" data-act="cond" data-v="${esc(c)}">${esc(c)}</button>${S.idx.cond[c]?`<span class="tinfo" role="button" data-act="tip" data-k="rule:${esc(S.idx.cond[c].id)}" aria-label="Règle : ${esc(c)}" title="Règle">i</span>`:""}</span>`).join("")}</div>
@@ -399,8 +406,10 @@ const reperesAuto=(ch,D)=>REP_BASE.concat(repWants(ch,D).slice(0,4));
 const RACC_DEFAUT=["skills","saves","cond","inv","equip","insp"];
 const TILE_CAT={
   reperes:{ca:"CA",init:"Initiative",vitesse:"Vitesse",dd:"DD des sorts",atks:"Attaque de sort",pp:"Perception passive",ip:"Intuition passive",ivp:"Investigation passive",maitrise:"Maîtrise",attaques:"Attaques par action",taille:"Taille",dv:"Dés de vie",
-    rage:"Dégâts de rage",bard:"Dé bardique",ma:"Arts martiaux",credo:"DD du Credo",sneak:"Attaque sournoise",malice:"DD Frappe malicieuse",crit:"Critique",aura:"Aura de protection",souffle:"DD du souffle",or:"Or"},
-  raccourcis:{skills:"Tests de caractéristique",saves:"Jets de sauvegarde",cond:"États",inv:"Inventaire",equip:"Équipement",rest:"Repos",hist:"Historique des jets",notes:"Notes de partie"}
+    rage:"Dégâts de rage",bard:"Dé bardique",ma:"Arts martiaux",credo:"DD du Credo",sneak:"Attaque sournoise",malice:"DD Frappe malicieuse",crit:"Critique",aura:"Aura de protection",souffle:"DD du souffle",or:"Or",
+    vision:"Vision",bottes:"Bottes d’arme",agrip:"Agripper / bousculer",saut:"Saut",port:"Charge",harmo:"Harmonisation"},
+  raccourcis:{skills:"Tests de caractéristique",saves:"Jets de sauvegarde",cond:"États",inv:"Inventaire",equip:"Équipement",rest:"Repos",hist:"Historique des jets",notes:"Notes de partie",
+    sorts:"Sorts",atkl:"Attaques",actions:"Actions"}
 };
 /* Fiche des tuiles (lot T1, voir claude/catalogue-tuiles-2024.md) : gabarit, largeur minimale, action, blocs permis.
    Largeurs minimales en px réels sur iPhone : É étroite 70, M moyenne 104, L large 156, P pleine 330 (cases avec 8 px de marge dans le bloc).
@@ -434,7 +443,7 @@ function blockTiles(ch,blk){
   return arr;
 }
 const REP_CLS=["rage","bard","ma","credo","sneak","malice","crit","aura","souffle"];
-const tileAvailable=(ch,blk,id)=>{ const D=derive(ch); if((id==="dd"||id==="atks"||id==="slots")&&!D.cast) return false; return !REP_CLS.includes(id)||repWants(ch,D).includes(id); };
+const tileAvailable=(ch,blk,id)=>{ const D=derive(ch); if((id==="dd"||id==="atks"||id==="slots"||id==="sorts")&&!D.cast) return false; if(id==="bottes"&&!bottesN(D)) return false; return !REP_CLS.includes(id)||repWants(ch,D).includes(id); };
 const inspInRep=ch=>Array.isArray(ch.layout?.tiles?.reperes)&&ch.layout.tiles.reperes.includes("insp");
 function inspPlaced(ch){ return customBlocks(ch).some(b=>(b.tiles||[]).some(x=>x&&x.id==="insp")); }
 function seeInsp(ch){ if(ch.layout?.inspSeen&&!inspInRep(ch)) return; const r=blockTiles(ch,"raccourcis"); ch.layout=Object.assign({},ch.layout,{inspSeen:true}); ch.layout.tiles=Object.assign({},ch.layout.tiles,{raccourcis:r});
@@ -467,6 +476,9 @@ function racTileMap(ch,D){
     conc:()=>`<button class="tpbtn" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></svg>Concentration<small class="tpsub">${ch.conc?esc(ch.conc):"Aucun sort"}</small></button>`,
     exh:()=>`<button class="tpbtn" data-act="tpop" data-v="cond"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/></svg>Épuisement<small class="tpsub">${+ch.exhaustion?"Niveau "+ch.exhaustion:"Aucun"}</small></button>`,
     comp:()=>{ const c=ch.companion; return `<button class="tpbtn" data-act="tpop" data-v="comp"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.comp}</svg>${c&&c.name?esc(c.name):"Compagnon"}<small class="tpsub">${c?`${+c.hp?.cur||0}/${+c.hp?.max||0} PV · CA ${+c.ac||10}`:"Ajouter un compagnon"}</small></button>`; },
+    sorts:()=>`<button class="tpbtn" data-act="tpop" data-v="list:sorts"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="m12 6 1 2 2 .5-1.5 1.5.5 2-2-1-2 1 .5-2L9 8.5l2-.5z"/></svg>Sorts<small class="tpsub">${S.Titems?S.Titems.filter(i=>i.kind==="spell").length:0} prêts</small></button>`,
+    atkl:()=>`<button class="tpbtn" data-act="tpop" data-v="list:atk"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.attaques}</svg>Attaques<small class="tpsub">${S.Titems?S.Titems.filter(i=>i.kind==="atk").length:0} au choix</small></button>`,
+    actions:()=>`<button class="tpbtn" data-act="tpop" data-v="list:actions"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-3.5a1.5 1.5 0 0 1 3 0V11m0-2a1.5 1.5 0 0 1 3 0v5a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14.5V12a1.5 1.5 0 0 1 3 0v1"/></svg>Actions<small class="tpsub">Ce que je peux faire</small></button>`,
     search:()=>`<button class="tpbtn" data-act="tsearch"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>Recherche<small class="tpsub">Jet, action, sort…</small></button>`,
     notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
   };
@@ -500,6 +512,13 @@ function repTileMap(ch,D,size){
     souffle:()=>want("souffle")?t(8+D.pb+D.mods.con,"DD du souffle",`Souffle : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10, sauvegarde de Dextérité`):"",
     comp:()=>{ const c=ch.companion; return `<button class="rtile" data-act="tpop" data-v="comp" title="Compagnon : PV et CA"><b class="num">${c?`${+c.hp?.cur||0}/${+c.hp?.max||0}`:"—"}</b><span class="label">${c&&c.name?esc(c.name):"Compagnon"}</span></button>`; },
     or:()=>t(orTotal(ch)+" po","Or","Valeur totale de ta bourse, en pièces d'or"),
+    // Lot T5 (12 nov. 2026) : tuiles calculées depuis la fiche, sans saisie
+    vision:()=>{ const L=chSenses(ch,D), v=L.find(x=>x.k==="noir")||L[0]; return t(v?mFmt(v.m)+" m":"—",v&&v.k!=="noir"?SENSES[v.k]:"Vision",v?SENSES[v.k]+" sur "+mFmt(v.m)+" m":"Pas de vision dans le noir"); },
+    bottes:()=>bottesN(D)?t(bottesN(D),"Bottes d’arme","Nombre de types d'arme dont tu peux utiliser la botte"):"",
+    agrip:()=>t(8+D.pb+D.mods.for,"Agripper / bousculer","DD de la sauvegarde imposée par ta lutte ou ta bousculade"),
+    saut:()=>t(mFmt(+(D.abEff?.for??10)*0.3)+" m","Saut","Saut en longueur avec élan"),
+    port:()=>t(chCarry(ch,D)+" kg","Charge","Poids que tu peux porter"),
+    harmo:()=>t(`${(ch.attuned||[]).filter(id=>(ch.bag||[]).some(b=>b.id===id)).length}/3`,"Harmonisation","Objets magiques harmonisés (3 au plus)"),
     insp:()=>`<button class="rtile" data-act="insp" aria-pressed="${!!ch.inspiration}" title="Inspiration héroïque : toucher pour l'utiliser ou la regagner"><b class="num">${ch.inspiration?"✓":"—"}</b><span class="label">Inspiration</span></button>`,
     conc:()=>`<button class="rtile" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="Concentration"><b class="num tconcv">${ch.conc?esc(ch.conc):"—"}</b><span class="label">Concentration</span></button>`,
     exh:()=>`<button class="rtile" data-act="tpop" data-v="cond" title="Épuisement : toucher pour le modifier"><b class="num">${+ch.exhaustion||0}</b><span class="label">Épuisement</span></button>`,
@@ -566,6 +585,12 @@ const REP_ICON={
   conc:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/>',
   exh:'<path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/>',
   comp:'<ellipse cx="12" cy="16" rx="4.5" ry="3.8"/><circle cx="5.5" cy="10.5" r="2"/><circle cx="9.5" cy="6" r="2"/><circle cx="14.5" cy="6" r="2"/><circle cx="18.5" cy="10.5" r="2"/>',
+  vision:'<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M12 9a3 3 0 0 0 0 6z" fill="currentColor"/>',
+  bottes:'<path d="M14.5 3H21v6.5L10 20.5 3.5 14z"/><path d="m7 17-3 3M16.5 7.5l-6 6"/>',
+  agrip:'<path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V10m0-4a1.5 1.5 0 0 1 3 0v4m0-3a1.5 1.5 0 0 1 3 0v3m0-1.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5.6-3.9L4.3 13a1.5 1.5 0 0 1 2.7-1.3L7 12"/>',
+  saut:'<path d="M3 19c3-9 6-12 9-12s6 3 9 12"/><path d="m18 16 3 3-1 4"/><circle cx="12" cy="4" r="1.5"/>',
+  port:'<path d="M7 8h10l3 13H4z"/><path d="M9.5 8a2.5 2.5 0 0 1 5 0"/>',
+  harmo:'<circle cx="12" cy="15" r="6"/><path d="m9 6 3-3 3 3-3 3z"/>',
   or:'<ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/>'
 };
 const COINS=[["pp","Platine",10],["po","Or",1],["pe","Électrum",0.5],["pa","Argent",0.1],["pc","Cuivre",0.01]];
@@ -582,6 +607,29 @@ function compPop(ch,wrap){ const c=ch.companion||{name:"",ac:10,hp:{cur:10,max:1
     <div class="muted tinfonote">Pour un compagnon animal, un destrier, un familier ou une créature invoquée. Sa fiche complète (attaques, vitesse) viendra plus tard.</div></div>`); }
 /* Fenêtre d'explication d'une tuile de valeur : sens de la valeur, puis calcul ligne par ligne avec les chiffres du perso. */
 function skillRows(D,k){ const s=D.skills[k], m=D.mods[s.ab], pr=s.lv*D.pb, r=[[ABN[s.ab],m]]; if(s.lv) r.push([s.lv>1?"Expertise (maîtrise × 2)":"Maîtrise",pr]); if(s.val-m-pr) r.push(["Autres bonus",s.val-m-pr]); return r; }
+/* Lot T5 : sens, bottes d'arme, charge. */
+const SENSES={noir:"Vision dans le noir",aveugle:"Vision aveugle",vibr:"Perception des vibrations",lucide:"Vision lucide"};
+const SENSE_RX={noir:/Vision dans le noir[^.]*?(\d+(?:,\d+)?)\s*m\b/i,aveugle:/Vision aveugle[^.]*?(\d+(?:,\d+)?)\s*m\b/i,vibr:/Perception des vibrations[^.]*?(\d+(?:,\d+)?)\s*m\b/i,lucide:/Vision lucide[^.]*?(\d+(?:,\d+)?)\s*m\b/i};
+/* Sens du perso, lus dans les textes de son espèce, de sa classe et sous-classe (jusqu'à son niveau), de ses dons et objets : [{k,m,src}], la plus grande portée par sens. */
+function chSenses(ch,D){ const best={}, look=(txt,src)=>{ for(const k in SENSE_RX){ const m=SENSE_RX[k].exec(txt||""); if(m){ const v=parseFloat(m[1].replace(",",".")); if(!best[k]||v>best[k].m) best[k]={k,m:v,src}; } } };
+  const sp=srd("species",ch.species)||hb(ch.species); if(sp&&Array.isArray(sp.traits)) for(const t of sp.traits) look(t.name+". "+t.text,sp.name||"Espèce"); else if(sp) look(sp.text||sp.desc||"",sp.name||"Espèce");
+  if(D.cls){ for(const f of D.cls.features) if(f.level<=D.L&&/Vision|vibrations/i.test(f.text||"")) look(f.text,D.cls.name+" · "+f.name);
+    const sc=ch.subclass&&ch.subclass.startsWith("srd:")&&D.cls.subclasses?.find(s=>"srd:"+s.id===ch.subclass); if(sc) for(const f of sc.features) if(f.level<=D.L&&/Vision|vibrations/i.test(f.text||"")) look(f.text,sc.name+" · "+f.name); }
+  for(const s of D.sources||[]) look(s.text,(s.origin?s.origin+" · ":"")+s.name);
+  return ["noir","aveugle","vibr","lucide"].filter(k=>best[k]).map(k=>best[k]); }
+/* Bottes d'arme : nombre de types d'arme (colonne de la classe, sinon 2 dès qu'elle a l'aptitude). */
+function bottesN(D){ const cls=D.cls; if(!cls||!cls.features.some(f=>f.level<=D.L&&/^Bottes d.arme$/.test(f.name))) return 0; const v=colVal(cls,"Bottes d’arme",D.L); return +v||2; }
+const BOTTES={"Coup double":"Quand tu attaques avec cette arme légère grâce à l'action Attaque, ton attaque en plus avec l'autre arme légère se fait sans l'action bonus habituelle.",
+  "Écorchure":"Même si tu rates ta cible, elle subit des dégâts égaux au modificateur que tu utilises pour l'attaque (sauf si ce modificateur est négatif).",
+  "Enchaînement":"Quand tu touches, tu peux faire une seconde attaque contre une autre créature à 1,50 m de la première et à ta portée (une fois par tour, sans ajouter ton modificateur aux dégâts, sauf s'il est négatif).",
+  "Ouverture":"Quand tu touches, ta prochaine attaque contre cette cible avant la fin de ton prochain tour a l'avantage.",
+  "Poussée":"Quand tu touches une créature de taille Grande au plus, tu peux la repousser de 3 m.",
+  "Ralentissement":"Quand tu touches et infliges des dégâts, la Vitesse de la cible baisse de 3 m jusqu'au début de ton prochain tour (pas de cumul).",
+  "Renversement":"Quand tu touches, la cible fait une sauvegarde de Constitution (DD 8 + ton modificateur d'attaque + ta maîtrise) ; si elle la rate, elle tombe À terre.",
+  "Sape":"Quand tu touches, la cible a le désavantage à son prochain jet d'attaque avant le début de ton prochain tour."};
+/* Charge (capacité de charge) : Force × 7,5 kg pour une taille Petite ou Moyenne ; ×½ Très petite, ×2 Grande, ×4 Très grande, ×8 Gigantesque. */
+function carryMult(ch){ const s=norm(String(chSize(ch)||"")); return /^tres petite/.test(s)?0.5:/^gig/.test(s)?8:/^tres grande/.test(s)?4:/^grande/.test(s)?2:1; }
+function chCarry(ch,D){ return mFmt(+(D.abEff?.for??10)*7.5*carryMult(ch)); }
 function infoData(ch,D,id){
   const lv="Niveau "+D.L, cv=lab=>colVal(D.cls,lab,D.L), sp=srd("species",ch.species)||hb(ch.species);
   const passive=(k,title,desc)=>({title,v:10+D.skills[k].val,desc,rows:[["Base",10],...skillRows(D,k)],note:"Avec l'avantage, ajoute 5 ; avec le désavantage, retire 5."});
@@ -607,6 +655,23 @@ function infoData(ch,D,id){
     crit:()=>({title:"Critique",v:D.L>=15?"18-20":"19-20",desc:"Ton attaque devient un coup critique sur ces résultats du d20.",rows:[[D.L>=15?"Critique supérieur (niveau 15)":"Critique amélioré (niveau 3)",D.L>=15?"18-20":"19-20"]],noTotal:true}),
     aura:()=>({title:"Aura de protection",v:sg(Math.max(1,D.mods.cha)),desc:`Toi et tes alliés à ${D.L>=18?9:3} m ajoutez ce bonus à vos jets de sauvegarde, tant que tu es conscient.`,rows:[["Charisme (au moins +1)",Math.max(1,D.mods.cha)]],noTotal:true}),
     or:()=>({title:"Bourse",v:orTotal(ch)+" po",desc:"La valeur totale de tes pièces, en pièces d'or (on arrondit à l'or inférieur). Tu modifies ta bourse dans l'onglet Feuille.",rows:COINS.map(([k,l,v])=>[`${l} (${k}) × ${+ch.gold?.[k]||0}`,String(Math.round((+ch.gold?.[k]||0)*v*100)/100).replace(".",",")+" po"]),noTotal:true}),
+    vision:()=>{ const L=chSenses(ch,D), noir=L.find(x=>x.k==="noir");
+      return {title:"Vision",v:noir?mFmt(noir.m)+" m":L.length?mFmt(L[0].m)+" m":"—",
+        desc:noir?"Vision dans le noir : jusqu'à cette distance, tu vois dans la pénombre comme en pleine lumière, et dans le noir comme dans la pénombre. Dans le noir, tu ne distingues pas les couleurs, seulement des nuances de gris."
+          :"Ton personnage n'a pas de vision dans le noir : sans lumière, il ne voit rien. Une torche ou un sort de lumière devient vite utile.",
+        rows:L.length?L.map(x=>[SENSES[x.k]+" ("+x.src+")",mFmt(x.m)+" m"]):[["Aucun sens particulier","—"]],noTotal:true,
+        note:L.some(x=>x.k!=="noir")?L.filter(x=>x.k!=="noir").map(x=>({aveugle:"Vision aveugle : tu perçois ce qui t'entoure à cette distance sans avoir besoin de tes yeux, même dans le noir ou face à l'invisible.",vibr:"Perception des vibrations : tu sens la position de ce qui bouge à cette distance, si tu touches le même sol (ou le même liquide).",lucide:"Vision lucide : à cette distance, tu vois dans tout type de noir, tu vois l'invisible et tu perces les illusions et les métamorphoses."}[x.k])).join(" "):"La vision dans le noir vient de ton espèce ou d'une aptitude. Les sorts qui en donnent pour un temps ne sont pas comptés ici."}; },
+    bottes:()=>{ const n=bottesN(D); if(!n) return null; const atk=(S.Titems||[]).filter(i=>i.kind==="atk"&&i.mastery), seen=new Set();
+      return {title:"Bottes d’arme",v:n,desc:`Tu peux utiliser la botte de ${n} types d'arme, choisis parmi celles que tu maîtrises. Tu peux changer un de ces choix à chaque repos long. La botte s'applique quand tu attaques avec l'arme.`,
+        rows:atk.length?atk.map(i=>[i.name,i.mastery]):[["Aucune attaque avec une botte dans la fiche","—"]],noTotal:true,
+        note:atk.filter(i=>!seen.has(i.mastery)&&seen.add(i.mastery)).map(i=>`<b>${esc(i.mastery)}</b> : ${BOTTES[i.mastery]||""}`).join("<br>")||"Ajoute tes armes dans l'onglet Feuille pour voir leurs bottes."}; },
+    agrip:()=>({title:"Agripper et bousculer",v:8+D.pb+D.mods.for,desc:"À la place d'une attaque à mains nues, tu peux tenter d'agripper une créature (une main libre, taille au plus un cran au-dessus de la tienne) ou de la bousculer (la repousser de 1,50 m ou la faire tomber À terre). Elle fait une sauvegarde de Force ou de Dextérité, à son choix, contre ce DD.",rows:dcRows("for"),note:"Une créature agrippée a une Vitesse de 0 ; elle peut tenter de se libérer à son tour contre le même DD."}),
+    saut:()=>{ const f=+(D.abEff?.for??10), h=Math.max(0,0.9+0.3*D.mods.for);
+      return {title:"Saut",v:mFmt(f*0.3)+" m",desc:"Avec au moins 3 m d'élan. Sans élan, la distance est divisée par deux. Le saut se décompte de ton déplacement.",rows:[["En longueur (Force × 30 cm)",mFmt(f*0.3)+" m"],["En hauteur (90 cm + mod. de Force × 30 cm)",mFmt(h)+" m"]],noTotal:true,note:"En hauteur, tu peux tendre les bras pour attraper un rebord un peu plus haut."}; },
+    port:()=>{ const f=+(D.abEff?.for??10), m=carryMult(ch);
+      return {title:"Charge",v:chCarry(ch,D)+" kg",desc:"Le poids que tu peux porter sans être gêné. Tu peux pousser, tirer ou soulever le double ; si tu dépasses ta charge en le faisant, ta Vitesse tombe à 1,50 m.",rows:[["Force × 7,5 kg"+(m!==1?" × "+mFmt(m)+" (taille)":""),chCarry(ch,D)+" kg"],["Pousser, tirer, soulever",mFmt(f*15*m)+" kg"]],noTotal:true,note:"L'appli ne connaît pas le poids de tout ton équipement : vérifie avec le MJ si tu portes beaucoup."}; },
+    harmo:()=>{ const att=(ch.attuned||[]).map(id=>(ch.bag||[]).find(b=>b.id===id)).filter(Boolean);
+      return {title:"Harmonisation",v:`${att.length}/3`,desc:"Certains objets magiques ne fonctionnent que si tu crées un lien avec eux pendant un repos court. Tu ne peux être lié qu'à 3 objets à la fois.",rows:att.length?att.map(b=>[b.name,"lié"]):[["Aucun objet harmonisé","—"]],noTotal:true,note:"Tu gères l'harmonisation depuis la fenêtre Équipement."}; },
     souffle:()=>({title:"DD du souffle",v:8+D.pb+D.mods.con,desc:"Ton Souffle remplace une de tes attaques : chaque créature dans la zone fait une sauvegarde de Dextérité contre ce DD.",rows:dcRows("con"),note:`Dégâts : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10, la moitié en cas de réussite.`})
   };
   return I[id]?I[id]():null;

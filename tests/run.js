@@ -1516,6 +1516,26 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(/par rangée/.test(bad), 'tuiles par rangée invalides refusées à l’import');
   });
 
+  await test('Tuiles T5 : Vision, Bottes d’arme, Agripper, Saut, Charge, Harmonisation ; raccourcis Sorts, Attaques, Actions', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p); // guerrier humain niveau 1
+    await p.evaluate(() => { const ch = cur(); ch.abilities.for = 16; ch.layout = Object.assign({}, ch.layout, { hidden: ['reperes'], custom: [{ id: 'c_t5aaaaaa', name: 'T5', r: 2, c: 4, tiles: [] }] }); S.layoutEdit = true; render(); S.T.pop = 'tiles:c_t5aaaaaa'; render(); });
+    eq(await p.evaluate(() => ['vision', 'bottes', 'agrip', 'saut', 'port', 'harmo', 'atkl', 'actions'].every(v => document.querySelector(`.tpop .tres [data-t="${v}"]`)) && !document.querySelector('.tpop .tres [data-t="sorts"]')), true, 'nouvelles tuiles dans la réserve ; Sorts absent pour un guerrier sans sorts');
+    for (const v of ['vision', 'bottes', 'agrip', 'saut', 'port', 'harmo']) await p.click(`.tpop [data-act="ctileAdd"][data-t="${v}"]`);
+    await p.keyboard.press('Escape'); await p.evaluate(() => { S.layoutEdit = false; render(); });
+    const val = id => p.evaluate(id => document.querySelector(`.tblk[data-blk="c_t5aaaaaa"] [data-v="info:${id}"] .num`)?.textContent, id);
+    eq([await val('vision'), await val('bottes'), await val('agrip'), await val('saut'), await val('port'), await val('harmo')], ['—', '3', '13', '4,8 m', '120 kg', '0/3'], 'humain : pas de vision dans le noir ; guerrier 1 : 3 bottes ; DD 8 + 2 + 3 ; saut 16 × 30 cm ; charge 16 × 7,5 kg ; aucun objet harmonisé');
+    await p.evaluate(() => { cur().species = 'srd:nain'; render(); });
+    eq(await val('vision'), '36 m', 'nain : vision dans le noir sur 36 m');
+    await p.click('.tblk[data-blk="c_t5aaaaaa"] [data-v="info:vision"]');
+    ok(await p.evaluate(() => /pénombre/.test(document.querySelector('.tpop').textContent) && /Nain/.test(document.querySelector('.tpop .tinfocalc').textContent)), 'fenêtre Vision : la règle en clair et sa source (Nain)');
+    await p.keyboard.press('Escape'); await p.click('.tblk[data-blk="c_t5aaaaaa"] [data-v="info:bottes"]');
+    ok(await p.evaluate(() => /repos long/.test(document.querySelector('.tpop').textContent)), 'fenêtre Bottes d’arme');
+    await p.keyboard.press('Escape');
+    for (const [k, re] of [['list:atk', /Attaques/], ['list:actions', /Esquive/]]) { await p.evaluate(k => { S.T.pop = k; render(); }, k); ok(await p.evaluate(re => new RegExp(re).test(document.querySelector('.tpop').textContent), re.source), 'raccourci ' + k + ' : liste'); await p.keyboard.press('Escape'); }
+    await p.evaluate(() => { const ch = cur(); ch.classId = 'srd:magicien'; render(); S.T.pop = 'list:sorts'; render(); });
+    ok(await p.evaluate(() => !document.querySelector('.tpop') || /Sorts/.test(document.querySelector('.tpop').textContent)), 'raccourci Sorts : liste (ou rien sans sort)');
+  });
+
   await test('Agencements : 3 + 1 ligne, la tuile prend la taille de la case, la réserve se grise selon la case, changer d’agencement', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_agaaaaaa', name: 'Combat', r: 2, c: 3, tiles: [] }], width: { c_agaaaaaa: 3 }, hidden: ['reperes', 'raccourcis'] }); S.layoutEdit = true; render(); S.T.pop = 'tiles:c_agaaaaaa'; render(); });
