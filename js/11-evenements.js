@@ -140,7 +140,7 @@ document.addEventListener("click",e=>{
     case "export": exportChar(t.dataset.id); break;
     case "tab": S.tab=t.dataset.v; render(); { const tb=document.querySelector(".sheettabs"); if(tb&&tb.getBoundingClientRect().top<0) window.scrollTo(0,0); } break;
     case "ask": S.confirm=t.dataset.v; render(); break;
-    case "rest": applyRest(t.dataset.v); S.confirm=null; touch(S.cur); render(); break;
+    case "rest": applyRest(t.dataset.v); S.confirm=null; touch(S.cur); render(); break; // applyRest refuse à 0 PV
     case "r20": rollD20(t.dataset.l, +t.dataset.m); break;
     case "dmg": rollDmg(t.dataset.l, t.dataset.e, t.dataset.crit==="1"); break;
     case "adv": S.adv=t.dataset.v; renderDice(); break;
@@ -208,10 +208,10 @@ document.addEventListener("click",e=>{
     case "theme": setTheme(curTheme()==="dark"?"light":"dark"); render(); break;
     case "restOpen": S.T=S.T||{}; S.T.restKind=t.dataset.v||""; S.T.pop="rest"; render(); break;
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
-    case "restLong": applyRest("long"); S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
-    case "restShort": applyRest("court"); S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
+    case "restLong": if(applyRest("long")===false){ render(); break; } S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
+    case "restShort": if(applyRest("court")===false){ render(); break; } S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
     case "tpop": S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
-    case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); break; } if(S.T.pop==="card") S.T.q=""; S.T.pop=null; render(); } break;
+    case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); break; } S.T.pop=null; render(); } break;
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
     case "tvroll": { if(!ensureTableRollUse()) break; const T=S.T; T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; if(logD20(false)) tableRollCommitted("d20"); render(); break; }
@@ -363,7 +363,7 @@ document.addEventListener("change",e=>{
   if(t.dataset.actChange==="hbFilter"){ S.hbFilter=t.value; render(); return; }
   if(t.dataset.actChange==="invsel"){ S.invSel=t.value; render(); return; }
   if(t.dataset.invfix!==undefined&&t.value){ const ch=cur(); const i=+t.dataset.invfix; if(ch.invocations&&ch.invocations[i]){ ch.invocations[i]=invId(ch.invocations[i])+"|"+t.value; touch(S.cur); render(); } return; }
-  if(t.id==="hp-set"){ const ch=cur(); const D=derive(ch); ch.hp=ch.hp||{cur:0,temp:0}; const before=+ch.hp.cur||0; ch.hp.cur=Math.max(0,Math.min(D.hpMax,+t.value||0)); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0}; S.hpEdit=false; touch(S.cur); render(); return; }
+  if(t.id==="hp-set"){ if(t.value.trim()===""||!Number.isFinite(+t.value)){ S.hpEdit=false; render(); return; } /* garde-fou : champ vidé = on annule, les PV ne passent pas à 0 */ const ch=cur(); const D=derive(ch); ch.hp=ch.hp||{cur:0,temp:0}; const before=+ch.hp.cur||0; ch.hp.cur=Math.max(0,Math.min(D.hpMax,+t.value||0)); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0}; S.hpEdit=false; touch(S.cur); render(); return; }
   if(t.dataset.actChange==="tcost"){ const ch=cur(); ch.costs=ch.costs||{}; ch.costs[t.dataset.k]=t.value; S.unlockCost=false; touch(S.cur); render(); return; }
   if(t.dataset.btitle){ const ch=cur(); if(ch){ const id=t.dataset.btitle; ch.layout=Object.assign({},ch.layout,{titles:Object.assign({},ch.layout?.titles,{[id]:t.value.trim().slice(0,40)})}); touch(S.cur); render(); } return; }
   if(t.dataset.cname){ const ch=cur(); if(ch){ const list=customCopy(ch), b=list.find(x=>x.id===t.dataset.cname); if(b){ b.name=t.value.trim().slice(0,40); saveCustom(ch,list); render(); } } return; }
@@ -386,6 +386,9 @@ document.addEventListener("change",e=>{
   if(t.dataset.cnt){ const ch=cur(); const c=(ch.counters||[]).find(x=>x.id===t.dataset.cnt); if(!c) return; c[t.dataset.bind]=Math.max(0,v); touch(S.cur); softRender(); return; }
   if(t.dataset.att){ const ch=cur(); const a=(ch.attacks||[]).find(x=>x.id===t.dataset.att); if(!a) return; setPath(a,t.dataset.bind,v); if(t.dataset.bind==="weapon"&&!a.name){ const w=srd("weapons",v)||hb(v); if(w) a.name=w.name; } touch(S.cur); render(); return; }
   const ch=cur(); if(!ch) return;
+  // Garde-fous : niveau de 1 à 20, pièces entières et positives
+  if(t.dataset.bind==="level"){ v=Math.max(1,Math.min(20,Math.round(+v||1))); t.value=v; }
+  if(/^gold\./.test(t.dataset.bind)){ v=Math.max(0,Math.min(1e9,Math.floor(+v||0))); t.value=v; }
   setPath(ch,t.dataset.bind,v);
   if(t.dataset.bind==="classId") ch.subclass="";
   touch(S.cur); if(t.tagName==="SELECT"||t.type==="checkbox") render(); else softRender();
@@ -435,7 +438,7 @@ document.addEventListener("submit",e=>{
     const value=f.elements.total.value; if(!validDiceTotal(value)) return;
     applyChargeRecovery(cur(),f.dataset.id,+value); render(); return;
   }
-  if(f.dataset.form==="hpamt"){ hpApply(parseInt(document.getElementById("hp-amt").value)||0); return; }
+  if(f.dataset.form==="hpamt"){ const raw=(document.getElementById("hp-amt").value||"").trim(); if(!/^\d+$/.test(raw)||+raw<=0){ const er=document.getElementById("hp-amt-err"); if(er) er.textContent="Saisis un nombre entier supérieur à 0."; return; } hpApply(+raw); return; }
   if(f.dataset.form==="cc"){ const c=S.T.cc; if(!c||c.res) return; const a1=parseInt(document.getElementById("cc-d1").value), b1=c.mode==="n"?0:parseInt(document.getElementById("cc-d2")?.value); if(!(a1>=1&&a1<=20)) return; if(c.mode!=="n"&&!(b1>=1&&b1<=20)) return; ccResolve(a1,b1,false); return; }
   if(f.dataset.form==="hdroll"){ const ch=cur(), D=derive(ch); const r=parseInt(document.getElementById("t-hd").value); if(!(r>=1&&r<=D.hd)) return; hdSpend(ch,D,r,true); setTimeout(()=>{ const i=document.getElementById("t-hd"); if(i) i.focus(); },0); return; }
   if(f.dataset.form==="death"){ const ch=cur(); const r=parseInt(document.getElementById("t-death").value); if(!(r>=1&&r<=20)) return; ch.death=ch.death||{s:0,f:0}; ch.hp=ch.hp||{cur:0,temp:0};

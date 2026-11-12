@@ -1606,6 +1606,32 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(['tilePick', 'chgUse', 'tempgain', 'tclose', 'thp', 'hpdmg', 'hpheal'].filter(a => cases.has(a)), [], 'anciens gestionnaires retirés (nettoyage du 12 nov. 2026)');
   });
 
+  await test('Garde-fous : PV vidés, Échap sur les fenêtres, montant refusé, repos à 0 PV, recherche gardée, niveau et or bornés', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p); await p.evaluate(() => { cur().level = 3; render(); });
+    // PV vidés : on annule, rien ne change
+    await p.evaluate(() => { cur().hp = { cur: 10, temp: 0 }; render(); }); await p.click('.health-card [data-act="hpedit"]'); await p.fill('#hp-set', ''); await p.press('#hp-set', 'Enter');
+    eq(await p.evaluate(() => cur().hp.cur), 10, 'champ des PV vidé puis validé : les PV restent à 10');
+    // montant refusé : message ; Échap ferme la fenêtre
+    await p.click('.health-card [data-act="hpask"][data-v="dmg"]');
+    for (const v of ['0', '-5', '1.5']) { await p.fill('#hp-amt', v); await p.press('#hp-amt', 'Enter'); eq(await p.evaluate(() => [cur().hp.cur, document.getElementById('hp-amt-err').textContent]), [10, 'Saisis un nombre entier supérieur à 0.'], 'montant « ' + v + ' » refusé avec un message'); }
+    await p.keyboard.press('Escape'); ok(await p.evaluate(() => !document.querySelector('#modal .picker') && !S.pending), 'Échap ferme la fenêtre Dégâts');
+    await p.click('.health-card [data-act="hpask"][data-v="dmg"]'); await p.fill('#hp-amt', '4'); await p.press('#hp-amt', 'Enter'); eq(await p.evaluate(() => cur().hp.cur), 6, 'montant valide toujours appliqué');
+    // repos à 0 PV
+    await p.evaluate(() => { cur().hp = { cur: 0, temp: 0 }; S.T.pop = 'rest'; S.T.restKind = 'long'; render(); });
+    eq(await p.evaluate(() => [document.querySelector('[data-act="restLong"]').disabled, /au moins 1 PV/.test(document.querySelector('.tpop').textContent)]), [true, true], 'repos long à 0 PV : bouton grisé, explication');
+    eq(await p.evaluate(() => [applyRest('long'), cur().hp.cur, cur().rollLog[0].label]), [false, 0, 'Repos impossible'], 'repos long refusé à 0 PV (règle : au moins 1 PV)');
+    await p.keyboard.press('Escape');
+    // recherche gardée après une fiche fermée
+    await p.evaluate(() => { cur().hp = { cur: 10, temp: 0 }; render(); }); await p.fill('#tq', 'second souffle'); await p.locator('#tres .trow').first().click(); eq(await p.evaluate(() => S.T.pop), 'card', 'fiche ouverte depuis la recherche');
+    await p.keyboard.press('Escape'); eq(await p.evaluate(() => [S.T.q, document.getElementById('tq').value, document.querySelectorAll('#tres .trow').length > 0]), ['second souffle', 'second souffle', true], 'Échap : la recherche reste');
+    await p.locator('#tres .trow').first().click(); await p.click('.tpop .tpophead [data-act="tpopclose"]'); eq(await p.evaluate(() => S.T.q), 'second souffle', '× : la recherche reste');
+    // niveau et or bornés
+    await p.evaluate(() => { S.tab = 'build'; S.unlockEdit = true; render(); });
+    for (const [v, w] of [['0', 1], ['25', 20], ['-3', 1], ['4', 4]]) { await p.fill('[data-bind="level"]', v); await p.press('[data-bind="level"]', 'Tab'); eq(await p.evaluate(() => cur().level), w, 'niveau « ' + v + ' » → ' + w); }
+    await p.evaluate(() => { S.tab = 'inv'; render(); });
+    for (const [v, w] of [['-50', 0], ['12.7', 12], ['30', 30]]) { await p.fill('#f-gpo', v); await p.press('#f-gpo', 'Tab'); eq(await p.evaluate(() => cur().gold.po), w, 'or « ' + v + ' » → ' + w); }
+  });
+
   await test('Grande case 2×2 : la tuile occupe vraiment deux rangées', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_grand000', name: 'Grand', r: 2, c: 2, ag: 'g', tiles: [{ id: 'ca', sz: '2', r: 0, c: 0 }] }] }); render(); });

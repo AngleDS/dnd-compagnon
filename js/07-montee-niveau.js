@@ -173,8 +173,9 @@ function renderModal(){
   if(S.pending.type==="hp"){ const P=S.pending, dmg=P.mode==="dmg", hp=ch.hp||{cur:D.hpMax,temp:0};
     m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box hpbox" role="dialog" aria-label="${dmg?"Dégâts":"Soins"}" style="grid-template-rows:auto auto auto;max-width:420px">
       <div class="row" style="justify-content:space-between"><h2 style="color:${dmg?"#9b2f2f":"#3f6b4a"}">${dmg?"Dégâts subis":"Soins reçus"}</h2><button class="btn small ghost" data-act="closeModal">Annuler</button></div>
-      <form class="stack" data-form="hpamt"><div class="row" style="gap:10px;align-items:flex-end"><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="0" style="width:110px;font-size:var(--fs-xl)" autofocus></label>
+      <form class="stack" data-form="hpamt" novalidate><div class="row" style="gap:10px;align-items:flex-end"><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="1" step="1" style="width:110px;font-size:var(--fs-xl)" autofocus></label>
         <button class="btn primary ${dmg?"hpdmgb":"hphealb"}" type="submit" style="height:46px">${dmg?"Appliquer les dégâts":"Appliquer les soins"}</button></div>
+        <div id="hp-amt-err" class="warntxt" role="alert" style="font-size:var(--fs-sm)"></div>
         ${dmg?`<label class="row" style="gap:6px;font-size:var(--fs-sm)"><input type="checkbox" id="hp-crit"> Coup critique (compte deux échecs si tu es à 0 PV)</label>`:""}
         <div class="muted" style="font-size:var(--fs-sm)">PV ${+hp.cur||0} / ${D.hpMax}${+hp.temp?` · ${+hp.temp} PV temporaires${dmg?" (perdus en premier)":""}`:""}${dmg&&ch.conc?` · concentration sur ${esc(ch.conc)} : un jet sera demandé`:""}</div></form>
       <div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,3,4,5,6,8,10,12].map(n=>`<button class="btn small" data-act="hpquick" data-v="${n}">${dmg?"−":"+"}${n}</button>`).join("")}</div></div></div>`;

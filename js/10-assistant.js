@@ -162,6 +162,7 @@ function newChar(){
 }
 function applyRest(kind){
   const ch=cur(), D=derive(ch);
+  if(ch.hp&&(+ch.hp.cur||0)<=0){ addLog({label:"Repos impossible",total:"0 PV",bd:"Il faut au moins 1 PV pour commencer un repos.",kind:"info"}); return false; }
   ch.turn={}; if(S.T){ S.T.castDone=null; S.T.castTurn=null; }
   ch.pactUsed=0;
   ch.resUsed=ch.resUsed||{};
