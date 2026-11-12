@@ -1503,6 +1503,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const g = document.querySelector('.tblk[data-blk="ressources"] .rresgrid'); return [!!g && getComputedStyle(g).gridTemplateColumns.split(' ').length, document.querySelectorAll('.tblk[data-blk="ressources"] .rres').length]; }), [1, 3], '1 par rangée : tuiles complètes (avec leurs boutons) l’une sous l’autre');
     await p.keyboard.press('Escape'); await p.click('.tblk[data-blk="tour"] .tedpen'); await p.click('.tpop [data-act="blkFmt"][data-w="4"][data-n="3"]');
     eq(await p.evaluate(() => [cur().layout.cols.tour, getComputedStyle(document.querySelector('.tblk[data-blk="tour"] .tturnb')).gridTemplateColumns.split(' ').length, document.querySelectorAll('.tpop .bfmt .bpat[data-act="blkFmt"][data-n="4"]').length]), [3, 3, 0], 'Ce tour : 3 boutons par rangée ; 4 par rangée n’est pas proposé (boutons trop étroits)');
+    eq(await p.evaluate(() => [[...document.querySelectorAll('.tpop .bfmt .bpat[data-act="blkFmt"]')].map(b => b.querySelectorAll('.bpb i').length).every(n => n === 5), document.querySelector('.tpop .bfmtsum').textContent]), [true, '4 colonnes · 3 tuiles par rangée · 2 rangées'], 'miniatures : les 5 boutons de Ce tour répartis selon le format ; phrase du format choisi');
+    await p.click('.tpop [data-act="blkFmt"][data-w="2"][data-n="1"]');
+    const pv = await p.evaluate(() => { const th = Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--th'))), b = [...document.querySelectorAll('.tpop .bprev .tturnbtn')].map(e => Math.round(e.getBoundingClientRect().height)), sec = document.querySelector('.tpop .bprev .tblk'), body = document.querySelector('.tpop .tpopbody');
+      return [b.length, b.every(h => h === th), !!document.querySelector('.tpop .bprev .tturnfoot [data-act="tnewturn"]'), sec.getBoundingClientRect().width < body.clientWidth * 0.6, getComputedStyle(sec).paddingLeft]; });
+    eq(pv, [5, true, true, true, '7px'], 'aperçu en 2 colonnes : 5 tuiles de même hauteur, « Nouveau tour » en bas, bloc à sa largeur réelle avec la marge de la page');
+    ok(await p.evaluate(() => { const sec = document.querySelector('.tpop .bprev .tblk').getBoundingClientRect(), bt = document.querySelector('.tpop .bprev .tturnfoot .btn').getBoundingClientRect(); return bt.right <= sec.right - 7 && bt.left >= sec.left; }), 'bloc étroit : « Nouveau tour » passe sous la phrase, sans déborder du bloc');
+    eq(await p.evaluate(() => [!document.querySelector('.tblk[data-blk="tour"] .tturnbtn[data-act="tnewturn"]'), !!document.querySelector('.tblk[data-blk="tour"] .tturnfoot [data-act="tnewturn"]')]), [true, true], '« Nouveau tour » : un bouton sur la ligne du bas, plus une tuile');
     await p.keyboard.press('Escape');
     eq(await p.evaluate(() => [agList(2, 2).map(a => a[0]), agList(1, 1).length, agList(4, 4).length === new Set(agList(4, 4).map(([a]) => agSlots(4, 4, a).map(x => x.r + ',' + x.c + ',' + tileSpan(x.sz, 4, 4)).join(';'))).size]), [['s', 'lb', 'lt', 'g', 'll'], 1, true], 'agencements : seulement ceux qui changent quelque chose');
     const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { cols: { tour: 9 } } }), hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
@@ -1856,7 +1863,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Tour : Mouvement et Autre manuels et annulables, Nouveau tour réinitialise tout',async p=>{
     await diceTable(p);
-    ok((await p.innerText('.tturnbtn[data-v="eco:action"]')).includes('Actions ('),'nombre d’options entre parenthèses');
+    ok(/^Actions\s+\d+ options?$/.test((await p.innerText('.tturnbtn[data-v="eco:action"]')).trim()),'nombre d’options sous le libellé');
     await p.click('.tturnbtn[data-v="move"]');
     ok((await p.innerText('.tturnbtn[data-v="move"]')).includes('✓ Mouvement terminé'),'jalon Mouvement');
     await p.click('.tturnbtn[data-v="move"]');

@@ -352,11 +352,11 @@ function viewTable(ch,D,banner=""){
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
   const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
+  // Ce tour : des tuiles (hauteur fixe, libellé sur deux lignes au plus, nombre d'options dessous) ; « Autre » occupe le reste de sa rangée
+  const tn=blkCols(ch,"tour"), tspan=Math.max(1,tn-((TT.length-1)%tn));
   const turnBtns=TT.map(([k,l])=>{ const used=!!turn[k], n=items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length;
-    const label=used?"✓ "+TURN_DONE[k]:({action:"Actions",bonus:"Actions bonus",reaction:"Réactions"}[k]||l)+(n&&TURN_COSTS.includes(k)?" ("+n+")":"");
-    return `<button class="tturnbtn" aria-pressed="${used}" data-act="${k==="move"?"tturn":"tpop"}" data-v="${k==="move"?"move":"eco:"+k}" title="${k==="move"?(used?"Annuler":"Marquer le mouvement terminé"):"Options disponibles"}"><span>${label}</span>${used&&k==="move"?`<span class="tused">Annuler</span>`:""}</button>`; }).join("")
-    // « Nouveau tour » : une case à côté d'« Autre » (dans la bande du titre, il recouvrait les boutons au doigt : cible de 44 px)
-    +`<button class="tturnbtn tnew" data-act="tnewturn" title="Tout remettre à zéro pour le tour suivant"><span>↻ Nouveau tour</span></button>`;
+    const label=used?"✓ "+TURN_DONE[k]:({action:"Actions",bonus:"Actions bonus",reaction:"Réactions"}[k]||l), cnt=!used&&n&&TURN_COSTS.includes(k)?`<small class="tturnn">${n} option${n>1?"s":""}</small>`:"";
+    return `<button class="tturnbtn" aria-pressed="${used}" data-act="${k==="move"?"tturn":"tpop"}" data-v="${k==="move"?"move":"eco:"+k}"${k==="autre"&&tspan>1?` style="grid-column:span ${tspan}"`:""} title="${k==="move"?(used?"Annuler":"Marquer le mouvement terminé"):"Options disponibles"}"><span class="tturnl">${label}</span>${cnt}${used&&k==="move"?`<span class="tused">Annuler</span>`:""}</button>`; }).join("");
   const ecoBtns=Object.entries(ECO).map(([k,l])=>`<button class="teco" aria-pressed="${T.eco===k}" data-act="teco" data-v="${k}">${l}<span class="muted num">${items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length}</span></button>`).join("");
   const recent=T.recent.map(k=>items.find(i=>i.key===k)).filter(Boolean).map(i=>`<button class="chip" data-act="tsel" data-k="${esc(i.key)}">${esc(i.name)}</button>`).join("");
   const blocks={
@@ -369,7 +369,7 @@ function viewTable(ch,D,banner=""){
     recherche:blkHidden(ch,"recherche")?"":`<div class="tgrid tb-solo"><div class="tmain">${tbHead("recherche","Recherche","blk:recherche")}${searchBar()}</div></div>`,
     tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
       <div class="tturnb"${colsStyle(ch,"tour")}>${turnBtns}</div>
-      <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div></div></div>`,
+      <div class="tturnfoot"><span class="muted">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</span><button class="btn small" data-act="tnewturn" title="Tout remettre à zéro pour le tour suivant">↻ Nouveau tour</button></div></div></div>`,
     raccourcis:`<div class="tgrid tb-solo"><div class="tside table-reference">
       ${tbHead("raccourcis","Raccourcis")}
       <div class="tpanels"${colsStyle(ch,"raccourcis")}>${raccourcisTiles(ch,D)}
@@ -657,6 +657,9 @@ function tilesOnPage(ch,D,except){ const on=new Set(), vis=id=>id!==except&&!blk
   if(vis("recherche")) on.add("search");
   for(const b of customBlocks(ch)) if(b.id!==except) cGrid(b).tiles.forEach(t=>on.add(t.id));
   return on; }
+/* Nombre d'éléments d'un bloc de base (miniatures des formats) */
+function blkCount(ch,D,id){ if(id==="tour") return 5; if(id==="ressources") return Math.max(1,D.res.length); if(id==="notes") return 2; if(id==="raccourcis") return Math.max(1,blockTiles(ch,"raccourcis").length);
+  if(id==="reperes"){ const T=repTileMap(ch,D); return Math.max(1,blockTiles(ch,"reperes").filter(x=>T[x]&&T[x]()).length); } return 1; }
 const rangLab=r=>r+" rangée"+(r>1?"s":"");
 /* Tuiles par rangée des blocs de base (Ressources, Ce tour, Raccourcis, Notes) : ch.layout.cols[id] ; sinon valeur par défaut selon la largeur.
    Un choix n'est proposé que si chaque case reste assez large pour ses tuiles. */
@@ -666,7 +669,7 @@ const colsOk=(id,w,n)=>Number.isInteger(n)&&n>=1&&n<=w&&cellW(n,1,w)>=TILE_W[COL
 function blkCols(ch,id,w=blkWidth(ch,id)){ if(!COLS_MIN[id]) return 0; const n=+ch.layout?.cols?.[id]; if(colsOk(id,w,n)) return n; const d=COLS_DEF[id][w]||1; return colsOk(id,w,d)?d:1; }
 const colsStyle=(ch,id)=>{ const n=blkCols(ch,id); return n?` style="grid-template-columns:repeat(${n},minmax(0,1fr))"`:""; };
 // Miniature d'un format : la page sur 4 colonnes, le bloc occupe w colonnes, avec sa grille de tuiles
-const patThumb=(w,r,c,on,attrs,label)=>`<button class="bpat" aria-pressed="${!!on}" ${attrs} aria-label="${esc(label)}" title="${esc(label)}"><span class="bpg"><span class="bpb" style="grid-column:span ${w};grid-template-columns:repeat(${c},1fr)">${"<i></i>".repeat(r*c)}</span>${"<span class=\"bpe\"></span>".repeat(4-w)}</span></button>`;
+const patThumb=(w,r,c,on,attrs,label,count)=>`<button class="bpat" aria-pressed="${!!on}" ${attrs} aria-label="${esc(label)}" title="${esc(label)}"><span class="bpg"><span class="bpb" style="grid-column:span ${w};grid-template-columns:repeat(${c},1fr)">${"<i></i>".repeat(Number.isInteger(count)?count:r*c)}</span>${"<span class=\"bpe\"></span>".repeat(4-w)}</span></button>`;
 /* Agencements d'un bloc créé (décision d'Angle) : découpes prêtes des cases (lignes entières, grande case 2×2, demi-lignes).
    b.ag = identifiant ; agSlots donne les cases {r,c,sz} qui couvrent tout le bloc ; une tuile posée dans une case prend sa taille. */
 function agList(R,C){ const L=[["s","Cases simples"]];
@@ -698,8 +701,12 @@ function blkTitle(ch,id,def){ const t=ch?.layout?.titles?.[id]; return typeof t=
 function builtinPop(ch,D,id,wrap){ const def=(TBLK.find(b=>b[0]===id)||[])[1]||id, w=blkWidth(ch,id), ws=blkWidths(id);
   const title=BLK_TITLED.includes(id)?`<label class="field"><span>Titre (vide = pas de titre)</span><input type="text" maxlength="40" data-btitle="${id}" value="${esc(blkTitle(ch,id,def))}"></label>`:"";
   // Format : largeur × tuiles par rangée (Ressources, Ce tour, Raccourcis, Notes) ; largeur seule pour Repères (contenu automatique) et Recherche
-  const nCur=blkCols(ch,id,w), pats=COLS_MIN[id]?`<div class="label" style="margin:14px 0 6px">Format <span class="muted" style="text-transform:none;letter-spacing:0">· largeur et tuiles par rangée</span></div>${fmtMatrix([1,2,3,4],n=>n+" par rangée",(n,x)=>ws.includes(x)&&colsOk(id,x,n)?patThumb(x,2,n,x===w&&n===nCur,`data-act="blkFmt" data-v="${id}" data-w="${x}" data-n="${n}"`,`${x} colonne${x>1?"s":""} · ${n} tuile${n>1?"s":""} par rangée`):"")}`
-    :ws.length>1?`<div class="label" style="margin:14px 0 6px">Format <span class="muted" style="text-transform:none;letter-spacing:0">· largeur</span></div>${fmtMatrix([0],()=>"",(r,x)=>ws.includes(x)?patThumb(x,2,id==="reperes"?x:1,x===w,`data-act="blkWidth" data-v="${id}" data-w="${x}"`,`${x} colonne${x>1?"s":""}`):"")}`:"";
+  // Miniatures fidèles (demande d'Angle) : le vrai nombre d'éléments du bloc, répartis selon le format ; phrase du format choisi sous le tableau
+  const nCur=blkCols(ch,id,w), cnt=blkCount(ch,D,id), tl=n=>n+" tuile"+(n>1?"s":""), rows=n=>Math.max(1,Math.ceil(cnt/n));
+  const pats=COLS_MIN[id]?`<div class="label" style="margin:14px 0 6px">Format <span class="muted" style="text-transform:none;letter-spacing:0">· largeur et tuiles par rangée</span></div>${fmtMatrix([1,2,3,4],n=>tl(n)+" par rangée",(n,x)=>ws.includes(x)&&colsOk(id,x,n)?patThumb(x,rows(n),n,x===w&&n===nCur,`data-act="blkFmt" data-v="${id}" data-w="${x}" data-n="${n}"`,`${x} colonne${x>1?"s":""} · ${tl(n)} par rangée`,cnt):"")}
+      <div class="bfmtsum">${w} colonne${w>1?"s":""} · ${tl(nCur)} par rangée · ${rangLab(rows(nCur))}</div>`
+    :ws.length>1?`<div class="label" style="margin:14px 0 6px">Format <span class="muted" style="text-transform:none;letter-spacing:0">· largeur</span></div>${fmtMatrix([0],()=>"",(r,x)=>ws.includes(x)?patThumb(x,id==="reperes"?Math.max(1,Math.ceil(cnt/x)):1,id==="reperes"?x:1,x===w,`data-act="blkWidth" data-v="${id}" data-w="${x}"`,`${x} colonne${x>1?"s":""}`,id==="reperes"?cnt:1):"")}
+      <div class="bfmtsum">${w} colonne${w>1?"s":""}${id==="reperes"?" · "+rangLab(Math.max(1,Math.ceil(cnt/w))):""}</div>`:"";
   const note={reperes:"Son contenu s’adapte tout seul à ton personnage (classe, sous-classe, espèce).",ressources:"Son contenu montre tout seul les ressources de ton personnage (classe, sous-classe, dons).",tour:"Ce bloc ne se personnalise pas, en dehors de son titre et de sa largeur."}[id];
   let body;
   if(id==="raccourcis"){ const T=S.T, blk=id, cat=customCat(), arr=blockTiles(ch,blk), free=arr.indexOf(""), onPage=tilesOnPage(ch,D,blk), unused=Object.keys(cat).filter(x=>!arr.includes(x)&&!onPage.has(x)&&tileAvailable(ch,blk,x)).sort((a,c)=>!tileOkInBlk(a,blk)-!tileOkInBlk(c,blk)), sel=Number.isInteger(T.tileSlot)?T.tileSlot:-1;
@@ -713,7 +720,8 @@ function builtinPop(ch,D,id,wrap){ const def=(TBLK.find(b=>b[0]===id)||[])[1]||i
       <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-tblk="${blk}" style="grid-template-columns:repeat(${blkCols(ch,blk,w)},minmax(0,1fr))">${cells}</div></div>${selBar}
       <div class="row" style="justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">Touche une case puis une tuile de la réserve, ou glisse-la.</span><button class="btn small ghost" data-act="tileReset" data-blk="${blk}" title="Remet les tuiles conseillées : Tests, Sauvegardes, États, Inventaire, Équipement, Inspiration">Automatique (recommandé)</button></div>
       <div class="label" style="margin:10px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>`; }
-  else body=`<div class="label" style="margin:14px 0 6px">Aperçu <span class="muted" style="text-transform:none;letter-spacing:0">· taille réelle</span></div><div class="bprev bprevc" style="${prevW(w)}" inert>${(S.Tblocks||{})[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div>${note?`<div class="muted" style="font-size:var(--fs-sm);margin-top:8px">${note}</div>`:""}`;
+  // Aperçu fidèle : le bloc dessiné avec les styles de la page (marge de 8 px, tuiles, largeur réelle sur 4 colonnes)
+  else body=`<div class="label" style="margin:14px 0 6px">Aperçu <span class="muted" style="text-transform:none;letter-spacing:0">· taille réelle</span></div><div class="bprev bprevc" inert><div class="tblocks tfree tprev"><section class="tblk w${w}" style="width:calc((100% - 12px) * ${w} / 4 + ${4*(w-1)}px)"><div class="tband"><span class="tbandt">${esc(blkTitle(ch,id,def))}</span></div><div class="tblkc">${(S.Tblocks||{})[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section></div></div>${note?`<div class="muted" style="font-size:var(--fs-sm);margin-top:8px">${note}</div>`:""}`;
   return wrap("Bloc : "+def,`${title}${pats}${body}<div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkResetOne" data-v="${id}">Remettre comme à l’origine</button></div>`); }
 const widthRow=(ch,id,b)=>{ const ws=blkWidths(id,b); if(ws.length<2) return ""; const cur=blkWidth(ch,id,b);
   return `<div class="label" style="margin:2px 0 6px">Largeur sur la page</div><div class="row bwidth" style="gap:6px;flex-wrap:wrap;margin-bottom:12px">${ws.map(w=>`<button class="chip" data-act="blkWidth" data-v="${id}" data-w="${w}" aria-pressed="${w===cur}">${w} colonne${w>1?"s":""}</button>`).join("")}</div>`; };
@@ -788,7 +796,7 @@ function customPop(ch,D,id,wrap){
   const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>tileFits(t.id,sizeW(z,C,b.w||4))?`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`:`<span class="chip toff" aria-disabled="true" title="Trop étroit pour cette tuile">${l}</span>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
   const w=b.w||4, pats=fmtMatrix([1,2,3,4],rangLab,(r,ww)=>patThumb(ww,r,ww,r===R&&ww===C&&ww===w,`data-act="blkPat" data-v="${id}" data-r="${r}" data-c="${ww}"`,`${ww} colonne${ww>1?"s":""} · ${rangLab(r)}`));
   return wrap("Bloc : "+(b.name||"sans titre"),`<label class="field"><span>Titre (vide = pas de titre)</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
-    <div class="label" style="margin:14px 0 6px">Format</div>${pats}
+    <div class="label" style="margin:14px 0 6px">Format</div>${pats}<div class="bfmtsum">${C} colonne${C>1?"s":""} · ${rangLab(R)} · ${R*C} case${R*C>1?"s":""}</div>
     ${agList(R,C).length>1?`<div class="label" style="margin:14px 0 6px">Agencement</div><div class="bpats">${agList(R,C).map(([a,l])=>agThumb(R,C,a,(agList(R,C).some(z=>z[0]===b.ag)?b.ag:"s")===a,`data-act="blkAg" data-v="${id}" data-ag="${a}"`,l)).join("")}</div>`:""}
     <div class="label" style="margin:14px 0 6px">Tuiles <span class="muted" style="text-transform:none;letter-spacing:0">· aperçu à la taille réelle</span></div>
     <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},var(--th))">${cells}</div></div>${selBar}
@@ -850,7 +858,7 @@ function tableGeom(ch,list,ord){ // list : [{id,w,h}] ; renvoie {id:{c,y}}
   return res; }
 const TH_PX=()=>{ const v=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--th")); return v||80; };
 // Après chaque rendu : largeur des colonnes, hauteur réelle des blocs, puis position de chacun
-function tableLayoutDom(){ const box=document.querySelector(".tblocks.tfree"), ch=cur(); if(!box||!ch) return;
+function tableLayoutDom(){ const box=document.querySelector(".tblocks.tfree:not(.tprev)"), ch=cur(); if(!box||!ch) return;
   // Colonnes de page séparées de 4 px ; chaque bloc a 8 px de marge intérieure (maquette validée par Angle)
   const W=box.clientWidth, CW=(W-3*TL.FG)/4, secs=[...box.querySelectorAll(":scope > .tblk")];
   for(const el of secs){ const w=+el.dataset.w||4; el.style.width=(w*CW+(w-1)*TL.FG)+"px"; }
