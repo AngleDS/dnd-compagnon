@@ -4,6 +4,8 @@ function keepAnchor(t){ if(!S.T) return; const sel='[data-act="'+t.dataset.act+'
   S.T.anchor={sel,top:t.getBoundingClientRect().top}; }
 /* Liste des résultats de recherche : se replie quand on touche ailleurs, se rouvre en revenant dans la barre. */
 document.addEventListener("pointerdown",e=>{ if(!S.T) return; const inside=e.target.closest&&e.target.closest(".tsearchwrap");
+  // Un jet direct lancé depuis un résultat (mini-menu, pavé, fenêtre de résultat) ne replie pas la liste
+  if(e.target.closest&&(e.target.closest(".qmenu,.dice-pad-back")||(S.T.pop==="qroll"&&e.target.closest(".tpopback")))) return;
   const d=document.getElementById("tres"); if(!d) return; if(inside){ S.T.qOpen=true; d.classList.remove("closed"); } else if(!e.target.closest(".tpop")||!d.closest(".tpop")){ S.T.qOpen=false; d.classList.add("closed"); } },true);
 /* Menu déroulant : se ferme au choix d'un élément, au clic ailleurs et avec Échap. */
 document.addEventListener("click",e=>{ if(!S.menuOpen) return; const inMenu=e.target.closest&&e.target.closest("#hmenu");

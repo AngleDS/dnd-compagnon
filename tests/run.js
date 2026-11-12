@@ -1532,6 +1532,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.fill('#tq', nm);
     await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
     eq(await p.evaluate(() => [S.T.pop, /toucher/.test(cur().rollLog[0].label)]), ['qroll', true], 'Recherche : même menu, même petite fenêtre');
+    await p.click('.tpop .tpophead [data-act="tpopclose"]');
+    eq(await p.evaluate(() => [S.T.pop, document.getElementById('tres').classList.contains('closed'), document.querySelectorAll('#tres .trow').length > 0]), [null, false, true], 'Recherche : après le jet, la ligne trouvée reste affichée');
+    await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-r="dmg"]').first().click(); await p.click('.qmenu [data-m="n"]'); await p.click('.tpopback', { position: { x: 5, y: 5 } });
+    eq(await p.evaluate(() => [S.T.pop, document.getElementById('tres').classList.contains('closed'), document.querySelectorAll('#tres .trow').length > 0]), [null, false, true], 'Recherche : fermer en touchant à côté garde aussi la ligne');
   });
 
   await test('Bandeau, repos et tuiles : libellé Repos, dés de vie toujours visibles, plus de tuile Épuisement, portrait figé à la table', async p => {
