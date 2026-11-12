@@ -45,6 +45,7 @@ function render(){
   else if(S.view==="wizard"&&S.W) app().innerHTML=viewWizard();
   else { S.view="list"; app().innerHTML=viewList(); }
   { const nb=document.querySelector(".tpopbody"); if(nb&&pKey&&S.T&&S.T.pop===pKey&&pScroll) nb.scrollTop=pScroll; }
+  if(S.T&&S.T.anchor){ const A=S.T.anchor, nb=document.querySelector(".tpopbody"), el=nb&&nb.querySelector(A.sel); S.T.anchor=null; if(el) nb.scrollTop+=el.getBoundingClientRect().top-A.top; }
   if(S.view==="sheet"&&S.tab==="table") tableLayoutDom();
   renderModal();
   syncDiceInputMode();

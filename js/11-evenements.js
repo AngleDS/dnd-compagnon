@@ -1,4 +1,7 @@
 /* ---------- events ---------- */
+/* Fenêtre qui ne saute pas : le bouton touché (format, agencement, largeur) reste sous le doigt après le nouveau rendu (voir render). */
+function keepAnchor(t){ if(!S.T) return; const sel='[data-act="'+t.dataset.act+'"]'+["v","r","c","w","n","ag"].filter(k=>t.dataset[k]!==undefined).map(k=>`[data-${k}="${t.dataset[k]}"]`).join("");
+  S.T.anchor={sel,top:t.getBoundingClientRect().top}; }
 /* Liste des résultats de recherche : se replie quand on touche ailleurs, se rouvre en revenant dans la barre. */
 document.addEventListener("pointerdown",e=>{ if(!S.T) return; const inside=e.target.closest&&e.target.closest(".tsearchwrap");
   const d=document.getElementById("tres"); if(!d) return; if(inside){ S.T.qOpen=true; d.classList.remove("closed"); } else if(!e.target.closest(".tpop")||!d.closest(".tpop")){ S.T.qOpen=false; d.classList.add("closed"); } },true);
@@ -22,20 +25,31 @@ document.addEventListener("click",e=>{
     case "blkDelNow": if(ch){ const id=t.dataset.v; if(BLK_KEEP.includes(id)) break; const label=blkLabel(ch,id), snap=JSON.parse(JSON.stringify(ch.layout||{}));
       if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else setBlkHidden(ch,id,true);
       const u=S.undo={doc:S.cur,layout:snap,label,at:Date.now()}; clearTimeout(S.undoTimer); S.undoTimer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; render(); } },6000); render(); } break;
-    case "blkWidth": if(ch){ const id=t.dataset.v, w=+t.dataset.w, b=customBlocks(ch).find(x=>x.id===id); if(!blkWidths(id,b).includes(w)) break;
+    case "blkWidth": if(ch){ const id=t.dataset.v, w=+t.dataset.w, b=customBlocks(ch).find(x=>x.id===id); if(!blkWidths(id,b).includes(w)) break; keepAnchor(t);
       ch.layout=Object.assign({},ch.layout,{width:Object.assign({},ch.layout?.width,{[id]:w})});
       // Bloc créé : les tuiles qui ne tiennent plus dans les cases plus étroites retournent dans la réserve
       if(b){ const list=customCopy(ch), bb=list.find(x=>x.id===id); bb.w=w; const keep=cGrid(bb).tiles.filter(x=>tileFits(x.id,sizeW(x.sz,bb.c,w))), n=cGrid(bb).tiles.length-keep.length;
         bb.tiles=keep.map(x=>({id:x.id,sz:x.sz,r:x.r,c:x.c})); list.forEach(x=>delete x.w); saveCustom(ch,list); if(n) setBanner(n+" tuile"+(n>1?"s retournent":" retourne")+" dans la réserve : trop large"+(n>1?"s":"")+" pour cette largeur."); }
       touch(S.cur); render(); } break;
-    // Format d'un bloc créé (lot 3) : rangées × largeur ; les tuiles qui ne tiennent plus retournent dans la réserve
+    // Format d'un bloc créé : rangées × largeur. Une tuile garde sa place si elle y tient, sinon elle va dans la première case libre (à sa taille, puis en 1×1) ;
+    // celles qui ne tiennent plus attendent (b.park) et reviennent d'elles-mêmes quand le bloc s'agrandit.
     case "blkPat": if(ch){ const id=t.dataset.v, list=customCopy(ch), b=list.find(x=>x.id===id), r=+t.dataset.r, c=+t.dataset.c;
-      if(b&&CUSTOM_PATS.some(([a,w])=>a===r&&w===c)){ b.w=c; delete b.ag; const [keep,out]=cReformat(b,r,c); b.r=r; b.c=c; const fit=keep.filter(x=>tileFits(x.id,sizeW(x.sz||"1",c,c))), drop=out.concat(keep.filter(x=>!fit.includes(x)).map(x=>x.id));
-        b.tiles=fit.map(x=>({id:x.id,sz:x.sz||"1",r:x.r,c:x.c})); list.forEach(x=>delete x.w); saveCustom(ch,list); ch.layout.width=Object.assign({},ch.layout.width,{[id]:c}); touch(S.cur);
-        if(drop.length){ const cat=customCat(); setBanner("Retour dans la réserve : "+drop.map(x=>cat[x]||x).join(", ")+"."); } }
+      if(b&&CUSTOM_PATS.some(([a,w])=>a===r&&w===c)){ keepAnchor(t); const prev=cGrid(b).tiles, park=(Array.isArray(b.park)?b.park:[]).filter(x=>typeof x==="string"&&!prev.some(y=>y.id===x));
+        b.w=c; delete b.ag; b.r=r; b.c=c; const placed=[], out=[], tmp={r,c,tiles:placed};
+        for(const x of prev.concat(park.map(id=>({id,sz:"1"})))){ let ok=false;
+          for(const sz of [...new Set([x.sz||"1","1"])]){ if(!sizeOk(sz,r,c)||!tileSizeOk(x.id,sz,r,c)||!tileFits(x.id,sizeW(sz,c,c))) continue; const [h,w]=tileSpan(sz,r,c), cc=sz==="l"||sz==="b"?0:x.c;
+            const here=Number.isInteger(x.r)&&x.r+h<=r&&cc+w<=c&&!placed.some(y=>tilesHit(y,{sz,r:x.r,c:cc},r,c))?{r:x.r,c:cc}:cFreeSpot(tmp,sz);
+            if(here){ placed.push({id:x.id,sz,r:here.r,c:here.c}); ok=true; break; } }
+          if(!ok) out.push(x.id); }
+        b.tiles=placed.map(x=>({id:x.id,sz:x.sz,r:x.r,c:x.c})); if(out.length) b.park=out; else delete b.park;
+        list.forEach(x=>delete x.w); saveCustom(ch,list); ch.layout.width=Object.assign({},ch.layout.width,{[id]:c}); touch(S.cur);
+        const fresh=out.filter(x=>!park.includes(x)); if(fresh.length){ const cat=customCat(); setBanner("Plus de place pour : "+fresh.map(x=>cat[x]||x).join(", ")+". "+(fresh.length>1?"Elles reviendront":"Elle reviendra")+" si le bloc s’agrandit."); } }
       S.T.ctile=null; S.T.tileSlot=null; render(); } break;
+    // Format d'un bloc de base : largeur et tuiles par rangée
+    case "blkFmt": if(ch){ const id=t.dataset.v, w=+t.dataset.w, n=+t.dataset.n; if(!blkWidths(id).includes(w)||!COLS_MIN[id]||!colsOk(id,w,n)) break; keepAnchor(t);
+      ch.layout=Object.assign({},ch.layout,{width:Object.assign({},ch.layout?.width,{[id]:w}),cols:Object.assign({},ch.layout?.cols,{[id]:n})}); touch(S.cur); render(); } break;
     // Agencement d'un bloc créé : les tuiles posées au coin d'une nouvelle case en prennent la taille si elles y tiennent ; les autres retournent dans la réserve
-    case "blkAg": if(ch){ const id=t.dataset.v, list=customCopy(ch), b=list.find(x=>x.id===id), ag=t.dataset.ag; if(!b||!agList(b.r,b.c).some(a=>a[0]===ag)) break;
+    case "blkAg": if(ch){ const id=t.dataset.v, list=customCopy(ch), b=list.find(x=>x.id===id), ag=t.dataset.ag; if(!b||!agList(b.r,b.c).some(a=>a[0]===ag)) break; keepAnchor(t);
       b.w=blkWidth(ch,id,b); b.ag=ag; const sl=agSlots(b.r,b.c,ag), keep=[], out=[];
       for(const x of cGrid(b).tiles){ const s0=sl.find(y=>y.r===x.r&&y.c===x.c); if(s0&&slotOk(b,x.id,s0)) keep.push({id:x.id,sz:s0.sz,r:x.r,c:x.c}); else out.push(x.id); }
       b.tiles=keep; list.forEach(x=>delete x.w); saveCustom(ch,list); if(out.length){ const cat=customCat(); setBanner("Retour dans la réserve : "+out.map(x=>cat[x]||x).join(", ")+"."); }
@@ -44,7 +58,7 @@ document.addEventListener("click",e=>{
       list.forEach(x=>delete x.w); list.push(Object.assign(JSON.parse(JSON.stringify(b)),{id,name:(b.name||"Bloc")+" (copie)"})); delete list[list.length-1].w; saveCustom(ch,list);
       const o=tableOrder(ch).filter(x=>x!==id); o.splice(o.indexOf(b.id)+1,0,id); saveTableOrder(ch,o); if(ch.layout.width?.[b.id]) ch.layout.width=Object.assign({},ch.layout.width,{[id]:ch.layout.width[b.id]});
       S.T.pop="tiles:"+id; render(); } break;
-    case "blkResetOne": if(ch){ const id=t.dataset.v; ch.layout=Object.assign({},ch.layout); for(const k of ["width","titles","tiles"]) if(ch.layout[k]&&id in ch.layout[k]){ ch.layout[k]=Object.assign({},ch.layout[k]); delete ch.layout[k][id]; }
+    case "blkResetOne": if(ch){ const id=t.dataset.v; ch.layout=Object.assign({},ch.layout); for(const k of ["width","titles","tiles","cols"]) if(ch.layout[k]&&id in ch.layout[k]){ ch.layout[k]=Object.assign({},ch.layout[k]); delete ch.layout[k][id]; }
       touch(S.cur); S.T.tileSlot=null; render(); } break;
     case "layoutAuto": if(ch){ const snap=JSON.parse(JSON.stringify(ch.layout||{})); autoLayout(ch); const u=S.undo={doc:S.cur,layout:snap,label:"",auto:true,at:Date.now()};
       clearTimeout(S.undoTimer); S.undoTimer=setTimeout(()=>{ if(S.undo===u){ S.undo=null; render(); } },6000); render(); } break;
@@ -57,7 +71,7 @@ document.addEventListener("click",e=>{
       if(Number.isInteger(j)&&j!==i&&arr[j]){ [arr[i],arr[j]]=[arr[j],arr[i]]; setBlockTiles(ch,blk,arr); S.T.tileSlot=null; } else S.T.tileSlot=j===i?null:i; render(); } break;
     case "tileDel": if(ch){ const arr=blockTiles(ch,t.dataset.blk); arr[+t.dataset.i]=""; setBlockTiles(ch,t.dataset.blk,arr); S.T.tileSlot=null; render(); } break;
     case "tileReset": if(ch){ ch.layout=Object.assign({},ch.layout); ch.layout.tiles=Object.assign({},ch.layout.tiles); delete ch.layout.tiles[t.dataset.blk]; touch(S.cur); S.T.tileSlot=null; render(); } break;
-    case "blkCreate": if(ch){ const list=customCopy(ch); if(list.length>=20||(+t.dataset.r)*(+t.dataset.c)>8) break; const id="c_"+Math.random().toString(36).slice(2,10);
+    case "blkCreate": if(ch){ const list=customCopy(ch); if(list.length>=20) break; const id="c_"+Math.random().toString(36).slice(2,10);
       const c=Math.min(4,Math.max(1,+t.dataset.c)); list.push({id,name:"Mon bloc "+(list.length+1),r:Math.min(4,Math.max(1,+t.dataset.r)),c,tiles:[]}); saveCustom(ch,list); saveTableOrder(ch,tableOrder(ch));
       ch.layout.width=Object.assign({},ch.layout.width,{[id]:c}); S.T.tileSlot=null; S.T.ctile=null; S.T.pop="tiles:"+id; render(); } break;
     case "ctileAdd": if(ch){ const id=t.dataset.v, b=customBlocks(ch).find(x=>x.id===id); if(b){
@@ -74,10 +88,6 @@ document.addEventListener("click",e=>{
       else S.T.tileSlot=S.T.tileSlot===n?null:n; render(); } break;
     case "ctileDel": if(ch){ cUpdate(ch,t.dataset.v,b=>{ const l=cGrid(b).tiles; l.splice(+t.dataset.i,1); return l; }); S.T.ctile=null; render(); } break;
     case "ctileSize": if(ch){ if(!cUpdate(ch,t.dataset.v,b=>cResize(b,+t.dataset.i,t.dataset.z))) setBanner("Pas assez de place dans ce bloc pour cette taille ici."); render(); } break;
-    case "blkFormat": if(ch){ const id=t.dataset.v, list=customCopy(ch), b=list.find(x=>x.id===id), r=+t.dataset.r, c=+t.dataset.c;
-      if(b&&r*c<=8&&r>=1&&c>=1){ const [keep,out]=cReformat(b,r,c); b.r=r; b.c=c; b.tiles=keep.map(x=>({id:x.id,sz:x.sz||"1",r:x.r,c:x.c})); saveCustom(ch,list);
-        if(out.length){ const cat=customCat(); setBanner("Retour dans la réserve : "+out.map(x=>cat[x]||x).join(", ")+"."); } }
-      S.T.ctile=null; S.T.tileSlot=null; S.T.pop="tiles:"+id; render(); } break;
     case "cblkDel": S.T.cdel=S.T.cdel===t.dataset.v?null:t.dataset.v; render(); { const pb=document.querySelector(".tpopbody"); if(pb) pb.scrollTop=0; } break;
     case "cblkDelNo": S.T.cdel=null; render(); break;
     case "cblkDelYes": if(ch){ const id=t.dataset.v; if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else if(!BLK_KEEP.includes(id)){ setBlkHidden(ch,id,true); setBanner("Bloc retiré : « Ajouter un bloc » permet de le remettre."); } S.T.cdel=null; S.T.pop=null; render(); } break;

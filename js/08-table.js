@@ -266,7 +266,7 @@ function tPop(ch,D){
   if(k.startsWith("blk:")){ const id=k.slice(4); if(!TBLK.some(b=>b[0]===id)||BLK_FIXED.includes(id)){ T.pop=null; return ""; } return builtinPop(ch,D,id,wrap); }
   if(k==="blkadd"){ const gone=TBLK.filter(b=>blkHidden(ch,b[0]));
     return wrap("Ajouter un bloc",`${gone.length?`<div class="label" style="margin-bottom:6px">Blocs retirés</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${gone.map(b=>`<button class="btn small" data-act="blkRestore" data-v="${b[0]}">+ ${esc(b[1])}</button>`).join("")}</div>`:""}<div class="label" style="margin-bottom:6px">Nouveau bloc : choisis son format</div><div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Largeur sur la page (sur 4 colonnes) et nombre de rangées de tuiles. Tu places ensuite les tuiles dans la même fenêtre.</div>
-    <div class="bpats">${CUSTOM_PATS.map(([r,w])=>patThumb(w,r,w,false,`data-act="blkCreate" data-r="${r}" data-c="${w}"`,`${w} col. · ${r} rang${r>1?"s":""}`)).join("")}</div>
+    ${fmtMatrix([1,2,3,4],rangLab,(r,w)=>patThumb(w,r,w,false,`data-act="blkCreate" data-r="${r}" data-c="${w}"`,`${w} colonne${w>1?"s":""} · ${rangLab(r)}`))}
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn small ghost" data-act="layoutReset">Remettre l’ordre des blocs par défaut</button></div>`); }
   if(k.startsWith("tiles:")){ const blk=k.slice(6); if(!TILE_CAT[blk]){ T.pop=null; return ""; } return builtinPop(ch,D,blk,wrap); }
   if(k.startsWith("info:")) return infoPop(ch,D,k.slice(5),wrap);
@@ -368,13 +368,13 @@ function viewTable(ch,D,banner=""){
         ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
     recherche:blkHidden(ch,"recherche")?"":`<div class="tgrid tb-solo"><div class="tmain">${tbHead("recherche","Recherche","blk:recherche")}${searchBar()}</div></div>`,
     tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
-      <div class="tturnb">${turnBtns}</div>
+      <div class="tturnb"${colsStyle(ch,"tour")}>${turnBtns}</div>
       <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div></div></div>`,
     raccourcis:`<div class="tgrid tb-solo"><div class="tside table-reference">
       ${tbHead("raccourcis","Raccourcis")}
-      <div class="tpanels">${raccourcisTiles(ch,D)}
+      <div class="tpanels"${colsStyle(ch,"raccourcis")}>${raccourcisTiles(ch,D)}
       </div></div></div>`,
-    notes:`<div class="tgrid tb-solo"><div class="tbottom">${tbHead("notes","Notes et historique","blk:notes")}<div class="tpanels">${racTileMap(ch,D).notes()}${racTileMap(ch,D).hist()}</div></div></div>`
+    notes:`<div class="tgrid tb-solo"><div class="tbottom">${tbHead("notes","Notes et historique","blk:notes")}<div class="tpanels"${colsStyle(ch,"notes")}>${racTileMap(ch,D).notes()}${racTileMap(ch,D).hist()}</div></div></div>`
   };
   for(const b of customBlocks(ch)) blocks[b.id]=customBlockHtml(ch,D,b,{slots:otherSlots,size:overviewSize});
   S.Tblocks=blocks; // aperçu dans la fenêtre du crayon
@@ -515,12 +515,12 @@ function repTileMap(ch,D,size){
 /* Bloc Ressources (lot T3b) : une tuile par ressource du perso (classe, sous-classe, dons, objets maison), 2 par rangée.
    Jusqu'à 8 : des ronds à toucher directement ; au-delà : − / + ; réserve de dés et Rouerie magique : leur fiche (dépense guidée).
    Toucher le nom ouvre la fiche de la ressource (description et usage). Bloc absent si le perso n'a aucune ressource. */
-function resBlock(ch,D){ if(!D.res.length) return ""; const w=blkWidth(ch,"ressources");
-  // Une colonne : tuiles compactes empilées (même taille que les Repères), un toucher ouvre la petite fenêtre
-  if(w===1) return `<div class="rrescol" role="group" aria-label="Ressources">${resCompact(ch,D)}</div>`;
+function resBlock(ch,D){ if(!D.res.length) return ""; const w=blkWidth(ch,"ressources"), n=blkCols(ch,"ressources",w), cs=`style="grid-template-columns:repeat(${n},minmax(0,1fr))"`;
+  // Cases étroites : tuiles compactes (même taille que les Repères), un toucher ouvre la petite fenêtre ; sinon tuiles complètes avec leurs boutons
+  if(cellW(n,1,w)<TILE_W.L) return `<div class="rrescol" ${cs} role="group" aria-label="Ressources">${resCompact(ch,D)}</div>`;
   const tiles=D.res.map(r=>{ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, c=resCard(r);
     return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${resCtl(ch,r)}</div>`; }).join("");
-  return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid${w===2?" one":""}" role="group" aria-label="Ressources">${tiles}</div>`; }
+  return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid" ${cs} role="group" aria-label="Ressources">${tiles}</div>`; }
 const resCompact=(ch,D)=>D.res.map(r=>{ const left=r.max-Math.min(r.max,+(ch.resUsed?.[r.id]||0));
   return `<button class="rtile rrestile${left<=0?" vide0":""}" data-act="tpop" data-v="res:${esc(r.id)}" title="${esc(r.name)} : dépenser ou récupérer"><b class="num">${left}/${r.max}${r.pool?`<small> d${r.die}</small>`:""}</b><span class="label">${esc(r.name)}</span></button>`; }).join("");
 const resCard=r=>{ const it=(S.Titems||[]).find(x=>x.res&&x.res.id===r.id); return it?`data-act="tsel" data-k="${esc(it.key)}"`:""; };
@@ -632,9 +632,6 @@ function reperesTiles(ch,D,size,k=4){ const T=repTileMap(ch,D,size), h=blockTile
   let i=0; return per.flatMap(c=>h.slice(i,i+=c).map(x=>x.replace(/^<(\w+)/,`<$1 style="grid-column:span ${12/c}"`))).join(""); }
 /* Blocs personnalisés (étape 6) : ch.layout.custom = [{id,name,r,c,tiles:[{id,sz}]}] ; taille d'une tuile : "1" (1×1), "2" (2×2), "l" (ligne entière).
    Placement automatique dans l'ordre (les tuiles comblent les trous) ; les cases restantes affichent « + ». */
-/* Modèles de blocs personnalisés : 8 cases au plus (décision d'Angle). */
-const BLK_TPL=[1,2,3,4].flatMap(r=>[1,2,3,4].map(c=>[r,c])).filter(([r,c])=>r*c<=8);
-const blkTemplates=(act,b)=>`<div class="ctpls">${BLK_TPL.map(([r,c])=>`<button class="ctpl${b&&b.r===r&&b.c===c?" on":""}" data-act="${act}"${b?` data-v="${b.id}"`:""} data-r="${r}" data-c="${c}" aria-label="Bloc de ${r} ligne${r>1?"s":""} et ${c} colonne${c>1?"s":""}"${b&&b.r===r&&b.c===c?' aria-current="true"':""}><span class="ctplg" style="grid-template-columns:repeat(${c},1fr)">${"<i></i>".repeat(r*c)}</span><small>${r}×${c}</small></button>`).join("")}</div>`;
 /* Nouveau format : les tuiles qui tiennent à leur place sont gardées, dans l'ordre ; renvoie [tuiles gardées, noms retirés]. */
 function cReformat(b,r,c){ const keep=[], out=[], nb={r,c}; for(const t of cGrid(b).tiles){ const [h,w]=tileSpan(t.sz,r,c), n=Object.assign({},t,{c:t.sz==="l"?0:t.c});
     if(n.r+h<=r&&n.c+w<=c&&!keep.some(k=>tilesHit(k,n,r,c))) keep.push(n); else out.push(t.id); } return [keep,out]; }
@@ -643,12 +640,31 @@ const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",exh:"Épuisem
 function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,TILE_GEN,{slots:"Emplacements de sorts"}); }
 function customBlocks(ch){ return Array.isArray(ch.layout?.custom)?ch.layout.custom.filter(b=>b&&typeof b.id==="string"&&/^c_[a-z0-9]{4,20}$/.test(b.id)&&b.r>=1&&b.r<=4&&b.c>=1&&b.c<=4).map(b=>Object.assign({},b,{w:blkWidth(ch,b.id,b)})):[]; }
 /* Largeur des blocs sur la grille invisible de 4 colonnes (lot 2) : ch.layout.width = {id: 1..4}. Personnage et PV restent en pleine largeur. */
-const BLK_WIDTHS={perso:[4],pv:[4],reperes:[2,3,4],ressources:[1,2,4],recherche:[2,4],tour:[2,4],raccourcis:[2,4],notes:[2,4]};
+const BLK_WIDTHS={perso:[4],pv:[4],reperes:[2,3,4],ressources:[1,2,3,4],recherche:[2,3,4],tour:[2,3,4],raccourcis:[2,3,4],notes:[2,3,4]};
 const blkWidths=(id,b)=>id.startsWith("c_")?[1,2,3,4].filter(w=>w>=(b?.c||1)):(BLK_WIDTHS[id]||[4]);
 function blkWidth(ch,id,b){ const w=+ch.layout?.width?.[id]; if(blkWidths(id,b).includes(w)) return w; if((id==="reperes"||id==="ressources")&&ch===cur()&&pairOn()) return id==="reperes"?3:1; return 4; }
 const blkWidthSet=(ch,id)=>Number.isInteger(+ch.layout?.width?.[id])&&!!ch.layout.width[id];
-/* Formats d'un bloc créé (lot 3) : largeur sur la page × rangées de tuiles ; une tuile = une colonne de page ; 8 cases au plus. */
-const CUSTOM_PATS=[[1,1],[2,1],[3,1],[4,1],[1,2],[2,2],[3,2],[4,2],[1,3],[2,3],[1,4],[2,4]];
+/* Formats d'un bloc créé : largeur sur la page × rangées de tuiles ; une tuile = une colonne de page. Les 16 formats (1 à 4 rangées × 1 à 4 colonnes, décision d'Angle du 12 nov. 2026 : plus de plafond de 8 cases). */
+const CUSTOM_PATS=[1,2,3,4].flatMap(r=>[1,2,3,4].map(w=>[r,w]));
+/* Tableau des formats : une ligne par nombre de rangées (ou de tuiles par rangée), une colonne par largeur ; case vide si le format n'existe pas pour ce bloc. */
+function fmtMatrix(rows,rowLab,cell){ const cols=[1,2,3,4];
+  return `<div class="bfmt" role="group" aria-label="Formats"><span></span>${cols.map(w=>`<span class="bfh">${w} col.</span>`).join("")}${rows.map(r=>`<span class="bfh bfr">${rowLab(r)}</span>${cols.map(w=>cell(r,w)||`<span class="bpat bnone" aria-hidden="true"></span>`).join("")}`).join("")}</div>`; }
+/* Tuiles déjà visibles ailleurs sur la page (Repères, Raccourcis, Notes, Recherche, autres blocs créés) : la réserve d'un bloc ne les propose pas (pas de doublon). */
+function tilesOnPage(ch,D,except){ const on=new Set(), vis=id=>id!==except&&!blkHidden(ch,id);
+  if(vis("reperes")){ const T=repTileMap(ch,D); blockTiles(ch,"reperes").forEach(id=>{ if(T[id]&&T[id]()) on.add(id); }); }
+  if(vis("raccourcis")) blockTiles(ch,"raccourcis").forEach(id=>id&&on.add(id));
+  if(vis("notes")) ["notes","hist"].forEach(id=>on.add(id));
+  if(vis("recherche")) on.add("search");
+  for(const b of customBlocks(ch)) if(b.id!==except) cGrid(b).tiles.forEach(t=>on.add(t.id));
+  return on; }
+const rangLab=r=>r+" rangée"+(r>1?"s":"");
+/* Tuiles par rangée des blocs de base (Ressources, Ce tour, Raccourcis, Notes) : ch.layout.cols[id] ; sinon valeur par défaut selon la largeur.
+   Un choix n'est proposé que si chaque case reste assez large pour ses tuiles. */
+const COLS_MIN={ressources:"E",tour:"M",raccourcis:"M",notes:"M"};
+const COLS_DEF={ressources:{1:1,2:1,3:1,4:2},tour:{2:1,3:2,4:2},raccourcis:{2:1,3:2,4:2},notes:{2:1,3:2,4:2}};
+const colsOk=(id,w,n)=>Number.isInteger(n)&&n>=1&&n<=w&&cellW(n,1,w)>=TILE_W[COLS_MIN[id]];
+function blkCols(ch,id,w=blkWidth(ch,id)){ if(!COLS_MIN[id]) return 0; const n=+ch.layout?.cols?.[id]; if(colsOk(id,w,n)) return n; const d=COLS_DEF[id][w]||1; return colsOk(id,w,d)?d:1; }
+const colsStyle=(ch,id)=>{ const n=blkCols(ch,id); return n?` style="grid-template-columns:repeat(${n},minmax(0,1fr))"`:""; };
 // Miniature d'un format : la page sur 4 colonnes, le bloc occupe w colonnes, avec sa grille de tuiles
 const patThumb=(w,r,c,on,attrs,label)=>`<button class="bpat" aria-pressed="${!!on}" ${attrs} aria-label="${esc(label)}" title="${esc(label)}"><span class="bpg"><span class="bpb" style="grid-column:span ${w};grid-template-columns:repeat(${c},1fr)">${"<i></i>".repeat(r*c)}</span>${"<span class=\"bpe\"></span>".repeat(4-w)}</span></button>`;
 /* Agencements d'un bloc créé (décision d'Angle) : découpes prêtes des cases (lignes entières, grande case 2×2, demi-lignes).
@@ -660,7 +676,8 @@ function agList(R,C){ const L=[["s","Cases simples"]];
   if(C>=3&&R>=2) L.push(["gr","Grande case à droite"]);
   if(C>=2&&R>=2) L.push(["ll","Lignes entières"]);
   if(C===4) L.push(["h","Demi-lignes"]);
-  return L; }
+  // Seulement les découpes qui changent quelque chose : deux agencements identiques pour ce format ne sont proposés qu'une fois
+  const seen=new Set(); return L.filter(([a])=>{ const k=agSlots(R,C,a).map(x=>x.r+","+x.c+","+tileSpan(x.sz,R,C)).join(";"); if(seen.has(k)) return false; seen.add(k); return true; }); }
 function agSlots(R,C,ag){ const S0=[], used=Array.from({length:R},()=>Array(C).fill(false)), put=(r,c,sz)=>{ const [h,w]=tileSpan(sz,R,C); for(let i=r;i<r+h;i++) for(let j=c;j<c+w;j++) used[i][j]=true; S0.push({r,c,sz}); };
   if(ag==="l"||ag==="ll") for(let r=0;r<R;r++) put(r,0,"l");
   if(ag==="lb") put(R-1,0,"l"); if(ag==="lt") put(0,0,"l");
@@ -680,10 +697,12 @@ function blkTitle(ch,id,def){ const t=ch?.layout?.titles?.[id]; return typeof t=
 /* Fenêtre du crayon d'un bloc de base : titre, format (largeurs possibles), aperçu à la taille réelle ; Raccourcis : ses tuiles ; « Remettre comme à l'origine ». */
 function builtinPop(ch,D,id,wrap){ const def=(TBLK.find(b=>b[0]===id)||[])[1]||id, w=blkWidth(ch,id), ws=blkWidths(id);
   const title=BLK_TITLED.includes(id)?`<label class="field"><span>Titre (vide = pas de titre)</span><input type="text" maxlength="40" data-btitle="${id}" value="${esc(blkTitle(ch,id,def))}"></label>`:"";
-  const pats=ws.length>1?`<div class="label" style="margin:14px 0 6px">Format</div><div class="bpats">${ws.map(x=>patThumb(x,2,x,x===w,`data-act="blkWidth" data-v="${id}" data-w="${x}"`,`${x} colonne${x>1?"s":""}`)).join("")}</div>`:"";
+  // Format : largeur × tuiles par rangée (Ressources, Ce tour, Raccourcis, Notes) ; largeur seule pour Repères (contenu automatique) et Recherche
+  const nCur=blkCols(ch,id,w), pats=COLS_MIN[id]?`<div class="label" style="margin:14px 0 6px">Format <span class="muted" style="text-transform:none;letter-spacing:0">· largeur et tuiles par rangée</span></div>${fmtMatrix([1,2,3,4],n=>n+" par rangée",(n,x)=>ws.includes(x)&&colsOk(id,x,n)?patThumb(x,2,n,x===w&&n===nCur,`data-act="blkFmt" data-v="${id}" data-w="${x}" data-n="${n}"`,`${x} colonne${x>1?"s":""} · ${n} tuile${n>1?"s":""} par rangée`):"")}`
+    :ws.length>1?`<div class="label" style="margin:14px 0 6px">Format <span class="muted" style="text-transform:none;letter-spacing:0">· largeur</span></div>${fmtMatrix([0],()=>"",(r,x)=>ws.includes(x)?patThumb(x,2,id==="reperes"?x:1,x===w,`data-act="blkWidth" data-v="${id}" data-w="${x}"`,`${x} colonne${x>1?"s":""}`):"")}`:"";
   const note={reperes:"Son contenu s’adapte tout seul à ton personnage (classe, sous-classe, espèce).",ressources:"Son contenu montre tout seul les ressources de ton personnage (classe, sous-classe, dons).",tour:"Ce bloc ne se personnalise pas, en dehors de son titre et de sa largeur."}[id];
   let body;
-  if(id==="raccourcis"){ const T=S.T, blk=id, cat=customCat(), arr=blockTiles(ch,blk), free=arr.indexOf(""), unused=Object.keys(cat).filter(x=>!arr.includes(x)&&tileAvailable(ch,blk,x)).sort((a,c)=>!tileOkInBlk(a,blk)-!tileOkInBlk(c,blk)), sel=Number.isInteger(T.tileSlot)?T.tileSlot:-1;
+  if(id==="raccourcis"){ const T=S.T, blk=id, cat=customCat(), arr=blockTiles(ch,blk), free=arr.indexOf(""), onPage=tilesOnPage(ch,D,blk), unused=Object.keys(cat).filter(x=>!arr.includes(x)&&!onPage.has(x)&&tileAvailable(ch,blk,x)).sort((a,c)=>!tileOkInBlk(a,blk)-!tileOkInBlk(c,blk)), sel=Number.isInteger(T.tileSlot)?T.tileSlot:-1;
     const face=x=>`<span class="tface">${tileFace(ch,D,blk,x)}</span><span class="tname">${esc(cat[x])}</span>`;
     const cells=arr.map((x,i)=>x?`<button class="tcell${sel===i?" on":""}${TILE_META[x]?.act?" tact":""}" data-act="tileCell" data-blk="${blk}" data-i="${i}" data-tslot="${i}" data-tdrag="cell" aria-pressed="${sel===i}" aria-label="Case ${i+1} : ${esc(cat[x])}">${face(x)}</button>`
       :`<button class="tcell libre${sel===i?" on":""}" data-act="tileCell" data-blk="${blk}" data-i="${i}" data-tslot="${i}" aria-pressed="${sel===i}" aria-label="Case ${i+1} libre">+</button>`).join("");
@@ -691,7 +710,7 @@ function builtinPop(ch,D,id,wrap){ const def=(TBLK.find(b=>b[0]===id)||[])[1]||i
       :`<span class="tcell tmini toff" aria-disabled="true" title="${tileWhy(x,blk)}">${face(x)}<small class="toffwhy">${tileWhy(x,blk)}</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
     const selBar=sel>=0&&arr[sel]?`<div class="row" style="gap:8px;margin-top:8px;align-items:center"><span class="muted" style="font-size:var(--fs-sm)">Case ${sel+1} : ${esc(cat[arr[sel]])}</span><button class="btn small ghost" data-act="tileDel" data-blk="${blk}" data-i="${sel}">Retirer cette tuile</button></div>`:"";
     body=`<div class="label" style="margin:14px 0 6px">Tuiles <span class="muted" style="text-transform:none;letter-spacing:0">· aperçu à la taille réelle</span></div>
-      <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-tblk="${blk}" style="grid-template-columns:repeat(${w>=4?2:1},minmax(0,1fr))">${cells}</div></div>${selBar}
+      <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-tblk="${blk}" style="grid-template-columns:repeat(${blkCols(ch,blk,w)},minmax(0,1fr))">${cells}</div></div>${selBar}
       <div class="row" style="justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">Touche une case puis une tuile de la réserve, ou glisse-la.</span><button class="btn small ghost" data-act="tileReset" data-blk="${blk}" title="Remet les tuiles conseillées : Tests, Sauvegardes, États, Inventaire, Équipement, Inspiration">Automatique (recommandé)</button></div>
       <div class="label" style="margin:10px 0 6px">Réserve${free<0&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${blk}">${res}</div>`; }
   else body=`<div class="label" style="margin:14px 0 6px">Aperçu <span class="muted" style="text-transform:none;letter-spacing:0">· taille réelle</span></div><div class="bprev bprevc" style="${prevW(w)}" inert>${(S.Tblocks||{})[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div>${note?`<div class="muted" style="font-size:var(--fs-sm);margin-top:8px">${note}</div>`:""}`;
@@ -762,17 +781,17 @@ function customPop(ch,D,id,wrap){
   occ.forEach((row,r)=>row.forEach((k,c)=>{ const n=r*C+c; if(k<0&&!done[r][c]) cells+=`<button class="tcell libre${selC===n?" on":""}" style="grid-row:${r+1};grid-column:${c+1}" data-act="ctileCell" data-v="${id}" data-cell="${n}" data-tslot="" aria-pressed="${selC===n}" aria-label="Case libre, ligne ${r+1}, colonne ${c+1}">+</button>`; }));
   const selSlot=selC>=0?slotAt(b,Math.floor(selC/C),selC%C):null, okT=x=>selSlot?slotOk(b,x,selSlot):!!fitSize(b,x);
   const free=occ.flat().some(k=>k<0);
-  const unused=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&tileAvailable(ch,"",x)).sort((a,c)=>!okT(a)-!okT(c));
+  const onPage=tilesOnPage(ch,D,id), unused=Object.keys(cat).filter(x=>!tiles.some(t=>t.id===x)&&!onPage.has(x)&&tileAvailable(ch,"",x)).sort((a,c)=>!okT(a)-!okT(c));
   const res=unused.length?unused.map(x=>okT(x)?`<button class="tcell tmini${TILE_META[x]?.act?" tact":""}" data-act="ctileAdd" data-v="${id}" data-t="${x}" data-tdrag="cres" data-cblk="${id}" aria-label="Placer : ${esc(cat[x])}">${face(x)}</button>`
       :`<span class="tcell tmini toff" aria-disabled="true" title="Trop large pour ${selSlot?"cette case":"ce bloc"}">${face(x)}<small class="toffwhy">Trop large pour ${selSlot?"cette case":"ce bloc"}</small></span>`).join(""):`<span class="muted" style="font-size:var(--fs-sm)">Toutes les tuiles sont placées.</span>`;
   const t=tiles[selT], sizes=t?TILE_SIZES.filter(([z])=>tileSizeOk(t.id,z,R,C)):[];
   const selBar=t?`<div class="row" style="gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap"><span class="muted" style="font-size:var(--fs-sm)">${esc(cat[t.id]||t.id)} :</span>${sizes.map(([z,l])=>tileFits(t.id,sizeW(z,C,b.w||4))?`<button class="chip" aria-pressed="${t.sz===z}" data-act="ctileSize" data-v="${id}" data-i="${selT}" data-z="${z}">${l}</button>`:`<span class="chip toff" aria-disabled="true" title="Trop étroit pour cette tuile">${l}</span>`).join("")}<button class="btn small ghost" data-act="ctileDel" data-v="${id}" data-i="${selT}">Retirer cette tuile</button></div>`:"";
-  const w=b.w||4, pats=CUSTOM_PATS.map(([r,ww])=>patThumb(ww,r,ww,r===R&&ww===C&&ww===w,`data-act="blkPat" data-v="${id}" data-r="${r}" data-c="${ww}"`,`${ww} col. · ${r} rang${r>1?"s":""}`)).join("");
+  const w=b.w||4, pats=fmtMatrix([1,2,3,4],rangLab,(r,ww)=>patThumb(ww,r,ww,r===R&&ww===C&&ww===w,`data-act="blkPat" data-v="${id}" data-r="${r}" data-c="${ww}"`,`${ww} colonne${ww>1?"s":""} · ${rangLab(r)}`));
   return wrap("Bloc : "+(b.name||"sans titre"),`<label class="field"><span>Titre (vide = pas de titre)</span><input type="text" maxlength="40" data-cname="${id}" value="${esc(b.name)}"></label>
-    <div class="label" style="margin:14px 0 6px">Format</div><div class="bpats">${pats}</div>
+    <div class="label" style="margin:14px 0 6px">Format</div>${pats}
     ${agList(R,C).length>1?`<div class="label" style="margin:14px 0 6px">Agencement</div><div class="bpats">${agList(R,C).map(([a,l])=>agThumb(R,C,a,(agList(R,C).some(z=>z[0]===b.ag)?b.ag:"s")===a,`data-act="blkAg" data-v="${id}" data-ag="${a}"`,l)).join("")}</div>`:""}
     <div class="label" style="margin:14px 0 6px">Tuiles <span class="muted" style="text-transform:none;letter-spacing:0">· aperçu à la taille réelle</span></div>
-    <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},minmax(60px,auto))">${cells}</div></div>${selBar}
+    <div class="bprev" style="${prevW(w)}"><div class="tpgrid" data-cgrid="${id}" data-r="${R}" data-c="${C}" style="grid-template-columns:repeat(${C},minmax(0,1fr));grid-template-rows:repeat(${R},var(--th))">${cells}</div></div>${selBar}
     <div class="muted" style="font-size:var(--fs-sm);margin:8px 0">Touche une case libre puis une tuile de la réserve, ou glisse une tuile (au doigt : appui long). Touche une tuile posée pour changer sa taille ; glisse-la hors du bloc pour la retirer.</div>
     <div class="label" style="margin:10px 0 6px">Réserve${!free&&unused.length?" (bloc plein : retire d’abord une tuile)":""}</div><div class="tres" data-tres="${id}">${res}</div>
     <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkDup" data-v="${id}">Dupliquer le bloc</button></div>`);
@@ -854,7 +873,7 @@ function autoLayout(ch){ const D=derive(ch), n=reperesAuto(ch,D).length, nr=D.re
   order.push("tour","raccourcis","recherche","notes",...cb);
   for(const id of cb){ const b=customBlocks(ch).find(x=>x.id===id); width[id]=blkWidth(ch,id,b); }
   const tiles=Object.assign({},ch.layout?.tiles); delete tiles.raccourcis;
-  ch.layout=Object.assign({},ch.layout,{order,width,hidden:[],titles:{},tiles,custom:[],pos:{},inspSeen:true}); touch(S.cur); }
+  ch.layout=Object.assign({},ch.layout,{order,width,hidden:[],titles:{},tiles,custom:[],pos:{},cols:{},inspSeen:true}); touch(S.cur); }
 /* Blocs retirés (ch.layout.hidden) : tous sauf Personnage et Points de vie ; on les remet par « Ajouter un bloc ». */
 const BLK_FIXED=["perso","pv"];
 const BLK_KEEP=["pv"]; // seul Points de vie ne se supprime pas (décision d'Angle) ; les autres se remettent par « + Ajouter un bloc »

@@ -489,3 +489,10 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .tblocks.tfree>.tblk{background:var(--sheet)}
 .tblocks.tfree>.tblk .character-banner{border-bottom:0}
 .tblocks.tfree>.tblk :is(.health-card,.tside,.tbottom){background:none;border-color:transparent;box-shadow:none}
+/* Tableau des formats (lot 2) : lignes = rangées (ou tuiles par rangée), colonnes = largeur sur la page */
+.bfmt{display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:6px;align-items:stretch}
+.bfmt .bfh{align-self:end;text-align:center;font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
+.bfmt .bfr{align-self:center;text-align:right;padding-right:2px}
+.bfmt .bpat{width:100%;min-width:0;padding:6px 2px}
+.bfmt .bpat .bpg{width:100%;max-width:60px}
+.bfmt .bnone{visibility:hidden}

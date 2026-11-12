@@ -253,7 +253,6 @@ fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disab
 .tblocks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 8px;max-width:860px;margin:0 auto;align-items:start}
 .tblocks>*{grid-column:1/-1;min-width:0}.tblocks>.tblk.w1,.tblocks>.tblk.w2,.tblocks>.tblk.w3{grid-column:auto}
 /* Blocs étroits (lot 2) : contenu sur une colonne */
-.tblk.w2 .tpanels,.tblk.w2 .tturnb,.rresgrid.one{grid-template-columns:minmax(0,1fr)!important}
 .rrescol{display:grid;grid-auto-rows:1fr;gap:8px}.rp1l{letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .tblk{min-width:0}
 .tblk .table-overview.tb-solo{grid-template-columns:minmax(0,1fr)!important;margin:0!important}
