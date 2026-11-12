@@ -59,7 +59,6 @@ function tipHtml(i,ch,D){
 }
 function bagTipRef(ch,b){ let r=b.ref||matchItem(b.name); if(r) return r;
   const a=(ch.attacks||[]).find(x=>{ const bb=atkBag(ch,x); return bb&&bb.id===b.id; }); if(a&&a.weapon){ if(a.weapon.startsWith("srd:")) return "item:arme:"+a.weapon.slice(4); if(a.weapon.startsWith("hb:")) return a.weapon; } return ""; }
-function eqName(ch,b){ return `<span class="tipl" data-act="tip" data-k="bag:${esc(b.id)}">${esc(b.name)}</span>`; }
 function openTip(key,anchor){
   if(key.startsWith("bag:")){ const ch=cur(); const b=ch&&(ch.bag||[]).find(x=>x.id===key.slice(4)); if(!b) return; const ref=bagTipRef(ch,b); const tip=document.getElementById("tip");
     let html=ref?itemTipHtml(ref):"";

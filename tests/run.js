@@ -1597,6 +1597,15 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const t = document.createElement('div'); t.className = 'toast'; document.body.append(t); const z = +getComputedStyle(t).zIndex, zp = +getComputedStyle(document.querySelector('.tpopback')).zIndex; t.remove(); return z > zp && z > 10000; }), 'message en bas de l’écran au-dessus des fenêtres et du pavé');
   });
 
+  await test('Code : chaque action affichée a son gestionnaire, plus d’action orpheline', async p => {
+    const src = HTML_SOURCE.replace(/<script type="application\/json"[\s\S]*?<\/script>/g, '');
+    const acts = new Set([...src.matchAll(/data-act="([A-Za-z0-9_-]+)"/g)].map(m => m[1]));
+    const cases = new Set([...src.matchAll(/case\s+"([A-Za-z0-9_-]+)"\s*:/g)].map(m => m[1]));
+    const ailleurs = ['noop', 'tip', 'tipclose', 'closeModal']; // gérés hors du grand aiguillage (bulles, fenêtres)
+    eq([...acts].filter(a => !cases.has(a) && !ailleurs.includes(a)).sort(), [], 'actions sans gestionnaire');
+    eq(['tilePick', 'chgUse', 'tempgain', 'tclose', 'thp', 'hpdmg', 'hpheal'].filter(a => cases.has(a)), [], 'anciens gestionnaires retirés (nettoyage du 12 nov. 2026)');
+  });
+
   await test('Grande case 2×2 : la tuile occupe vraiment deux rangées', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_grand000', name: 'Grand', r: 2, c: 2, ag: 'g', tiles: [{ id: 'ca', sz: '2', r: 0, c: 0 }] }] }); render(); });

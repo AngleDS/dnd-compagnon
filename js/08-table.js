@@ -582,7 +582,6 @@ const REP_ICON={
   souffle:'<path d="M12 21c-4 0-7-2.7-7-6.5 0-3 2-5 3-6.5.5 2 1.5 3 2.5 3C10 7 12 4.5 14 3c0 3.5 5 5.5 5 11.5 0 3.8-3 6.5-7 6.5z"/>',
   insp:'<path d="m12 2 2.6 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.4-.5z"/>',
   conc:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/>',
-  exh:'<path d="M4 18c3-1 5-4 8-4s5 3 8 4"/><path d="M12 4v6M9 7l3 3 3-3"/>',
   comp:'<ellipse cx="12" cy="16" rx="4.5" ry="3.8"/><circle cx="5.5" cy="10.5" r="2"/><circle cx="9.5" cy="6" r="2"/><circle cx="14.5" cy="6" r="2"/><circle cx="18.5" cy="10.5" r="2"/>',
   vision:'<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M12 9a3 3 0 0 0 0 6z" fill="currentColor"/>',
   bottes:'<path d="M14.5 3H21v6.5L10 20.5 3.5 14z"/><path d="m7 17-3 3M16.5 7.5l-6 6"/>',
@@ -696,9 +695,6 @@ function reperesTiles(ch,D,size,k=4){ const T=repTileMap(ch,D,size), h=blockTile
   let i=0; return per.flatMap(c=>h.slice(i,i+=c).map(x=>x.replace(/^<(\w+)/,`<$1 style="grid-column:span ${12/c}"`))).join(""); }
 /* Blocs personnalisés (étape 6) : ch.layout.custom = [{id,name,r,c,tiles:[{id,sz}]}] ; taille d'une tuile : "1" (1×1), "2" (2×2), "l" (ligne entière).
    Placement automatique dans l'ordre (les tuiles comblent les trous) ; les cases restantes affichent « + ». */
-/* Nouveau format : les tuiles qui tiennent à leur place sont gardées, dans l'ordre ; renvoie [tuiles gardées, noms retirés]. */
-function cReformat(b,r,c){ const keep=[], out=[], nb={r,c}; for(const t of cGrid(b).tiles){ const [h,w]=tileSpan(t.sz,r,c), n=Object.assign({},t,{c:t.sz==="l"?0:t.c});
-    if(n.r+h<=r&&n.c+w<=c&&!keep.some(k=>tilesHit(k,n,r,c))) keep.push(n); else out.push(t.id); } return [keep,out]; }
 /* Tuiles générales (lot T2) : proposées dans tous les blocs selon la largeur. */
 const TILE_GEN={insp:"Inspiration héroïque",conc:"Concentration",search:"Recherche",comp:"Compagnon"};
 function customCat(){ return Object.assign({},TILE_CAT.reperes,TILE_CAT.raccourcis,TILE_GEN,{slots:"Emplacements de sorts"}); }
@@ -787,8 +783,6 @@ function builtinPop(ch,D,id,wrap){ const def=(TBLK.find(b=>b[0]===id)||[])[1]||i
   // Aperçu fidèle : le bloc dessiné avec les styles de la page (marge de 8 px, tuiles, largeur réelle sur 4 colonnes)
   else body=`<div class="label" style="margin:14px 0 6px">Aperçu <span class="muted" style="text-transform:none;letter-spacing:0">· taille réelle</span></div><div class="bprev bprevc" inert><div class="tblocks tfree tprev"><section class="tblk w${w}" style="width:calc((100% - 12px) * ${w} / 4 + ${4*(w-1)}px)"><div class="tband"><span class="tbandt">${esc(blkTitle(ch,id,def))}</span></div><div class="tblkc">${(S.Tblocks||{})[id]||`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`}</div></section></div></div>${note?`<div class="muted" style="font-size:var(--fs-sm);margin-top:8px">${note}</div>`:""}`;
   return wrap("Bloc : "+def,`${title}${pats}${body}<div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkResetOne" data-v="${id}">Remettre comme à l’origine</button></div>`); }
-const widthRow=(ch,id,b)=>{ const ws=blkWidths(id,b); if(ws.length<2) return ""; const cur=blkWidth(ch,id,b);
-  return `<div class="label" style="margin:2px 0 6px">Largeur sur la page</div><div class="row bwidth" style="gap:6px;flex-wrap:wrap;margin-bottom:12px">${ws.map(w=>`<button class="chip" data-act="blkWidth" data-v="${id}" data-w="${w}" aria-pressed="${w===cur}">${w} colonne${w>1?"s":""}</button>`).join("")}</div>`; };
 function customCopy(ch){ return customBlocks(ch).map(b=>Object.assign({},b,{tiles:(Array.isArray(b.tiles)?b.tiles:[]).map(t=>Object.assign({},t))})); }
 function saveCustom(ch,list){ ch.layout=Object.assign({},ch.layout,{custom:list}); touch(S.cur); }
 /* Position exacte des tuiles : {id,sz,r,c} (ligne et colonne de la case en haut à gauche). Taille : [hauteur, largeur] en cases. */
@@ -951,11 +945,6 @@ const BLK_FIXED=["perso","pv"];
 const BLK_KEEP=["pv"]; // seul Points de vie ne se supprime pas (décision d'Angle) ; les autres se remettent par « + Ajouter un bloc »
 const blkHidden=(ch,id)=>!BLK_KEEP.includes(id)&&Array.isArray(ch.layout?.hidden)&&ch.layout.hidden.includes(id);
 function setBlkHidden(ch,id,on){ const h=(Array.isArray(ch.layout?.hidden)?ch.layout.hidden:[]).filter(x=>x!==id); if(on&&!BLK_KEEP.includes(id)) h.push(id); ch.layout=Object.assign({},ch.layout,{hidden:h}); touch(S.cur); }
-/* Bas de chaque fenêtre de bloc : monter, descendre, supprimer (confirmation). */
-function blkActions(ch,id,extra=""){ const vis=tableOrder(ch).filter(x=>!blkHidden(ch,x)), i=vis.indexOf(id), custom=id.startsWith("c_"), fixed=BLK_KEEP.includes(id);
-  const bar=`<div class="blkacts"><span class="row" style="gap:6px;flex-wrap:wrap"><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="-1" aria-label="Monter le bloc" ${i>0?"":"disabled"}>↑ Monter</button><button class="btn small ghost" data-act="blkMove" data-v="${id}" data-d="1" aria-label="Descendre le bloc" ${i>=0&&i<vis.length-1?"":"disabled"}>↓ Descendre</button>${extra}</span>${fixed?"":`<button class="btn small ghost blkdel" data-act="cblkDel" data-v="${id}" aria-expanded="${S.T.cdel===id}">Supprimer le bloc</button>`}</div>`;
-  const conf=!fixed&&S.T.cdel===id?`<div class="blkconfirm" role="alert"><span>${custom?"Supprimer ce bloc et ses tuiles ?":"Retirer ce bloc ? Tu pourras le remettre avec « Ajouter un bloc »."}</span><span class="row" style="gap:6px"><button class="btn small danger" data-act="cblkDelYes" data-v="${id}">Supprimer</button><button class="btn small ghost" data-act="cblkDelNo">Annuler</button></span></div>`:"";
-  return bar+conf; }
 function saveTableOrder(ch,order){ ch.layout=Object.assign({},ch.layout,{order}); touch(S.cur); }
 function moveTableBlock(ch,id,d){ const o=tableOrder(ch), vis=o.filter(x=>!blkHidden(ch,x)), i=vis.indexOf(id), j=i+d; if(i<0||j<0||j>=vis.length) return; [vis[i],vis[j]]=[vis[j],vis[i]]; let k=0; saveTableOrder(ch,o.map(x=>blkHidden(ch,x)?x:vis[k++])); }
 function hpStepper(ch,D){
@@ -1063,7 +1052,6 @@ function tCard(ch,D){
   };
   let body="";
   const sec=(t,inner)=>inner?`<section class="tsec"><h3 class="tsech">${esc(t)}</h3>${inner}</section>`:"";
-  const duo=(a,b)=>`<div class="tduo">${[a,b].filter(Boolean).map(([l,v,sub])=>`<div><div class="label">${esc(l)}</div><div class="tduov num">${esc(v)}</div>${sub?`<div class="muted" style="font-size:var(--fs-sm)">${esc(sub)}</div>`:""}</div>`).join("")}</div>`;
   const exhN=2*(+ch.exhaustion||0);
   if(["abil","save","skill","init"].includes(i.kind)){ body=d20(i.kind==="init"?"init":i.kind,i.mod,i.parts,i.ab,i.name);
     if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); const lv=D.skills[sk.id].lv;

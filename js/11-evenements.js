@@ -67,7 +67,6 @@ document.addEventListener("click",e=>{
     case "blkUndo": if(ch&&S.undo&&S.undo.doc===S.cur){ ch.layout=S.undo.layout; S.undo=null; clearTimeout(S.undoTimer); touch(S.cur); render(); } break;
     case "layoutMag": case "layoutGrav": if(ch){ const k=a==="layoutMag"?"mag":"grav", on=k==="mag"?ch.layout?.mag===false:!ch.layout?.grav; ch.layout=Object.assign({},ch.layout,{[k]:on}); touch(S.cur); render(); } break;
     case "layoutReset": if(ch){ ch.layout=Object.assign({},ch.layout); delete ch.layout.order; delete ch.layout.pos; touch(S.cur); } if(S.T) S.T.pop=null; render(); break;
-    case "tilePick": { S.T.tileSlot=+t.dataset.i; S.T.ctile=null; S.T.pop="tiles:"+t.dataset.blk; render(); break; }
     case "tileAdd": if(ch&&!tileOkInBlk(t.dataset.v,t.dataset.blk)) break; if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=Number.isInteger(S.T.tileSlot)&&S.T.tileSlot<arr.length?S.T.tileSlot:arr.indexOf(""); if(i>=0){ arr[i]=t.dataset.v; setBlockTiles(ch,blk,arr); S.T.tileSlot=null; } else setBanner("Bloc plein : retire d’abord une tuile."); render(); } break;
     case "tileCell": if(ch){ const blk=t.dataset.blk, arr=blockTiles(ch,blk), i=+t.dataset.i, j=S.T.tileSlot; // toucher une case la sélectionne ; une case pleine sélectionnée puis une autre case = déplacer ou échanger
       if(Number.isInteger(j)&&j!==i&&arr[j]){ [arr[i],arr[j]]=[arr[j],arr[i]]; setBlockTiles(ch,blk,arr); S.T.tileSlot=null; } else S.T.tileSlot=j===i?null:i; render(); } break;
@@ -155,12 +154,6 @@ document.addEventListener("click",e=>{
       else if(r>=10){ ch.death.s=Math.min(3,ch.death.s+1); txt="Réussite."+(ch.death.s>=3?" Trois réussites : tu es stabilisé.":""); }
       else { ch.death.f=Math.min(3,ch.death.f+1); txt="Échec."+(ch.death.f>=3?" Trois échecs : ton personnage meurt.":""); }
       addLog({label:"Jet contre la mort",total:r,bd:txt,crit:r===20,fumble:r===1}); touch(S.cur); render(); break; }
-    case "hpdmg": case "hpheal": { const n=+document.getElementById("hp-delta").value||0; if(!n) break; const D=derive(ch); ch.hp=ch.hp||{cur:D.hpMax,temp:0};
-      if(a==="hpdmg"){ let left=n; const tmp=+ch.hp.temp||0; const ab=Math.min(tmp,left); ch.hp.temp=tmp-ab; left-=ab; ch.hp.cur=Math.max(0,(+ch.hp.cur||0)-left);
-        if(ch.conc) addLog({label:"Concentration : JS de Constitution",total:"DD "+Math.max(10,Math.floor(n/2)),bd:"Maintien de "+ch.conc+". Clique sur « JS Concentration ».",kind:"info"}); }
-      else ch.hp.cur=Math.min(D.hpMax,(+ch.hp.cur||0)+n);
-      if((+ch.hp.cur||0)>0&&ch.death&&(ch.death.s||ch.death.f)) ch.death={s:0,f:0};
-      touch(S.cur); render(); break; }
     case "spendhd": { const D=derive(ch); if((+ch.hdUsed||0)>=D.L) break; const r=rollExpr("1d"+D.hd); const heal=Math.max(1,r.total+D.mods.con); ch.hdUsed=(+ch.hdUsed||0)+1; ch.hp=ch.hp||{cur:0,temp:0}; ch.hp.cur=Math.min(D.hpMax,(+ch.hp.cur||0)+heal);
       addLog({label:"Dé de vie dépensé",total:heal,bd:r.bd+" "+sg(D.mods.con)+" Con"}); touch(S.cur); render(); break; }
     case "pip": { const k=t.dataset.k, i=+t.dataset.i, max=+t.dataset.max, isUsed=t.dataset.used==="1";
@@ -197,7 +190,6 @@ document.addEventListener("click",e=>{
       c.used = i<left ? c.max-i : c.max-(i+1); c.auto=false; b.charges=c; touch(S.cur); render(); break; }
     case "itemN": S.T.itemN=+t.dataset.v; render(); break;
     case "itemUse": if(performTableItemUse(t.dataset)) render(); break;
-    case "chgUse": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(!b) break; const c=Object.assign({},itemCharges(ch,b)); if((+c.used||0)>=c.max){ addLog({label:b.name,total:"0",bd:"Plus de charge.",kind:"info"}); break; } c.used=(+c.used||0)+1; c.auto=false; b.charges=c; addLog({label:b.name,total:(c.max-c.used)+"/"+c.max,bd:"1 charge dépensée.",kind:"info",quiet:true}); touch(S.cur); render(); break; }
     case "chgedit": S.pending={type:"chg",id:t.dataset.id}; renderModal(); break;
     case "chgSave": { const P=S.pending, b=(ch.bag||[]).find(x=>x.id===P.id); if(!b) break; const mx=Math.max(0,parseInt(document.getElementById("chg-max").value)||0);
       if(!mx){ b.charges=null; } else { const old=itemCharges(ch,b)||{}; b.charges={max:mx,used:Math.min(mx,+old.used||0),when:document.getElementById("chg-when").value,rec:document.getElementById("chg-rec").value.trim().replace(/\s/g,""),cost:document.getElementById("chg-cost").value,auto:false}; }
@@ -224,10 +216,8 @@ document.addEventListener("click",e=>{
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
     case "tvroll": { if(!ensureTableRollUse()) break; const T=S.T; T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; if(logD20(false)) tableRollCommitted("d20"); render(); break; }
     case "gdie": { S.T.gdie=+t.dataset.v; S.T.dmg=""; S.T.dmgBd=""; render(); break; }
-    case "tempgain": { const D=derive(ch); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const v=+t.dataset.v||0, b0=+ch.hp.temp||0; ch.hp.temp=Math.max(b0,v); addLog({label:(t.dataset.n||"Sort")+" · PV temporaires",total:ch.hp.temp,bd:b0?"remplace "+b0+" PV temporaires":"",quiet:true}); touch(S.cur); render(); break; }
     case "hbGuessLink": { const d=S.docs[t.dataset.id]; if(!d) break; d.link=aideGuess(Object.assign({_id:t.dataset.id},d)); touch(t.dataset.id); render(); break; }
     case "tvdmg": { if(!ensureTableRollUse()) break; const T=S.T; const r=rollExpr(t.dataset.e,!!t.dataset.re1); T.dmg=String(r.total); T.dmgBd=(t.dataset.crit?"Critique · ":"")+r.bd; if(logDmg(false)) tableRollCommitted("dmg"); render(); break; }
-    case "tclose": e.preventDefault(); S.T.sel=null; render(); break;
     case "hpstep": { const D=derive(ch); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const v=+t.dataset.v, before=+ch.hp.cur||0;
       if(v<0&&before<=0){ ch.death=ch.death||{s:0,f:0}; if((ch.death.s||0)<3){ ch.death.f=Math.min(3,(ch.death.f||0)+1); addLog({label:"Dégâts à 0 PV",total:"échec",bd:"Subir des dégâts à 0 PV compte comme un échec (deux sur un coup critique).",kind:"info"}); } }
       ch.hp.cur=Math.max(0,Math.min(D.hpMax,before+v)); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0};
@@ -243,12 +233,6 @@ document.addEventListener("click",e=>{
     case "tturn": { ch.turn=ch.turn||{}; ch.turn[t.dataset.v]=!ch.turn[t.dataset.v]; touch(S.cur); render(); break; }
     case "tnewturn": ch.turn={}; if(S.T){ S.T.castDone=null; S.T.itemUseReceipt=null; } touch(S.cur); render(); break;
     case "tconcEnd": ch.conc=""; touch(S.cur); render(); break;
-    case "thp": { const n=+document.getElementById("t-hp").value||0; if(!n) break; const D=derive(ch); ch.hp=ch.hp||{cur:D.hpMax,temp:0};
-      if(+t.dataset.v<0){ let left=n; const tmp=+ch.hp.temp||0; const ab=Math.min(tmp,left); ch.hp.temp=tmp-ab; left-=ab; ch.hp.cur=Math.max(0,(+ch.hp.cur||0)-left);
-        if(ch.conc) concDamage(n,true); }
-      else ch.hp.cur=Math.min(D.hpMax,(+ch.hp.cur||0)+n);
-      if((+ch.hp.cur||0)>0&&ch.death&&(ch.death.s||ch.death.f)) ch.death={s:0,f:0};
-      touch(S.cur); render(); break; }
     case "tcast": if(performTableCast(t.dataset)) render(); break;
     case "tuse": { const cost=t.dataset.v; if(!TURN_COSTS.includes(cost)) break; ch.turn=ch.turn||{}; ch.turn[cost]=!t.dataset.off; touch(S.cur); render(); break; }
     case "tpool": { const D=derive(ch), r=D.res.find(x=>x.id===t.dataset.id); if(!r) break; const left=r.max-(+ch.resUsed?.[r.id]||0); const n=Math.max(1,Math.min(+document.getElementById("t-pool").value||1,left,r.maxUse||left)); if(left<=0) break;
@@ -509,7 +493,6 @@ function dragGhost(el,cls){ const r=el.getBoundingClientRect(), g=document.creat
   [c,...c.querySelectorAll("*")].forEach(n=>{ n.removeAttribute("id"); n.removeAttribute("name"); n.removeAttribute("for"); [...n.attributes].filter(a=>a.name.startsWith("data-")).forEach(a=>n.removeAttribute(a.name)); });
   c.classList.remove("dragging","blkph","eqsrc","eqok","eqno","eqover"); c.style.cssText="position:static;inset:auto;transform:none;width:100%;height:100%;margin:0;box-sizing:border-box";
   g.className="dragghost "+(cls||""); g.setAttribute("aria-hidden","true"); g.style.width=r.width+"px"; g.style.height=r.height+"px"; g.appendChild(c); document.body.appendChild(g); return {g,r}; }
-const reduceMotion=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
 let BLKD=null, BLKP=null;
 const LONG_PRESS_MS=350; // appui long avant tout glisser au doigt (blocs, tuiles, équipement)
 /* Placement libre (lot B) : le bloc suit le doigt ; sa colonne s'aimante sur la grille de 4, sa hauteur sur les voisins (aimant activable).
