@@ -499,3 +499,15 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 /* Dés physiques sans pavé : message sous la case, champ de valeur des fenêtres PV temp. / PV max (12 nov. 2026) */
 .dicerr{flex-basis:100%;font-size:var(--fs-sm)}
 .pvset{width:120px;min-height:44px;font-size:var(--fs-lg);text-align:center}
+
+/* Repères : valeur lisible dans son gabarit, dégradé réservé aux actions. */
+.rtile.rep-value-tile{container-type:inline-size;gap:2px;padding:3px 2px;position:relative;box-shadow:inset 0 1px var(--line)}
+.rtile.rep-value-tile .rico{width:14px;height:14px;margin:0;flex-shrink:0}
+.rtile.rep-value-tile .num{font-family:var(--f-body);font-size:var(--fs-xl);line-height:1}
+.rtile.rep-value-tile .rep-label{font-size:var(--fs-xs);line-height:1.05;letter-spacing:0;max-width:100%}
+.rtile.rep-value-tile .rep-label::after{display:none;content:attr(data-short)}
+.rtile.rep-value-tile .rep-shield{width:44px;height:43px;position:relative;display:grid;place-items:center;flex-shrink:0}
+.rtile.rep-value-tile .rep-shield .rico{position:absolute;width:100%;height:100%;stroke-width:1;z-index:0}
+.rtile.rep-value-tile .rep-shield .num{position:relative;z-index:1}
+.rtile.rep-value-tile:not(.rinfo)::after{content:'↗';position:absolute;right:5px;top:2px;color:var(--brass);font-size:var(--fs-xs)}
+@container (max-width: 90px){.rtile.rep-value-tile .num{font-size:var(--fs-lg)}.rtile.rep-value-tile .rep-full{display:none}.rtile.rep-value-tile .rep-label::after{display:inline}}

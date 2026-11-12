@@ -1863,7 +1863,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.hmenu');
     eq(await p.evaluate(() => [...document.querySelectorAll('.hdrop .hditem')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['nav:list', 'theme', 'virtualDice', 'layoutEdit'], 'Menu déroulant : personnages, mode clair, dés, Personnaliser l’interface');
     ok(await p.evaluate(() => { const d = document.querySelector('.hdrop').getBoundingClientRect(); return d.left >= 0 && d.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; }), 'Menu dans l’écran');
-    await p.mouse.click(20, 600); ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'clic ailleurs : Menu fermé');
+    await p.mouse.click(220, 45); ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'clic ailleurs : Menu fermé');
     await menuClick(p, '[data-act="layoutEdit"]');
     await p.click('.tblk[data-blk="tour"] .tedpen');
     eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['blk:tour', 'Bloc : Combat!'], 'Ce tour : fenêtre du bloc');
@@ -2231,6 +2231,20 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(()=>cur().turn||{}),{},'jets sans coût et jalons préservés');
   });
 
+
+  await test('Repères : bouclier CA, libellé compact et actions identifiables', async p => {
+    await diceTable(p);
+    const r = await p.evaluate(() => {
+      const ch=cur(), D=derive(ch), T=repTileMap(ch,D,chSize(ch)), box=document.createElement('div');
+      box.innerHTML=T.ca()+T.vitesse()+T.ivp()+T.harmo(); document.body.appendChild(box);
+      const ca=box.querySelector('[data-v="info:ca"]'), speed=box.querySelector('[data-v="speed"]'), inv=box.querySelector('[data-v="info:ivp"]'), harm=box.querySelector('[data-v="info:harmo"]');
+      for(const el of [ca,speed,inv,harm]) {el.style.width='70px';el.style.height='76px';}
+      const small=[getComputedStyle(inv.querySelector('.rep-full')).display,inv.getAttribute('aria-label'),harm.querySelector('.rep-label').dataset.short];
+      inv.style.width='165px'; const wide=getComputedStyle(inv.querySelector('.rep-full')).display;
+      const out=[!!ca.querySelector('.rep-shield .rico') && !!ca.querySelector('.rep-shield .num'),speed.classList.contains('rinfo'),small,wide]; box.remove(); return out;
+    });
+    eq(r,[true,false,['none','Investigation passive : 11','Harm.'],'inline'],'bouclier, vitesse interactive, libellés selon la largeur et nom accessible');
+  });
 
   if (BROWSER) await BROWSER.close();
   const ko = results.filter(r => !r[1]).length;

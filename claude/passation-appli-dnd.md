@@ -1,3 +1,5 @@
+> **Repères — design validé par Angle (12 nov. 2026)** : bouclier autour de la CA, icônes de repères, dégradé et flèche pour Initiative et Vitesse, libellés abrégés uniquement en format compact ; nom complet et valeur accessibles. Les raccourcis ne changent pas. Gabarit 76 px conservé.
+
 # Passation technique — D&D Compagnon
 
 État au 10 novembre 2026. Fusion de la passation historique (versions 112 à 118 de l'artefact) et de la passation de la reprise menée hors de Claude (sauvegardes, isolation de Claude, dés virtuels, pavé numérique, suivi du tour).

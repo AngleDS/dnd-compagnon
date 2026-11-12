@@ -516,7 +516,7 @@ function repTileMap(ch,D,size){
     comp:()=>{ const c=ch.companion; return `<button class="rtile" data-act="tpop" data-v="comp" title="Compagnon : PV et CA"><b class="num">${c?`${+c.hp?.cur||0}/${+c.hp?.max||0}`:"—"}</b><span class="label">${c&&c.name?esc(c.name):"Compagnon"}</span></button>`; },
     or:()=>t(orTotal(ch)+" po","Or","Valeur totale de ta bourse, en pièces d'or"),
     // Lot T5 (12 nov. 2026) : tuiles calculées depuis la fiche, sans saisie
-    vision:()=>{ const L=chSenses(ch,D), v=L.find(x=>x.k==="noir")||L[0]; return t(v?mFmt(v.m)+" m":"—",v&&v.k!=="noir"?SENSES[v.k]:"Vision",v?SENSES[v.k]+" sur "+mFmt(v.m)+" m":"Pas de vision dans le noir"); },
+    vision:()=>{ const L=chSenses(ch,D), v=L.find(x=>x.k==="noir")||L[0]; return t(v?mFmt(v.m)+" m":"—",v?SENSES[v.k]:"Vision",v?SENSES[v.k]+" sur "+mFmt(v.m)+" m":"Pas de vision dans le noir"); },
     bottes:()=>bottesN(D)?t(bottesN(D),"Bottes d’arme","Nombre de types d'arme dont tu peux utiliser la botte"):"",
     agrip:()=>t(8+D.pb+D.mods.for,"Agripper / bousculer","DD de la sauvegarde imposée par ta lutte ou ta bousculade"),
     saut:()=>t(mFmt(+(D.abEff?.for??10)*0.3)+" m","Saut","Saut en longueur avec élan"),
@@ -531,6 +531,15 @@ function repTileMap(ch,D,size){
   // sans liseré ni dégradé (réservés aux fenêtres où l'on agit). Petite icône dorée au-dessus du chiffre (variante A).
   for(const id of Object.keys(T)){ const f=T[id]; T[id]=()=>{ let h=f(); if(!h) return h;
     if(h.startsWith('<span class="rtile"')) h=h.replace('<span class="rtile"',`<button class="rtile rinfo" data-act="tpop" data-v="info:${id}"`).replace(/<\/span>$/,"</button>");
+    if(Object.prototype.hasOwnProperty.call(TILE_CAT.reperes,id)){
+      const label=h.match(/<span class="label">([^<]*)<\/span>/), full=label&&label[1];
+      const compact={ivp:"Invest. passive",harmo:"Harm.",agrip:"Agripper / Bousculer",malice:"DD Frappe malicieuse",aura:"Aura protection",souffle:"DD souffle",vision:full==="Perception des vibrations"?"Percept. vibrations":full==="Vision dans le noir"?"Vision nocturne":full}[id]||full;
+      const value=h.match(/<b class="num">([^<]*)<\/b>/);
+      if(full) h=h.replace(label[0],`<span class="label rep-label" data-short="${esc(compact)}"><span class="rep-full">${full}</span></span>`).replace('<button class="rtile',`<button aria-label="${esc(full)} : ${esc(value?value[1]:"")}" class="rtile rep-value-tile`);
+      if(id==="ca") h=h.replace(/<b class="num">([\s\S]*?)<\/b>/,`<span class="rep-shield"><svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON.ca}</svg><b class="num">$1</b></span>`);
+      else if(REP_ICON[id]) h=h.replace('<b class="num',`<svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON[id]}</svg><b class="num`);
+      return h;
+    }
     return REP_ICON[id]?h.replace('<b class="num',`<svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${REP_ICON[id]}</svg><b class="num`):h; }; }
   return T;
 }
