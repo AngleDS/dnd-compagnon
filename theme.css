@@ -320,7 +320,7 @@ button.health-detail{border:0;background:none;box-shadow:none;text-align:left;co
 
 /* Carte PV : PV temp., PV max ±, dés de vie et Repos alignés ; emplacements de sorts qui s'adaptent au perso */
 .health-details .health-detail{align-self:start;align-content:start}
-.character-rest{margin-left:auto;align-self:center;display:grid;justify-items:center;gap:4px}
+.character-banner{position:relative}.character-rest{position:absolute;top:0;right:0;margin:0}.tblk .character-banner .character-identity h1{padding-right:52px}
 .character-rest .hprest{display:inline-flex;align-items:center;justify-content:center;width:44px;height:36px;min-height:36px;padding:0}
 .character-rest .hprest .tpi{width:20px;height:20px;stroke:var(--brass)}
 @media (pointer:coarse){.character-rest .hprest{height:44px;min-height:44px}}
@@ -504,3 +504,10 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
 .bfmt .bpat{width:100%;min-width:0;padding:6px 2px}
 .bfmt .bpat .bpg{width:100%;max-width:60px}
 .bfmt .bnone{visibility:hidden}
+
+/* Lot jets directs et confort (12 nov. 2026) */
+.trow .tkb{display:inline-flex;align-items:baseline;gap:6px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--sheet2);cursor:pointer}
+.trow .tkb b{color:var(--brass)}.trow .tkb:hover,.trow .tkb:focus-visible{border-color:var(--brass)}
+.tblocks.tfree .tblkc .ccell>*{height:100%}
+.tblocks.tfree .ccell[data-sz="2"] b.num{font-size:var(--fs-2xl)}
+.tblocks.editing .tblk{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}

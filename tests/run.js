@@ -414,14 +414,14 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const al = await p.evaluate(() => [document.querySelector('.table-overview').getBoundingClientRect().left, document.querySelector('.tgrid').getBoundingClientRect().left]);
     ok(Math.abs(al[0] - al[1]) < 2, 'bords gauches alignés : ' + al);
     await p.click('[data-act="restOpen"][data-v=""]');
-    ok(await p.evaluate(() => S.T.pop === 'rest' && !document.querySelector('[data-act="restShort"]') && !document.querySelector('[data-act="restLong"]')), 'choix du repos');
+    ok(await p.evaluate(() => S.T.pop === 'rest' && !!document.querySelector('[data-act="restShort"]') && !document.querySelector('.restpick') && document.querySelector('[data-act="restKind"][data-v="court"]').getAttribute('aria-pressed') === 'true' && /1 heure au moins/.test(document.querySelector('.restwhat').textContent)), 'Repos : une seule fenêtre, repos court détaillé d’emblée, choix Court / Long en haut');
     await p.click('[data-act="restKind"][data-v="court"]'); ok(await p.evaluate(() => !!document.querySelector('[data-act="restShort"]')), 'repos court');
     await p.click('[data-act="restShort"]'); eq(await p.evaluate(() => [cur().pactUsed, cur().hp.cur, S.T.pop]), [0, 3, null], 'repos court : pacte récupéré, PV inchangés');
     await p.click('[data-act="restOpen"][data-v=""]'); await p.click('[data-act="restKind"][data-v="long"]'); await p.click('[data-act="restLong"]');
     eq(await p.evaluate(() => [cur().hp.cur === derive(cur()).hpMax, cur().hdUsed, S.T.pop]), [true, 0, null], 'repos long : PV et dés de vie');
     await p.click('.health-dice'); ok(await p.evaluate(() => !S.T.pop), 'toucher les dés de vie n’ouvre rien');
     ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="perso"] .character-banner .character-rest [data-act="restOpen"]') && !document.querySelector('.health-card [data-act="restOpen"]') && !document.querySelector('.tpanels [data-act="restOpen"]')), 'bouton Repos à droite du bandeau du personnage, plus dans la carte PV');
-    await p.click('.character-rest [data-act="restOpen"]'); ok(await p.evaluate(() => document.querySelectorAll('.restpick .restcard').length === 2), 'deux cartes séparées');
+    await p.click('.character-rest [data-act="restOpen"]'); ok(await p.evaluate(() => S.T.pop === 'rest' && !document.querySelector('.restpick') && document.querySelectorAll('.tpop [data-act="restKind"]').length === 2 && !!document.querySelector('.tpop [data-act="restShort"]')), 'une seule fenêtre : choix Court / Long et détail du repos court');
   });
  
   await test('Portrait : image réduite et enregistrée dans la fiche', async p => {
@@ -1237,7 +1237,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq([geo.n, geo.w < 6, geo.h < 1, geo.rows, geo.gap], [8, true, true, [true, true], 20], 'huit tuiles de même hauteur, rangées de ressources en face des rangées de repères, 20 px d’une tuile à l’autre (8 + 4 + 8) : ' + JSON.stringify(geo));
     ok(await p.evaluate(() => { const l = document.querySelector('.tblk[data-blk="ressources"] > .tband'); return l.textContent === 'Ressources' && l.scrollWidth <= l.clientWidth + 1; }), 'titre « Ressources » entier dans sa colonne');
     await p.click('.tblk[data-blk="ressources"] .rrestile:last-child');
-    eq(await p.evaluate(() => [S.T.pop.startsWith('res:'), !!document.querySelector('.tpop .pips,.tpop .rresstep,.tpop .rresopen')]), [true, true], 'toucher une ressource ouvre la petite fenêtre');
+    eq(await p.evaluate(() => [S.T.pop, /^res:/.test(S.T.sel), !!document.querySelector('.tpop .pips,.tpop [data-act="tpool"],.tpop [data-act="rouerie"]'), !/Description et usage/.test(document.querySelector('.tpop').textContent)]), ['card', true, true, true], 'toucher une ressource ouvre directement sa fiche, compteur compris (plus de fenêtre intermédiaire)'); await p.keyboard.press('Escape');
     await p.evaluate(() => { S.T.pop = 'res:cls:imposition-des-mains'; render(); }); await p.click('.tpop [data-act="resstep"][data-v="1"]');
     eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], document.querySelector('.tblk[data-blk="ressources"] .rrestile').querySelector('.num').textContent]), [1, '9/10'], 'dépense dans la fenêtre, tuile à jour');
     await p.keyboard.press('Escape'); await p.evaluate(() => { cur().level = 3; render(); });
@@ -1260,7 +1260,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const g = await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="ressources"]').getBoundingClientRect(), t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => Math.round(e.getBoundingClientRect().width)), r = [...document.querySelectorAll('.tblk[data-blk="ressources"] .rtile')].map(e => Math.round(e.getBoundingClientRect().width));
       return { same: Math.round(a.top) === Math.round(b.top), right: b.left > a.right, rep3: Math.round(a.width / b.width), tw: t[0], rw: r[0], pair: !!document.querySelector('.rpair'), ov: document.documentElement.scrollWidth <= innerWidth }; });
     eq([g.same, g.right, g.rep3, Math.abs(g.tw - g.rw) <= 6, g.pair, g.ov], [true, true, 3, true, false, true], 'Repères (3) et Ressources (1) côte à côte, tuiles de largeur voisine (8 px de marge dans chaque bloc), sans débordement : ' + JSON.stringify(g));
-    await p.click('.tblk[data-blk="ressources"] .rrestile'); ok(await p.evaluate(() => S.T.pop.startsWith('res:')), 'Ressources en colonne : un toucher ouvre la petite fenêtre'); await p.keyboard.press('Escape');
+    await p.click('.tblk[data-blk="ressources"] .rrestile'); ok(await p.evaluate(() => S.T.pop === 'card' && /^res:/.test(S.T.sel)), 'Ressources en colonne : un toucher ouvre directement la fiche'); await p.keyboard.press('Escape');
     await p.evaluate(() => { cur().layout.width.raccourcis = 2; cur().layout.width.notes = 2; cur().layout.order = ['raccourcis', 'notes', 'perso', 'reperes', 'ressources', 'pv']; render(); });
     eq(await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="raccourcis"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="notes"]').getBoundingClientRect(); return [Math.round(a.top) === Math.round(b.top), getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpanels')).gridTemplateColumns.split(' ').length]; }), [true, 1], 'Raccourcis et Notes (2 colonnes chacun) côte à côte, tuiles sur une colonne');
     // Bloc créé : largeur ≥ nombre de colonnes de tuiles ; une tuile trop large retourne dans la réserve
@@ -1498,6 +1498,61 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const r = await p.evaluate(() => { const t = document.querySelector('.tblocks.tfree .tband'); if (!t) return null; const pr = document.createElement('span'); pr.style.color = 'var(--ink)'; document.body.append(pr); const ink = getComputedStyle(pr).color; pr.remove(); const c = getComputedStyle(t); return { font: c.fontFamily, color: c.color, ink }; });
     ok(r, 'aucun bloc à tuiles affiché'); ok(/IM Fell/.test(r.font), 'police des titres de bloc : ' + r.font); ok(r.color === r.ink, 'couleur des titres de bloc : ' + r.color + ' (attendu ' + r.ink + ')');
   });
+  await test('Jets directs : Toucher et Dégâts depuis une ligne (dés physiques et virtuels), aussi dans la Recherche', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { S.T.pop = 'list:atk'; render(); });
+    ok(await p.locator('.tpop .trow .tkb[data-r="hit"]').count() > 0 && await p.locator('.tpop .trow .tkb[data-r="dmg"]').count() > 0, 'Toucher et Dégâts sont des boutons dans les lignes');
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();
+    eq(await p.evaluate(() => [S.T.pop, !!document.querySelector('#dice-pad'), dicePad && dicePad.target.id]), ['card', true, 't-d1'], 'dés physiques : la fiche s’ouvre avec le pavé sur le d20');
+    await padNumber(p, 12);
+    eq(await p.evaluate(() => [S.T.d1, /toucher/.test(cur().rollLog[0].label), cur().rollLog[0].total === 12 + S.Titems.find(i => i.key === S.T.sel).mod]), ['12', true, true], 'valeur saisie, jet enregistré');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { setVirtualDice(true); cur().turn = {}; S.T.pop = 'list:atk'; render(); });
+    const n0 = await p.evaluate(() => cur().rollLog.length);
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();
+    eq(await p.evaluate(n0 => [S.T.pop, +S.T.d1 >= 1 && +S.T.d1 <= 20, cur().rollLog.length === n0 + 1, /toucher/.test(cur().rollLog[0].label), !!document.querySelector('#dice-pad')], n0), ['card', true, true, true, false], 'dés virtuels : un toucher lance l’attaque, résultat dans la fiche');
+    ok(await p.evaluate(() => !!document.querySelector('.tpop [data-act="tvdmg"]')), 'les dégâts s’enchaînent depuis la même fiche');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { cur().turn = {}; S.T.pop = 'list:atk'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="dmg"]').first().click();
+    eq(await p.evaluate(() => [S.T.pop, S.T.dmg !== '', /dégâts/i.test(cur().rollLog[0].label)]), ['card', true, true], 'dés virtuels : un toucher sur Dégâts lance les dégâts');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { cur().turn = {}; S.T.pop = null; render(); });
+    const nm = await p.evaluate(() => S.Titems.find(i => i.kind === 'atk').name);
+    await p.fill('#tq', nm);
+    ok(await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-r="hit"]').count() > 0, 'Recherche : la ligne trouvée a les mêmes boutons');
+    await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-r="hit"]').first().click();
+    eq(await p.evaluate(() => [S.T.pop, /toucher/.test(cur().rollLog[0].label)]), ['card', true], 'Recherche : Toucher lance le jet directement');
+  });
+
+  await test('Grande case 2×2 : la tuile occupe vraiment deux rangées', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { const ch = cur(); ch.layout = Object.assign({}, ch.layout, { custom: [{ id: 'c_grand000', name: 'Grand', r: 2, c: 2, ag: 'g', tiles: [{ id: 'ca', sz: '2', r: 0, c: 0 }] }] }); render(); });
+    const g = await p.evaluate(() => { const c = document.querySelector('.tblk[data-blk="c_grand000"] .ccell[data-sz="2"]'); if (!c) return null; const t = c.firstElementChild.getBoundingClientRect(), th = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--th')); return [Math.round(t.height), Math.round(c.getBoundingClientRect().height), 2 * th + 12]; });
+    ok(g, 'la grande case est affichée');
+    eq([g[0], g[1]], [g[2], g[2]], 'tuile 2×2 : hauteur de deux tuiles plus l’écart, sans vide dessous');
+  });
+
+  await test('Glisser un bloc : attrapé par son contenu, défilement automatique rapide, un seul calcul par image', async p => {
+    await p.setViewportSize({ width: 390, height: 900 }); await diceTable(p); await menuClick(p, '[data-act="layoutEdit"]');
+    const vis = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].sort((a, b) => a.offsetTop - b.offsetTop || a.offsetLeft - b.offsetLeft).map(b => b.dataset.blk));
+    await p.evaluate(() => scrollTo(0, 0));
+    const src = await p.locator('.tblk[data-blk="pv"] .health-card').boundingBox(), top = await p.locator('.tblk[data-blk="perso"]').boundingBox();
+    await p.mouse.move(src.x + src.width / 2, src.y + src.height / 2); await p.mouse.down();
+    for (let i = 1; i <= 12; i++) { await p.mouse.move(src.x + src.width / 2, src.y + src.height / 2 + (top.y + 10 - src.y - src.height / 2) * i / 12); await p.waitForTimeout(20); }
+    await p.mouse.up();
+    eq((await vis())[0], 'pv', 'bloc attrapé par son contenu (carte PV), sans passer par la poignée');
+    await p.setViewportSize({ width: 390, height: 600 }); await p.evaluate(() => scrollTo(0, 0));
+    const b = await p.locator('.tblk[data-blk="pv"] > .tband').boundingBox();
+    await p.mouse.move(b.x + 80, b.y + 8); await p.mouse.down(); await p.mouse.move(b.x + 80, b.y + 30, { steps: 3 });
+    await p.mouse.move(b.x + 80, 595, { steps: 3 }); await p.waitForTimeout(600);
+    const sc = await p.evaluate(() => [scrollY, document.documentElement.scrollHeight - innerHeight]);
+    ok(sc[0] >= Math.min(1000, sc[1] - 5), 'défilement automatique rapide près du bord (plus de 1000 px en 0,6 s) : ' + sc);
+    const n = await p.evaluate(async () => { let k = 0; const o = window.blkPlace; window.blkPlace = function () { k++; return o.apply(this, arguments); };
+      for (let i = 0; i < 30; i++) document.dispatchEvent(new PointerEvent('pointermove', { pointerId: BLKD.id, pointerType: 'mouse', clientX: 120 + i, clientY: 300, bubbles: true }));
+      const sync = k; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); window.blkPlace = o; return [sync, k]; });
+    ok(n[0] === 0 && n[1] >= 1 && n[1] <= 3, '30 mouvements : aucun calcul immédiat, au plus un par image : ' + n);
+    await p.mouse.up();
+  });
+
   await test('Formats des blocs de base : largeur × tuiles par rangée (Ressources, Ce tour), agencements sans doublon, import', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 3; render(); });
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="ressources"] .tedpen');
@@ -1565,7 +1620,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 2; cur().layout = { order: ['notes', 'perso'], hidden: ['tour'], titles: { notes: 'X' } }; render(); });
     ok(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].every(b => getComputedStyle(b).borderTopStyle === 'solid' && parseFloat(getComputedStyle(b).borderTopWidth) >= 1)), 'en jeu, chaque bloc a un liseré');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-act="layoutAuto"]');
-    eq(await p.evaluate(() => [cur().layout.order.slice(0, 7), cur().layout.width, cur().layout.hidden, cur().layout.titles]), [['perso', 'reperes', 'ressources', 'pv', 'recherche', 'tour', 'raccourcis'], { recherche: 2, notes: 2, reperes: 3, ressources: 1 }, [], {}],
+    eq(await p.evaluate(() => [cur().layout.order.slice(0, 7), cur().layout.width, cur().layout.hidden, cur().layout.titles]), [['perso', 'reperes', 'ressources', 'pv', 'recherche', 'tour', 'raccourcis'], { recherche: 4, notes: 4, reperes: 3, ressources: 1 }, [], {}],
       'paladin 2 (6 repères, 2 ressources) : Ressources à droite de Repères, Recherche et Notes côte à côte, tout remis');
     ok(await p.evaluate(() => /Disposition automatique appliquée/.test(document.querySelector('.tundo').textContent)), 'bandeau « Annuler »');
     await p.click('.tundo [data-act="blkUndo"]');
@@ -1662,7 +1717,14 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
     ok(await p.evaluate(() => !document.querySelector('.health-card [data-act="insp"]') && !!document.querySelector('.health-card .tconcb')), 'carte PV : plus d’Inspiration, Concentration toujours là');
     await p.click('.tblk[data-blk="raccourcis"] [data-act="insp"]');
-    eq(await p.evaluate(() => [cur().inspiration, document.querySelector('.tblk[data-blk="raccourcis"] [data-act="insp"]').getAttribute('aria-pressed')]), [true, 'true'], 'tuile Inspiration : un toucher la gagne');
+    eq(await p.evaluate(() => [!!cur().inspiration, S.T.pop, /repos long/.test(document.querySelector('.tpop').textContent)]), [false, 'insp', true], 'tuile Inspiration dépensée : un toucher ne la rend pas, il explique (repos long ou MJ)');
+    await p.click('.tpop [data-act="inspGain"]');
+    eq(await p.evaluate(() => [cur().inspiration, S.T.pop, document.querySelector('.tblk[data-blk="raccourcis"] [data-act="insp"]').getAttribute('aria-pressed')]), [true, null, 'true'], '« Le MJ me l’accorde » la rend');
+    await p.click('.tblk[data-blk="raccourcis"] [data-act="insp"]');
+    eq(await p.evaluate(() => [cur().inspiration, S.T.pop, cur().rollLog[0].label]), [false, null, 'Inspiration héroïque utilisée'], 'un toucher la dépense, ligne dans l’historique');
+    await p.click('.tblk[data-blk="raccourcis"] [data-act="insp"]'); await p.keyboard.press('Escape');
+    await p.evaluate(() => { cur().species = 'srd:humain'; applyRest('court'); }); ok(!await p.evaluate(() => cur().inspiration), 'repos court : pas d’Inspiration (règle : repos long)');
+    await p.evaluate(() => { applyRest('long'); render(); }); ok(await p.evaluate(() => cur().inspiration), 'repos long : Inspiration regagnée (Humain, Ingénieux)');
     await p.evaluate(() => { const ch = cur(); ch.layout = { tiles: { raccourcis: ['skills','saves','cond','inv','equip',''] } }; render(); });
     eq(await p.evaluate(() => [blockTiles(cur(), 'raccourcis')[5], cur().layout.tiles.raccourcis[5], !!cur().layout.inspSeen]), ['insp', '', false], 'disposition déjà enregistrée : Inspiration ajoutée à l’écran sans rien écrire');
     await p.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); }); await p.click('.tpop [data-act="tileCell"][data-i="0"]'); await p.click('.tpop [data-act="tileCell"][data-i="1"]');

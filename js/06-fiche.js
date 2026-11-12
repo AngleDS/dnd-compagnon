@@ -134,7 +134,7 @@ function viewSheet(){
           <div><span class="label">Joueur·se</span><span>${esc(ch.player||"—")}</span></div>
         </div>${ch.alignment?`<div class="meta">${esc(ch.alignment)}</div>`:""}
       </div>
-      ${S.tab==="table"?`<div class="character-rest"><span class="label">Repos</span><button class="btn hprest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg></button></div>`:`<div class="row" style="margin-left:auto"><span class="label">Bonus de maîtrise</span><b class="num">${sg(D.pb)}</b>${D.cls&&D.L<20?`<button class="btn small" data-act="lvlUp" title="Assistant de montée de niveau">Niveau ${D.L+1} ↑</button>`:""}</div>`}
+      ${S.tab==="table"?`<div class="character-rest"><button class="btn hprest" data-act="restOpen" data-v="" aria-label="Repos court ou long" title="Repos court ou repos long"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18v-5.5A2.5 2.5 0 0 1 7.5 10h9a2.5 2.5 0 0 1 2.5 2.5V18"/><path d="M7 10V7.5A1.5 1.5 0 0 1 8.5 6h2A1.5 1.5 0 0 1 12 7.5V10"/><path d="M16.5 3.5h3l-3 3h3"/></svg></button></div>`:`<div class="row" style="margin-left:auto"><span class="label">Bonus de maîtrise</span><b class="num">${sg(D.pb)}</b>${D.cls&&D.L<20?`<button class="btn small" data-act="lvlUp" title="Assistant de montée de niveau">Niveau ${D.L+1} ↑</button>`:""}</div>`}
     </div>`;
   return `${S.tab==="table"?"":banner}
     ${S.tab==="table"?"":`<div class="tabs sheettabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}</div>`}
@@ -186,7 +186,7 @@ function tabJeu(ch,D){
     ${(res+cnts)||`<div class="muted">Aucune ressource à suivre pour l'instant.</div>`}
     <div class="sect"><h2>États</h2><div class="row"><span class="label">Épuisement</span>
       <button class="btn small" data-act="exh" data-v="-1">−</button><b class="num">${D.exh}</b><button class="btn small" data-act="exh" data-v="1">+</button>
-      <button class="chip" aria-pressed="${!!ch.inspiration}" data-act="insp">Inspiration héroïque</button></div></div>
+      <button class="chip" aria-pressed="${!!ch.inspiration}" data-act="insp" data-v="toggle">Inspiration héroïque</button></div></div>
     <div class="row">${conds}</div>
     <div class="row" style="margin-top:10px"><label class="field" style="flex:1;min-width:200px"><span>Concentration en cours</span><input id="f-conc" type="text" data-bind="conc" value="${esc(ch.conc||"")}" placeholder="Aucun sort"></label>
       <button class="btn" data-virtual data-act="r20" data-l="JS de Concentration" data-m="${D.saves.con.val}">JS Concentration ${sg(D.saves.con.val)}</button></div>

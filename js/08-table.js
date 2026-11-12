@@ -284,11 +284,12 @@ function tPop(ch,D){
       quick:`<button class="btn small" data-act="hpmaxb" data-v="5">+5 (Aide)</button><button class="btn small" data-act="hpmaxb" data-v="10">+10</button>${b?`<button class="btn small ghost" data-act="hpmaxb" data-v="${-b}">Remettre à zéro</button>`:""}`,
       info:`Base <b class="num">${D.hpBase}</b> · Maximum actuel <b class="num">${D.hpMax}</b>`,
       note:"Un bonus augmente aussi tes PV actuels du même montant (comme le sort Aide). Un malus les plafonne au nouveau maximum. Tout revient à la normale au repos long."}); }
+  if(k==="insp"){ const human=(()=>{ const sp=srd("species",ch.species); return !!(sp&&sp.traits.some(t=>t.name==="Ingénieux")); })();
+    return wrap("Inspiration héroïque",`<div class="texpl inspgain"><p>Tu as déjà utilisé ton Inspiration héroïque.</p><p class="muted">${human?"Tu la regagnes à la fin de ton prochain repos long (Ingénieux). ":""}Le MJ peut aussi t'en accorder une. On n'en a qu'une à la fois.</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="inspGain">Le MJ me l'accorde</button></div></div>`); }
   if(k==="rest"){ const hdLeft=Math.max(0,D.L-(+ch.hdUsed||0)), cur0=+(ch.hp?.cur||0);
     const shortRes=D.res.filter(r=>r.recharge==="court"||r.recharge==="long_court1"||r.recharge==="court_partiel"||(r.recharge==="long_court5"&&D.L>=5)).map(r=>r.name);
-    const kind=S.T.restKind||"";
-    const pick=`<div class="adv" role="group" aria-label="Type de repos" style="margin-bottom:12px;grid-template-columns:repeat(2,1fr)"><button aria-pressed="${kind==="court"}" data-act="restKind" data-v="court">Repos court</button><button aria-pressed="${kind==="long"}" data-act="restKind" data-v="long">Repos long</button></div>`;
-    if(!kind) return wrap("Repos",`<div class="restpick"><button class="restcard" data-act="restKind" data-v="court"><b>Repos court</b><span class="muted">1 heure au moins. Tu peux dépenser des dés de vie (${hdLeft} restant${hdLeft>1?"s":""}) ; ${D.cast&&D.cast.type==="pact"?"tes emplacements de pacte reviennent, ":""}ainsi que les ressources de repos court.</span></button><button class="restcard" data-act="restKind" data-v="long"><b>Repos long</b><span class="muted">8 heures au moins. Tout revient : PV, dés de vie, emplacements et ressources ; l'épuisement baisse d'un niveau.</span></button></div>`);
+    const kind=S.T.restKind||"court";
+    const pick=`<div class="adv" role="group" aria-label="Type de repos" style="margin-bottom:12px;grid-template-columns:repeat(2,1fr)"><button aria-pressed="${kind==="court"}" data-act="restKind" data-v="court">Repos court</button><button aria-pressed="${kind==="long"}" data-act="restKind" data-v="long">Repos long</button></div><div class="muted restwhat" style="font-size:var(--fs-sm);margin:-4px 0 12px">${kind==="long"?"8 heures au moins. Tout revient : PV, dés de vie, emplacements et ressources ; l'épuisement baisse d'un niveau.":`1 heure au moins. Tu peux dépenser des dés de vie (${hdLeft} restant${hdLeft>1?"s":""}) ; ${D.cast&&D.cast.type==="pact"?"tes emplacements de pacte reviennent, ":""}ainsi que les ressources de repos court.`}</div>`;
     if(kind==="long"){ const human=(()=>{ const sp=srd("species",ch.species); return !!(sp&&sp.traits.some(t=>t.name==="Ingénieux")); })();
       return wrap("Repos",pick+`<div class="row" style="gap:18px;align-items:flex-end"><div><div class="label">Points de vie</div><b class="num" style="font-size:var(--fs-2xl)">${cur0}</b><span class="muted num"> / ${D.hpBase}</span></div><div><div class="label">Dés de vie restants</div><b class="num" style="font-size:var(--fs-2xl)">${hdLeft}</b><span class="muted num"> / ${D.L}</span></div></div>
         <div class="lusec"><div class="label">À la fin du repos long</div><ul class="lul"><li>PV au maximum (${D.hpBase})${D.hpBonus?", bonus de PV max temporaire retiré":""}</li><li>Tous les dés de vie récupérés</li><li>${D.cast?"Tous les emplacements de sorts récupérés":"Ressources récupérées"}</li>${D.res.length?`<li>${D.res.map(r=>esc(r.name)).join(", ")}</li>`:""}${+ch.exhaustion?`<li>Épuisement : ${+ch.exhaustion} → ${+ch.exhaustion-1}</li>`:""}${human?"<li>Inspiration héroïque regagnée (Ingénieux)</li>":""}</ul></div>
@@ -540,7 +541,7 @@ function resBlock(ch,D){ if(!D.res.length) return ""; const w=blkWidth(ch,"resso
     return `<div class="rres${left<=0?" vide0":""}"><button class="rresname" ${c||'disabled'} title="Voir la ressource"><span class="label">${esc(r.name)}</span><small class="muted">${esc(rechargeLabel(r.recharge))}</small></button>${resCtl(ch,r)}</div>`; }).join("");
   return `${tbHead("ressources","Ressources","blk:ressources")}<div class="rresgrid" ${cs} role="group" aria-label="Ressources">${tiles}</div>`; }
 const resCompact=(ch,D)=>D.res.map(r=>{ const left=r.max-Math.min(r.max,+(ch.resUsed?.[r.id]||0));
-  return `<button class="rtile rrestile${left<=0?" vide0":""}" data-act="tpop" data-v="res:${esc(r.id)}" title="${esc(r.name)} : dépenser ou récupérer"><b class="num">${left}/${r.max}${r.pool?`<small> d${r.die}</small>`:""}</b><span class="label">${esc(r.name)}</span></button>`; }).join("");
+  return `<button class="rtile rrestile${left<=0?" vide0":""}" ${resCard(r)||`data-act="tpop" data-v="res:${esc(r.id)}"`} title="${esc(r.name)} : dépenser ou récupérer"><b class="num">${left}/${r.max}${r.pool?`<small> d${r.die}</small>`:""}</b><span class="label">${esc(r.name)}</span></button>`; }).join("");
 const resCard=r=>{ const it=(S.Titems||[]).find(x=>x.res&&x.res.id===r.id); return it?`data-act="tsel" data-k="${esc(it.key)}"`:""; };
 /* Commande d'une ressource : ronds (≤ 8), − / + au-delà ; réserve de dés et Rouerie magique : leur fiche (dépense guidée). */
 function resCtl(ch,r){ const used=Math.min(r.max,+(ch.resUsed?.[r.id]||0)), left=r.max-used, sid=esc(r.id);
@@ -835,7 +836,7 @@ const cellStyle=(t,R,C)=>{ const [h,w]=tileSpan(t.sz,R,C); return `grid-row:${t.
 function customBlockHtml(ch,D,b,ctx){
   const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b), wide=t=>sizeW(t.sz,b.c,b.w||4)>=TILE_W.L;
   const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:t.id==="search"&&wide(t)&&!S.T._tq?searchBar():(wide(t)&&TILE_GEN[t.id]&&Rm[t.id]?Rm[t.id]():((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||""));
-    return h?`<div class="ccell" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
+    return h?`<div class="ccell" data-sz="${esc(t.sz)}" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
   let html=tiles.map(one).join("");
   occ.forEach((row,r)=>row.forEach((k,c)=>{ if(k<0) html+=`<div class="ccell" style="grid-row:${r+1};grid-column:${c+1}">${plusTile(b.id,r*b.c+c,"rtile vide")}</div>`; }));
   return `${tbHead(b.id,b.name)}<div class="cgrid" style="grid-template-columns:repeat(${b.c},minmax(0,1fr));grid-template-rows:repeat(${b.r},var(--th))">${html}</div>`;
@@ -939,7 +940,7 @@ window.addEventListener("resize",()=>{ if(S.view==="sheet"&&S.tab==="table") tab
    Repères à 3 colonnes avec Ressources en colonne à droite quand ses tuiles tiennent sur une ou deux rangées et qu'il y a une ressource par rangée,
    sinon pleine largeur ; Raccourcis conseillés ; Recherche et Notes côte à côte en bas ; les blocs créés sont retirés (décision d'Angle ; « Annuler » les rend). Titres d'origine. */
 function autoLayout(ch){ const D=derive(ch), n=reperesAuto(ch,D).length, nr=D.res.length, cb=[];
-  const width={recherche:2,notes:2}, order=["perso"];
+  const width={recherche:4,notes:4}, order=["perso"];
   if(nr&&n<=6&&nr===Math.ceil(n/3)){ width.reperes=3; width.ressources=1; order.push("reperes","ressources","pv","recherche"); }
   else { order.push("reperes","pv","recherche"); if(nr) order.push("ressources"); }
   order.push("tour","raccourcis","notes",...cb);
@@ -991,11 +992,13 @@ function tResults(){
 }
 function tRow(i,first,inEco){
   const kv=(l,v)=>`<span class="tk"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
+  // Jet direct (Toucher, Dégâts, Soins) : la valeur est un bouton ; le reste de la ligne ouvre la fiche
+  const kb=(l,v,r)=>`<span class="tk tkb" role="button" tabindex="0" data-act="tqroll" data-k="${esc(i.key)}" data-r="${r}" aria-label="${l} : lancer (${esc(i.name)})" title="${l} : lancer"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
   let right="";
-  if(i.kind==="atk") right=kv("Toucher",sg(i.mod))+kv("Dégâts",i.dmg);
+  if(i.kind==="atk") right=kb("Toucher",sg(i.mod),"hit")+kb("Dégâts",i.dmg,"dmg");
   else if(i.kind==="spell"){
-    if(i.roll) right+= i.roll.startsWith("DD") ? kv("DD",i.roll.slice(3)) : kv("Toucher",i.roll);
-    if(i.dice){ const D=S.Tderived; const b=(i.sp.level===0&&i.m&&i.m.beams&&D)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1; right+=kv(i.heal?"Soins":"Dégâts",(b>1?b+" × ":"")+i.dice); }
+    if(i.roll) right+= i.roll.startsWith("DD") ? kv("DD",i.roll.slice(3)) : kb("Toucher",i.roll,"hit");
+    if(i.dice){ const D=S.Tderived; const b=(i.sp.level===0&&i.m&&i.m.beams&&D)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1; right+=kb(i.heal?"Soins":"Dégâts",(b>1?b+" × ":"")+i.dice,"dmg"); }
     right+=`<span class="tklvl">${i.sp.level?"niv. "+i.sp.level:"mineur"}</span>`;
   }
   else if(i.mod!==undefined) right=`<b class="num tkv">${sg(i.mod)}</b>`;

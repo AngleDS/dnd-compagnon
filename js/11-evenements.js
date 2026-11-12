@@ -184,6 +184,11 @@ document.addEventListener("click",e=>{
       const gain=D.L>=20?spent:Math.min(spent,Math.ceil(D.cast.pactSlots/2)); ch.pactUsed=spent-gain; ch.resUsed=ch.resUsed||{}; ch.resUsed["cls:rouerie-magique"]=1;
       addLog({label:"Rouerie magique",total:"+"+gain,bd:gain+" emplacement(s) de pacte récupéré(s). Utilisable à nouveau après un repos long.",kind:"info"}); touch(S.cur); render(); break; }
     case "tsel": tSelect(t.dataset.k); break;
+    case "tqroll": { // jet direct depuis une ligne : la fiche s'ouvre et le jet part (dés virtuels) ou le pavé s'ouvre (dés physiques)
+      const r=t.dataset.r; tSelect(t.dataset.k); const pop=document.querySelector(".tpop"); if(!pop) break;
+      if(virtualDiceEnabled()){ const b=pop.querySelector(r==="hit"?'[data-act="tvroll"]':'[data-act="tvdmg"]:not([data-crit])'); if(b) b.click(); }
+      else { const inp=pop.querySelector(r==="hit"?"#t-d1":"#t-dmg"); if(inp){ inp.scrollIntoView({block:"center"}); openDicePad(inp); } }
+      break; }
     case "saveApp": saveApp(); break;
     case "hpmaxb": hpMaxAdd(ch,+t.dataset.v); render(); break;
     case "pvpad": { const inp=t.closest(".pvpop")?.querySelector("input[data-pvset]"); if(inp) openDicePad(inp,true); break; }
@@ -267,7 +272,12 @@ document.addEventListener("click",e=>{
     case "cond": { const c=t.dataset.v; ch.conditions=ch.conditions||[]; ch.conditions=ch.conditions.includes(c)?ch.conditions.filter(x=>x!==c):[...ch.conditions,c]; touch(S.cur); render(); break; }
     case "exh": ch.exhaustion=Math.max(0,Math.min(6,(+ch.exhaustion||0)+(+t.dataset.v))); touch(S.cur); render(); break;
     case "tsearch": { const q=document.getElementById("tq"); if(q&&!q.closest(".tpop")){ q.scrollIntoView({block:"center",behavior:"smooth"}); q.focus({preventScroll:true}); } else { S.T.pop="search"; render(); setTimeout(()=>document.getElementById("tq")?.focus(),0); } break; }
-    case "insp": ch.inspiration=!ch.inspiration; touch(S.cur); render(); break;
+    case "insp": // fiche : simple case à cocher ; à la table : un toucher la dépense, la regagner passe par le repos long ou le MJ
+      if(t.dataset.v==="toggle"){ ch.inspiration=!ch.inspiration; touch(S.cur); render(); break; }
+      if(ch.inspiration){ ch.inspiration=false; addLog({label:"Inspiration héroïque utilisée",total:"✓",bd:"Revient au repos long (Ingénieux) ou quand le MJ l'accorde.",kind:"info"}); touch(S.cur); render(); }
+      else { S.T=S.T||{}; S.T.pop="insp"; render(); }
+      break;
+    case "inspGain": ch.inspiration=true; addLog({label:"Inspiration héroïque regagnée",total:"✓",bd:"Accordée par le MJ.",kind:"info"}); S.T.pop=null; touch(S.cur); render(); break;
     case "spdstep": case "spdset": if(ch){ const k=t.dataset.k; if(!SPD_MODES.some(m=>m[0]===k)) break; const sp=Object.assign({},ch.speeds), n=a==="spdset"?+t.dataset.v:(+sp[k]||0)+(+t.dataset.v);
       sp[k]=Math.max(0,Math.min(60,Math.round(n*10)/10)); if(!sp[k]) delete sp[k]; ch.speeds=sp; touch(S.cur); render(); } break;
     case "addAttack": { ch.attacks=ch.attacks||[]; const id=uid(); ch.attacks.push({id,name:"",weapon:"",ability:"auto",prof:true}); touch(S.cur); S.pending={type:"attack",id}; render(); break; }
@@ -506,12 +516,16 @@ const LONG_PRESS_MS=350; // appui long avant tout glisser au doigt (blocs, tuile
    Au lâcher, on enregistre une relation (« sous tel bloc », « même hauteur », « rangée 2 »…) plutôt que des pixels. */
 const SNAP=22;
 function blkDeps(ch,id){ const pos=ch.layout?.pos||{}, out=new Set([id]); let more=true; while(more){ more=false; for(const k in pos) if(!out.has(k)&&out.has(pos[k]?.a)){ out.add(k); more=true; } } return out; }
-function blkSnap(ch,id,c,y){ const L=S.TL, me=L.list.find(b=>b.id===id), g=L.g, BAND=TL.BAND, M=TL.M, GAP=tlGapV(ch), TH=TH_PX(), dep=blkDeps(ch,id), cands=[{y:0,rel:{t:"top",px:0},lab:"en haut"}];
+function blkSnap(ch,id,c,y,cache){ const L=S.TL, me=L.list.find(b=>b.id===id), g=L.g, BAND=TL.BAND, M=TL.M, GAP=tlGapV(ch), TH=TH_PX(), dep=blkDeps(ch,id);
+  // Les positions possibles ne dépendent que de la colonne : calculées une fois par colonne pendant un glisser
+  let cands=cache&&cache[c];
+  if(!cands){ cands=[{y:0,rel:{t:"top",px:0},lab:"en haut"}];
   for(const o of L.list){ if(dep.has(o.id)||!g[o.id]) continue; const oy=g[o.id].y, oc=g[o.id].c, ov=c<oc+o.w&&oc<c+me.w, nm=blkLabel(ch,o.id);
     if(ov){ cands.push({y:oy+o.h+GAP,rel:{t:"below",a:o.id,px:0},lab:"sous « "+nm+" »"}, {y:oy+o.h+GAP+TL.VGAP,rel:{t:"below",a:o.id,px:TL.VGAP},lab:"sous « "+nm+" », espacé"}); continue; }
     cands.push({y:oy,rel:{t:"same",a:o.id,px:0},lab:"même hauteur que « "+nm+" »"},{y:oy+BAND,rel:{t:"same",a:o.id,px:BAND},lab:"décalé d’une bande de titre"},{y:oy+o.h-me.h,rel:{t:"bottom",a:o.id},lab:"même bas que « "+nm+" »"});
     const rows=document.querySelector(`.tblocks.tfree>[data-blk="${o.id}"] .rtile`)?Math.round((o.h-BAND-M-1+TL.G)/(TH+TL.G)):0;
     for(let k=1;k<rows;k++) cands.push({y:oy+k*(TH+TL.G),rel:{t:"row",a:o.id,k},lab:"rangée "+(k+1)+" de « "+nm+" »"}); }
+  if(cache) cache[c]=cands; }
   if(ch.layout?.mag!==false){ let best=null; for(const k of cands){ const d=Math.abs(k.y-y); if(d<=SNAP&&(!best||d<best.d)) best=Object.assign({d},k); } if(best) return best; }
   // Sans aimant : sous le bloc le plus bas qui le précède dans ses colonnes, avec l'écart choisi
   let a=null, ab=0; for(const o of L.list){ if(dep.has(o.id)||!g[o.id]) continue; const oc=g[o.id].c, b=g[o.id].y+o.h+GAP; if(c<oc+o.w&&oc<c+me.w&&b<=y+1&&b>=ab){ a=o.id; ab=b; } }
@@ -524,28 +538,32 @@ function blkFreeze(ch){ const L=S.TL, pos=Object.assign({},ch.layout?.pos), orde
   return pos; }
 function blkPlace(){ if(!BLKD||!S.TL) return; const ch=cur(), box=BLKD.el.parentElement; if(!ch||!box) return;
   const r=box.getBoundingClientRect(), L=S.TL, me=L.list.find(b=>b.id===BLKD.bid), x=BLKD.x-r.left-BLKD.dx, y=BLKD.y-r.top-BLKD.dy;
-  const c=Math.max(0,Math.min(4-me.w,Math.round(x/(L.CW+TL.FG)))), s=blkSnap(ch,BLKD.bid,c,y); BLKD.drop={c,y:s.y,rel:s.rel};
+  const c=Math.max(0,Math.min(4-me.w,Math.round(x/(L.CW+TL.FG)))), s=blkSnap(ch,BLKD.bid,c,y,BLKD.cache); BLKD.drop={c,y:s.y,rel:s.rel};
   const gh=BLKD.ph; gh.style.left=(c*(L.CW+TL.FG))+"px"; gh.style.top=s.y+"px"; gh.style.width=BLKD.el.offsetWidth+"px"; gh.style.height=me.h+"px";
   BLKD.guide.style.top=s.y+"px"; BLKD.guide.style.display=s.lab?"":"none"; BLKD.guide.firstChild.textContent=s.lab; }
 function blkGhostAt(){ if(BLKD&&BLKD.ghost){ BLKD.ghost.style.left=(BLKD.x-BLKD.dx)+"px"; BLKD.ghost.style.top=(BLKD.y-BLKD.dy)+"px"; } }
-function blkLoop(){ if(!BLKD) return; // défilement automatique près des bords, même sans bouger le doigt
-  const top=(document.querySelector(".tlayouttop")?.getBoundingClientRect().bottom||0)+50;
-  const v=BLKD.y<top?-Math.min(18,(top-BLKD.y)/3+4):BLKD.y>innerHeight-60?Math.min(18,(BLKD.y-innerHeight+60)/3+4):0;
-  if(v){ const s0=scrollY; window.scrollBy(0,v); if(scrollY!==s0) blkPlace(); }
+const BLK_ZONE=100, BLK_VMAX=3000; // zone de défilement près des bords (px) ; vitesse au bord (px par seconde)
+function blkLoop(ts){ if(!BLKD) return; // défilement automatique près des bords, même sans bouger ; un seul placement par image
+  const dt=BLKD.t?Math.min(50,ts-BLKD.t):16; BLKD.t=ts;
+  const top=(document.querySelector(".tlayouttop")?.getBoundingClientRect().bottom||0)+BLK_ZONE, bot=innerHeight-BLK_ZONE;
+  const k=BLKD.y<top?-Math.min(1,(top-BLKD.y)/BLK_ZONE):BLKD.y>bot?Math.min(1,(BLKD.y-bot)/BLK_ZONE):0;
+  if(k){ BLKD.acc+=BLK_VMAX*k*Math.abs(k)*dt/1000; const s=Math.trunc(BLKD.acc); if(s){ BLKD.acc-=s; window.scrollBy(0,s); } } else BLKD.acc=0;
+  if(scrollY!==BLKD.sy){ BLKD.sy=scrollY; BLKD.dirty=true; }
+  if(BLKD.dirty){ BLKD.dirty=false; blkPlace(); }
   BLKD.raf=requestAnimationFrame(blkLoop); }
 document.addEventListener("pointerdown",e=>{
-  // Au doigt : la poignée seule (la page doit pouvoir défiler) ; à la souris : tout le bloc, sauf ses boutons.
+  // Tout le bloc sert de poignée (son contenu est inactif en édition), sauf le crayon et le ✕. Au doigt : appui long, un glissement rapide fait défiler.
   if(!S.layoutEdit||!e.target.closest||(e.pointerType==="mouse"&&e.button!==0)) return;
-  const g=e.target.closest("[data-blkgrip]")||(e.pointerType==="mouse"&&!e.target.closest("button")?e.target.closest(".tblocks.editing > .tblk"):null); if(!g) return;
+  const g=e.target.closest("[data-blkgrip]")||(!e.target.closest(".tedpen,.tdel")?e.target.closest(".tblocks.editing > .tblk"):null); if(!g) return;
   const el=g.closest(".tblk"); if(!el) return;
-  if(e.pointerType!=="mouse"){ // au doigt : appui long sur la poignée, sinon la page défile
+  if(e.pointerType!=="mouse"){ // au doigt : appui long sur le bloc, sinon la page défile
     BLKP={el,g,id:e.pointerId,x:e.clientX,y:e.clientY,timer:setTimeout(()=>{ const P=BLKP; BLKP=null; if(P) blkStart(P.el,P.g,P.id,P.x,P.y); },LONG_PRESS_MS)}; return; }
   e.preventDefault(); blkStart(el,g,e.pointerId,e.clientX,e.clientY);
 });
 function blkStart(el,g,pid,x,y){ if(!el.isConnected||!S.TL) return; const box=el.parentElement;
   const {g:ghost,r}=dragGhost(el,"blkghost"), ph=document.createElement("div"), guide=document.createElement("div");
   ph.className="tlghost"; guide.className="tlguide"; guide.innerHTML="<span></span>"; box.append(ph,guide);
-  BLKD={el,bid:el.dataset.blk,id:pid,ghost,ph,guide,x,y,dx:x-r.left,dy:y-r.top};
+  BLKD={el,bid:el.dataset.blk,id:pid,ghost,ph,guide,x,y,dx:x-r.left,dy:y-r.top,cache:{},sy:scrollY,acc:0,t:0,dirty:false};
   blkGhostAt(); el.classList.add("dragging"); document.body.classList.add("blkdragging");
   try{ g.setPointerCapture(pid); }catch(err){}
   blkPlace(); BLKD.raf=requestAnimationFrame(blkLoop); }
@@ -554,9 +572,9 @@ document.addEventListener("pointermove",e=>{ if(BLKP&&e.pointerId===BLKP.id&&Mat
 document.addEventListener("touchmove",e=>{ if(BLKD) e.preventDefault(); },{passive:false});
 document.addEventListener("pointermove",e=>{
   if(!BLKD||e.pointerId!==BLKD.id) return; e.preventDefault();
-  BLKD.x=e.clientX; BLKD.y=e.clientY; blkGhostAt(); blkPlace();
+  BLKD.x=e.clientX; BLKD.y=e.clientY; blkGhostAt(); BLKD.dirty=true; // le placement attend la prochaine image
 });
-function blkDragEnd(e){ if(!BLKD||e.pointerId!==BLKD.id) return; const D0=BLKD; BLKD=null;
+function blkDragEnd(e){ if(!BLKD||e.pointerId!==BLKD.id) return; if(BLKD.dirty){ BLKD.dirty=false; blkPlace(); } const D0=BLKD; BLKD=null;
   cancelAnimationFrame(D0.raf); D0.ghost.remove(); D0.ph.remove(); D0.guide.remove(); D0.el.classList.remove("dragging"); document.body.classList.remove("blkdragging");
   const ch=cur(); if(ch&&D0.drop){ const pos=blkFreeze(ch); pos[D0.bid]=Object.assign({c:D0.drop.c},D0.drop.rel);
     // À hauteur égale, le bloc posé passe devant : il remonte dans l'ordre avant le premier bloc qui n'est pas plus haut que lui (tient après rechargement)
