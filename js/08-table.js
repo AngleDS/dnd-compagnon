@@ -259,7 +259,7 @@ function eqPop(ch,D){
 function tPop(ch,D){
   const T=S.T; if(T.pop==="tiles:reperes") T.pop="blk:reperes"; // Repères ne se personnalise plus (lot T3a)
   const k=T.pop; if(!k){ S.lastPop=null; return ""; }
-  const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
+  const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tqroll" data-r="d20" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const anim=S.lastPop!==k; S.lastPop=k;
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
   if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
@@ -318,7 +318,7 @@ function tPop(ch,D){
     T.pop=null; return ""; }
   if(k.startsWith("eco:")){ const e=k.slice(4); T.eco=e; const used=!!(ch.turn||{})[e];
     return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop" role="dialog" aria-modal="true" aria-label="${ECO[e]}" data-act="noop"><div class="tpophead"><b>${ECO[e]}</b><span class="row" style="gap:6px"><button class="btn small" data-act="tturn" data-v="${e}">${used?"Annuler":e==="autre"?"Marquer Autre terminé":"Marquer comme consommée"}</button><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></span></div><div class="tpopbody">${used?`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">✓ ${TURN_DONE[e]}</div>`:""}${tEco(ch,D)}</div></div></div>`; }
-  const B={skills:["Tests de caractéristique",`<div class="tabil">${AB.map(a=>`<div class="tabrow"><button class="tabhead ${sgc(D.mods[a])}" data-act="tsel" data-k="abil:${a}"><span>${ABN[a]}</span><b class="num">${sg(D.mods[a])}</b></button><div class="tabsk">${S.C.skills.filter(s=>s.ability===a).map(s=>`<button class="tskc ${sgc(D.skills[s.id].val)}" data-act="tsel" data-k="skill:${s.id}">${D.skills[s.id].lv?`<span class="pdot p${D.skills[s.id].lv}" title="${D.skills[s.id].lv>1?"Expertise":"Maîtrise"}"></span>`:""}${esc(s.name)} <b class="num">${sg(D.skills[s.id].val)}</b></button>`).join("")||`<span class="muted" style="font-size:var(--fs-sm)">Aucune compétence</span>`}</div></div>`).join("")}</div>${pLegend(true)}`],saves:["Jets de sauvegarde",`<div class="tsavegrid">${saves}</div>${pLegend(false)}`],cond:["États",`<div class="condgrid">${CONDS.map(c=>`<span class="condpick"><button class="chip" aria-pressed="${(ch.conditions||[]).includes(c)}" data-act="cond" data-v="${esc(c)}">${esc(c)}</button>${S.idx.cond[c]?`<span class="tinfo" role="button" data-act="tip" data-k="rule:${esc(S.idx.cond[c].id)}" aria-label="Règle : ${esc(c)}" title="Règle">i</span>`:""}</span>`).join("")}</div>
+  const B={skills:["Tests de caractéristique",`<div class="tabil">${AB.map(a=>`<div class="tabrow"><button class="tabhead ${sgc(D.mods[a])}" data-act="tqroll" data-r="d20" data-k="abil:${a}"><span>${ABN[a]}</span><b class="num">${sg(D.mods[a])}</b></button><div class="tabsk">${S.C.skills.filter(s=>s.ability===a).map(s=>`<button class="tskc ${sgc(D.skills[s.id].val)}" data-act="tqroll" data-r="d20" data-k="skill:${s.id}">${D.skills[s.id].lv?`<span class="pdot p${D.skills[s.id].lv}" title="${D.skills[s.id].lv>1?"Expertise":"Maîtrise"}"></span>`:""}${esc(s.name)} <b class="num">${sg(D.skills[s.id].val)}</b></button>`).join("")||`<span class="muted" style="font-size:var(--fs-sm)">Aucune compétence</span>`}</div></div>`).join("")}</div>${pLegend(true)}`],saves:["Jets de sauvegarde",`<div class="tsavegrid">${saves}</div>${pLegend(false)}`],cond:["États",`<div class="condgrid">${CONDS.map(c=>`<span class="condpick"><button class="chip" aria-pressed="${(ch.conditions||[]).includes(c)}" data-act="cond" data-v="${esc(c)}">${esc(c)}</button>${S.idx.cond[c]?`<span class="tinfo" role="button" data-act="tip" data-k="rule:${esc(S.idx.cond[c].id)}" aria-label="Règle : ${esc(c)}" title="Règle">i</span>`:""}</span>`).join("")}</div>
         <div class="row"><span class="label">Épuisement</span><span class="hpstep"><button class="btn small stepq" data-act="exh" data-v="-1" aria-label="Retirer un niveau">−</button><b class="num">${+ch.exhaustion||0}</b><button class="btn small stepq" data-act="exh" data-v="1" aria-label="Ajouter un niveau">+</button></span>${+ch.exhaustion?`<span class="muted" style="font-size:var(--fs-sm)">−${2*ch.exhaustion} aux tests d20, vitesse −${String(1.5*ch.exhaustion).replace(".",",")} m</span>`:""}</div>`],inv:["Inventaire",`${(ch.counters||[]).map(c=>`<div class="res"><b class="tipl" data-act="tip" data-k="cnt:${esc(c.id)}">${esc(c.name)}</b><div class="row">${(+c.max||0)<=20?pips("cnt:"+c.id,+c.max||0,(+c.max||0)-(+c.cur||0),true):""}<span class="muted num" style="font-size:var(--fs-sm)">${+c.cur||0}/${+c.max||0}</span>${c.recharge?`<span class="muted" style="font-size:var(--fs-sm)">· ${esc(rechargeLabel(c.recharge))}</span>`:""}</div></div>`).join("")}
         <div class="tbag">${(ch.bag||[]).map(b=>`<div class="tbagrow${(+b.qty||0)>0?"":" empty"}"><span>${itemName(b)}${b.note?` <span class="muted" style="font-size:var(--fs-sm)">· ${esc(b.note)}</span>`:""}${(b.ref||matchItem(b.name))?"":` <button class="btn small ghost infob mk" data-act="mkItem" data-id="${b.id}" title="Créer la fiche de cet objet dans Mes contenus">+ fiche</button>`}${chargePips(ch,b)}<button class="btn small ghost chgb" data-act="chgedit" data-id="${b.id}" title="${itemCharges(ch,b)?"Modifier le compteur":"Ajouter un compteur (charges, utilisations)"}">${itemCharges(ch,b)?"⚙":"+ compteur"}</button></span><span class="hpstep"><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="-1" aria-label="Utiliser un">−</button><b class="num">${+b.qty||0}</b><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="1" aria-label="Ajouter un">+</button>${S.bagDel===b.id?`<button class="btn small danger" data-act="bagrm" data-id="${b.id}">Supprimer</button>`:`<button class="btn small ghost btndel" data-act="bagdel" data-id="${b.id}" aria-label="Supprimer ${esc(b.name)}" title="Supprimer de l'inventaire">${ICON_TRASH}</button>`}</span></div>`).join("")||`<div class="muted" style="font-size:var(--fs-sm)">Le sac est vide.</div>`}</div>
         <form class="row" data-form="bag" style="margin-top:8px;gap:6px"><input id="bag-new" type="text" list="bag-dl" placeholder="Ajouter un objet" aria-label="Nouvel objet" style="flex:1;min-width:140px"><input id="bag-newq" type="number" min="1" value="1" aria-label="Quantité" style="width:60px"><button class="btn small" type="submit">Ajouter</button></form>
@@ -360,7 +360,7 @@ function viewTable(ch,D,banner=""){
     </div>${slotsRow}
   <div class="health-footer"><span class="tconc${ch.conc?" on":""}"><button class="tconcb" data-act="${ch.conc?"ccopen":"tsel"}" data-k="conc" title="${ch.conc?"Faire un jet de sauvegarde de concentration":"Aucun sort de concentration en cours"}"><span class="label">Concentration</span><b>${ch.conc?esc(ch.conc):"—"}</b></button>${ch.conc?`<button class="btn small ghost" data-act="tconcEnd" aria-label="Fin de concentration" title="Mettre fin à la concentration">×</button>`:""}</span></div></section></div>`;
   const turnPips=[["action","Action"],["bonus","Bonus"],["reaction","Réaction"],["move","Mouvement"]].map(([k,l])=>`<button class="tpip" aria-pressed="${!!turn[k]}" data-act="tturn" data-v="${k}">${l}</button>`).join("");
-  const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tsel" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
+  const saves=AB.map(a=>`<button class="tabhead ${sgc(D.saves[a].val)}" data-act="tqroll" data-r="d20" data-k="save:${a}"><span>${D.saves[a].prof?`<span class="pdot p1" title="Maîtrise"></span>`:""}${ABN[a]}</span><b class="num">${sg(D.saves[a].val)}</b></button>`).join("");
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
   // Ce tour : des tuiles (hauteur fixe, libellé sur deux lignes au plus, nombre d'options dessous) ; « Autre » occupe le reste de sa rangée
   const tn=blkCols(ch,"tour"), tspan=Math.max(1,tn-((TT.length-1)%tn));
@@ -492,7 +492,7 @@ function repTileMap(ch,D,size){
   const t=(v,l,title)=>`<span class="rtile"${title?` title="${esc(title)}"`:""}><b class="num">${v}</b><span class="label">${l}</span></span>`;
   const T={
     ca:()=>t(D.ac,"CA",D.acNote||""),
-    init:()=>`<button class="rtile act" data-act="tsel" data-k="init" title="Jet d'initiative"><b class="num">${sg(D.init)}</b><span class="label">Initiative</span></button>`,
+    init:()=>`<button class="rtile act" data-act="tqroll" data-r="d20" data-k="init" title="Jet d'initiative"><b class="num">${sg(D.init)}</b><span class="label">Initiative</span></button>`,
     vitesse:()=>`<button class="rtile" data-act="tpop" data-v="speed" title="Vitesse et autres déplacements"><b class="num">${mFmt(D.speed)} m</b><span class="label">Vitesse</span></button>`,
     dd:()=>D.cast?t(D.cast.dc,"DD des sorts","Degré de difficulté de tes sorts"):"",
     pp:()=>t(D.passive,"Perception passive","10 + ton modificateur de Perception"),
@@ -1152,6 +1152,7 @@ function tRow(i,first,inEco){
     if(lv||(!i.dice&&!(i.roll&&!i.roll.startsWith("DD")))) right+=cl;
     right+=`<span class="tklvl">${i.sp.level?"niv. "+i.sp.level:"mineur"}</span>`;
   }
+  else if(["abil","save","skill","init"].includes(i.kind)) right=kb("Jet",sg(i.mod),"d20");
   else if(i.mod!==undefined) right=`<b class="num tkv">${sg(i.mod)}</b>`;
   else if(i.cost&&!inEco) right=`<span class="badge">${ECO[i.cost]}</span>`;
   return `<button class="trow ${first?"first":""}${(i.kind==="atk"||i.kind==="bagitem")&&i.held===false?" sheathed":""}" data-act="tsel" data-k="${esc(i.key)}"><span class="tname"><b>${esc(i.name)}</b>${(()=>{ const sub = inEco ? (i.kind==="spell" ? (i.sp.range||"") : (i.kind==="atk" ? (i.held===true?(i.pact?"arme de pacte":"en main"):i.held===false?"au fourreau":"") : i.sub)) : i.sub; return sub?`<span class="muted"> · ${esc(sub)}</span>`:""; })()}</span><span class="tinfo" role="button" data-act="tip" data-k="${esc(i.key)}" aria-label="Règle : ${esc(i.name)}" title="Règle">i</span><span class="tright">${right}</span></button>`;
@@ -1331,10 +1332,12 @@ function castOpts(ch,D,i){ const sp=i.sp, out=[], al=arcLevel(D,i.ref), fr=(D.re
   return out; }
 function qMenuOpen(btn){ qMenuClose(); const k=btn.dataset.k, r=btn.dataset.r, from=btn.dataset.from||"", i=(S.Titems||[]).find(x=>x.key===k), ch=cur(); if(!i||!ch) return;
   if(r==="cast"&&i.sp&&i.sp.level===0){ quickCast(k,"slot:0"); return; }
-  const adv=r==="hit"?condAdvice(ch,i.kind==="atk"?"atk":"spellatk",i.ab):{mode:"n"}, forced=adv.mode==="a"||adv.mode==="d"?adv.mode:null;
-  const opts=r==="cast"?castOpts(ch,derive(ch),i).map(([v,l,dis])=>[v,l,"✦",dis]):r==="hit"?[["a","Avantage","˄"],["n","Normal","–"],["d","Désavantage","˅"]]:[["n","Normal","–"],["c","Critique (dés doublés)","×2"]];
-  const m=document.createElement("div"); m.className="qmenu"; m.setAttribute("role","menu"); m.setAttribute("aria-label",(r==="cast"?"Lancer : ":r==="hit"?"Jet d'attaque : ":"Dégâts : ")+i.name);
-  m.innerHTML=(opts.length?opts.map(([v,l,ic,dis])=>`<button role="menuitem" class="qm-${v.split(":")[0]}" data-act="tqgo" data-k="${esc(k)}" data-r="${r}" data-m="${esc(v)}" data-from="${esc(from)}"${dis||(forced&&forced!==v)?" disabled":""}${forced===v?' aria-current="true"':""}><span class="qmi" aria-hidden="true">${ic}</span>${esc(l)}</button>`).join(""):`<div class="qmnote">Aucun emplacement pour ce sort.</div>`)+(forced?`<div class="qmnote">${forced==="a"?"Avantage":"Désavantage"} imposé par ton état</div>`:"");
+  // Tests de caractéristique, sauvegardes, Initiative, Concentration (r = "d20", demande d'Angle) : même mini-menu que Toucher ; « Détails » ouvre la fiche
+  const adv=r==="hit"?condAdvice(ch,i.kind==="atk"?"atk":"spellatk",i.ab):r==="d20"?condAdvice(ch,i.kind,i.ab):{mode:"n"}, fail=r==="d20"&&adv.mode==="f", forced=adv.mode==="a"||adv.mode==="d"?adv.mode:null;
+  const opts=r==="cast"?castOpts(ch,derive(ch),i).map(([v,l,dis])=>[v,l,"✦",dis]):r==="hit"||r==="d20"?[["a","Avantage","˄",fail],["n","Normal","–",fail],["d","Désavantage","˅",fail]]:[["n","Normal","–"],["c","Critique (dés doublés)","×2"]];
+  const m=document.createElement("div"); m.className="qmenu"; m.setAttribute("role","menu"); m.setAttribute("aria-label",(r==="cast"?"Lancer : ":r==="hit"?"Jet d'attaque : ":r==="d20"?"Jet : ":"Dégâts : ")+i.name);
+  m.innerHTML=(opts.length?opts.map(([v,l,ic,dis])=>`<button role="menuitem" class="qm-${v.split(":")[0]}" data-act="tqgo" data-k="${esc(k)}" data-r="${r}" data-m="${esc(v)}" data-from="${esc(from)}"${dis||(forced&&forced!==v)?" disabled":""}${forced===v?' aria-current="true"':""}><span class="qmi" aria-hidden="true">${ic}</span>${esc(l)}</button>`).join(""):`<div class="qmnote">Aucun emplacement pour ce sort.</div>`)+(forced?`<div class="qmnote">${forced==="a"?"Avantage":"Désavantage"} imposé par ton état</div>`:"")+(fail?`<div class="qmnote"><b>Échec automatique</b> à cause de ton état : pas de jet.</div>`:"")
+    +(r==="d20"?`<button role="menuitem" class="qm-det" data-act="tqdet" data-k="${esc(k)}"><span class="qmi" aria-hidden="true">i</span>Détails</button>`:"");
   document.body.append(m); QMENU=m;
   const b=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
   m.style.left=Math.max(8,Math.min(innerWidth-w-8,b.right-w))+"px"; m.style.top=(b.bottom+6+h>innerHeight-8?Math.max(8,b.top-6-h):b.bottom+6)+"px";
@@ -1344,19 +1347,20 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&QMENU){ qMenuClose
 function qBack(){ const T=S.T; if(T.pop&&T.pop!=="qroll"&&T.pop!=="card") T.qrBack=T.pop; else if(T.pop!=="qroll") T.qrBack=null; }
 function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch) return; qBack();
   const keep=from==="cast"&&T.castDone===key; // jets d'un sort qui vient d'être lancé : on ne relance pas le sort
-  Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,itemUseReceipt:null,mode:r==="hit"?(m==="a"||m==="d"?m:"n"):"n"}); if(!keep) T.castDone=null;
+  Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,itemUseReceipt:null,mode:r==="hit"||r==="d20"?(m==="a"||m==="d"?m:"n"):"n"}); if(!keep) T.castDone=null;
   T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);
   const D=derive(ch), exh=2*(+ch.exhaustion||0), heal=!!i.heal;
   if(r==="hit"){ const mod=(i.kind==="atk"?+i.mod:parseInt(i.roll,10)||0)-exh; T.qr={k:key,r,mode:T.mode,mod,label:i.name+" — toucher"}; }
+  else if(r==="d20"){ T.qr={k:key,r,mode:T.mode,mod:(+i.mod||0)-exh,label:i.name}; }
   else { const b=(i.kind==="spell"&&i.sp&&i.sp.level===0&&i.m&&i.m.beams)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1;
     const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,T.castRit?i.sp.level:T.castLvl,D):i.dice)||""), mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0);
     T.qr={k:key,r,crit:m==="c",dice:m==="c"?doubleDice(dice):dice,flat,heal,beams:b,re1:heal&&!!D.guerisseur}; }
   T.pop="qroll"; render();
   if(virtualDiceEnabled()){ if(!ensureTableRollUse()){ render(); return; }
-    if(r==="hit"){ T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; render(); if(logD20(false)) tableRollCommitted("d20"); }
+    if(r==="hit"||r==="d20"){ T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; render(); if(logD20(false)) tableRollCommitted("d20"); }
     else { const x=rollExpr(T.qr.dice,T.qr.re1); T.dmg=String(x.total); T.dmgBd=(T.qr.crit?"Critique · ":"")+x.bd; render(); if(logDmg(false)) tableRollCommitted("dmg"); }
     render(); }
-  else { const inp=document.getElementById(r==="hit"?"t-d1":"t-dmg"); if(inp) inp.focus(); } } // dés physiques : la case est active, le clavier sort
+  else { const inp=document.getElementById(r==="hit"||r==="d20"?"t-d1":"t-dmg"); if(inp) inp.focus(); } } // dés physiques : la case est active, le clavier sort
 function quickCast(key,m){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch||!i.sp) return; qMenuClose(); qBack();
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,castDone:null,itemUseReceipt:null,mode:"n"});
   T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);
@@ -1373,7 +1377,7 @@ function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x
       ${m.save?`<div class="tbig"><span class="num">DD ${D.cast.dc}</span><span class="muted">JS de ${esc(m.save)}</span></div>`:""}
       ${T.castTemp?`<div class="muted">PV temporaires : ${T.castTemp.v}${T.castTemp.b0>=T.castTemp.v?" (tu en avais déjà autant ou plus)":""}</div>`:""}
       ${m.attack||ex?`<div class="row qchains">${m.attack?btn("hit","Toucher",sg(D.cast.atk)):""}${ex?btn("dmg",m.heal?"Soins":"Dégâts",ex):""}</div>`:""}</div>`); }
-  if(q.r==="hit") return wrap(esc(i.name)+" · Toucher",`<div class="qres"><div class="qmode label">${ML[q.mode]}</div>
+  if(q.r==="hit"||q.r==="d20") return wrap(esc(i.name)+(q.r==="hit"?" · Toucher":""),`<div class="qres"><div class="qmode label">${ML[q.mode]}</div>
     ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
     <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div></div>`);
   return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un rayon sur ${q.beams}`:""}</div>

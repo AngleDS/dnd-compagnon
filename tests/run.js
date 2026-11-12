@@ -1069,7 +1069,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await tiles(), ['CA','Initiative','Vitesse','Perception passive'], 'guerrier niveau 1 : les 4 valeurs communes, sans case vide');
     eq(await p.evaluate(() => document.querySelector('.rtile .num').innerText.trim()), String(await p.evaluate(() => derive(cur()).ac)), 'valeur de CA');
     await p.click('.tblk[data-blk="reperes"] button.rtile[data-k="init"]');
-    eq(await p.evaluate(() => [S.T.pop, S.T.sel]), ['card','init'], 'Initiative ouvre le jet');
+    ok(await p.evaluate(() => /Initiative/.test(document.querySelector('.qmenu')?.getAttribute('aria-label') || '')), 'Initiative ouvre le mini-menu du jet');
+    await p.click('.qmenu [data-act="tqdet"]');
+    eq(await p.evaluate(() => [S.T.pop, S.T.sel]), ['card','init'], 'Détails : la fiche du jet d’initiative');
     await p.keyboard.press('Escape');
     await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
@@ -2257,6 +2259,53 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       box.remove(); return result;
     });
     eq(r,[true,true,true,true,true,[]],'icônes de la maquette pour tous les repères, CA en bouclier et Inspiration inchangée');
+  });
+
+  await test('Tests et sauvegardes : mini-menu Avantage / Normal / Désavantage partout, états imposés, échec automatique', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    const menu = () => p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => (b.dataset.m || b.dataset.act) + (b.disabled ? '-' : '') + (b.getAttribute('aria-current') ? '*' : '')));
+    // Fenêtre Tests de caractéristique : compétence puis caractéristique
+    await p.evaluate(() => { S.T.pop = 'skills'; render(); });
+    await p.click('.tpop [data-k="skill:athletisme"]');
+    eq(await menu(), ['a', 'n', 'd', 'tqdet'], 'compétence : Avantage, Normal, Désavantage, Détails');
+    await p.click('.qmenu [data-m="a"]');
+    eq(await p.evaluate(() => [S.T.pop, S.T.qr.r, S.T.qr.mode, S.T.sel, document.activeElement && document.activeElement.id, !!document.getElementById('t-d2')]), ['qroll', 'd20', 'a', 'skill:athletisme', 't-d1', true], 'dés physiques : deux d20 à saisir, case active');
+    await p.fill('#t-d1', '4'); await p.fill('#t-d2', '15'); await p.locator('#t-d2').blur();
+    const mod = await p.evaluate(() => S.Titems.find(i => i.key === 'skill:athletisme').mod);
+    eq(await p.evaluate(() => [cur().rollLog[0].label, cur().rollLog[0].total]), ['Athlétisme', 15 + mod], 'avantage : le meilleur d20 est retenu et journalisé');
+    await p.evaluate(() => { S.T.pop = 'skills'; render(); }); await p.click('.tpop [data-k="abil:for"]');
+    eq(await menu(), ['a', 'n', 'd', 'tqdet'], 'caractéristique seule : même menu');
+    await p.click('.qmenu [data-act="tqdet"]');
+    eq(await p.evaluate(() => [S.T.pop, S.T.sel]), ['card', 'abil:for'], 'Détails : la fiche complète');
+    // Sauvegardes en dés virtuels
+    await p.evaluate(() => { setVirtualDice(true); S.T.pop = 'saves'; render(); });
+    await p.click('.tpop [data-k="save:con"]'); await p.click('.qmenu [data-m="d"]');
+    eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label, /^désavantage \d+ \/ \d+/.test(cur().rollLog[0].bd)]), ['qroll', 'JS de Constitution', true], 'sauvegarde virtuelle avec désavantage : deux d20 lancés');
+    // États : Empoisonné impose le désavantage aux tests ; Entravé aux sauvegardes de Dextérité ; Paralysé : échec automatique en Force
+    await p.evaluate(() => { cur().conditions = ['Empoisonné']; S.T.pop = 'skills'; render(); });
+    await p.click('.tpop [data-k="skill:perception"]');
+    eq(await menu(), ['a-', 'n-', 'd*', 'tqdet'], 'Empoisonné : désavantage imposé au test');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { cur().conditions = ['Entravé']; S.T.pop = 'saves'; render(); });
+    await p.click('.tpop [data-k="save:dex"]');
+    eq(await menu(), ['a-', 'n-', 'd*', 'tqdet'], 'Entravé : désavantage imposé à la sauvegarde de Dextérité');
+    await p.keyboard.press('Escape');
+    await p.evaluate(() => { cur().conditions = ['Paralysé']; S.T.pop = 'saves'; render(); });
+    await p.click('.tpop [data-k="save:for"]');
+    eq(await menu(), ['a-', 'n-', 'd-', 'tqdet'], 'Paralysé : sauvegarde de Force sans jet');
+    ok(await p.evaluate(() => /Échec automatique/.test(document.querySelector('.qmenu').textContent)), 'échec automatique annoncé');
+    await p.keyboard.press('Escape');
+    // Recherche : la valeur d'un test, d'une sauvegarde et de l'Initiative se lance directement
+    await p.evaluate(() => { cur().conditions = []; S.T.pop = null; render(); });
+    await p.fill('#tq', 'Discrétion');
+    ok(await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-k="skill:discretion"][data-r="d20"]').first().isVisible(), 'Recherche : Discrétion se lance depuis sa valeur');
+    await p.fill('#tq', 'Initiative');
+    await p.locator('.tblk[data-blk="recherche"] .trow .tkb[data-k="init"][data-r="d20"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label]), ['qroll', 'Initiative'], 'Recherche : Initiative lancée en deux touchers');
+    // Écran tactile : menu et cases de 44 px, rien hors écran
+    ok(await p.evaluate(() => { S.T.pop = 'skills'; render(); return true; }), 'fenêtre rouverte');
+    await p.click('.tpop [data-k="skill:arcanes"]');
+    ok(await p.evaluate(() => { const m = document.querySelector('.qmenu').getBoundingClientRect(); return m.left >= 0 && m.right <= innerWidth; }), 'iPhone : le menu tient dans l’écran');
   });
 
   if (BROWSER) await BROWSER.close();
