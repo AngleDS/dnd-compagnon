@@ -1377,13 +1377,15 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tplus')).visibility === 'hidden'), 'en jeu, la case libre est vide (pas de « + »)');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="raccourcis"] .tedpen'); await p.click('.tpop [data-act="tileCell"][data-i="5"]');
     eq(await p.evaluate(() => [S.T.pop, S.T.tileSlot]), ['tiles:raccourcis', 5], 'mode édition : le crayon ouvre les tuiles, la case libre se choisit');
-    await p.click('.tpop [data-act="tileAdd"][data-v="rest"]');
-    eq((await racc())[5], 'restOpen', 'tuile Repos ajoutée dans la case libre');
+    await p.click('.tpop [data-act="tileAdd"][data-v="actions"]');
+    eq((await racc())[5], 'list:actions', 'tuile Actions ajoutée dans la case libre');
     await p.click('.tpop [data-act="tileCell"][data-i="0"]'); await p.click('.tpop [data-act="tileDel"][data-i="0"]');
     eq((await racc())[0], '+', 'case vidée');
     await p.click('.tpop [data-act="tileCell"][data-i="1"]'); await p.click('.tpop [data-act="tileCell"][data-i="0"]');
     eq((await racc()).slice(0, 2), ['saves', '+'], 'tuile déplacée en touchant sa case puis la case visée');
-    eq(await p.evaluate(() => cur().layout.tiles.raccourcis), ['saves','','cond','inv','equip','rest'], 'choix enregistré dans la fiche');
+    eq(await p.evaluate(() => cur().layout.tiles.raccourcis), ['saves','','cond','inv','equip','actions'], 'choix enregistré dans la fiche');
+    ok(await p.evaluate(() => !document.querySelector('.tpop [data-v="rest"]') && !customCat(cur()).rest), 'Repos n’est plus une tuile des Raccourcis (case fixe de la carte PV)');
+    eq(await p.evaluate(() => { const ch = cur(), old = ch.layout.tiles.raccourcis.slice(); ch.layout.tiles.raccourcis = ['rest', ...old.slice(1)]; const r = blockTiles(ch, 'raccourcis')[0]; ch.layout.tiles.raccourcis = old; return r; }), '', 'ancienne tuile Repos enregistrée : case libre');
     await p.keyboard.press('Escape'); await p.click('.tblk[data-blk="reperes"] .tedpen');
     ok(await p.evaluate(() => S.T.pop === 'blk:reperes' && !document.querySelector('.tpop .tpgrid,.tpop .tres')), 'Repères : pas de tuiles à choisir (contenu automatique)');
     await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
@@ -1391,7 +1393,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const r = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); const id = importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); let bad = '';
       try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: Object.assign({}, ch, { layout: { tiles: { reperes: 'x' } } }), hb: [] }); } catch (e) { bad = e.detail || e.message; }
       return [S.docs[id].layout.tiles.raccourcis[5], bad]; });
-    eq(r[0], 'rest', 'tuiles suivent l’export'); ok(/tuiles/.test(r[1]), 'tuiles invalides refusées à l’import');
+    eq(r[0], 'actions', 'tuiles suivent l’export'); ok(/tuiles/.test(r[1]), 'tuiles invalides refusées à l’import');
   });
 
   await test('Bloc personnalisé : modèle, nom, tuiles à leur place exacte, tailles, glisser, ancien format, suppression, import', async p => {
@@ -1455,7 +1457,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       await diceTable(t); await legacyRacc(t); await t.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
       const res = await t.evaluate(async () => {
         const fire = (type, x, y, el) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 5, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y }));
-        const src = document.querySelector('.tpop .tres [data-v="rest"]'), dst = document.querySelector('.tpop .tpgrid [data-i="5"]').getBoundingClientRect(), r = src.getBoundingClientRect();
+        const src = document.querySelector('.tpop .tres [data-v="actions"]'), dst = document.querySelector('.tpop .tpgrid [data-i="5"]').getBoundingClientRect(), r = src.getBoundingClientRect();
         const x = r.x + r.width / 2, y = r.y + r.height / 2, tx = dst.x + dst.width / 2, ty = dst.y + dst.height / 2;
         fire('pointerdown', x, y, src); fire('pointermove', x, y - 30, document); await new Promise(z => setTimeout(z, 30));
         const quick = !!document.querySelector('.dragghost'); fire('pointermove', tx, ty, document); fire('pointerup', tx, ty, document);
@@ -1463,7 +1465,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
         fire('pointerdown', x, y, src); await new Promise(z => setTimeout(z, 420)); const ghost = !!document.querySelector('.dragghost.tghost');
         fire('pointermove', tx, ty, document); fire('pointerup', tx, ty, document);
         return [quick, afterQuick, ghost, blockTiles(cur(), 'raccourcis')[5]]; });
-      eq(res, [false, '', true, 'rest'], 'glisser rapide : rien ne bouge ; appui long : la tuile part et se pose');
+      eq(res, [false, '', true, 'actions'], 'glisser rapide : rien ne bouge ; appui long : la tuile part et se pose');
       if (errs.length) throw new Error('Erreur JS : ' + errs.join(' | '));
     } finally { await ctx.close(); }
   });
@@ -1472,19 +1474,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.setViewportSize({ width: 1280, height: 1600 }); await diceTable(p);
     ok(!await p.locator('.tbpen,.tedpen').count(), 'pas de crayon en jeu');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="raccourcis"] .tedpen');
-    eq(await p.evaluate(() => [!!document.querySelector('.tpop .tres [data-v="rest"]'), ['hist', 'notes', 'ca'].some(v => document.querySelector(`.tpop .tres [data-v="${v}"]`))]), [true, false], 'pas de doublon : Historique, Notes (bloc Notes) et CA (Repères) ne sont pas proposés');
+    eq(await p.evaluate(() => [!!document.querySelector('.tpop .tres [data-v="actions"]'), ['hist', 'notes', 'ca'].some(v => document.querySelector(`.tpop .tres [data-v="${v}"]`))]), [true, false], 'pas de doublon : Historique, Notes (bloc Notes) et CA (Repères) ne sont pas proposés');
     await p.keyboard.press('Escape'); await p.evaluate(() => { cur().layout = Object.assign({}, cur().layout, { hidden: ['notes', 'reperes'] }); render(); }); await p.click('.tblk[data-blk="raccourcis"] .tedpen');
-    eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .tpgrid .tcell').length, ['rest', 'hist', 'notes', 'ca'].every(v => document.querySelector(`.tpop .tres [data-v="${v}"]`))]), ['tiles:raccourcis', 6, true], 'popup : 6 cases ; réserve avec Repos, Historique, Notes et aussi une tuile de valeur (CA)');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .tpgrid .tcell').length, ['actions', 'hist', 'notes', 'ca'].every(v => document.querySelector(`.tpop .tres [data-v="${v}"]`))]), ['tiles:raccourcis', 6, true], 'popup : 6 cases ; réserve avec Repos, Historique, Notes et aussi une tuile de valeur (CA)');
     ok(await p.evaluate(() => !!document.querySelector('.tpop .tpgrid .tcell[data-i="0"] svg') && !document.querySelector('.tpop [data-act="tileMove"]')), 'cases avec icône, plus de flèches');
     const drag = async (from, to, mid) => { const a = await p.locator(from).boundingBox(), b = to ? await p.locator(to).boundingBox() : { x: 2, y: 2, width: 0, height: 0 };
       await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await p.mouse.down(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 3 }); if (mid) await mid(); await p.mouse.up(); };
     const arr = () => p.evaluate(() => blockTiles(cur(), 'raccourcis'));
-    await drag('.tpop .tres [data-v="rest"]', '.tpop .tpgrid [data-i="5"]', async () => {
+    await drag('.tpop .tres [data-v="actions"]', '.tpop .tpgrid [data-i="5"]', async () => {
       const st = await p.evaluate(() => [!!document.querySelector('.dragghost.tghost'), document.querySelector('.tpop .tpgrid [data-i="5"]').classList.contains('tover')]);
       eq(st, [true, true], 'copie qui suit la souris, case visée allumée'); });
-    eq((await arr())[5], 'rest', 'réserve → case libre');
+    eq((await arr())[5], 'actions', 'réserve → case libre');
     await drag('.tpop .tpgrid [data-i="5"]', '.tpop .tpgrid [data-i="0"]');
-    eq((await arr()).slice(0, 1).concat((await arr())[5]), ['rest', 'skills'], 'case → case : échange');
+    eq((await arr()).slice(0, 1).concat((await arr())[5]), ['actions', 'skills'], 'case → case : échange');
     await drag('.tpop .tpgrid [data-i="1"]', '.tpop .tres');
     eq((await arr())[1], '', 'case → réserve : tuile retirée');
     await drag('.tpop .tpgrid [data-i="2"]', null);
