@@ -19,7 +19,7 @@ Règle unique pour tout agent qui travaille sur ce dossier (Claude, ChatGPT/Code
 
 - Le propriétaire décide. Quand il pose une question : **répondre et proposer, ne rien modifier sans son accord.**
 - Modifier **uniquement les fichiers nécessaires** à la tâche. Pas de refonte non demandée.
-- Ne jamais modifier `dist/` (généré, non suivi par Git) ni le dossier `D&D Compagnon/` (encore utilisé).
+- Ne jamais modifier `dist/` (généré, non suivi par Git) ni le dossier `D&D Compagnon/` (encore utilisé). Depuis le 12 nov. 2026, ce dossier et `dnd-compagnon.html` à la racine ne sont plus suivis par Git (`.gitignore`) : ils restent sur le Mac mais ne sont plus publiés sur GitHub.
 - Noms de fichiers sans accent, sans espace, sans caractère spécial.
 
 ## Après modification
