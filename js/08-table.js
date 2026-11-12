@@ -732,25 +732,29 @@ const oilOf=ch=>(ch.bag||[]).find(x=>objKind(x)==="huile"&&(+x.qty||0)>0);
 /* Données d'une tuile de compteur : nom, valeur affichée, sous-titre, icône, vide. */
 function ctrGet(ch,id){ if(!ch||!isCtr(id)) return null; const k=id.slice(4);
   if(id.startsWith("cnt:")){ const c=(ch.counters||[]).find(x=>x.id===k); if(!c) return null; const cur0=+c.cur||0, max=+c.max||0;
-    return {c,name:String(c.name||"Compteur"),val:`${cur0}/${max}`,sub:c.recharge?"revient au "+rechargeLabel(c.recharge):"compteur",icon:CTR_ICON.cnt,empty:cur0<=0}; }
+    return {c,left:cur0,max,name:String(c.name||"Compteur"),val:`${cur0}/${max}`,sub:c.recharge?"revient au "+rechargeLabel(c.recharge):"compteur",icon:CTR_ICON.cnt,empty:cur0<=0}; }
   const b=(ch.bag||[]).find(x=>x.id===k); if(!b) return null; const kind=objKind(b), chg=itemCharges(ch,b), q=+b.qty||0;
-  if(chg&&chg.max){ const left=chg.max-(+chg.used||0); return {b,kind,chg,name:String(b.name),val:`${left}/${chg.max}`,sub:"charges",icon:CTR_ICON.charges,empty:left<=0}; }
+  if(chg&&chg.max){ const left=chg.max-(+chg.used||0); return {b,kind,chg,left,max:chg.max,name:String(b.name),val:`${left}/${chg.max}`,sub:"charges",icon:CTR_ICON.charges,empty:left<=0}; }
   const sub={torche:"vive 6 m",bougie:"vive 1,5 m",huile:"6 h de lumière",lanterne:/sourde/.test(norm(b.name))?"cône 18 m":"vive 9 m",rations:"1 par jour",munitions:"1 par attaque"}[kind]||"quantité";
-  return {b,kind,name:String(b.name),val:"×"+q,sub,icon:CTR_ICON[kind]||CTR_ICON.qte,empty:q<=0&&kind!=="lanterne"}; }
-/* Tuile : étroite (valeur au-dessus du nom) ou large (icône, nom et sous-titre), comme les autres tuiles. */
-function ctrTile(ch,id,wide){ const x=ctrGet(ch,id); if(!x) return "";
-  return wide?`<button class="tpbtn rctrw${x.empty?" vide0":""}" data-act="tpop" data-v="ctr:${esc(id)}"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${x.icon}</svg>${esc(x.name)}<small class="tpsub"><b class="num">${esc(x.val)}</b> · ${esc(x.sub)}</small></button>`
-    :`<button class="rtile rctr${x.empty?" vide0":""}" data-act="tpop" data-v="ctr:${esc(id)}" title="${esc(x.name)} : ${esc(x.sub)}"><svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${x.icon}</svg><b class="num">${esc(x.val)}</b><span class="label">${esc(x.name)}</span></button>`; }
-const ctrMap=(ch,wide)=>Object.fromEntries(Object.keys(ctrCat(ch)).map(id=>[id,()=>ctrTile(ch,id,wide)]));
+  return {b,kind,left:q,max:q,name:String(b.name),val:"×"+q,sub,icon:CTR_ICON[kind]||CTR_ICON.qte,empty:q<=0&&kind!=="lanterne"}; }
+/* Tuile : compacte (1×1) = chiffres ; large (1×2, ligne, 2×2) = petites pastilles si elles tiennent, sinon chiffres (décision d'Angle).
+   Pastilles pleines = ce qui reste ; vides = ce qui est utilisé (une quantité de l'Inventaire n'a que des pleines).
+   Un toucher ouvre la fenêtre, où les pastilles sont grandes et se touchent (comme les emplacements de la carte PV une fois déverrouillés). */
+const ctrCap=(px,sz)=>Math.min(12,Math.max(0,Math.floor((px-12)/18))*(sz==="2"||sz==="b"?2:1));
+function ctrTile(ch,id,cap){ const x=ctrGet(ch,id); if(!x) return "";
+  if(!cap) return `<button class="rtile rctr${x.empty?" vide0":""}" data-act="tpop" data-v="ctr:${esc(id)}" title="${esc(x.name)} : ${esc(x.sub)}"><svg class="rico" viewBox="0 0 24 24" aria-hidden="true">${x.icon}</svg><b class="num">${esc(x.val)}</b><span class="label">${esc(x.name)}</span></button>`;
+  const dots=x.max>0&&x.max<=cap?`<span class="ctrdots" aria-hidden="true">${pips("",x.max,x.max-x.left,true,true)}</span>`:"";
+  return `<button class="tpbtn rctrw${x.empty?" vide0":""}${dots?" dots":""}" data-act="tpop" data-v="ctr:${esc(id)}" aria-label="${esc(x.name)} : ${esc(x.val)}"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true">${x.icon}</svg>${esc(x.name)}${dots||`<small class="tpsub"><b class="num">${esc(x.val)}</b> · ${esc(x.sub)}</small>`}</button>`; }
+const ctrMap=(ch,wide)=>Object.fromEntries(Object.keys(ctrCat(ch)).map(id=>[id,()=>ctrTile(ch,id,wide?ctrCap(BLK_CELL_W.raccourcis,"1"):0)]));
 /* Fenêtre d'un compteur : − / + (ou les charges), et l'action propre à l'objet. */
 function ctrPop(ch,D,id,wrap){ const x=ctrGet(ch,id); if(!x){ S.T.pop=null; return ""; }
   const step=(act,attr,v,max,lab)=>`<span class="hpstep ctrstep"><button class="btn stepb" data-act="${act}" ${attr} data-v="-1" aria-label="${esc(lab)} : retirer 1" ${v<=0?"disabled":""}>−</button><b class="num">${v}${max!=null?`<small> / ${max}</small>`:""}</b><button class="btn stepb" data-act="${act}" ${attr} data-v="1" aria-label="${esc(lab)} : ajouter 1" ${max!=null&&v>=max?"disabled":""}>+</button></span>`;
   const note=t=>`<div class="muted" style="font-size:var(--fs-sm);margin-top:10px">${t}</div>`, btn=(t,dis,extra="")=>`<div class="row" style="justify-content:center;margin-top:12px"><button class="btn primary" data-act="ctrUse" data-v="${esc(id)}"${extra} ${dis?"disabled":""}>${t}</button></div>`;
   let h="";
   if(x.c){ const c=x.c, mx=+c.max||0, v=+c.cur||0;
-    h=`<div class="row" style="justify-content:center">${step("cnt",`data-id="${esc(c.id)}"`,v,mx,c.name)}</div>${note("Récupération : "+(c.recharge?rechargeLabel(c.recharge):"aucune (tu le remets à jour toi-même)")+".")}`; }
+    h=`${mx>0&&mx<=20?`<div class="row ctrbig" style="justify-content:center;margin-bottom:10px">${pips("cnt:"+c.id,mx,mx-v,true)}</div>`:""}<div class="row" style="justify-content:center">${step("cnt",`data-id="${esc(c.id)}"`,v,mx,c.name)}</div>${note("Récupération : "+(c.recharge?rechargeLabel(c.recharge):"aucune (tu le remets à jour toi-même)")+".")}`; }
   else { const b=x.b, q=+b.qty||0, lab=b.name;
-    h=x.chg?`<div class="label" style="text-align:center;margin-bottom:6px">Charges</div><div class="row" style="justify-content:center">${chargePips(ch,b)}</div>`
+    h=x.chg?`<div class="label" style="text-align:center;margin-bottom:6px">Charges</div><div class="row ctrbig" style="justify-content:center">${chargePips(ch,b)}</div>`
       :`<div class="label" style="text-align:center;margin-bottom:6px">Quantité</div><div class="row" style="justify-content:center">${step("bagq",`data-id="${esc(b.id)}"`,q,null,lab)}</div>`;
     if(x.kind==="torche"||x.kind==="bougie") h+=note(LIGHT_TXT[x.kind])+btn(x.kind==="torche"?"Allumer une torche":"Allumer une bougie",q<=0);
     else if(x.kind==="huile") h+=note(LIGHT_TXT.huile)+btn("Remplir une lanterne",q<=0);
@@ -900,7 +904,7 @@ function cUpdate(ch,id,fn){ seeInsp(ch); const list=customCopy(ch), b=list.find(
 const cellStyle=(t,R,C)=>{ const [h,w]=tileSpan(t.sz,R,C); return `grid-row:${t.r+1}/span ${h};grid-column:${t.c+1}/span ${w}`; };
 function customBlockHtml(ch,D,b,ctx){
   const Rm=racTileMap(ch,D), T=repTileMap(ch,D,ctx.size), {tiles,occ}=cGrid(b), wide=t=>sizeW(t.sz,b.c,b.w||4)>=TILE_W.L;
-  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:t.id==="search"&&wide(t)&&!S.T._tq?searchBar():(wide(t)&&(TILE_GEN[t.id]||isCtr(t.id))&&Rm[t.id]?Rm[t.id]():((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||""));
+  const one=t=>{ const h=t.id==="slots"?`<div class="rtile rslots">${ctx.slots||`<span class="muted">Pas d’emplacements</span>`}<span class="label">Emplacements</span></div>`:t.id==="search"&&wide(t)&&!S.T._tq?searchBar():isCtr(t.id)?ctrTile(ch,t.id,wide(t)?ctrCap(sizeW(t.sz,b.c,b.w||4),t.sz):0):(wide(t)&&(TILE_GEN[t.id]||isCtr(t.id))&&Rm[t.id]?Rm[t.id]():((T[t.id]&&T[t.id]())||(Rm[t.id]&&Rm[t.id]())||""));
     return h?`<div class="ccell" data-sz="${esc(t.sz)}" style="${cellStyle(t,b.r,b.c)}">${h}</div>`:""; };
   let html=tiles.map(one).join("");
   occ.forEach((row,r)=>row.forEach((k,c)=>{ if(k<0) html+=`<div class="ccell" style="grid-row:${r+1};grid-column:${c+1}">${plusTile(b.id,r*b.c+c,"rtile vide")}</div>`; }));

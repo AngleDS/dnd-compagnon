@@ -1229,7 +1229,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       ch.layout.order = [...tableOrder(ch).filter(x => x !== 'c_ctraaaa'), 'c_ctraaaa']; S.T.pop = 'tiles:c_ctraaaa'; render(); });
     eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .ctrres .tname')].map(e => e.textContent).sort()), ['Dague', 'Huile', 'Rations'], 'réserve : objets comptables non posés (la corde seule n’y est pas)');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="c_ctraaaa"] .rctr .num')].map(e => e.textContent)), ['×5', '7/10'], 'tuiles étroites : quantité et charges restantes');
-    ok(await p.evaluate(() => /Lanterne à capote/.test(document.querySelector('.tblk[data-blk="c_ctraaaa"] .rctrw')?.textContent || '')), 'case 1×2 : tuile large');
+    ok(await p.evaluate(() => { const t = document.querySelector('.tblk[data-blk="c_ctraaaa"] .rctrw'); return /Lanterne à capote/.test(t?.textContent || '') && t.querySelectorAll('.ctrdots .pip').length === 1; }), 'case 1×2 : tuile large, une pastille pour la lanterne');
+    await p.evaluate(() => { const ch = cur(); ch.bag.push({ id: 'fl', name: 'Flèches', qty: 20 }); ch.layout.custom[0].tiles.push({ id: 'obj:fl', sz: '12', r: 1, c: 2 }); render(); });
+    eq(await p.evaluate(() => { const t = document.querySelector('.tblk[data-blk="c_ctraaaa"] [data-v="ctr:obj:fl"]'); return [t.querySelectorAll('.pip').length, /×20/.test(t.textContent)]; }), [0, true], 'trop pour la case (×20 en 1×2) : chiffres');
+    await p.evaluate(() => { const ch = cur(); ch.layout.custom[0].tiles = ch.layout.custom[0].tiles.filter(t => t.id !== 'obj:fl'); ch.bag = ch.bag.filter(b => b.id !== 'fl'); render(); });
     await p.click('.tpop [data-act="ctileAdd"][data-t="obj:ra"]');
     eq(await p.evaluate(() => cur().layout.custom[0].tiles.map(t => t.id)), ['obj:to', 'obj:tr', 'obj:la', 'obj:ra'], 'Rations posées depuis la réserve');
     await p.evaluate(() => { S.T.pop = null; render(); });
@@ -1245,12 +1248,14 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.T.pop = 'ctr:obj:ra'; render(); }); await p.click('.tpop [data-act="ctrUse"]');
     eq(await p.evaluate(() => cur().bag.find(b => b.id === 'ra').qty), 2, 'rations : un jour passe');
     await p.evaluate(() => { S.T.pop = 'ctr:obj:tr'; render(); });
-    ok(await p.evaluate(() => document.querySelectorAll('.tpop .ctrpop .pip').length === 10), 'objet à charges : ses 10 charges');
+    ok(await p.evaluate(() => document.querySelectorAll('.tpop .ctrbig button.pip').length === 10), 'objet à charges : ses 10 charges en grandes pastilles');
+    await p.click('.tpop .ctrbig button.pip[data-i="7"]');
+    eq(await p.evaluate(() => cur().bag.find(b => b.id === 'tr').charges.used), 2, 'toucher une pastille vide rend une charge');
     await p.evaluate(() => { cur().bag.find(b => b.id === 'ra').qty = 0; S.T.pop = null; render(); });
     ok(await p.evaluate(() => document.querySelector('.tblk[data-blk="c_ctraaaa"] [data-v="ctr:obj:ra"]').classList.contains('vide0')), 'à 0 : la tuile reste, grisée');
     // Raccourcis : tuile large ; objet retiré du sac : les tuiles s'effacent sans erreur
     await p.evaluate(() => { const ch = cur(); const arr = blockTiles(ch, 'raccourcis'); arr[arr.indexOf('') >= 0 ? arr.indexOf('') : 0] = 'obj:da'; setBlockTiles(ch, 'raccourcis', arr); render(); });
-    ok(await p.evaluate(() => /Dague[\s\S]*×2/.test(document.querySelector('.tblk[data-blk="raccourcis"] [data-v="ctr:obj:da"]')?.textContent || '')), 'Raccourcis : tuile large de l’objet');
+    ok(await p.evaluate(() => { const t = document.querySelector('.tblk[data-blk="raccourcis"] [data-v="ctr:obj:da"]'); return /Dague/.test(t?.textContent || '') && t.querySelectorAll('.ctrdots .pip:not(.used)').length === 2; }), 'Raccourcis : tuile large, une pastille par dague');
     const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.evaluate(() => { const ch = cur(); ch.bag = ch.bag.filter(b => b.id !== 'to' && b.id !== 'da'); render(); S.T.pop = 'tiles:c_ctraaaa'; render(); S.T.pop = 'tiles:raccourcis'; render(); });
     eq(await p.evaluate(() => [!!document.querySelector('[data-v="ctr:obj:to"]'), !!document.querySelector('[data-v="ctr:obj:da"]'), blockTiles(cur(), 'raccourcis').includes('obj:da')]), [false, false, false], 'objets supprimés : plus de tuile');
@@ -1270,7 +1275,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop .ctrstep [data-v="-1"]'); await p.click('.tpop .ctrstep [data-v="-1"]'); await p.click('.tpop .ctrstep [data-v="-1"]');
     await p.evaluate(t => { S.T.pop = 'ctr:' + t; render(); }, t); await p.click('.tpop .ctrstep [data-v="-1"]');
     ok(await p.evaluate(() => document.querySelector('.tpop .ctrstep [data-v="1"]').disabled === false && /repos long/.test(document.querySelector('.tpop .ctrpop').textContent)), 'fenêtre : récupération indiquée');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="c_cntaaaa"] :is(.rctr,.rctrw) .num')].map(e => e.textContent)), ['1/4', '2/3'], 'tuiles : valeurs à jour');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="c_cntaaaa"] .rctrw')].map(t => t.querySelectorAll('.pip:not(.used)').length + '/' + t.querySelectorAll('.pip').length)), ['1/4', '2/3'], 'tuiles larges : pastilles pleines et vides à jour');
+    await p.evaluate(e => { const ch = cur(); ch.layout.custom[0].c = 4; ch.layout.custom[0].tiles[1].c = 1; render(); }, e);
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="c_cntaaaa"] .rctr .num')].map(e => e.textContent)), ['1/4', '2/3'], 'tuiles compactes (1×1 dans 4 colonnes) : chiffres');
+    await p.evaluate(e => { S.T.pop = 'ctr:' + e; render(); }, e);
+    await p.click('.tpop .ctrbig button.pip[data-i="2"]');
+    eq(await p.evaluate(() => cur().counters[0].cur), 3, 'fenêtre : toucher une grande pastille règle le compteur');
+    await p.click('.tpop .ctrstep [data-v="-1"]'); await p.click('.tpop .ctrstep [data-v="-1"]');
     await p.evaluate(() => { S.T.pop = null; applyRest('court'); render(); });
     eq(await p.evaluate(() => cur().counters.map(c => c.cur)), [4, 2], 'repos court : seul le compteur « repos court » revient');
     await p.evaluate(() => { applyRest('long'); render(); });
