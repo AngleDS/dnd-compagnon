@@ -498,9 +498,9 @@ const SNAP=22;
 function blkDeps(ch,id){ const pos=ch.layout?.pos||{}, out=new Set([id]); let more=true; while(more){ more=false; for(const k in pos) if(!out.has(k)&&out.has(pos[k]?.a)){ out.add(k); more=true; } } return out; }
 function blkSnap(ch,id,c,y){ const L=S.TL, me=L.list.find(b=>b.id===id), g=L.g, BAND=TL.BAND, M=TL.M, GAP=tlGapV(ch), TH=TH_PX(), dep=blkDeps(ch,id), cands=[{y:0,rel:{t:"top",px:0},lab:"en haut"}];
   for(const o of L.list){ if(dep.has(o.id)||!g[o.id]) continue; const oy=g[o.id].y, oc=g[o.id].c, ov=c<oc+o.w&&oc<c+me.w, nm=blkLabel(ch,o.id);
-    if(ov){ cands.push({y:oy+o.h+GAP,rel:{t:"below",a:o.id,px:0},lab:"sous « "+nm+" »"}, {y:oy+o.h+GAP+BAND,rel:{t:"below",a:o.id,px:BAND},lab:"sous « "+nm+" », espacé"}); continue; }
-    cands.push({y:oy,rel:{t:"same",a:o.id,px:0},lab:"même hauteur que « "+nm+" »"},{y:oy+BAND+M,rel:{t:"same",a:o.id,px:BAND+M},lab:"décalé d’une marge"},{y:oy+o.h-me.h,rel:{t:"bottom",a:o.id},lab:"même bas que « "+nm+" »"});
-    const rows=document.querySelector(`.tblocks.tfree>[data-blk="${o.id}"] .rtile`)?Math.round((o.h-BAND-2*M+TL.G)/(TH+TL.G)):0;
+    if(ov){ cands.push({y:oy+o.h+GAP,rel:{t:"below",a:o.id,px:0},lab:"sous « "+nm+" »"}, {y:oy+o.h+GAP+TL.VGAP,rel:{t:"below",a:o.id,px:TL.VGAP},lab:"sous « "+nm+" », espacé"}); continue; }
+    cands.push({y:oy,rel:{t:"same",a:o.id,px:0},lab:"même hauteur que « "+nm+" »"},{y:oy+BAND,rel:{t:"same",a:o.id,px:BAND},lab:"décalé d’une bande de titre"},{y:oy+o.h-me.h,rel:{t:"bottom",a:o.id},lab:"même bas que « "+nm+" »"});
+    const rows=document.querySelector(`.tblocks.tfree>[data-blk="${o.id}"] .rtile`)?Math.round((o.h-BAND-M-1+TL.G)/(TH+TL.G)):0;
     for(let k=1;k<rows;k++) cands.push({y:oy+k*(TH+TL.G),rel:{t:"row",a:o.id,k},lab:"rangée "+(k+1)+" de « "+nm+" »"}); }
   if(ch.layout?.mag!==false){ let best=null; for(const k of cands){ const d=Math.abs(k.y-y); if(d<=SNAP&&(!best||d<best.d)) best=Object.assign({d},k); } if(best) return best; }
   // Sans aimant : sous le bloc le plus bas qui le précède dans ses colonnes, avec l'écart choisi
@@ -514,8 +514,8 @@ function blkFreeze(ch){ const L=S.TL, pos=Object.assign({},ch.layout?.pos), orde
   return pos; }
 function blkPlace(){ if(!BLKD||!S.TL) return; const ch=cur(), box=BLKD.el.parentElement; if(!ch||!box) return;
   const r=box.getBoundingClientRect(), L=S.TL, me=L.list.find(b=>b.id===BLKD.bid), x=BLKD.x-r.left-BLKD.dx, y=BLKD.y-r.top-BLKD.dy;
-  const c=Math.max(0,Math.min(4-me.w,Math.round(x/(L.CW+TL.G)))), s=blkSnap(ch,BLKD.bid,c,y); BLKD.drop={c,y:s.y,rel:s.rel};
-  const gh=BLKD.ph; gh.style.left=(c*(L.CW+TL.G))+"px"; gh.style.top=s.y+"px"; gh.style.width=BLKD.el.offsetWidth+"px"; gh.style.height=me.h+"px";
+  const c=Math.max(0,Math.min(4-me.w,Math.round(x/(L.CW+TL.FG)))), s=blkSnap(ch,BLKD.bid,c,y); BLKD.drop={c,y:s.y,rel:s.rel};
+  const gh=BLKD.ph; gh.style.left=(c*(L.CW+TL.FG))+"px"; gh.style.top=s.y+"px"; gh.style.width=BLKD.el.offsetWidth+"px"; gh.style.height=me.h+"px";
   BLKD.guide.style.top=s.y+"px"; BLKD.guide.style.display=s.lab?"":"none"; BLKD.guide.firstChild.textContent=s.lab; }
 function blkGhostAt(){ if(BLKD&&BLKD.ghost){ BLKD.ghost.style.left=(BLKD.x-BLKD.dx)+"px"; BLKD.ghost.style.top=(BLKD.y-BLKD.dy)+"px"; } }
 function blkLoop(){ if(!BLKD) return; // défilement automatique près des bords, même sans bouger le doigt

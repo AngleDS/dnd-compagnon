@@ -454,24 +454,36 @@ button.rtile.rinfo:hover{filter:brightness(1.08)}button.rtile.rinfo:active{filte
    Mesures du prototype validé : 12 px entre tuiles (aussi d'un bloc à l'autre), cadre de 4 px (bordure 1 + marge 3), bande de titre de 16 px sur chaque bloc. */
 :root{--th:76px}
 .tblocks.tfree{display:block;position:relative;max-width:860px;margin:0 auto;padding:0;min-height:40px}
-.tblocks.tfree>.tblk,.tblocks.tfree.editing>.tblk.ted{position:absolute;top:0;left:0;box-sizing:border-box;padding:0 3px 3px;border:1px solid var(--line);border-radius:12px;outline:0;background:transparent;margin:0;width:100%}
-.tblocks.tfree>.tblk>.tband{height:16px;line-height:16px;padding:0 6px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tblocks.tfree>.tblk,.tblocks.tfree.editing>.tblk.ted{position:absolute;top:0;left:0;box-sizing:border-box;padding:0 7px 7px;border:1px solid var(--line);border-radius:12px;outline:0;background:transparent;margin:0;width:100%}
+.tblocks.tfree>.tblk>.tband{display:flex;align-items:center;justify-content:space-between;gap:8px;height:24px;line-height:22px;padding:0 1px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tblocks.tfree .rtiles,.tblocks.tfree .rresgrid,.tblocks.tfree .rrescol,.tblocks.tfree .cgrid{gap:12px;grid-auto-rows:var(--th)}
 .tblocks.tfree .rrescol{grid-auto-rows:var(--th)}
 .tblocks.tfree .rtile{min-height:0;height:100%;box-sizing:border-box}
-.tblocks.tfree.editing>.tblk.ted{border:1.5px dashed var(--brass);padding:0 3px 3px;background:var(--sheet);cursor:default}
-.tblocks.tfree.editing>.tblk>.tband{padding-left:46px;padding-right:44px}
-.tblocks.tfree.editing>.tblk>.tblkgrip{position:absolute;left:-1px;top:-1px;min-width:40px;min-height:40px;z-index:3;background:var(--sheet);border-radius:12px 0 12px 0}
-.tblocks.tfree.editing>.tblk>.tedpen{position:absolute;right:2px;top:2px;min-width:34px;min-height:34px;z-index:3;margin:0}
+.tblocks.tfree.editing>.tblk.ted{border:1px dashed var(--brass);padding:0 7px 7px;background:var(--sheet);cursor:default}
+.tblocks.tfree.editing>.tblk>.tband{padding-left:38px;padding-right:40px}
+.tblocks.tfree.editing>.tblk>.tblkgrip{position:absolute;left:-1px;top:-1px;min-width:36px;min-height:36px;z-index:3;background:var(--sheet);border-radius:12px 0 12px 0}
+.tblocks.tfree.editing>.tblk>.tedpen{position:absolute;right:2px;top:2px;min-width:32px;min-height:32px;z-index:3;margin:0}
 .tblocks.tfree.editing>.tblk>.tdel{position:absolute;right:2px;bottom:2px;z-index:3;min-width:30px;min-height:30px;padding:0;border-radius:999px;border:1px solid var(--blood);background:color-mix(in srgb,var(--blood) 55%,var(--sheet));color:#f6dada;font-size:var(--fs-sm);left:auto}
 .tblocks.tfree>.tblk.dragging{opacity:.35}
 .tlguide{position:absolute;left:0;right:0;height:0;border-top:2px solid var(--brass);z-index:5;pointer-events:none}
 .tlguide span{position:absolute;right:0;top:-18px;font-size:var(--fs-xs);color:var(--brass);background:var(--sheet);padding:0 4px;border-radius:4px}
 .tlghost{position:absolute;border:2px dashed var(--brass);border-radius:12px;background:color-mix(in srgb,var(--brass) 10%,transparent);z-index:1;pointer-events:none}
 .tedbar .chip[aria-pressed="true"]{background:var(--tgrad);border-color:var(--brass);color:var(--ink)}
-.tblocks.tfree>.tblk.w1>.tband{letter-spacing:0;padding:0 2px}
-.blkghost>.tblk{padding:0 3px 3px}
-.blkghost>.tblk>.tband{height:16px;line-height:16px;padding:0 6px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tblocks.tfree>.tblk.w1>.tband{letter-spacing:0;padding:0}
+/* Marge intérieure unique (décision d'Angle, maquette 8 px) : les anciennes cartes (Ce tour, Raccourcis, PV, en-tête) n'ajoutent plus la leur */
+.tblocks.tfree .tblkc :is(.tside,.health-card){padding:0;border:0}
+.tblocks.tfree .tblkc .character-banner{padding:0;margin:0}
+.tblocks.tfree .tblkc .tpanels{gap:12px;margin:0}
+.tblocks.tfree .tblkc .tturnb{gap:12px;margin-top:0}
+.tblocks.tfree .tblkc .tbottom{gap:12px}
+/* Tuiles de Raccourcis et de Notes : même taille partout, hauteur d'une rangée de tuiles ; texte sur une ligne, « … » au besoin */
+.tblocks.tfree .tblkc .tpbtn{height:var(--th);min-height:0;padding:6px;gap:2px;box-sizing:border-box}
+.tblocks.tfree .tblkc .tpbtn>*{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Tuiles étroites (bloc d'une colonne) : libellé un peu plus petit pour tenir dans la case */
+.tblocks.tfree>.tblk.w1 .rtile .label{letter-spacing:0;font-size:calc(var(--fs-xs) * .9)}
+.tturnbtn.tnew{justify-content:center;color:var(--muted)}
+.blkghost>.tblk{padding:0 7px 7px}
+.blkghost>.tblk>.tband{height:24px;line-height:22px;padding:0 38px;font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .blkghost .tblkgrip,.blkghost .tedpen,.blkghost .tdel{display:none}
 /* Chaque bloc a un seul fond, bande de titre comprise (demande d'Angle) : les cartes intérieures n'ont plus ni fond propre ni trait */
 .tblocks.tfree>.tblk{background:var(--sheet)}

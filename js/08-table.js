@@ -354,7 +354,9 @@ function viewTable(ch,D,banner=""){
   const TT=[["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["move","Mouvement"],["autre","Autre"]];
   const turnBtns=TT.map(([k,l])=>{ const used=!!turn[k], n=items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length;
     const label=used?"✓ "+TURN_DONE[k]:({action:"Actions",bonus:"Actions bonus",reaction:"Réactions"}[k]||l)+(n&&TURN_COSTS.includes(k)?" ("+n+")":"");
-    return `<button class="tturnbtn${k==="autre"?" wide":""}" aria-pressed="${used}" data-act="${k==="move"?"tturn":"tpop"}" data-v="${k==="move"?"move":"eco:"+k}" title="${k==="move"?(used?"Annuler":"Marquer le mouvement terminé"):"Options disponibles"}"><span>${label}</span>${used&&k==="move"?`<span class="tused">Annuler</span>`:""}</button>`; }).join("");
+    return `<button class="tturnbtn" aria-pressed="${used}" data-act="${k==="move"?"tturn":"tpop"}" data-v="${k==="move"?"move":"eco:"+k}" title="${k==="move"?(used?"Annuler":"Marquer le mouvement terminé"):"Options disponibles"}"><span>${label}</span>${used&&k==="move"?`<span class="tused">Annuler</span>`:""}</button>`; }).join("")
+    // « Nouveau tour » : une case à côté d'« Autre » (dans la bande du titre, il recouvrait les boutons au doigt : cible de 44 px)
+    +`<button class="tturnbtn tnew" data-act="tnewturn" title="Tout remettre à zéro pour le tour suivant"><span>↻ Nouveau tour</span></button>`;
   const ecoBtns=Object.entries(ECO).map(([k,l])=>`<button class="teco" aria-pressed="${T.eco===k}" data-act="teco" data-v="${k}">${l}<span class="muted num">${items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length}</span></button>`).join("");
   const recent=T.recent.map(k=>items.find(i=>i.key===k)).filter(Boolean).map(i=>`<button class="chip" data-act="tsel" data-k="${esc(i.key)}">${esc(i.name)}</button>`).join("");
   const blocks={
@@ -366,7 +368,6 @@ function viewTable(ch,D,banner=""){
         ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
     recherche:blkHidden(ch,"recherche")?"":`<div class="tgrid tb-solo"><div class="tmain">${tbHead("recherche","Recherche","blk:recherche")}${searchBar()}</div></div>`,
     tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
-      <div class="row" style="justify-content:space-between"><span></span><span class="row" style="gap:6px"><button class="btn small" data-act="tnewturn">Nouveau tour</button></span></div>
       <div class="tturnb">${turnBtns}</div>
       <div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Les options restent accessibles après consommation. Mouvement et Autre se terminent manuellement.</div></div></div>`,
     raccourcis:`<div class="tgrid tb-solo"><div class="tside table-reference">
@@ -402,9 +403,9 @@ const TILE_CAT={
   raccourcis:{skills:"Tests de caractéristique",saves:"Jets de sauvegarde",cond:"États",inv:"Inventaire",equip:"Équipement",rest:"Repos",hist:"Historique des jets",notes:"Notes de partie"}
 };
 /* Fiche des tuiles (lot T1, voir claude/catalogue-tuiles-2024.md) : gabarit, largeur minimale, action, blocs permis.
-   Largeurs minimales en px réels sur iPhone : É étroite 76, M moyenne 104, L large 160, P pleine 340 (cases du placement libre).
+   Largeurs minimales en px réels sur iPhone : É étroite 70, M moyenne 104, L large 156, P pleine 330 (cases avec 8 px de marge dans le bloc).
    Une tuile n'est proposée que dans une case assez large ; les autres sont montrées grisées et barrées. */
-const TILE_W={E:76,M:104,L:160,P:340}; // largeurs mini (px), revues pour les cases du placement libre (12 px entre tuiles)
+const TILE_W={E:70,M:104,L:156,P:330}; // largeurs mini (px), revues pour les cases du placement libre (12 px entre tuiles)
 const TILE_META=Object.assign(
   Object.fromEntries(Object.keys(TILE_CAT.reperes).map(id=>[id,{kind:"V",min:"E",act:id==="init"}])),
   Object.fromEntries(Object.keys(TILE_CAT.raccourcis).map(id=>[id,{kind:"Pop",min:"M",act:true}])),
@@ -416,7 +417,7 @@ const tileFits=(id,w)=>w>=tileMinW(id);
 const BLK_CELL_W={reperes:80,raccourcis:170};
 // Largeur réelle d'un groupe de cases sur iPhone (358 px utiles, grille invisible de 4 colonnes) pour un bloc de W colonnes de page
 // Placement libre : 4 colonnes de tuiles, 12 px entre deux tuiles, 4 px de marge dans le cadre (358 px utiles - 8 de marges)
-const cellW=(C,span,W=4)=>{ const col=(358-8-36)/4, inner=col*W+12*(W-1); return Math.floor((inner-12*(C-1))/C*span+12*(span-1)); };
+const cellW=(C,span,W=4)=>{ const col=(358-12)/4, inner=col*W+4*(W-1)-16; return Math.floor((inner-12*(C-1))/C*span+12*(span-1)); }; // page de 358 px, colonnes à 4 px, 8 px de marge dans le bloc
 const tileOkInBlk=(id,blk)=>!(TILE_META[id]||{}).only&&tileFits(id,BLK_CELL_W[blk]);
 const tileWhy=(id,blk)=>(TILE_META[id]||{}).only?"Seulement dans un bloc créé":"Trop large pour ces cases";
 const chSize=ch=>String(ch.size||(srd("species",ch.species)||hb(ch.species))?.size||"—");
@@ -672,7 +673,7 @@ const slotAt=(b,r,c)=>bSlots(b).find(x=>x.r===r&&x.c===c);
 const slotOk=(b,id,sl)=>tileSizeOk(id,sl.sz,b.r,b.c)&&tileFits(id,sizeW(sl.sz,b.c,b.w||4));
 const agThumb=(R,C,ag,on,attrs,label)=>`<button class="bpat" aria-pressed="${!!on}" ${attrs} aria-label="${esc(label)}" title="${esc(label)}"><span class="bpb bag" style="grid-template-columns:repeat(${C},1fr);grid-template-rows:repeat(${R},9px);width:${C*12+8}px">${agSlots(R,C,ag).map(x=>{ const [h,w]=tileSpan(x.sz,R,C); return `<i style="grid-row:${x.r+1}/span ${h};grid-column:${x.c+1}/span ${w};height:auto"></i>`; }).join("")}</span></button>`;
 // Largeur de l'aperçu dans la fenêtre : w colonnes sur 4 (écart 8 px), comme sur la page
-const prevW=w=>`width:calc((100% - 36px) * ${w} / 4 + ${12*(w-1)}px)`;
+const prevW=w=>`width:calc((100% - 12px) * ${w} / 4 + ${4*(w-1)-16}px)`; // largeur intérieure du bloc sur la page
 /* Titre des blocs de base (lot 3) : ch.layout.titles[id] ; vide = pas de titre. */
 const BLK_TITLED=["reperes","ressources","recherche","tour","raccourcis","notes"];
 function blkTitle(ch,id,def){ const t=ch?.layout?.titles?.[id]; return typeof t==="string"?t:def; }
@@ -795,21 +796,22 @@ function tableBlocks(ch,blocks){
   const title=id=>id==="perso"||id==="pv"?"":id.startsWith("c_")?(cb[id]?.name||""):blkTitle(ch,id,(TBLK.find(b=>b[0]===id)||[])[1]||"");
   const pen=id=>id==="perso"||id==="pv"?"":`<button class="tedpen" data-act="tpop" data-v="${id==="raccourcis"||id.startsWith("c_")?"tiles:":"blk:"}${id}" aria-label="Modifier le bloc ${esc(label(id))}" title="Modifier le bloc">${PEN_SVG}</button>`;
   const sec=id=>`<section class="tblk${ed?" ted":""} w${blkWidth(ch,id,cb[id])}" data-blk="${id}" data-w="${blkWidth(ch,id,cb[id])}" aria-label="${esc(label(id))}">
-    <div class="tband">${esc(title(id))}</div>${ed?`<span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span>${pen(id)}${BLK_KEEP.includes(id)?"":`<button class="tdel" data-act="blkDelNow" data-v="${id}" aria-label="Supprimer le bloc ${esc(label(id))}" title="Supprimer le bloc">✕</button>`}`:""}
+    <div class="tband"><span class="tbandt">${esc(title(id))}</span></div>${ed?`<span class="tblkgrip" data-blkgrip="${id}" role="button" aria-label="Déplacer le bloc ${esc(label(id))}" title="Glisser pour déplacer">⋮⋮</span>${pen(id)}${BLK_KEEP.includes(id)?"":`<button class="tdel" data-act="blkDelNow" data-v="${id}" aria-label="Supprimer le bloc ${esc(label(id))}" title="Supprimer le bloc">✕</button>`}`:""}
     <div class="tblkc"${ed?" inert":""}>${blocks[id]||(ed?`<div class="muted" style="font-size:var(--fs-sm)">Vide pour ce personnage pour l’instant.</div>`:"")}</div></section>`;
   const box=`<div class="tblocks tfree${ed?" editing":""}">${ids.map(sec).join("")}</div>`;
   if(!ed) return `${charges?`<div class="tcharges">${charges}</div>`:""}${box}`;
   const u=S.undo&&S.undo.doc===S.cur?S.undo:null, mag=ch.layout?.mag!==false, grav=!!ch.layout?.grav;
-  return `<div class="tlayouttop tedbar" role="status"><span><b>Mode édition</b> · glisse un bloc par ⋮⋮</span><span class="row" style="gap:6px"><button class="chip" data-act="layoutMag" aria-pressed="${mag}" title="Aimanter aux bords et aux rangées de tuiles des voisins">Aimant</button><button class="chip" data-act="layoutGrav" aria-pressed="${grav}" title="Faire remonter les blocs pour boucher les trous">Tasser</button><button class="btn small primary" data-act="layoutDone">Terminé</button></span></div>
-  <div class="tedtop"><button class="taddblk" data-act="tpop" data-v="blkadd">＋ Ajouter un bloc</button><button class="taddblk tauto" data-act="layoutAuto">Automatique (recommandé)</button></div>
+  // Un seul bandeau (décision d'Angle) : titre et « Terminé », puis les quatre outils de même forme
+  return `<div class="tlayouttop tedbar" role="status"><div class="tedl1"><span><b>Mode édition</b> <span class="muted" style="font-size:var(--fs-xs)">· glisse un bloc par ⋮⋮</span></span><button class="btn small primary" data-act="layoutDone">Terminé</button></div>
+  <div class="tedl2"><button class="chip" data-act="tpop" data-v="blkadd" aria-label="Ajouter un bloc">＋ Bloc</button><button class="chip" data-act="layoutAuto" title="Disposition recommandée pour ce personnage">Automatique</button><button class="chip" data-act="layoutMag" aria-pressed="${mag}" title="Aimanter aux bords et aux rangées de tuiles des voisins">Aimant</button><button class="chip" data-act="layoutGrav" aria-pressed="${grav}" title="Réduire les marges entre blocs et faire remonter les blocs">Tasser</button></div></div>
   ${box}
   ${u?`<div class="tundo" role="status"><span>${u.auto?"Disposition automatique appliquée":`Bloc « ${esc(u.label)} » supprimé`}</span><button class="btn small ghost" data-act="blkUndo">Annuler</button></div>`:""}`;
 }
 /* Géométrie du placement libre : mêmes mesures que le prototype validé par Angle. */
-const TL={G:12,M:4,BAND:16,GAP:4};
+const TL={G:12,FG:4,M:8,BAND:24,VGAP:16,GAP:4}; // G : entre tuiles ; FG : entre colonnes de page ; M : marge intérieure (bordure comprise) ; BAND : bande du titre
 /* Écart vertical entre deux blocs empilés (décision d'Angle) : une marge de 16 px par défaut ; « Tasser » le réduit à 4 px (comme entre deux colonnes) et fait remonter les blocs.
    Les relations enregistrées ne changent pas : en décochant « Tasser », les marges reviennent. */
-const tlGapV=ch=>ch.layout?.grav?TL.GAP:TL.BAND;
+const tlGapV=ch=>ch.layout?.grav?TL.GAP:TL.VGAP;
 function tableGeom(ch,list,ord){ // list : [{id,w,h}] ; renvoie {id:{c,y}}
   const gv=tlGapV(ch), pos=ch.layout?.pos||{}, by=Object.fromEntries(list.map(b=>[b.id,b])), res={}, colB=[0,0,0,0]; let curc=0;
   const ordered=ord.filter(id=>by[id]);
@@ -830,12 +832,12 @@ function tableGeom(ch,list,ord){ // list : [{id,w,h}] ; renvoie {id:{c,y}}
 const TH_PX=()=>{ const v=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--th")); return v||80; };
 // Après chaque rendu : largeur des colonnes, hauteur réelle des blocs, puis position de chacun
 function tableLayoutDom(){ const box=document.querySelector(".tblocks.tfree"), ch=cur(); if(!box||!ch) return;
-  const W=box.clientWidth, CW=(W-2*TL.M-3*TL.G)/4, secs=[...box.querySelectorAll(":scope > .tblk")];
-  box.style.setProperty("--cw",CW+"px");
-  for(const el of secs){ const w=+el.dataset.w||4; el.style.width=(w*CW+(w-1)*TL.G+2*TL.M)+"px"; }
+  // Colonnes de page séparées de 4 px ; chaque bloc a 8 px de marge intérieure (maquette validée par Angle)
+  const W=box.clientWidth, CW=(W-3*TL.FG)/4, secs=[...box.querySelectorAll(":scope > .tblk")];
+  for(const el of secs){ const w=+el.dataset.w||4; el.style.width=(w*CW+(w-1)*TL.FG)+"px"; }
   const list=secs.map(el=>({id:el.dataset.blk,w:+el.dataset.w||4,h:el.offsetHeight}));
   const g=tableGeom(ch,list,tableOrder(ch)); let bottom=0;
-  for(const el of secs){ const p=g[el.dataset.blk]; if(!p) continue; el.style.left=(p.c*(CW+TL.G))+"px"; el.style.top=p.y+"px"; bottom=Math.max(bottom,p.y+el.offsetHeight); }
+  for(const el of secs){ const p=g[el.dataset.blk]; if(!p) continue; el.style.left=(p.c*(CW+TL.FG))+"px"; el.style.top=p.y+"px"; bottom=Math.max(bottom,p.y+el.offsetHeight); }
   box.style.height=(bottom+(S.layoutEdit?120:4))+"px"; S.TL={W,CW,g,list};
   // Un bloc qui change de taille sans nouveau rendu (champ ouvert, texte saisi…) : on replace les blocs, sans chevauchement
   if(typeof ResizeObserver==="function"&&!document.body.classList.contains("blkdragging")){ TL_RO=TL_RO||new ResizeObserver(()=>{ if(TL_RAF) return; TL_RAF=requestAnimationFrame(()=>{ TL_RAF=0; if(!document.body.classList.contains("blkdragging")) tableLayoutDom(); }); });

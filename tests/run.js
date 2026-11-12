@@ -975,7 +975,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await noOverlap(), 'toujours sans chevauchement');
     await p.click('[data-act="layoutDone"]');
     ok(!await p.locator('[data-blkgrip]').count() && (await vis())[0] === 'pv', 'Terminé : retour au jeu, place conservée');
-    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.taddblk'); await p.click('.tpop [data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-v="blkadd"]'); await p.click('.tpop [data-act="layoutReset"]'); await p.click('[data-act="layoutDone"]');
     eq([(await vis())[0], await p.evaluate(() => cur().layout.pos)], ['perso', undefined], 'ordre et positions par défaut rétablis depuis « + Ajouter un bloc »');
   });
 
@@ -987,7 +987,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [(cur().layout.hidden || []).length, !!document.querySelector('.tblk[data-blk="notes"]'), !document.querySelector('.tundo')]), [0, true, true], 'Annuler : le bloc revient');
     await p.click('.tblk[data-blk="reperes"] .tdel');
     ok(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].length === 0 && cur().layout.hidden.includes('reperes')), 'Repères aussi se supprime');
-    await p.click('.taddblk');
+    await p.click('[data-v="blkadd"]');
     eq(await p.evaluate(() => [...document.querySelectorAll('.tpop [data-act="blkRestore"]')].map(b => b.dataset.v)), ['reperes'], '« + Ajouter un bloc » propose de le remettre');
     await p.click('.tpop [data-act="blkRestore"][data-v="reperes"]');
     ok(await p.evaluate(() => !!document.querySelector('.tblk[data-blk="reperes"]')), 'Repères remis');
@@ -1019,6 +1019,15 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq([G.recherche.y - (G.perso.y + G.perso.h), G.notes.y === G.recherche.y, G.notes.x - (G.recherche.x + G.recherche.w)], [16, true, 4], 'Recherche sous Personnage avec une marge de 16 px (par défaut), Notes en face, 4 px entre deux colonnes');
     ok(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].every(b => getComputedStyle(b).backgroundColor === getComputedStyle(document.querySelector('.tblocks > .tblk')).backgroundColor && getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)') && [...document.querySelectorAll('.tblk .health-card,.tblk .tside')].every(c => getComputedStyle(c).backgroundImage === 'none' && getComputedStyle(c).backgroundColor === 'rgba(0, 0, 0, 0)') && getComputedStyle(document.querySelector('.tblk .character-banner')).borderBottomStyle === 'none'), 'chaque bloc a un seul fond, bande de titre comprise ; plus de trait sous Personnage');
     ok(Object.values(G).every(b => b.x >= 0 && b.x + b.w <= 391), 'rien ne déborde de la page');
+    await p.evaluate(() => { const ch = cur(); S.keepLayout = JSON.parse(JSON.stringify(ch.layout)); ch.layout.hidden = []; ch.layout.pos = {}; ch.layout.width = {}; render(); });
+    const mg = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.tblocks > .tblk')].map(s => { const R = s.getBoundingClientRect(), band = s.querySelector('.tband').getBoundingClientRect();
+      const k = [...s.querySelectorAll('.tblkc button, .tblkc input, .tblkc .character-portrait')].map(e => e.getBoundingClientRect()).filter(r => r.width > 20);
+      return [s.dataset.blk, [Math.round(Math.min(...k.map(r => r.left)) - R.left), Math.round(Math.min(...k.map(r => r.top)) - band.bottom)]]; })));
+    ok(['reperes', 'recherche', 'tour', 'raccourcis', 'notes', 'perso'].every(id => mg[id] && mg[id][0] === 8) && ['reperes', 'recherche', 'tour', 'raccourcis', 'notes'].every(id => mg[id][1] === 0), 'même marge intérieure de 8 px à gauche dans chaque bloc, contenu juste sous la bande du titre : ' + JSON.stringify(mg));
+    const tp = await p.evaluate(() => [...document.querySelectorAll('.tblk[data-blk="raccourcis"] .tpbtn, .tblk[data-blk="notes"] .tpbtn')].map(e => { const r = e.getBoundingClientRect(); return Math.round(r.width) + 'x' + Math.round(r.height); }).concat(['th' + Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--th')))]));
+    const th = tp.pop().slice(2);
+    ok(tp.length >= 8 && tp.every(x => x === tp[0]) && tp[0].endsWith('x' + th), 'tuiles de Raccourcis et de Notes de même taille, hauteur d’une rangée de tuiles : ' + tp.join(' '));
+    await p.evaluate(() => { cur().layout = S.keepLayout; render(); });
     await p.evaluate(() => { const d = document.createElement('div'); d.style.height = '150px'; document.querySelector('.tblk[data-blk="notes"] .tblkc').appendChild(d); }); await p.waitForTimeout(150);
     G = await g(); eq(G.pv.y - (G.notes.y + G.notes.h), 16, 'un bloc qui grandit sans nouveau rendu repousse celui du dessous (pas de chevauchement)');
     await menuClick(p, '[data-act="layoutEdit"]');
@@ -1225,7 +1234,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await pair(), ['3', '1', true, true], 'paladin 2 (6 repères, 2 ressources), rien de réglé : Repères sur 3 colonnes, Ressources juste à droite');
     const geo = await p.evaluate(() => { const t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => e.getBoundingClientRect()), r = [...document.querySelectorAll('.tblk[data-blk="ressources"] .rrestile')].map(e => e.getBoundingClientRect()), all = [...t, ...r];
       return { n: all.length, w: Math.max(...all.map(x => x.width)) - Math.min(...all.map(x => x.width)), h: Math.max(...all.map(x => x.height)) - Math.min(...all.map(x => x.height)), rows: r.map((x, k) => Math.abs(x.top - t[3 * k].top) < 1), gap: Math.round(r[0].left - t[2].right) }; });
-    eq([geo.n, geo.w < 1.5, geo.h < 1, geo.rows, geo.gap], [8, true, true, [true, true], 12], 'huit tuiles de même taille, rangées de ressources en face des rangées de repères, 12 px d’écart : ' + JSON.stringify(geo));
+    eq([geo.n, geo.w < 6, geo.h < 1, geo.rows, geo.gap], [8, true, true, [true, true], 20], 'huit tuiles de même hauteur, rangées de ressources en face des rangées de repères, 20 px d’une tuile à l’autre (8 + 4 + 8) : ' + JSON.stringify(geo));
     ok(await p.evaluate(() => { const l = document.querySelector('.tblk[data-blk="ressources"] > .tband'); return l.textContent === 'Ressources' && l.scrollWidth <= l.clientWidth + 1; }), 'titre « Ressources » entier dans sa colonne');
     await p.click('.tblk[data-blk="ressources"] .rrestile:last-child');
     eq(await p.evaluate(() => [S.T.pop.startsWith('res:'), !!document.querySelector('.tpop .pips,.tpop .rresstep,.tpop .rresopen')]), [true, true], 'toucher une ressource ouvre la petite fenêtre');
@@ -1250,7 +1259,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { const ch = cur(); ch.layout.order = ['perso', 'reperes', 'ressources', 'pv', 'recherche', 'tour', 'raccourcis', 'notes']; S.layoutEdit = false; render(); });
     const g = await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="ressources"]').getBoundingClientRect(), t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => Math.round(e.getBoundingClientRect().width)), r = [...document.querySelectorAll('.tblk[data-blk="ressources"] .rtile')].map(e => Math.round(e.getBoundingClientRect().width));
       return { same: Math.round(a.top) === Math.round(b.top), right: b.left > a.right, rep3: Math.round(a.width / b.width), tw: t[0], rw: r[0], pair: !!document.querySelector('.rpair'), ov: document.documentElement.scrollWidth <= innerWidth }; });
-    eq([g.same, g.right, g.rep3, Math.abs(g.tw - g.rw) <= 1, g.pair, g.ov], [true, true, 3, true, false, true], 'Repères (3) et Ressources (1) côte à côte, tuiles de même largeur, sans débordement : ' + JSON.stringify(g));
+    eq([g.same, g.right, g.rep3, Math.abs(g.tw - g.rw) <= 6, g.pair, g.ov], [true, true, 3, true, false, true], 'Repères (3) et Ressources (1) côte à côte, tuiles de largeur voisine (8 px de marge dans chaque bloc), sans débordement : ' + JSON.stringify(g));
     await p.click('.tblk[data-blk="ressources"] .rrestile'); ok(await p.evaluate(() => S.T.pop.startsWith('res:')), 'Ressources en colonne : un toucher ouvre la petite fenêtre'); await p.keyboard.press('Escape');
     await p.evaluate(() => { cur().layout.width.raccourcis = 2; cur().layout.width.notes = 2; cur().layout.order = ['raccourcis', 'notes', 'perso', 'reperes', 'ressources', 'pv']; render(); });
     eq(await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="raccourcis"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="notes"]').getBoundingClientRect(); return [Math.round(a.top) === Math.round(b.top), getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpanels')).gridTemplateColumns.split(' ').length]; }), [true, 1], 'Raccourcis et Notes (2 colonnes chacun) côte à côte, tuiles sur une colonne');
@@ -1300,7 +1309,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Bloc personnalisé : modèle, nom, tuiles à leur place exacte, tailles, glisser, ancien format, suppression, import', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
-    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.taddblk');
+    await menuClick(p, '[data-act="layoutEdit"]'); await p.click('[data-v="blkadd"]');
     eq(await p.evaluate(() => document.querySelectorAll('.tpop .bpats [data-act="blkCreate"]').length), 12, '12 formats en miniatures (largeur × rangées, 8 cases au plus)');
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); const e = document.elementFromPoint(r.left + 20, r.top + 10); return !!e.closest('.tpop'); }), 'popup au-dessus de la barre de disposition');
     await p.click('.tpop [data-act="blkCreate"][data-r="2"][data-c="3"]');
@@ -1502,7 +1511,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tundo [data-act="blkUndo"]');
     eq(await p.evaluate(() => cur().layout.order), ['notes', 'perso'], 'Annuler : disposition d’avant');
     await p.evaluate(() => { cur().layout.custom = [{ id: 'c_autoaaaa', name: 'Perso', r: 1, c: 1, tiles: [] }]; render(); });
-    ok(await p.evaluate(() => { const a = document.querySelector('.tedtop [data-act="tpop"]').getBoundingClientRect(), b = document.querySelector('.tedtop [data-act="layoutAuto"]').getBoundingClientRect(), f = document.querySelector('.tblocks.editing > .tblk').getBoundingClientRect(); return a.bottom < f.top && b.left - a.right >= 30; }), 'boutons en haut de page, séparés');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tedbar .tedl2 > button')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['tpop:blkadd', 'layoutAuto', 'layoutMag', 'layoutGrav'], 'un seul bandeau : Ajouter un bloc, Automatique, Aimant, Tasser');
+    ok(await p.evaluate(() => { const r = [...document.querySelectorAll('.tedbar .tedl2 > button')].map(b => b.getBoundingClientRect()); return !document.querySelector('.tedtop') && r.every(x => Math.abs(x.top - r[0].top) < 2 && Math.abs(x.height - r[0].height) < 1); }), 'quatre boutons de même forme sur une ligne, plus de boutons sous le bandeau');
     await p.evaluate(() => { cur().level = 6; render(); }); await p.click('[data-act="layoutAuto"]');
     eq(await p.evaluate(() => cur().layout.custom), [], 'les blocs créés sont retirés');
     eq(await p.evaluate(() => [cur().layout.order.slice(0, 4), cur().layout.width.reperes]), [['perso', 'reperes', 'pv', 'ressources'], undefined], 'paladin 6 (8 repères, 3 ressources) : Repères en pleine largeur, Ressources sous la carte PV');
@@ -1518,7 +1528,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.keyboard.press('Escape'); await p.click('[data-act="layoutDone"]');
     eq(await p.evaluate(() => document.querySelector('.tblk[data-blk="raccourcis"] > .tband').textContent), 'Mes outils', 'titre changé, dans la bande du bloc');
     await p.evaluate(() => { cur().layout.titles.raccourcis = ''; render(); });
-    eq(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="raccourcis"] > .tband'); return [b.textContent, Math.round(b.getBoundingClientRect().height)]; }), ['', 16], 'titre vide : masqué, la bande garde sa hauteur (même marge pour tous)');
+    eq(await p.evaluate(() => { const b = document.querySelector('.tblk[data-blk="raccourcis"] > .tband'); return [b.textContent, Math.round(b.getBoundingClientRect().height)]; }), ['', 24], 'titre vide : masqué, la bande garde sa hauteur (même marge pour tous)');
     await menuClick(p, '[data-act="layoutEdit"]'); await p.click('.tblk[data-blk="reperes"] .tedpen');
     ok(await p.evaluate(() => !!document.querySelector('.tpop .bprev .rtiles') && document.querySelectorAll('.tpop .bpats .bpat').length === 3), 'Repères : 3 formats et aperçu de ses tuiles');
     await p.keyboard.press('Escape'); await p.click('.tblk[data-blk="raccourcis"] .tedpen'); await p.click('.tpop [data-act="blkResetOne"]');
