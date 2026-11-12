@@ -287,7 +287,48 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 - Reliquats Claude (section 5).
 - Stratégie de sauvegarde entre appareils (navigateur, iPhone, iPad, copie personnelle, synchronisation, restauration, confidentialité) : à concevoir avant d'implémenter.
 
-## 14. À faire (ordre validé par Angle le 10 nov. 2026, sauf mention)
+## 14. Feuille de route (validée par Angle le 12 nov. 2026)
+
+**Cette liste remplace les « à faire » et « plus tard » plus anciens de ce document** (sections 11, 14 ancienne, 15 et 16, gardées pour l'historique des décisions). Répartition décidée par Angle : **Claude** ou **ChatGPT** ; modèle Claude conseillé entre parenthèses (avis de Claude : Fable pour les chantiers où une erreur de conception coûte cher, Opus pour les chantiers qui touchent plusieurs fichiers ou écrans, Sonnet pour les chantiers bien délimités, Haiku pour les tâches mécaniques).
+
+**Phase 1 — socles** (d'autres chantiers s'appuient dessus)
+- 10. Fenêtres harmonisées : même structure, tailles et boutons pour Tests, Sauvegardes, États, Inventaire, Équipement, Repos, cartes… — Claude (Opus). Avant 2, 4, 5, 6, 7.
+- 20. Menu « Réglages » : thème, dés virtuels, préférences — Claude (Sonnet). Accueille 4, 21, 22, 24.
+- 1. Compteurs : Lumière, Rations, Munitions, compteur maison posé dans un bloc — Claude (Opus). **Prochain chantier.** Avant 3 et 23 (le compteur maison est la première tuile créée par le joueur).
+
+**Phase 2 — le jeu à la table**
+- 2. Moins de touchers pour actions, actions bonus, réactions ; jet direct en touchant « Toucher » ou « Dégâts » — Claude (Opus). Après 10.
+- 5. Effets en cours avec leur durée ; résistances et immunités saisies à la main — Claude (Opus). Après 2 (« Nouveau tour » doit faire avancer un compteur de rounds).
+- 7. Accès rapide aux jets les plus utilisés (par fréquence) — Claude (Sonnet). Après 2.
+- 6. Plusieurs notes datées au lieu de la zone unique — Claude (Sonnet). Après 10.
+- 8. Retrouver plus simplement un bloc retiré — Claude (Sonnet).
+- 4. Dés libres — design ChatGPT d'abord, puis code Claude (Sonnet). Après 10 et 20.
+- 3. Nouveau design des tuiles les plus utilisées (CA, Vitesse…) — **ChatGPT**. De préférence après 1.
+- 9. Crayon pour Personnage et PV (largeur, titre) — petit, à confirmer par Angle (point non retenu pour l'instant).
+
+**Phase 3 — règles et personnage** (dans cet ordre)
+- 13. Lignages : elfe drow / haut-elfe / sylvestre, tieffelin abyssal / chtonien / infernal, gnome des forêts / des roches ; sorts toujours préparés, lancers gratuits, Bricolage ; vision à 36 m du drow — Claude (Opus). Avant 17.
+- 14. Bottes d'arme : choisir les types d'arme retenus (aujourd'hui toutes les armes de la fiche) — Claude (Sonnet).
+- 17. Assistant de création (refonte, choix des traits d'espèce) — Claude (**Fable**). Après 13 et 14.
+- 16. Vérification des classes une à une (Garrant, Baudoin, Mara, Yarjerit ; `claude/plan-tests-classes.md`) — Claude (Opus). Après 13, 14, 17.
+- 15. Multiclasse — Claude (**Fable**). Le moins prioritaire, après 16.
+
+**Phase 4 — la fiche**
+- 18. Onglet « Feuille » : toute la fiche en lecture seule, valeurs en temps réel (section 16) — Claude (Opus). Mieux après 13.
+- 19. PDF propre de la fiche — Claude (Sonnet) ou ChatGPT. Après 18.
+
+**Phase 5 — l'appli et l'écran**
+- 11. En-tête aligné sur la largeur des blocs ; en-tête compact sur téléphone — Claude (Sonnet). Avant 12.
+- 12. Ordinateur en deux colonnes — Claude (Opus). Après 11.
+- 21. Accueil plus léger sur téléphone — Claude (Sonnet). Après 20.
+- 24. Sauvegarde entre appareils — Claude (**Fable**). Après 20 ; à concevoir avec la PWA (hors ligne, conflits).
+- 25. Pack de table (partager le contenu hors SRD) — Claude (Opus). Après 24 (même format d'export).
+- 23. Créer ses propres tuiles depuis un menu — Claude (Opus), pas prioritaire. Après 1 et 3.
+- 22. Skins par classe (mode clair et sombre) — **ChatGPT**. Après 3 et 20.
+- 26. PWA : encore en v146 ; mise à jour quand Angle le demande — Claude (Haiku). Publication iPhone, iPad, App Store seulement après stabilisation (et après 24).
+- 27. Petits restes : reliquats Claude, essai du catalogue dans l'app Claude sur ordinateur — à voir ensemble.
+
+## 14 bis. Ancienne liste « À faire » (10 nov. 2026, historique)
 
 **Lot 1 — Corrections sans décision : fait le 10 nov. 2026**, publié en v123 (suite complète 84/84 sur `bb583c3`).
 - Onglets de la fiche sur iPhone : la largeur minimale de 44 px laissait les onglets se tasser et se chevaucher (effet du commit `82f0cbd`). Barre défilante, fondu sur le bord qui continue, onglet actif ramené dans la partie visible ; lignes de compétences à 44 px (zones de toucher qui débordaient). Nouveau test : aucun élément cliquable n'en recouvre un autre (`343b393`).
