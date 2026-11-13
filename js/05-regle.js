@@ -308,15 +308,21 @@ function spellMech(sp){
   const sv=t.match(/jet de sauvegarde (?:de |d’)(Force|Dextérité|Constitution|Intelligence|Sagesse|Charisme)/i);
   if(sv) m.save=sv[1];
   const first=t.split(/\n(?:Emplacement de niveau supérieur|Amélioration de sort mineur)\./)[0];
-  const dm=first.match(/(\d+d\d+)(?:\s*\+\s*votre modificateur de caractéristique d’incantation)?\s+(?:dégâts?|points de dégâts)\s+(?:de\s+)?([a-zéèêàç]+)/i);
+  const dm=first.match(/(\d+d\d+)(?:\s*\+\s*(\d+)(?![\dd]))?(?:\s*\+\s*votre modificateur de caractéristique d’incantation)?\s+(?:dégâts?|points de dégâts)\s+(?:de\s+)?([a-zéèêàç]+)/i);
   const heal=first.match(/(?:récupère|regagne)[^.]{0,80}?(\d+d\d+)(\s*\+\s*votre modificateur de caractéristique d’incantation)?/i)||first.match(/points de vie égal à (\d+d\d+)(\s*\+\s*votre modificateur de caractéristique d’incantation)?/i);
   if(heal&&(!dm||first.indexOf(heal[1])<first.indexOf(dm[1]))){ m.dice=heal[1]; m.heal=true; m.addMod=!!heal[2]; }
-  else if(dm){ m.dice=dm[1]; m.dmgType=dm[2]; m.addMod=/\d+d\d+\s*\+\s*votre modificateur de caractéristique d’incantation/.test(first); }
+  else if(dm){ m.dice=dm[1]; m.dmgType=dm[3]; if(+dm[2]) m.flat=+dm[2]; m.addMod=/\d+d\d+\s*\+\s*votre modificateur de caractéristique d’incantation/.test(first); }
+  // Plusieurs traits à la fois (Projectile magique : trois traits de 1d4 + 1, un de plus par niveau d'emplacement)
+  const dn=dm&&first.match(/\b(deux|trois|quatre|cinq) (?:traits|projectiles|fléchettes)\b/i);
+  if(dn){ m.beams=true; m.darts={deux:2,trois:3,quatre:4,cinq:5}[dn[1].toLowerCase()]; if(/(?:un|une) (?:trait|projectile|fléchette) supplémentaire par niveau d’emplacement/i.test(t)) m.upDarts=1; }
   const up=t.match(/Emplacement de niveau supérieur\.[^\n]*?(\d+d\d+)[^.\n]{0,50}?par niveau d’emplacement au-delà du (\d+)/);
   if(up){ m.upDice=up[1]; }
   if(sp.level===0 && /Amélioration de sort mineur/.test(t)){ m.scale=true; m.beams=/rayons/.test(t); }
   return m;
 }
+// Nombre de rayons (sorts mineurs) ou de traits (Projectile magique) au niveau d'emplacement donné
+function beamsAt(m, sp, slot, D){ if(!m||!m.beams||!sp) return 1; if(m.darts) return m.darts+(m.upDarts&&slot>sp.level?slot-sp.level:0); return sp.level===0&&D?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1; }
+const beamWord=m=>m&&m.darts?"trait":"rayon";
 function diceAt(m, sp, slot, D){
   if(!m.dice) return null;
   let [n,f]=m.dice.split("d").map(Number);
@@ -327,6 +333,7 @@ function diceAt(m, sp, slot, D){
   if(m.addMod) bonus+=D.mods[D.cast?.ability||"cha"];
   if(sp.level===0 && (D.invPick||[]).some(p=>p.id==="decharge-dechirante"&&(p.c?norm((spellOf(p.c)||{}).name)===norm(sp.name):norm(sp.name)===norm("Décharge occulte")))) bonus+=D.mods.cha;
   if(m.bonus) bonus+=evalF(m.bonus,D.ctx);
+  if(m.flat) bonus+=m.flat;
   return expr+(bonus?sg(bonus):"");
 }
  

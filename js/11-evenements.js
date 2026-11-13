@@ -298,8 +298,8 @@ document.addEventListener("click",e=>{
       if(sp.concentration) ch.conc=sp.name;
       addLog({label:sp.name+(rit?" lancé en rituel":" lancé"),total:sp.level?"niv. "+(rit?sp.level:lvl):"mineur",bd:[rit?"Aucun emplacement dépensé.":left,sp.concentration?"Concentration notée.":"",m.save?"Cibles : JS de "+m.save+" DD "+D.cast.dc+".":""].filter(Boolean).join(" "),kind:"info"});
       const ex=diceAt(m,sp,rit?sp.level:lvl,D);
-      const beams=(sp.level===0&&m.beams)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1;
-      for(let b=1;b<=beams;b++){ const tag=beams>1?" (rayon "+b+")":""; if(m.attack) rollD20(sp.name+tag+" — toucher",D.cast.atk); if(ex) rollDmg(sp.name+tag+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); }
+      const beams=beamsAt(m,sp,rit?sp.level:lvl,D);
+      for(let b=1;b<=beams;b++){ const tag=beams>1?" ("+beamWord(m)+" "+b+")":""; if(m.attack) rollD20(sp.name+tag+" — toucher",D.cast.atk); if(ex) rollDmg(sp.name+tag+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); }
       touch(S.cur); render(); break; }
     case "sdmg": { const D=derive(ch), sp=spellOf(t.dataset.ref), m=spellMech(sp); const sel=document.getElementById("slot-"+t.dataset.ref.replace(/[^a-z0-9]/gi,"")); const lvl=+(sel?.value||sp.level); const ex=diceAt(m,sp,lvl,D); rollDmg(sp.name+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); break; }
     case "saveProf": { const v=t.dataset.v; ch.saveProfs=ch.saveProfs||[]; ch.saveProfs=t.checked?[...new Set([...ch.saveProfs,v])]:ch.saveProfs.filter(x=>x!==v); touch(S.cur); render(); break; }

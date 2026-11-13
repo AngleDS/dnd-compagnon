@@ -2431,6 +2431,15 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const d = document.querySelector('.tpop .tdesc'); return !!d && d.open && !document.querySelector('.tpop .wfoot'); }), 'règle sans bouton : description ouverte');
   });
 
+  await test('Projectile magique : trois traits de 1d4 + 1, un de plus par niveau d’emplacement ; dégâts fixes lus (Désintégration, Doigt de mort)', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'magicien');
+    eq(await p.evaluate(() => ['projectile-magique', 'desintegration', 'doigt-de-mort'].map(id => { const sp = S.C.spells.find(x => x.id === id), m = spellMech(sp); return [m.dice, m.flat, m.dmgType, m.darts || 0]; })), [['1d4', 1, 'force', 3], ['10d6', 40, 'force', 0], ['7d8', 30, 'nécrotiques', 0]], 'mécanique lue dans le texte du sort');
+    await p.evaluate(() => { const ch = cur(); ch.level = 3; ch.spells = [{ prepared: true, ref: 'srd:projectile-magique' }]; render(); tSelect('spell:srd:projectile-magique'); });
+    eq(await p.evaluate(() => document.querySelector('.tpop .tcvals b').textContent), '3 × 1d4+1', 'valeur clé : 3 × 1d4+1');
+    await p.evaluate(() => { S.T.slot = 2; render(); }); await p.click('.tpop .wfoot [data-act="tcast"]');
+    eq(await p.evaluate(() => [!!document.querySelector('.tpop #t-dmg'), /4 traits : des dégâts par trait/.test(document.querySelector('.tpop').textContent), cur().slotsUsed[2]]), [true, true, 1], 'lancé au niveau 2 : 4 traits, saisie des dégâts d’un trait, emplacement de niveau 2 dépensé');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');

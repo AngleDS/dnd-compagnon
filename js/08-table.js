@@ -1175,7 +1175,7 @@ function tRow(i,first,inEco){
     // Sort de niveau 1+ : un seul bouton « Lancer » (emplacement choisi dans le mini-menu, puis jets dans la fenêtre de résultat) ; sort mineur : Toucher / Dégâts, ou « Lancer » s'il n'a pas de jet
     const lv=i.sp.level>0, cl=`<span class="tk tkb tkcast" role="button" tabindex="0" data-act="tqroll" data-k="${esc(i.key)}" data-r="cast" aria-label="Lancer ${esc(i.name)}" title="Lancer le sort"><b>Lancer</b></span>`;
     if(i.roll) right+= i.roll.startsWith("DD") ? kv("DD",i.roll.slice(3)) : (lv?kv("Toucher",i.roll):kb("Toucher",i.roll,"hit"));
-    if(i.dice){ const D=S.Tderived; const b=(i.sp.level===0&&i.m&&i.m.beams&&D)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1; const t=(b>1?b+" × ":"")+i.dice; right+=lv?kv(i.heal?"Soins":"Dégâts",t):kb(i.heal?"Soins":"Dégâts",t,"dmg"); }
+    if(i.dice){ const D=S.Tderived; const b=beamsAt(i.m,i.sp,i.sp.level,D); const t=(b>1?b+" × ":"")+i.dice; right+=lv?kv(i.heal?"Soins":"Dégâts",t):kb(i.heal?"Soins":"Dégâts",t,"dmg"); }
     if(lv||(!i.dice&&!(i.roll&&!i.roll.startsWith("DD")))) right+=cl;
     right+=`<span class="tklvl">${i.sp.level?"niv. "+i.sp.level:"mineur"}</span>`;
   }
@@ -1275,7 +1275,7 @@ function tCard(ch,D){
         body+=sec("PV temporaires",`<div class="tbig"><span class="num">${v}</span><span class="muted">au niveau ${Math.max(1,L2)}</span></div>${done?(()=>{ const ct=T.castTemp; return ct&&ct.b0>=ct.v?`<div class="muted" style="font-size:var(--fs-sm)">Tu avais déjà ${ct.b0} PV temporaires : on garde le plus haut, ils ne se cumulent pas.</div>`:`<div class="muted" style="font-size:var(--fs-sm)">✓ Ajoutés à tes PV temporaires.</div>`; })():`<div class="muted" style="font-size:var(--fs-sm)">Ajoutés automatiquement au lancement du sort.</div>`}${sp.mech.tempNote?`<div class="muted" style="font-size:var(--fs-sm);margin-top:4px">${esc(sp.mech.tempNote.replace(/\{n\}/g,v))}</div>`:""}`); }
     }
     { const nn=invNotes(D,i.ref,sp); if(nn.length) body+=`<div class="tnotes" style="margin-top:6px">${nn.map(esc).join("<br>")}</div>`; }
-    if(sp.level===0&&m.beams){ const b=1+(D.L>=5)+(D.L>=11)+(D.L>=17); if(b>1) body+=`<div class="muted">${b} rayons : une attaque et des dégâts par rayon.</div>`; }
+    { const b=beamsAt(m,sp,done?(T.castRit?sp.level:T.castLvl):(lvl||sp.level),D); if(b>1) body+=`<div class="muted">${b} ${beamWord(m)}s : ${m.attack?"une attaque et ":""}des dégâts par ${beamWord(m)}.</div>`; }
     body+=`<details class="tdesc"><summary class="label">Description du sort</summary><div class="prose">${prose(sp.text)}</div></details>`;
     if(castCtl) body+=castCtl.startsWith("<section")?castCtl:`<div class="tuse">${castCtl}</div>`;
   }
@@ -1330,7 +1330,7 @@ function tCard(ch,D){
   let sum="";
   if(["abil","save","skill","init"].includes(i.kind)) sum=kv("Bonus",sg(i.mod-exhN));
   else if(i.kind==="atk") sum=kv("Toucher",sg(i.mod-exhN))+kv("Dégâts",i.dmg);
-  else if(i.kind==="spell"){ const m=i.m; if(m.attack) sum+=kv("Toucher",sg(D.cast.atk-exhN)); else if(m.save) sum+=kv("DD",D.cast.dc); if(i.dice) sum+=kv(m.heal?"Soins":"Dégâts",i.dice); }
+  else if(i.kind==="spell"){ const m=i.m; if(m.attack) sum+=kv("Toucher",sg(D.cast.atk-exhN)); else if(m.save) sum+=kv("DD",D.cast.dc); if(i.dice){ const b=beamsAt(m,i.sp,i.sp.level,D); sum+=kv(m.heal?"Soins":"Dégâts",(b>1?b+" × ":"")+i.dice); } }
   else if(i.kind==="feat"&&i.res){ const r=i.res; sum=kv("Reste",(r.max-(+ch.resUsed?.[r.id]||0))+"/"+r.max+(r.pool?" d"+r.die:"")); }
   else if(i.kind==="counter") sum=kv("Reste",(+i.counter.cur||0)+"/"+(+i.counter.max||0));
   const lkRef=i.kind==="spell"?i.ref:i.kind==="feat"?i.src:i.kind==="bagitem"?(((ch.bag||[]).find(z=>z.id===i.bagId)||{}).ref||matchItem(i.name)):null;
@@ -1392,7 +1392,7 @@ function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x
   const D=derive(ch), exh=2*(+ch.exhaustion||0), heal=!!i.heal;
   if(r==="hit"){ const mod=(i.kind==="atk"?+i.mod:parseInt(i.roll,10)||0)-exh; T.qr={k:key,r,mode:T.mode,mod,label:i.name+" — toucher"}; }
   else if(r==="d20"){ T.qr={k:key,r,mode:T.mode,mod:(+i.mod||0)-exh,label:i.name}; }
-  else { const b=(i.kind==="spell"&&i.sp&&i.sp.level===0&&i.m&&i.m.beams)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1;
+  else { const b=i.kind==="spell"?beamsAt(i.m,i.sp,keep&&i.sp?(T.castRit?i.sp.level:T.castLvl):(i.sp&&i.sp.level),D):1;
     const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,T.castRit?i.sp.level:T.castLvl,D):i.dice)||""), mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0);
     T.qr={k:key,r,crit:m==="c",dice:m==="c"?doubleDice(dice):dice,flat,heal,beams:b,re1:heal&&!!D.guerisseur}; }
   T.pop="qroll"; render();
@@ -1420,7 +1420,7 @@ function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x
   if(q.r==="hit"||q.r==="d20") return wrap(esc(i.name)+(q.r==="hit"?" · Toucher":""),`<div class="qres"><div class="qmode label">${ML[q.mode]}</div>
     ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
     <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div></div>`);
-  return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un rayon sur ${q.beams}`:""}</div>
+  return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un ${beamWord(i.m)} sur ${q.beams}`:""}</div>
     ${phys?(()=>{ const rg=diceRange(q.dice); return `<div class="row tin"><label class="field"><span>Total de tes ${esc(q.dice)}${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`; })():""}
     ${!phys&&T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}
     <div class="ttotal qtot" id="t-dtot" data-flat="${q.flat}">${damageTotalHtml(T.dmg,q.flat)}</div></div>`); }
