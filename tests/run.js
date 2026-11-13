@@ -2875,6 +2875,30 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.hpbox .hpdef'); ok(await p.locator('.tpop[aria-label="Défenses"]').isVisible() && !(await p.locator('.hpbox').count()), '« modifier » ouvre les défenses');
   });
 
+  await test('États et effets : effets actifs depuis un sort ou à la main, Terminé, lien avec la concentration, défenses', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'srd:clerc', bg: 'srd:acolyte', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); const ch = cur(); delete ch.conc; ch.spells = [{ ref: 'srd:benediction', prepared: true }, { ref: 'srd:soins', prepared: true }]; S.T.pop = 'cond'; render(); });
+    eq(await p.getAttribute('.tpop', 'aria-label'), 'États et effets', 'fenêtre renommée');
+    ok((await p.innerText('.tpop .fxsec')).includes('Aucun effet en cours.'), 'aucun effet au départ');
+    await p.click('.tpop .fxadd');
+    eq(await p.evaluate(() => [...document.querySelectorAll('#fx-sp option')].map(o => o.textContent)), ['—', 'Bénédiction (1 minute, concentration)'], 'seuls les sorts à durée sont proposés');
+    await p.selectOption('#fx-sp', 'srd:benediction'); await p.click('.tpop button[type=submit]');
+    eq(await p.evaluate(() => [S.T.pop, cur().conc, fxList(cur()).map(e => [e.name, e.dur, e.src, e.conc])]), ['cond', 'Bénédiction', [['Bénédiction', '1 minute', 'ton sort', true]]], 'sort suivi, concentration notée, retour à la fenêtre');
+    await p.click('.tpop .fxadd'); await p.fill('#fx-name', 'Potion de résistance'); await p.click('[data-act="fxDur"][data-v="1 heure"]');
+    eq(await p.inputValue('#fx-name'), 'Potion de résistance', 'choisir la durée ne vide pas le nom');
+    await p.fill('#fx-note', 'Résistance au feu'); await p.click('.tpop button[type=submit]');
+    ok(/Potion de résistance\s*1 heure\s*Résistance au feu/.test(await p.innerText('.tpop .fxsec')), 'effet à la main affiché avec sa durée et sa note');
+    await p.click('.tpop .fxadd'); await p.click('.tpop button[type=submit]');
+    eq(await p.evaluate(() => S.T.pop), 'fxadd', 'sans sort ni nom : rien n’est ajouté');
+    await p.evaluate(() => { cur().conc = ''; S.T.pop = 'cond'; render(); });
+    eq(await p.evaluate(() => fxList(cur()).map(e => e.name)), ['Potion de résistance'], 'fin de la concentration : le sort suivi s’arrête');
+    await p.click('.tpop .fxadd'); await p.selectOption('#fx-sp', 'srd:benediction'); await p.click('.tpop button[type=submit]');
+    await p.click('.tpop .fxrow:has-text("Bénédiction") [data-act="fxDone"]');
+    eq(await p.evaluate(() => [cur().conc, fxList(cur()).map(e => e.name)]), ['', ['Potion de résistance']], '« Terminé » sur le sort suivi met fin à la concentration');
+    await p.click('.tpop .fxdef'); ok(await p.locator('.tpop[aria-label="Défenses"]').isVisible(), 'ligne Défenses : ouvre la fenêtre');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));

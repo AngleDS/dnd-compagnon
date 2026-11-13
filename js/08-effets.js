@@ -42,3 +42,28 @@ function hpCalcShow(){ const amt=document.getElementById("hp-amt"), ty=document.
   if(btn) btn.textContent=r.n?"Appliquer "+r.n+" dégât"+(r.n>1?"s":""):"Aucun dégât (immunité)"; }
 document.addEventListener("input",e=>{ if(e.target&&e.target.id==="hp-amt") hpCalcShow(); });
 document.addEventListener("change",e=>{ if(e.target&&e.target.id==="hp-type") hpCalcShow(); });
+/* Effets actifs : nom, durée en texte, provenance, note, « Terminé ». Pas de compte à rebours : rounds et durées décomptées
+   viendront avec le Mode combat (chantier 28). Un sort de concentration suivi s'arrête avec la concentration, et l'inverse. */
+const FX_DURS=["1 minute","10 minutes","1 heure","8 heures","24 heures","Jusqu’à dissipation"];
+function spellDur(sp){ const d=String(sp&&sp.duration||"").trim(); if(!d||/instantan/i.test(d)) return "";
+  return d.replace(/^Concentration,\s*/i,"").replace(/^jusqu[’']à\s*/i,"").replace(/^./,x=>x.toUpperCase()); }
+function fxList(ch){ return (ch.effects||[]).filter(e=>!e.conc||ch.conc===e.name); }
+function fxAdd(ch,e){ ch.effects=[...fxList(ch).filter(x=>x.name!==e.name),Object.assign({id:uid()},e)]; }
+function fxDone(ch,id){ const e=(ch.effects||[]).find(x=>x.id===id); ch.effects=fxList(ch).filter(x=>x.id!==id); if(e&&e.conc&&ch.conc===e.name) ch.conc=""; }
+function fxSection(ch){ const L=fxList(ch), ds=defSummary(ch);
+  const row=e=>`<div class="fxrow"><div><b>${esc(e.name)}</b><div class="muted" style="font-size:var(--fs-sm)">${[e.dur||"Sans durée",e.src,e.conc?"concentration":""].filter(Boolean).map(esc).join(" · ")}</div>${e.note?`<div style="font-size:var(--fs-sm)">${esc(e.note)}</div>`:""}</div><button class="btn small" data-act="fxDone" data-id="${esc(e.id)}">Terminé</button></div>`;
+  return `<div class="lusec fxsec"><div class="label">Effets actifs</div>${L.length?L.map(row).join(""):`<div class="muted" style="font-size:var(--fs-sm);margin:6px 0">Aucun effet en cours.</div>`}<button class="btn fxadd" data-act="tpop" data-v="fxadd">+ Ajouter un effet</button>`
+    +`<button class="fxdef" data-act="tpop" data-v="def"><span><span class="label">Défenses</span> <b>${esc(ds||"aucune")}</b></span><span class="muted">Voir ›</span></button></div>`; }
+function fxAddPop(ch,D,wrap){ const T=S.T, sps=(ch.spells||[]).map(s=>({ref:s.ref,sp:spellOf(s.ref)})).filter(x=>x.sp&&spellDur(x.sp));
+  const chip=d=>`<span class="condpick"><button type="button" class="chip" aria-pressed="${T.fxDur===d}" data-act="fxDur" data-v="${esc(d)}">${esc(d)}</button></span>`;
+  return wrap("Ajouter un effet",`<form id="fxform" data-form="fxadd" class="stack" novalidate>
+    ${sps.length?`<div class="lusec"><div class="label">Depuis un de tes sorts</div><label class="field"><span>Sort</span><select id="fx-sp"><option value="">—</option>${sps.map(x=>`<option value="${esc(x.ref)}">${esc(x.sp.name)} (${esc(spellDur(x.sp).toLowerCase())}${x.sp.concentration?", concentration":""})</option>`).join("")}</select></label></div>`:""}
+    <div class="lusec"><div class="label">${sps.length?"Ou à la main":"À la main"}</div><label class="field"><span>Nom</span><input id="fx-name" type="text" maxlength="60" placeholder="ex. Potion de résistance"></label>
+      <div class="label" style="margin-top:8px">Durée</div><div class="condgrid" style="margin-top:6px">${FX_DURS.map(chip).join("")}</div>
+      <label class="field" style="margin-top:8px"><span>Note (facultatif)</span><input id="fx-note" type="text" maxlength="120"></label></div></form>`
+    +winFoot(`<button class="btn primary" type="submit" form="fxform">Ajouter</button>`)); }
+function fxSubmit(){ const ch=cur(); if(!ch) return; const v=id=>(document.getElementById(id)?.value||"").trim(), ref=v("fx-sp"), name=v("fx-name"), note=v("fx-note");
+  if(ref){ const sp=spellOf(ref); if(!sp) return; if(sp.concentration) ch.conc=sp.name; fxAdd(ch,{name:sp.name,dur:spellDur(sp),src:"ton sort",conc:!!sp.concentration,note}); }
+  else if(name) fxAdd(ch,{name,dur:S.T.fxDur||"",src:"",note});
+  else { setBanner("Choisis un de tes sorts ou donne un nom à l’effet."); return; }
+  S.T.fxDur=null; S.T.pop="cond"; touch(S.cur); render(); }

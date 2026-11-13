@@ -104,6 +104,8 @@ document.addEventListener("click",e=>{
     // Défenses (chantier 5)
     case "defEdit": S.T.defEdit=S.T.defEdit===t.dataset.c?null:t.dataset.c; render(); break;
     case "defTog": defToggle(ch,t.dataset.c,t.dataset.v); touch(S.cur); render(); break;
+    case "fxDone": fxDone(ch,t.dataset.id); touch(S.cur); render(); break;
+    case "fxDur": S.T.fxDur=S.T.fxDur===t.dataset.v?null:t.dataset.v; document.querySelectorAll('[data-act="fxDur"]').forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===S.T.fxDur))); break; // sans nouveau rendu : le nom saisi reste
     case "defOpen": S.pending=null; renderModal(); if(!(S.view==="sheet"&&S.tab==="table")){ S.view="sheet"; S.tab="table"; } render(); S.T.pop="def"; S.T.defEdit=null; render(); break;
     case "nav": if(t.dataset.v==="hb"||t.dataset.v==="comp"){ if(S.view==="sheet") S.navFrom="perso"; else if(S.view==="list") S.navFrom="menu"; }
       if(t.dataset.v==="main"||t.dataset.v==="table"){ // rester sur le perso affiché ; le perso principal seulement en venant d'ailleurs
@@ -481,6 +483,7 @@ document.addEventListener("submit",e=>{
     if(r===20){ ch.hp.cur=1; ch.death={s:0,f:0}; } else if(r===1) ch.death.f=Math.min(3,ch.death.f+2); else if(r>=10) ch.death.s=Math.min(3,ch.death.s+1); else ch.death.f=Math.min(3,ch.death.f+1);
     touch(S.cur); render(); return; }
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
+  if(f.dataset.form==="fxadd"){ fxSubmit(); return; }
   if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
     if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
   if(f.dataset.form==="usepv"){ performUse(f.dataset.k,+(document.getElementById("t-pvn")||{}).value||0); return; }
