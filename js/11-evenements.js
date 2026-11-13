@@ -301,7 +301,7 @@ document.addEventListener("click",e=>{
       const beams=beamsAt(m,sp,rit?sp.level:lvl,D);
       for(let b=1;b<=beams;b++){ const tag=beams>1?" ("+beamWord(m)+" "+b+")":""; if(m.attack) rollD20(sp.name+tag+" — toucher",D.cast.atk); if(ex) rollDmg(sp.name+tag+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); }
       touch(S.cur); render(); break; }
-    case "sdmg": { const D=derive(ch), sp=spellOf(t.dataset.ref), m=spellMech(sp); const sel=document.getElementById("slot-"+t.dataset.ref.replace(/[^a-z0-9]/gi,"")); const lvl=+(sel?.value||sp.level); const ex=diceAt(m,sp,lvl,D); rollDmg(sp.name+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); break; }
+    case "sdmg": { const D=derive(ch), sp=spellOf(t.dataset.ref), m=spellMech(sp); const sel=document.getElementById("slot-"+t.dataset.ref.replace(/[^a-z0-9]/gi,"")); const lvl=+(sel?.value||sp.level); const ex=diceAt(m,sp,lvl,D), nb=beamsAt(m,sp,lvl,D); for(let b=1;b<=nb;b++) rollDmg(sp.name+(nb>1?" ("+beamWord(m)+" "+b+")":"")+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); break; }
     case "saveProf": { const v=t.dataset.v; ch.saveProfs=ch.saveProfs||[]; ch.saveProfs=t.checked?[...new Set([...ch.saveProfs,v])]:ch.saveProfs.filter(x=>x!==v); touch(S.cur); render(); break; }
     case "addInv": { const s1=document.getElementById("addInvSel"); if(!s1||!s1.value) break; const id=s1.value, s2=document.getElementById("addInvCh"); const c=INV_CHOICE[id]?(s2&&s2.value||""):"";
       if(INV_CHOICE[id]&&!c) break; ch.invocations=ch.invocations||[]; const v=id+(c?"|"+c:""); if(!ch.invocations.includes(v)) ch.invocations.push(v); S.invSel=null; touch(S.cur); render(); break; }

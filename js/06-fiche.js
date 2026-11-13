@@ -264,11 +264,11 @@ function attackRows(ch,D){
     const opts=al?[s.sp.level]:slotsAvail.filter(l=>l>=s.sp.level); if(!opts.length) continue;
     const sid="aslot-"+s.ref.replace(/[^a-z0-9]/gi,"");
     const sel=opts.length>1?`<select id="${sid}" aria-label="Niveau d'emplacement">${opts.map(l=>`<option value="${l}">niv. ${l}</option>`).join("")}</select>`:`<input type="hidden" id="${sid}" value="${opts[0]}"><span class="muted" style="font-size:var(--fs-sm)">empl. niv. ${opts[0]}</span>`;
-    const dmg=diceAt(m,s.sp,opts[0],D);
+    const dmg=diceAt(m,s.sp,opts[0],D), nb=beamsAt(m,s.sp,opts[0],D);
     const hitTxt = m.attack?sg(D.cast.atk):(m.save?"JS "+m.save.slice(0,3)+" DD "+D.cast.dc:"Lancer");
     rows.push(`<tr><td><b class="tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(s.sp.name)}</b> <span class="muted" style="font-size:var(--fs-sm)">sort niv. ${s.sp.level} · ${esc(s.sp.range||"")}</span><div>${sel}</div></td>
       <td><button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${esc(hitTxt)}</button></td>
-      <td>${dmg?`<button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${esc(dmg)}</button> <span class="muted" style="font-size:var(--fs-sm)">${esc(m.heal?"soins":(m.dmgType||""))}</span>`:""}</td>
+      <td>${dmg?`<button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${nb>1?nb+" × ":""}${esc(dmg)}</button> <span class="muted" style="font-size:var(--fs-sm)">${esc(m.heal?"soins":(m.dmgType||""))}</span>`:""}</td>
       <td><span class="muted" style="font-size:var(--fs-sm)">1 clic = 1 emplacement</span></td></tr>`);
   }
   if(!rows.length) return "";
@@ -311,7 +311,7 @@ function tabSorts(ch,D){
     const rit = sp.ritual && sp.level>0 ? `<button class="btn small" data-virtual data-act="cast" data-rit="1" data-ref="${esc(s.ref)}" title="Sans emplacement, 10 minutes de plus">En rituel</button>` : "";
     const atk = m.attack?`<button class="rollbtn" data-virtual data-act="r20" data-l="${esc(sp.name)} — toucher" data-m="${D.cast.atk}" title="Relancer l'attaque sans dépenser d'emplacement">${sg(D.cast.atk)}</button>`:"";
     const sv = m.save?`<span class="badge">JS ${esc(m.save)} DD ${D.cast.dc}</span>`:"";
-    const dm = m.dice?`<button class="rollbtn" data-virtual data-act="sdmg" data-ref="${esc(s.ref)}" title="Relancer les dés sans dépenser d'emplacement">${m.heal?"Soins":"Dégâts"} ${esc(diceAt(m,sp,opts[0]||sp.level,D))}</button>`:"";
+    const dm = m.dice?`<button class="rollbtn" data-virtual data-act="sdmg" data-ref="${esc(s.ref)}" title="Relancer les dés sans dépenser d'emplacement">${m.heal?"Soins":"Dégâts"} ${(n=>n>1?n+" × ":"")(beamsAt(m,sp,opts[0]||sp.level,D))}${esc(diceAt(m,sp,opts[0]||sp.level,D))}</button>`:"";
     h+=`<div class="spell"><div class="h"><span class="nm tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(sp.name)}</span>${badge(s.ref)}
       ${sp.concentration?`<span class="badge" title="Concentration">C</span>`:""}${sp.ritual?`<span class="badge" title="Rituel">R</span>`:""}
       ${s.always?`<span class="badge" title="Toujours préparé">${esc(s.always)}</span>`:(sp.level>0?`<button class="chip" aria-pressed="${s.prepared}" data-act="prep" data-ref="${esc(s.ref)}">Préparé</button>`:"")}

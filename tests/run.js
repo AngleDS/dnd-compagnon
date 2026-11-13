@@ -2438,6 +2438,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => document.querySelector('.tpop .tcvals b').textContent), '3 × 1d4+1', 'valeur clé : 3 × 1d4+1');
     await p.evaluate(() => { S.T.slot = 2; render(); }); await p.click('.tpop .wfoot [data-act="tcast"]');
     eq(await p.evaluate(() => [!!document.querySelector('.tpop #t-dmg'), /4 traits : des dégâts par trait/.test(document.querySelector('.tpop').textContent), cur().slotsUsed[2]]), [true, true, 1], 'lancé au niveau 2 : 4 traits, saisie des dégâts d’un trait, emplacement de niveau 2 dépensé');
+    await p.evaluate(() => { S.T.pop = null; S.tab = 'sorts'; render(); });
+    ok(await p.evaluate(() => /Dégâts 3 × 1d4\+1/.test(document.body.innerText)), 'onglet Sorts : 3 × 1d4+1');
   });
 
   await test('Bulles d’info : même modèle que les fenêtres (nom et sous-titre, valeurs, cadre d’infos, description repliée)', async p => {
