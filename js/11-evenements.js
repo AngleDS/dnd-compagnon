@@ -162,7 +162,7 @@ document.addEventListener("click",e=>{
       let nv;
       if(isUsed){ const left=max-cv; nv = i<left ? max-i : max-(i+1); nv=Math.max(0,Math.min(max,nv)); }
       else { nv = cv===i+1 ? i : i+1; }
-      if(k==="pact") ch.pactUsed=nv; else if(k.startsWith("slot:")){ ch.slotsUsed=ch.slotsUsed||{}; ch.slotsUsed[k.slice(5)]=nv; } else if(k.startsWith("res:")){ ch.resUsed=ch.resUsed||{}; ch.resUsed[k.slice(4)]=nv; } else setPath(ch,k,nv);
+      if(k==="pact") ch.pactUsed=nv; else if(k.startsWith("slot:")){ ch.slotsUsed=ch.slotsUsed||{}; ch.slotsUsed[k.slice(5)]=nv; } else if(k.startsWith("res:")){ ch.resUsed=ch.resUsed||{}; ch.resUsed[k.slice(4)]=nv; if(nv>cv) cardSpendMarks(k.slice(4)); } else setPath(ch,k,nv);
       touch(S.cur); render(); break; }
     case "ammoNew": if(ch){ const name=String(t.dataset.v||"Munitions").slice(0,40); if(!ammoCounter(ch,name)&&!ammoItem(ch,name)){ ensureBag(ch); ch.bag.push({id:uid(),name,qty:20,note:""}); touch(S.cur); } render(); } break;
     case "ammoEnd": if(ch){ const c=t.dataset.obj?(ch.bag||[]).find(x=>x.id===t.dataset.obj):(ch.counters||[]).find(x=>x.id===t.dataset.id); if(!c) break; const back=Math.floor((+c.spent||0)/2);
@@ -172,7 +172,7 @@ document.addEventListener("click",e=>{
     case "compstep": if(ch){ const c=JSON.parse(JSON.stringify(ch.companion||{name:"",ac:10,hp:{cur:10,max:10}})); c.hp=c.hp||{cur:0,max:0}; const d=+t.dataset.v, k=t.dataset.k;
       if(k==="ac") c.ac=Math.max(0,Math.min(40,(+c.ac||10)+d)); else if(k==="max"){ c.hp.max=Math.max(1,Math.min(999,(+c.hp.max||0)+d)); c.hp.cur=Math.min(c.hp.cur,c.hp.max); } else if(k==="cur") c.hp.cur=Math.max(0,Math.min(+c.hp.max||0,(+c.hp.cur||0)+d));
       ch.companion=c; touch(S.cur); render(); } break;
-    case "resstep": if(ch){ const D=derive(ch), r=D.res.find(x=>x.id===t.dataset.id); if(!r) break; ch.resUsed=Object.assign({},ch.resUsed); ch.resUsed[r.id]=Math.max(0,Math.min(r.max,(+ch.resUsed[r.id]||0)+(+t.dataset.v))); touch(S.cur); render(); } break;
+    case "resstep": if(ch){ const D=derive(ch), r=D.res.find(x=>x.id===t.dataset.id); if(!r) break; ch.resUsed=Object.assign({},ch.resUsed); ch.resUsed[r.id]=Math.max(0,Math.min(r.max,(+ch.resUsed[r.id]||0)+(+t.dataset.v))); if(+t.dataset.v>0) cardSpendMarks(r.id); touch(S.cur); render(); } break;
     case "resuse": { const id=t.dataset.id, inp=document.getElementById("resn-"+id.replace(/[^a-z0-9]/g,"")); const n=+inp.value||0; if(!n) break; const D=derive(ch); const r=D.res.find(x=>x.id===id); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=Math.max(0,Math.min(r.max,(+ch.resUsed[id]||0)+n)); touch(S.cur); render(); break; }
     case "pool": { const id=t.dataset.id, D=derive(ch), r=D.res.find(x=>x.id===id); const inp=document.getElementById("pool-"+id.replace(/[^a-z0-9]/g,"")); let n=Math.max(1,+inp.value||1); const left=r.max-(+ch.resUsed?.[id]||0); n=Math.min(n,left,r.maxUse||n); if(n<=0) break; const rr=rollExpr(n+"d"+r.die); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=(+ch.resUsed[id]||0)+n; addLog({label:r.name+" ("+n+"d"+r.die+")",total:rr.total,bd:rr.bd}); touch(S.cur); render(); break; }
     case "rouerie": { const D=derive(ch); if(!D.cast||D.cast.type!=="pact") break; const used=+(ch.resUsed?.["cls:rouerie-magique"]||0); if(used>=1) break;
@@ -182,6 +182,11 @@ document.addEventListener("click",e=>{
     case "tsel": tSelect(t.dataset.k); break;
     case "tqroll": qMenuOpen(t); break; // jet direct depuis une ligne : d'abord le mini-menu (avantage… ou critique)
     case "tqdet": qMenuClose(); tSelect(t.dataset.k); break;
+    case "tuseq": performUse(t.dataset.k,1); break;
+    case "tusepv": usePvMenu(t); break;
+    case "tusepvgo": performUse(t.dataset.k,+t.dataset.n,{poison:t.dataset.poison==="1"}); break;
+    case "tuseundo": { const U=S.T.used; if(ch&&U){ const B=U.before; ch.turn=B.turn; ch.resUsed=B.resUsed; if(B.qty){ const b=(ch.bag||[]).find(z=>z.id===B.qty[0]); if(b) b.qty=B.qty[1]; } const i=(S.Titems||[]).find(x=>x.key===U.k); addLog({label:(i?i.name:"Utilisation")+" : utilisation annulée",total:"↺",bd:"Usage et action du tour rendus.",kind:"info",quiet:true}); touch(S.cur); }
+      S.T.used=null; S.T.itemUseReceipt=null; S.T.pop=S.T.qrBack||null; S.T.qrBack=null; render(); break; }
     case "tmiss": hitCommit(); { const i=(S.Titems||[]).find(x=>x.key===t.dataset.k); addLog({label:(i?i.name:"Attaque")+" — raté",total:"raté",bd:"Le MJ annonce que l'attaque ne touche pas.",kind:"info"}); const T=S.T; T.pop=T.qrBack||null; T.qrBack=null; render(); break; }
     case "tqgo": if(t.closest(".qhitnext")) hitCommit(); qMenuClose(); if(t.dataset.r==="cast") quickCast(t.dataset.k,t.dataset.m); else quickRoll(t.dataset.k,t.dataset.r,t.dataset.m,t.dataset.from); break;
     case "saveApp": saveApp(); break;
@@ -457,6 +462,7 @@ document.addEventListener("submit",e=>{
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
   if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
     if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
+  if(f.dataset.form==="usepv"){ performUse(f.dataset.k,+(document.getElementById("t-pvn")||{}).value||0); return; }
   if(f.dataset.form==="tq"){ const r=searchItems(S.Titems||[],S.T.q); if(r[0]){ const row=document.querySelector('#tres .trow.first[data-act="tqroll"]'); if(row){ qMenuOpen(row); return; } S.T.q=""; tSelect(r[0].key); } return; } // Entrée sur un jet : le mini-menu, comme au toucher
   if(f.dataset.form==="comp"){ S.comp.q=document.getElementById("compQ").value; render(); }
   if(f.dataset.form==="spellq"){ S.pending.q=document.getElementById("spellQ").value; renderModal(); }

@@ -294,6 +294,7 @@ function tPop(ch,D){
       info:`Base <b class="num">${D.hpBase}</b> · Maximum actuel <b class="num">${D.hpMax}</b>`,
       note:"Un bonus augmente aussi tes PV actuels du même montant (comme le sort Aide). Un malus les plafonne au nouveau maximum. Tout revient à la normale au repos long."}); }
   if(k==="qroll") return qrollPop(ch,D,wrap);
+  if(k==="used") return usedPop(ch,D,wrap);
   if(k==="insp"){ const human=(()=>{ const sp=srd("species",ch.species); return !!(sp&&sp.traits.some(t=>t.name==="Ingénieux")); })();
     return wrap("Inspiration héroïque",`<div class="texpl inspgain"><p>Tu as déjà utilisé ton Inspiration héroïque.</p><p class="muted">${human?"Tu la regagnes à la fin de ton prochain repos long (Ingénieux). ":""}Le MJ peut aussi t'en accorder une. On n'en a qu'une à la fois.</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="inspGain">Le MJ me l'accorde</button></div></div>`); }
   if(k==="rest"){ const hdLeft=Math.max(0,D.L-(+ch.hdUsed||0)), cur0=+(ch.hp?.cur||0);
@@ -1181,6 +1182,8 @@ function tRow(i,first,inEco,from){
     right+=`<span class="tklvl">${i.sp.level?"niv. "+i.sp.level:"mineur"}</span>`;
   }
   else if(["abil","save","skill","init"].includes(i.kind)) right=kb("Jet",sg(i.mod),"d20");
+  else if(useKind(i)){ const u=useKind(i), ch=cur(), r=i.res, left=r?r.max-(+((ch.resUsed||{})[r.id]||0)):0, b=i.kind==="bagitem"?(ch.bag||[]).find(z=>z.id===i.bagId):null, off=(r&&left<=0)||(b&&!(+b.qty>0));
+    right=(u==="pv"?kv("Réserve",String(left)):u==="res"?kv("Reste",left+"/"+r.max):u==="drink"?kv("Quantité",String(+b.qty||0)):"")+`<span class="tk tkb tkcast tkuse" role="button" tabindex="0" data-act="${off?"tsel":u==="pv"?"tusepv":"tuseq"}" data-k="${esc(i.key)}" aria-label="${u==="drink"?"Boire":"Utiliser"} : ${esc(i.name)}"${off?' aria-disabled="true"':""}><b>${u==="drink"?"Boire":"Utiliser"}</b></span>`; }
   else if(i.mod!==undefined) right=`<b class="num tkv">${sg(i.mod)}</b>`;
   else if(i.cost&&!inEco) right=`<span class="badge">${ECO[i.cost]}</span>`;
   // Tests, sauvegardes, initiative, concentration : toucher la ligne ouvre le mini-menu (avantage…, Détails), comme les tuiles (demande d'Angle, lot 2)
@@ -1512,6 +1515,44 @@ function syncDiceInputMode(){
 
 const TURN_COSTS=["action","bonus","reaction"];
 const TURN_DONE={action:"Action consommée",bonus:"Action bonus consommée",reaction:"Réaction consommée",move:"Mouvement terminé",autre:"Autre terminé"};
+/* Chantier 2 (décisions d'Angle) : « Utiliser » / « Boire » sur la ligne — aptitudes à usages, réserve de PV (Imposition des mains),
+   potions, actions de base. Un toucher dépense, marque l'action du tour et ouvre la fenêtre de résultat (jet de soins, « Annuler l'utilisation »). */
+function cardSpendMarks(resId){ if(S.T&&S.T.pop==="card"){ const i=tableSelected(); if(i&&i.res&&i.res.id===resId&&TURN_COSTS.includes(i.cost)) consumeTableCost(i.cost); } }
+function useKind(i){ if(!i) return "";
+  if(i.kind==="bagitem"&&i.use&&i.use.potion&&!i.use.spells&&!i.use.sp) return "drink";
+  if(i.kind==="feat"&&i.res&&!i.res.pool&&i.res.id!=="cls:rouerie-magique"&&TURN_COSTS.includes(i.cost)) return /\(PV\)\s*$/.test(i.res.name||"")?"pv":"res";
+  if(i.kind==="basic"&&TURN_COSTS.includes(i.cost)) return "basic"; return ""; }
+function useHeal(ch,D,i){ if(i.kind==="bagitem"){ const b=(ch.bag||[]).find(z=>z.id===i.bagId), hm=b&&String(bagRefText(b).text).match(/(\d+d\d+(?:\s*\+\s*\d+)?) points de vie/i); return hm?hm[1].replace(/\s/g,""):""; }
+  const m=String(i.text||"").match(/(\d+d\d+)\s*\+\s*(?:votre|ton) niveau de/i); return m?m[1]+"+"+D.L:""; }
+function usePvMenu(btn){ qMenuClose(); const k=btn.dataset.k, i=(S.Titems||[]).find(x=>x.key===k), ch=cur(); if(!i||!ch) return; const r=i.res, left=r.max-(+((ch.resUsed||{})[r.id]||0));
+  const m=document.createElement("div"); m.className="qmenu qmpv"; m.setAttribute("role","menu"); m.setAttribute("aria-label","Combien de PV : "+i.name);
+  m.innerHTML=`<form class="qmpvf" data-form="usepv" data-k="${esc(k)}"><label class="field"><span>PV à prendre (reste ${left})</span><input id="t-pvn" type="number" inputmode="numeric" min="1" max="${left}" required></label><button class="btn primary" type="submit">Utiliser</button></form>
+    <button role="menuitem" data-act="tusepvgo" data-k="${esc(k)}" data-n="${left}"><span class="qmi" aria-hidden="true">✦</span>Tout (${left} PV)</button>${left>=5?`<button role="menuitem" data-act="tusepvgo" data-k="${esc(k)}" data-n="5" data-poison="1"><span class="qmi" aria-hidden="true">✚</span>Retirer Empoisonné (5)</button>`:""}<button role="menuitem" class="qm-det" data-act="tqdet" data-k="${esc(k)}"><span class="qmi" aria-hidden="true">i</span>Détails</button>`;
+  document.body.append(m); QMENU=m; const b=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
+  m.style.left=Math.max(8,Math.min(innerWidth-w-8,b.right-w))+"px"; m.style.top=(b.bottom+6+h>innerHeight-8?Math.max(8,b.top-6-h):b.bottom+6)+"px"; m.querySelector("#t-pvn")?.focus(); }
+function performUse(key,n=1,opt={}){ const ch=cur(), i=(S.Titems||[]).find(x=>x.key===key), u=useKind(i); if(!ch||!u) return false; const D=derive(ch), T=S.T;
+  const before={turn:Object.assign({},ch.turn||{}),resUsed:Object.assign({},ch.resUsed||{}),qty:null}; let note="";
+  if(u==="res"||u==="pv"){ const r=i.res, used=+((ch.resUsed||{})[r.id]||0), left=r.max-used; n=Math.min(left,Math.floor(+n||0)); if(left<=0||n<1) return false;
+    ch.resUsed=Object.assign({},ch.resUsed,{[r.id]:used+n}); note=(u==="pv"?(opt.poison?"5 points dépensés : l’état Empoisonné de la créature touchée prend fin (sans rendre de PV)":n+" PV pris dans la réserve"):(n>1?n+" usages dépensés":"1 usage dépensé"))+" · reste "+(left-n)+"/"+r.max; }
+  else if(u==="drink"){ const b=(ch.bag||[]).find(z=>z.id===i.bagId); if(!b||!(+b.qty>0)) return false; before.qty=[b.id,+b.qty]; b.qty=+b.qty-1; note="1 "+b.name+" bue · reste "+b.qty; }
+  consumeTableCost(i.cost);
+  addLog({label:i.name+(u==="drink"?" bue":" utilisée"),total:u==="pv"?(opt.poison?"−5":"−"+n+" PV"):"✓",bd:note||ECO[i.cost]+" consommée",kind:"info",quiet:true});
+  qMenuClose(); qBack();
+  Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,d1:"",d2:"",dmg:"",dmgBd:"",castDone:null});
+  T.itemUseReceipt=u==="drink"?tableItemReceipt():null;
+  T.used={k:key,n,poison:!!opt.poison,note,cost:i.cost,before,fixed:u==="pv",heal:u==="pv"?"":useHeal(ch,D,i)};
+  T.pop="used"; touch(S.cur); render();
+  if(T.used.heal&&!virtualDiceEnabled()) document.getElementById("t-dmg")?.focus();
+  return true; }
+function usedPop(ch,D,wrap){ const T=S.T, U=T.used, i=U&&(S.Titems||[]).find(x=>x.key===U.k); if(!i){ T.pop=null; return ""; }
+  const head=`<div class="badge srd tusedb">✓ ${esc(ECO[U.cost]||"")} consommée${U.note?" · "+esc(U.note):""}</div>`;
+  let x="";
+  if(U.fixed&&!U.poison) x=`<div class="tbig"><span class="num">${U.n}</span><span class="muted">PV rendus à la créature que tu touches</span></div><div id="t-dtot" data-flat="${U.n}" hidden></div><div class="row"><button class="btn" data-act="tpoolself">Appliquer à moi</button></div>`;
+  else if(U.heal){ const mm=U.heal.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0), rg=diceRange(dice);
+    x=`<div class="tbig"><span class="num">${esc(U.heal)}</span><span class="muted">soins</span></div>
+      <div class="row tin"><label class="field"><span>Total de tes dés${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" inputmode="numeric" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" value="${esc(T.dmg)}" data-tin="dmg"></label><button class="btn small vroll" data-virtual data-act="tvdmg" data-e="${esc(dice)}">Lancer ${esc(dice)}</button></div>
+      <div class="ttotal qtot" id="t-dtot" data-flat="${flat}">${damageTotalHtml(T.dmg,flat)}</div>${T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}<div class="row" style="margin-top:8px"><button class="btn" data-act="tpoolself">Appliquer à moi</button></div>`; }
+  return wrap(i.name+(useKind(i)==="drink"?" · bue":" · utilisée"),`<div class="qres">${head}${x}<div class="row" style="margin-top:12px"><button class="btn small ghost" data-act="tuseundo">Annuler l’utilisation</button></div></div>`); }
 function tableSelected(){ return (S.Titems||[]).find(i=>i.key===S.T?.sel); }
 function tableCardCost(i=tableSelected()){
   if(!i) return null;

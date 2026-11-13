@@ -2533,6 +2533,36 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => !!cur().turn.action), true, 'depuis Actions : l’action, comme avant');
   });
 
+  await test('« Utiliser » / « Boire » sur la ligne : dépense, action du tour, jet de soins, Annuler ; dans Détails, dépenser marque l’action', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin');
+    await p.evaluate(() => { const ch = cur(); ch.level = 5; ch.turn = {}; ch.hp = { cur: 10, temp: 0 }; ch.bag = (ch.bag || []).concat([{ id: 'bp', name: 'Potion de guérison', qty: 2 }]); S.T.pop = 'eco:bonus'; render(); });
+    const imp = '.tpop .trow[data-k="feat:paladin/imposition des mains"]';
+    eq(await p.evaluate(s => document.querySelector(s + ' .tright').textContent.replace(/\s+/g, ' ').trim(), imp), 'Réserve25Utiliser'.replace('25', '25'), 'réserve et Utiliser sur la ligne');
+    await p.click(imp + ' [data-act="tusepv"]');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.qmenu button')].map(b => b.textContent.trim())), ['Utiliser', '✦Tout (25 PV)', '✚Retirer Empoisonné (5)', 'iDétails'], 'menu : nombre libre, Tout, Empoisonné, Détails');
+    eq(await p.evaluate(() => getComputedStyle(document.getElementById('t-pvn')).appearance), 'textfield', 'champ sans flèches');
+    await p.fill('#t-pvn', '7'); await p.click('.qmenu .qmpvf button[type="submit"]');
+    eq(await p.evaluate(() => [S.T.pop, cur().resUsed['cls:imposition-des-mains'], cur().turn.bonus, /7 PV pris dans la réserve · reste 18\/25/.test(document.querySelector('.tpop').textContent)]), ['used', 7, true, true], '7 PV pris, action bonus marquée, fenêtre de résultat');
+    await p.click('.tpop [data-act="tpoolself"]'); eq(await p.evaluate(() => cur().hp.cur), 17, 'Appliquer à moi : +7 PV');
+    await p.click('.tpop [data-act="tuseundo"]');
+    eq(await p.evaluate(() => [S.T.pop, +(cur().resUsed['cls:imposition-des-mains'] || 0), !!cur().turn.bonus]), ['eco:bonus', 0, false], 'Annuler : réserve et action bonus rendues, retour à la liste');
+    await p.click(imp + ' [data-act="tusepv"]'); await p.click('.qmenu [data-poison="1"]');
+    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], /Empoisonné/.test(document.querySelector('.tpop').textContent), !document.querySelector('.tpop [data-act="tpoolself"]')]), [5, true, true], 'Retirer Empoisonné : 5 points, sans soins');
+    await p.click('.tpop [data-act="tuseundo"]');
+    await p.click('.tpop .trow[data-k="bag:bp"] [data-act="tuseq"]');
+    eq(await p.evaluate(() => [S.T.pop, cur().bag.find(b => b.id === 'bp').qty, cur().turn.bonus, document.querySelector('.tpop .tbig .num').textContent]), ['used', 1, true, '2d4+2'], 'Boire : une potion de moins, action bonus, soins 2d4+2');
+    await p.fill('#t-dmg', '5'); await p.click('.tpop [data-act="tpoolself"]'); eq(await p.evaluate(() => cur().hp.cur), 17, 'soins de la potion : 5 + 2');
+    // aptitude à usages (guerrier) et action de base
+    await diceTable(p); await p.evaluate(() => { const ch = cur(); ch.level = 5; ch.turn = {}; S.T.pop = 'eco:bonus'; render(); });
+    await p.click('.tpop .trow[data-k="feat:guerrier/second souffle"] [data-act="tuseq"]');
+    eq(await p.evaluate(() => [cur().resUsed['cls:second-souffle'], cur().turn.bonus, document.querySelector('.tpop .tbig .num').textContent]), [1, true, '1d10+5'], 'Second souffle : un usage, action bonus, soins 1d10 + niveau');
+    await p.evaluate(() => { S.T.pop = 'eco:action'; render(); }); await p.click('.tpop summary'); await p.click('.tpop .trow[data-k="basic:esquive"] [data-act="tuseq"]');
+    eq(await p.evaluate(() => [S.T.pop, cur().turn.action]), ['used', true], 'Esquive : action marquée');
+    // dans la fenêtre Détails : dépenser un usage marque l'action
+    await p.evaluate(() => { cur().turn = {}; cur().resUsed = {}; S.T.pop = null; render(); tSelect('feat:guerrier/second souffle'); });
+    await p.click('.tpop .tcbody button.pip[data-i="2"]'); eq(await p.evaluate(() => [cur().resUsed['cls:second-souffle'], cur().turn.bonus]), [1, true], 'Détails : la pastille dépensée marque l’action bonus');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');
