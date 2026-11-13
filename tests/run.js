@@ -1161,13 +1161,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk).slice(2, 5)), ['pv', 'ressources', 'tour'], 'bloc sous la carte PV (Recherche retirée par défaut), après la Recherche');
     eq(await tiles(), ['Second souffle:2', 'Fougue:1'], 'guerrier 2 : Second souffle (2 ronds) et Fougue (1 rond)');
     await p.click('.tblk[data-blk="ressources"] .rres:first-child');
-    eq(await p.evaluate(() => [S.T.pop, document.querySelectorAll('.tpop .rrespop button.pip').length]), ['res:cls:second-souffle', 2], 'toucher la tuile ouvre la fenêtre, grandes pastilles');
-    await p.click('.tpop .rrespop button.pip[data-i="1"]');
+    eq(await p.evaluate(() => [S.T.pop, /second souffle/i.test(S.T.sel), document.querySelectorAll('.tpop .tcbody button.pip').length]), ['card', true, 2], 'toucher la tuile ouvre la fenêtre de l’aptitude, avec ses pastilles (lot 2 : une seule fenêtre)');
+    await p.click('.tpop .tcbody button.pip[data-i="1"]');
     eq(await p.evaluate(() => cur().resUsed['cls:second-souffle']), 1, 'un toucher sur le dernier rond plein en dépense un');
     await p.keyboard.press('Escape'); await p.evaluate(() => { S.T.pop = null; render(); });
     eq(await p.evaluate(() => { const t = [...document.querySelectorAll('.tblk[data-blk="ressources"] .rres')].map(e => e.getBoundingClientRect()); return Math.round(t[0].top) === Math.round(t[1].top); }), true, 'deux tuiles côte à côte');
-    await p.click('.tblk[data-blk="ressources"] .rres:first-child'); await p.click('.tpop .rrespop [data-act="tsel"]');
-    ok(await p.evaluate(() => S.T.pop === 'card' && /second souffle/i.test(S.T.sel)), '« Description et usage » ouvre la fiche de la ressource (aptitude de classe)');
+    await p.click('.tblk[data-blk="ressources"] .rres:first-child');
+    ok(await p.evaluate(() => S.T.pop === 'card' && /second souffle/i.test(S.T.sel) && !document.querySelector('.tpop .rrespop') && !!document.querySelector('.tpop .tdesc')), 'une seule fenêtre : compteur, description repliée et usage ensemble');
     await p.keyboard.press('Escape');
     await mk('paladin', 3);
     eq(await tiles(), ['Imposition des mains (PV):15 / 15', 'Conduit divin:2', 'Châtiment divin sans emplacement:1'], 'paladin 3 : réserve de 15 PV en chiffres, Conduit divin et Châtiment gratuit en ronds');
@@ -2379,7 +2379,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await mk('guerrier', 'nain');
     eq(await side(), ['repos', 'res:cls:second-souffle'], 'nain guerrier : sa ressource de classe (Second souffle)');
     await p.click('.health-card .hcside [data-v="res:cls:second-souffle"]');
-    eq(await p.evaluate(() => S.T.pop), 'res:cls:second-souffle', 'la tuile ouvre la fenêtre de la ressource');
+    eq(await p.evaluate(() => [S.T.pop, /second souffle/i.test(S.T.sel)]), ['card', true], 'la tuile ouvre la fenêtre de la ressource (celle de l’aptitude, lot 2)');
     await p.keyboard.press('Escape');
     // Crayon en mode Personnaliser : choisir Initiative, puis par défaut, puis vide
     await p.evaluate(() => { S.T.pop = null; S.layoutEdit = true; render(); });
@@ -2462,7 +2462,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { cur().level = 6; render(); tSelect('feat:paladin/imposition des mains'); });
     await p.click('.tpop [data-act="resstep"][data-v="1"]');
     eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], /29/.test(document.querySelector('.tpop .rresstep').textContent)]), [1, true], 'niveau 6 : compteur − / + qui dépense la réserve (29 / 30)');
-    await p.evaluate(() => { S.T.pop = 'res:cls:imposition-des-mains'; render(); }); await p.click('.tpop .rrespop [data-act="tsel"]');
+    await p.evaluate(() => { S.T.pop = null; render(); const b = document.createElement('button'); b.dataset.act = 'tpop'; b.dataset.v = 'res:cls:imposition-des-mains'; b.id = 'tmpres'; document.body.append(b); }); await p.click('#tmpres');
     eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['card', 'Imposition des mains'], 'la tuile Ressources mène à la même fenêtre');
   });
 

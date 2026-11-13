@@ -212,7 +212,8 @@ document.addEventListener("click",e=>{
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
     case "restLong": if(applyRest("long")===false){ render(); break; } S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": if(applyRest("court")===false){ render(); break; } S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
-    case "tpop": S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
+    case "tpop": if(/^res:/.test(t.dataset.v||"")){ const it=(S.Titems||[]).find(x=>x.res&&"res:"+x.res.id===t.dataset.v); if(it){ tSelect(it.key); break; } } // une ressource : une seule fenêtre, celle de l'aptitude (lot 2)
+      S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
     case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); break; } S.T.pop=null; render(); } break;
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
