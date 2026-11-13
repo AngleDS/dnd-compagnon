@@ -63,11 +63,12 @@ function tableItems(ch,D){
   for(const s of D.sources) featText.push({o:s.origin,n:s.name,t:s.text,ref:s.ref,effects:s.effects});
   const spc=srd("species",ch.species); if(spc) for(const t of spc.traits) featText.push({o:spc.name,n:t.name,t:t.text,ref:"srd"});
   for(const x of ch.invocations||[]){ const id=invId(x), i=S.idx.invocations[id]; if(i) featText.push({o:"Manifestation",n:invLabel(x),t:i.text,ref:"srd",cost:id==="armure-dombres"?"action":undefined,magic:id==="armure-dombres"}); }
+  const baseN=n=>norm(String(n).replace(/\s*\([^)]*\)\s*$/,"")); // « Imposition des mains (PV) » est la réserve de l'aptitude « Imposition des mains »
   for(const f of featText){
-    const res=D.res.find(r=>norm(r.name)===norm(f.n));
+    const res=D.res.find(r=>norm(r.name)===norm(f.n))||D.res.find(r=>baseN(r.name)===norm(f.n));
     add({key:"feat:"+norm(f.o+"/"+f.n),kind:"feat",name:f.n,sub:f.o,al:["aptitude"],cost:f.cost||costGuess(f.t)||(res&&res.id==="cls:rouerie-magique"?"autre":null),text:f.t,src:f.ref,res,magic:f.magic});
   }
-  for(const r of D.res) if(!featText.some(f=>norm(f.n)===norm(r.name))) add({key:"res:"+r.id,kind:"feat",name:r.name,sub:"Ressource · "+r.origin,al:["ressource"],cost:r.id==="cls:rouerie-magique"?"autre":null,text:"",res:r});
+  for(const r of D.res) if(!featText.some(f=>norm(f.n)===norm(r.name)||norm(f.n)===baseN(r.name))) add({key:"res:"+r.id,kind:"feat",name:r.name,sub:"Ressource · "+r.origin,al:["ressource"],cost:r.id==="cls:rouerie-magique"?"autre":null,text:"",res:r});
   for(const c of ch.counters||[]) add({key:"cnt:"+c.id,kind:"counter",name:c.name,sub:"Consommable",al:["objet"],cost:null,counter:c});
   for(const g of S.C.glossary){
     if(g.tag==="Action") add({key:"basic:"+g.id,kind:"basic",name:g.name,sub:"Action de base",al:["action"],cost:"action",text:g.text});
@@ -1281,7 +1282,7 @@ function tCard(ch,D){
     if(r){ const used=+(ch.resUsed?.[r.id]||0), left=r.max-used;
       if(r.id==="cls:rouerie-magique") ctl=`<div class="row">${pips("res:"+r.id,r.max,used,true,true)}${left>0?`<button class="btn small primary" data-act="rouerie">Utiliser</button>`:`<span class="muted">Revient au repos long</span>`}</div>`;
       else if(r.pool) ctl=`<div class="row"><b class="num">${left} / ${r.max} d${r.die}</b><label class="row" style="gap:4px">Dés à dépenser <input id="t-pool" type="number" min="1" max="${Math.min(left,r.maxUse||left)}" value="${Math.min(left,r.maxUse||left)||1}" style="width:60px"></label><button class="btn small primary" data-act="tpool" data-id="${esc(r.id)}" ${left<=0?"disabled":""}>Dépenser</button></div><div class="muted" style="font-size:var(--fs-sm)">Dépense les dés, puis lance-les ci-dessous : dés physiques ou jet virtuel.</div>`;
-      else ctl=`<div class="row">${r.max<=10?pips("res:"+r.id,r.max,used,true):`<b class="num">${left} / ${r.max}</b>`}<span class="muted" style="font-size:var(--fs-sm)">${rechargeLabel(r.recharge)}</span></div>`;
+      else ctl=`<div class="row">${resCtl(ch,r)}<span class="muted" style="font-size:var(--fs-sm)">${rechargeLabel(r.recharge)}</span></div>`;
     }
     let roll="";
     if(r&&r.pool&&T.poolKey===i.key&&T.poolN){ const expr=T.poolN+"d"+r.die; const heal=/soin|récup|guéri/i.test(i.name+" "+(i.text||""));

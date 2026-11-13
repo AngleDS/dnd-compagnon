@@ -1352,7 +1352,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const g = await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="reperes"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="ressources"]').getBoundingClientRect(), t = [...document.querySelectorAll('.tblk[data-blk="reperes"] .rtile')].map(e => Math.round(e.getBoundingClientRect().width)), r = [...document.querySelectorAll('.tblk[data-blk="ressources"] .rtile')].map(e => Math.round(e.getBoundingClientRect().width));
       return { same: Math.round(a.top) === Math.round(b.top), right: b.left > a.right, rep3: Math.round(a.width / b.width), tw: t[0], rw: r[0], pair: !!document.querySelector('.rpair'), ov: document.documentElement.scrollWidth <= innerWidth }; });
     eq([g.same, g.right, g.rep3, Math.abs(g.tw - g.rw) <= 6, g.pair, g.ov], [true, true, 3, true, false, true], 'Repères (3) et Ressources (1) côte à côte, tuiles de largeur voisine (8 px de marge dans chaque bloc), sans débordement : ' + JSON.stringify(g));
-    await p.click('.tblk[data-blk="ressources"] .rrestile'); ok(await p.evaluate(() => S.T.pop === 'card' && /^res:/.test(S.T.sel)), 'Ressources en colonne : un toucher ouvre directement la fiche'); await p.keyboard.press('Escape');
+    await p.click('.tblk[data-blk="ressources"] .rrestile'); ok(await p.evaluate(() => S.T.pop === 'card' && !!(S.Titems.find(i => i.key === S.T.sel) || {}).res), 'Ressources en colonne : un toucher ouvre directement la fiche (celle de l’aptitude quand elle existe)'); await p.keyboard.press('Escape');
     await p.evaluate(() => { cur().layout.width.raccourcis = 2; cur().layout.width.notes = 2; cur().layout.order = ['raccourcis', 'notes', 'perso', 'reperes', 'ressources', 'pv']; render(); });
     eq(await p.evaluate(() => { const a = document.querySelector('.tblk[data-blk="raccourcis"]').getBoundingClientRect(), b = document.querySelector('.tblk[data-blk="notes"]').getBoundingClientRect(); return [Math.round(a.top) === Math.round(b.top), getComputedStyle(document.querySelector('.tblk[data-blk="raccourcis"] .tpanels')).gridTemplateColumns.split(' ').length]; }), [true, 1], 'Raccourcis et Notes (2 colonnes chacun) côte à côte, tuiles sur une colonne');
     // Bloc créé : largeur ≥ nombre de colonnes de tuiles ; une tuile trop large retourne dans la réserve
@@ -2414,6 +2414,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     // règle seule : rien d'autre dans la fenêtre, la description reste ouverte
     await p.evaluate(() => { S.T.pop = null; render(); const i = S.Titems.find(x => x.kind === 'rule' && !x.cond && !x.rest && !x.cost); tSelect(i.key); });
     ok(await p.evaluate(() => { const d = document.querySelector('.tpop .tdesc'); return !!d && d.open && !document.querySelector('.tpop .wfoot'); }), 'règle sans bouton : description ouverte');
+  });
+
+  await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
+    await diceTable(p, 'paladin');
+    eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');
+    await p.evaluate(() => tSelect('feat:paladin/imposition des mains'));
+    eq(await p.evaluate(() => document.querySelectorAll('.tpop .tcbody button.pip').length), 5, 'niveau 1 : 5 PV en pastilles');
+    await p.evaluate(() => { cur().level = 6; render(); tSelect('feat:paladin/imposition des mains'); });
+    await p.click('.tpop [data-act="resstep"][data-v="1"]');
+    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], /29/.test(document.querySelector('.tpop .rresstep').textContent)]), [1, true], 'niveau 6 : compteur − / + qui dépense la réserve (29 / 30)');
+    await p.evaluate(() => { S.T.pop = 'res:cls:imposition-des-mains'; render(); }); await p.click('.tpop .rrespop [data-act="tsel"]');
+    eq(await p.evaluate(() => [S.T.pop, document.querySelector('.tpop .tpophead b').textContent]), ['card', 'Imposition des mains'], 'la tuile Ressources mène à la même fenêtre');
   });
 
   await test('Fenêtres harmonisées : au milieu de l’écran sur téléphone, même croix, bouton principal en pied, rouge / vert pour Dégâts / Soins', async p => {
