@@ -2505,6 +2505,23 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.keyboard.press('Escape'); ok(await p.evaluate(() => !S.settings && !document.querySelector('#modal .rgbox')), 'Échap ferme');
   });
 
+  await test('Toucher puis Dégâts, Critique ou Raté dans la même fenêtre (Critique mis en avant sur un 20 naturel)', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { S.T.pop = 'eco:action'; render(); });
+    const hit = async () => { await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]'); };
+    await hit();
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .qhitnext button')].map(b => b.dataset.m || b.dataset.act)), ['n', 'c', 'tmiss'], 'trois suites : Dégâts, Critique, Raté');
+    await p.fill('#t-d1', '12'); ok(await p.evaluate(() => !document.querySelector('.qhitnext .qcrit.on')), '12 : Critique pas mis en avant');
+    await p.fill('#t-d1', '20'); ok(await p.evaluate(() => !!document.querySelector('.qhitnext .qcrit.on')), '20 naturel : Critique mis en avant');
+    await p.click('.qhitnext .qcrit');
+    eq(await p.evaluate(() => [S.T.pop, S.T.qr.r, S.T.qr.crit, document.activeElement && document.activeElement.id]), ['qroll', 'dmg', true, 't-dmg'], 'Critique : fenêtre des dégâts doublés, case active');
+    await p.click('.tpop .tpophead [data-act="tpopclose"]'); eq(await p.evaluate(() => S.T.pop), 'eco:action', 'la croix ramène à la liste');
+    const n0 = await p.evaluate(() => cur().rollLog.length);
+    await hit(); await p.fill('#t-d1', '3'); await p.click('.qhitnext .qmiss');
+    eq(await p.evaluate(n0 => [cur().rollLog.length - n0, /toucher/.test(cur().rollLog[1].label), cur().turn.action], n0), [2, true, true], 'le jet de toucher saisi est enregistré (et l’action comptée) avant le raté');
+    eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label === S.Titems.find(i => i.kind === 'atk').name + ' — raté', cur().rollLog[0].total]), ['eco:action', true, 'raté'], 'Raté : noté dans l’historique, retour à la liste');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');

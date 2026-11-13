@@ -498,6 +498,7 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 /* Lancer un sort, enchaîner les jets, message au premier plan (12 nov. 2026) */
 .trow .tkb.tkcast b{color:var(--brass)}
 .qchains{gap:8px}.qchain{display:inline-flex;align-items:baseline;gap:6px}.qchain b{color:var(--brass)}
+.qhitnext{margin-top:12px;flex-wrap:wrap}.qhitnext .btn{min-height:44px}.qcrit.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}.qmiss{color:var(--muted)}
 .qbd{font-size:var(--fs-sm)}
 .toast{z-index:10001}
 

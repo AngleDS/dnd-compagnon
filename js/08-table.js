@@ -1391,7 +1391,7 @@ function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,itemUseReceipt:null,mode:r==="hit"||r==="d20"?(m==="a"||m==="d"?m:"n"):"n"}); if(!keep) T.castDone=null;
   T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);
   const D=derive(ch), exh=2*(+ch.exhaustion||0), heal=!!i.heal;
-  if(r==="hit"){ const mod=(i.kind==="atk"?+i.mod:parseInt(i.roll,10)||0)-exh; T.qr={k:key,r,mode:T.mode,mod,label:i.name+" — toucher"}; }
+  if(r==="hit"){ const mod=(i.kind==="atk"?+i.mod:parseInt(i.roll,10)||0)-exh; T.qr={k:key,r,mode:T.mode,mod,label:i.name+" — toucher",from:from||""}; }
   else if(r==="d20"){ T.qr={k:key,r,mode:T.mode,mod:(+i.mod||0)-exh,label:i.name}; }
   else { const b=i.kind==="spell"?beamsAt(i.m,i.sp,keep&&i.sp?(T.castRit?i.sp.level:T.castLvl):(i.sp&&i.sp.level),D):1;
     const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,T.castRit?i.sp.level:T.castLvl,D):i.dice)||""), mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0);
@@ -1408,6 +1408,17 @@ function quickCast(key,m){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key
   const [kind,v]=String(m||"slot:0").split(":"), data={ref:i.ref,k:key,l:String(i.sp.level===0?0:i.sp.level)};
   if(kind==="slot"&&i.sp.level>0) data.l=String(+v||i.sp.level); if(kind==="free") data.free=v; if(kind==="arc") data.arc=v;
   const ok=performTableCast(data); T.qr={k:key,r:"cast",ok}; T.pop="qroll"; render(); }
+/* Chantier 2 (décision d'Angle) : après un jet de toucher, la suite dans la même fenêtre — Dégâts, Critique (mis en avant sur un 20 naturel), Raté.
+   L'appli n'annonce pas le touché : c'est le MJ qui le dit. */
+function nat20(){ const T=S.T, a=parseInt(T.d1), b=parseInt(T.d2); if(!validDie(T.d1,20)) return false; const d=T.mode==="n"?a:validDie(T.d2,20)?(T.mode==="a"?Math.max(a,b):Math.min(a,b)):null; return d===20; }
+function hitChain(ch,D,i,q){ const keep=q.from==="cast"&&S.T.castDone===q.k;
+  const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,S.T.castRit?i.sp.level:S.T.castLvl,D):i.dice)||""); if(!expr) return "";
+  const mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=mm[2]||"", crit=nat20();
+  const b=(m,l,v)=>`<button class="btn qchain${m==="c"?" qcrit"+(crit?" on":""):""}" data-act="tqgo" data-k="${esc(q.k)}" data-r="dmg" data-m="${m}" data-from="${esc(q.from||"")}"><span class="tkl">${l}</span> <b class="num">${esc(v)}</b></button>`;
+  return `<div class="row qchains qhitnext">${b("n","Dégâts",expr)}${b("c","Critique",doubleDice(dice)+flat)}<button class="btn qchain qmiss" data-act="tmiss" data-k="${esc(q.k)}">Raté</button></div>`; }
+// Les boutons de la suite gardent le focus dans la case du d20 (pas de nouvel affichage entre l'appui et le clic) ; le jet saisi est enregistré au clic.
+function hitCommit(){ const T=S.T; if(virtualDiceEnabled()||T.pop!=="qroll"||!T.qr||T.qr.r!=="hit") return; if(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))) return; if(ensureTableRollUse()&&logD20(true)) tableRollCommitted("d20"); }
+["pointerdown","mousedown"].forEach(ev=>document.addEventListener(ev,e=>{ if(e.target.closest&&e.target.closest(".qhitnext button")) e.preventDefault(); },true));
 function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x.key===q.k); if(!i){ T.pop=null; return ""; }
   const phys=!virtualDiceEnabled(), ML={n:"Normal",a:"Avantage",d:"Désavantage"};
   if(q.r==="cast"){ const sp=i.sp, m=i.m||{}, done=T.castDone===q.k, L=T.castRit?sp.level:T.castLvl, last=(ch.rollLog||[])[0]||{};
@@ -1420,7 +1431,7 @@ function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x
       ${m.attack||ex?`<div class="row qchains">${m.attack?btn("hit","Toucher",sg(D.cast.atk)):""}${ex?btn("dmg",m.heal?"Soins":"Dégâts",ex):""}</div>`:""}</div>`); }
   if(q.r==="hit"||q.r==="d20") return wrap(esc(i.name)+(q.r==="hit"?" · Toucher":""),`<div class="qres"><div class="qmode label">${ML[q.mode]}</div>
     ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
-    <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div></div>`);
+    <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div>${q.r==="hit"?hitChain(ch,D,i,q):""}</div>`);
   return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un ${beamWord(i.m)} sur ${q.beams}`:""}</div>
     ${phys?(()=>{ const rg=diceRange(q.dice); return `<div class="row tin"><label class="field"><span>Total de tes ${esc(q.dice)}${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`; })():""}
     ${!phys&&T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}

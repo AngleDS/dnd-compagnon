@@ -182,7 +182,8 @@ document.addEventListener("click",e=>{
     case "tsel": tSelect(t.dataset.k); break;
     case "tqroll": qMenuOpen(t); break; // jet direct depuis une ligne : d'abord le mini-menu (avantage… ou critique)
     case "tqdet": qMenuClose(); tSelect(t.dataset.k); break;
-    case "tqgo": qMenuClose(); if(t.dataset.r==="cast") quickCast(t.dataset.k,t.dataset.m); else quickRoll(t.dataset.k,t.dataset.r,t.dataset.m,t.dataset.from); break;
+    case "tmiss": hitCommit(); { const i=(S.Titems||[]).find(x=>x.key===t.dataset.k); addLog({label:(i?i.name:"Attaque")+" — raté",total:"raté",bd:"Le MJ annonce que l'attaque ne touche pas.",kind:"info"}); const T=S.T; T.pop=T.qrBack||null; T.qrBack=null; render(); break; }
+    case "tqgo": if(t.closest(".qhitnext")) hitCommit(); qMenuClose(); if(t.dataset.r==="cast") quickCast(t.dataset.k,t.dataset.m); else quickRoll(t.dataset.k,t.dataset.r,t.dataset.m,t.dataset.from); break;
     case "saveApp": saveApp(); break;
     case "hpmaxb": hpMaxAdd(ch,+t.dataset.v); render(); break;
     case "hpask": S.pending={type:"hp",mode:t.dataset.v}; renderModal(); break;
@@ -417,6 +418,7 @@ document.addEventListener("input",e=>{
   if(t.dataset.bind==="sessionNotes"){ const ch=cur(); if(ch){ ch.sessionNotes=t.value; touch(S.cur); } return; }
   if(t.id==="tq"){ S.T.q=t.value; S.T.qOpen=true; const r=document.getElementById("tres"); if(r){ r.innerHTML=tResults(); r.classList.remove("closed"); } const c=document.querySelector(".tqclear"); if(c) c.hidden=!t.value; return; }
   if(t.dataset.tin){ S.T[t.dataset.tin]=t.value; S.T.logSig=""; if(t.dataset.tin==="dmg") S.T.dmgBd=""; const tt=document.getElementById("t-tot"); if(tt) tt.innerHTML=totalHtml(+tt.dataset.mod);
+    const qc=document.querySelector(".qhitnext .qcrit"); if(qc) qc.classList.toggle("on",nat20());
     const dt=document.getElementById("t-dtot"); if(dt&&t.dataset.tin==="dmg"){ const f=+dt.dataset.flat; dt.innerHTML=damageTotalHtml(t.value,f); } }
 });
 document.addEventListener("submit",e=>{
