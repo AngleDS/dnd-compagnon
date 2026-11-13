@@ -2174,9 +2174,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(()=>cur().turn.move),false,'Mouvement annulable');
     await p.click('.tturnbtn[data-v="eco:autre"]');
     eq(await p.evaluate(()=>!!cur().turn.autre),false,'consulter Autre ne termine pas le jalon');
-    await p.click('.tpophead [data-act="tturn"][data-v="autre"]');
+    await p.click('.tpop .wfoot [data-act="tturn"][data-v="autre"]');
     ok((await p.innerText('.tturnbtn[data-v="eco:autre"]')).includes('✓ Autre terminé'),'jalon Autre');
-    await p.click('.tpophead [data-act="tturn"][data-v="autre"]');
+    await p.click('.tpop .wfoot [data-act="tturn"][data-v="autre"]');
     eq(await p.evaluate(()=>cur().turn.autre),false,'Autre annulable');
     await p.evaluate(()=>{cur().turn={action:true,bonus:true,reaction:true,move:true,autre:true};S.T.pop=null;render();});
     await p.click('[data-act="tnewturn"]');
