@@ -42,6 +42,7 @@ Pour préparer cette intégration, `rollExpr` renvoie aussi le détail ordonné 
 ```bash
 node tests/run.js dist/dnd-compagnon.html                      # toute la suite
 node tests/run.js dist/dnd-compagnon.html --only "Pavé"        # seulement les tests dont le nom contient « Pavé »
+node tests/run.js dist/dnd-compagnon.html --jobs 1             # un test à la fois (par défaut : un par processeur, au plus 4)
 ```
 
 `--only` est répétable et ignore les majuscules. Il sert pendant le travail ; toute la suite reste obligatoire une fois à la fin de chaque lot (règle dans `AGENTS.md`). Une sélection qui ne correspond à aucun test échoue au lieu d'afficher un faux succès.

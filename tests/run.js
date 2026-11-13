@@ -2,27 +2,40 @@
 // Usage : node tests/run.js [chemin/vers/dnd-compagnon.html] [--only "texte" ...]   (par défaut dist/dnd-compagnon.html)
 //   --only : ne lance que les tests dont le nom contient ce texte (sans tenir compte des majuscules ; option répétable).
 //   Pendant le travail seulement : toute la suite reste obligatoire une fois par lot (voir AGENTS.md).
+//   --jobs N : nombre de tests lancés en même temps (par défaut : un par processeur, au plus 4 ; --jobs 1 = un par un).
 // Aucune donnée réelle : les persos sont créés pendant les tests ; Claude et le navigateur de l'app sont simulés.
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
 const ARGS = process.argv.slice(2), ONLY = [], POS = [];
-for (let i = 0; i < ARGS.length; i++) { if (ARGS[i] === '--only') ONLY.push(String(ARGS[++i] || '').toLowerCase()); else POS.push(ARGS[i]); }
+let JOBS = Math.max(1, Math.min(4, require('os').cpus().length));
+for (let i = 0; i < ARGS.length; i++) { if (ARGS[i] === '--only') ONLY.push(String(ARGS[++i] || '').toLowerCase()); else if (ARGS[i] === '--jobs') JOBS = Math.max(1, parseInt(ARGS[++i], 10) || 1); else POS.push(ARGS[i]); }
 const FILE = path.resolve(POS[0] || path.join(__dirname, '..', 'dist', 'dnd-compagnon.html'));
 let SKIPPED = 0;
 const HTML_SOURCE = fs.readFileSync(FILE, 'utf8');
  
 const results = [];
 // Un seul navigateur pour toute la suite ; chaque test a son propre contexte (stockage, cookies et pages isolés).
+// Les tests sont d'abord inscrits, puis lancés par JOBS à la fois (runTests) ; les résultats gardent l'ordre du fichier.
 let BROWSER = null;
+const QUEUE = [];
 async function test(name, fn) {
   if (ONLY.length && !ONLY.some(o => o && name.toLowerCase().includes(o))) { SKIPPED++; return; }
+  QUEUE.push([name, fn]);
+}
+async function runTests() {
   BROWSER = BROWSER || await chromium.launch();
+  const out = new Array(QUEUE.length); let next = 0;
+  const worker = async () => { while (next < QUEUE.length) { const k = next++; out[k] = await runOne(...QUEUE[k]); } };
+  await Promise.all(Array.from({ length: Math.min(JOBS, QUEUE.length) }, worker));
+  results.push(...out);
+}
+async function runOne(name, fn) {
   const ctx = await BROWSER.newContext({ viewport: { width: 1200, height: 900 }, colorScheme: 'dark' }); /* appareil réglé en sombre : thème Automatique = sombre */ const p = await ctx.newPage(); p.setDefaultTimeout(8000);
   const errors = []; p.on('pageerror', e => errors.push(e.message));
   await p.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
-  try { await fn(p, errors); if (errors.length) throw new Error('Erreur JS : ' + errors.join(' | ')); results.push([name, true]); console.log('✓', name); }
-  catch (e) { results.push([name, false]); console.log('✗', name, '\n   ', e.message); }
+  try { await fn(p, errors); if (errors.length) throw new Error('Erreur JS : ' + errors.join(' | ')); console.log('✓', name); return [name, true]; }
+  catch (e) { console.log('✗', name, '\n   ', e.message); return [name, false]; }
   finally { await ctx.close(); }
 }
 function ok(cond, msg) { if (!cond) throw new Error(msg); }
@@ -2897,6 +2910,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await f.locator('#physics-dice-demo').getAttribute('data-last-power'), 'le lancer est déclenché');
   });
 
+  await runTests();
   if (BROWSER) await BROWSER.close();
   const ko = results.filter(r => !r[1]).length;
   if (ONLY.length) {
