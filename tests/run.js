@@ -2601,20 +2601,36 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); return r.bottom < innerHeight - 20 && r.width < 700; }), 'ordinateur : fenêtre centrée, pas collée en bas');
   });
 
-  await test('Dés : traces des jets rapides pour la future animation', async p => {
-    await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); window.__diceTraces=[]; document.addEventListener('dice-trace', e => window.__diceTraces.push(e.detail)); S.T.pop='eco:action'; render(); });
+  await test('Dés 3D : jet rapide avec avantage utilise les faces du moteur', async p => {
+    await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); S.T.pop='eco:action'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="a"]');
-    await p.waitForFunction(() => window.__diceTraces.length >= 1);
-    const hit=await p.evaluate(() => ({trace:window.__diceTraces[0],d1:+S.T.d1,d2:+S.T.d2}));
-    eq(hit.trace.dice.map(d=>[d.faces,d.value]), [[20,hit.d1],[20,hit.d2]], 'deux valeurs exactes du jet avec avantage');
+    ok(await p.locator('.game-dice-frame').isVisible(), 'animation dans la fenêtre de jet existante');
+    await p.frameLocator('.game-dice-frame').locator('.stage canvas').waitFor({timeout:30000});
+    eq(await p.evaluate(() => (cur().rollLog||[]).length),0,'pas de résultat avant stabilisation');
+    await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1 && S.T.d2, null, {timeout:35000});
+    const result=await p.evaluate(() => ({d1:+S.T.d1,d2:+S.T.d2, log:cur().rollLog[0], action:cur().turn.action}));
+    ok(result.d1>=1&&result.d1<=20&&result.d2>=1&&result.d2<=20,'deux faces de d20');
+    ok(result.log.bd.includes(result.d1+' / '+result.d2),'historique conforme aux faces');
+    ok(result.action,'action consommée après le jet');
     await p.locator('.qhitnext .qchain[data-m="n"]').click();
-    await p.waitForFunction(() => window.__diceTraces.length >= 2);
-    const damage=await p.evaluate(() => ({trace:window.__diceTraces[1], result:+S.T.dmg}));
-    ok(damage.trace.dice.length>0 && damage.trace.dice.every(d=>d.faces>0), 'dés de dégâts regroupés');
-    eq(damage.trace.dice.reduce((sum,d)=>sum+(d.discarded?0:d.sign*d.value),0),damage.result,'valeurs conformes au résultat des dés');
-    await p.evaluate(() => { setDiceDisplayMode('direct'); window.__diceTraces=[]; S.T.pop='eco:action'; render(); });
+    await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.dmg !== '', null, {timeout:35000});
+    ok(await p.evaluate(() => +S.T.dmg>0 && /\[/.test(cur().rollLog[0].bd)), 'dégâts issus des dés physiques');
+    await p.evaluate(() => {const pref=JSON.parse(localStorage.getItem('registre-dice-studio-v1')||'{}');pref.trayMode='screen';localStorage.setItem('registre-dice-studio-v1',JSON.stringify(pref));S.T.pop=null;render()});
+    await p.locator('[data-act="tqroll"][data-k="init"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    eq(await p.evaluate(() => [S.T.qr.k,S.T.d1]),['init',''],'initiative ouverte sans résultat avant stabilisation');
+    ok(await p.locator('.game-dice-frame.fullscreen').isVisible(),'mode sans plateau affiché sur l’écran');
+    await p.frameLocator('.game-dice-frame').locator('.stage canvas').waitFor({timeout:30000});
+    eq(await p.frameLocator('.game-dice-frame').locator('.stage').evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0)','surface transparente au-dessus de la page');
+    await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1, null, {timeout:35000});
+    eq(await p.evaluate(() => [S.T.qr.k,cur().rollLog[0].label]),['init','Initiative'],'résultat affiché dans la fenêtre Initiative');
+  });
+
+  await test('Dés 3D : fermer pendant le lancer ne dépense pas l’action', async p => {
+    await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); S.T.pop='eco:action'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
-    eq(await p.evaluate(() => window.__diceTraces.length),0,'pas de trace en mode direct');
+    await p.click('.tpophead [data-act="tpopclose"]');
+    await p.waitForFunction(() => !S.T.roll3dPending, null, {timeout:5000});
+    eq(await p.evaluate(() => [!!cur().turn?.action,(cur().rollLog||[]).length]),[false,0],'aucun résultat ni action consommée après fermeture');
   });
 
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
@@ -2640,7 +2656,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [diceDisplayMode(), localStorage.getItem(VIRTUAL_DICE_DISPLAY_KEY)]), ['3d', '3d'], 'choix enregistré');
     await p.click('[data-act="virtualDice"]'); ok(await p.locator('[data-act="diceDisplay"]').isDisabled(), 'dés 3D grisés lorsque les jets sont désactivés');
     await p.click('[data-act="virtualDice"]'); eq(await p.getAttribute('[data-act="diceDisplay"]', 'aria-checked'), 'true', 'choix 3D conservé à la réactivation');
-    ok(await p.locator('.rg-help').filter({hasText:'prochaine étape'}).isVisible(), 'disponibilité des jets 3D expliquée');
+    ok(await p.locator('.rg-help').filter({hasText:'autres jets'}).isVisible(), 'disponibilité des jets 3D expliquée');
     await p.reload(); await p.waitForFunction(() => S.C && S.CAT); await menuClick(p, '[data-act="settingsOpen"]');
     eq(await p.getAttribute('[data-act="diceDisplay"]', 'aria-checked'), 'true', 'choix conservé après rechargement');
     await p.click('[data-act="diceDisplay"]');

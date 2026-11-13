@@ -16,6 +16,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.act==="tip"){ e.preventDefault(); openTip(t.dataset.k,t); return; }
   if(t.dataset.act==="tipclose"){ closeTip(); return; }
   const a=t.dataset.act, ch=cur();
+  if(S.T?.roll3dPending&&["tqgo","tmiss"].includes(a)) return;
   if(VIRTUAL_ACTIONS.has(a)&&!virtualDiceEnabled()){ e.preventDefault(); return; }
   if(a==="closeModal"){ if(e.target===t||t.tagName==="BUTTON"){ S.pending=null; renderModal(); render(); } return; }
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;

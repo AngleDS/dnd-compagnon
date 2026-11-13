@@ -1402,7 +1402,20 @@ function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x
   else { const b=i.kind==="spell"?beamsAt(i.m,i.sp,keep&&i.sp?(T.castRit?i.sp.level:T.castLvl):(i.sp&&i.sp.level),D):1;
     const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,T.castRit?i.sp.level:T.castLvl,D):i.dice)||""), mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0);
     T.qr={k:key,r,crit:m==="c",dice:m==="c"?doubleDice(dice):dice,flat,heal,beams:b,re1:heal&&!!D.guerisseur}; }
-  T.pop="qroll"; render();
+  T.pop="qroll"; T.roll3dPending=virtualDiceEnabled()&&diceDisplayMode()==="3d"; render();
+  if(virtualDiceEnabled()&&diceDisplayMode()==="3d"){
+    const qr=T.qr, charId=S.cur, parts=[], specs=[]; let fixed=0;
+    if(r==="hit"||r==="d20") { specs.push(20); if(T.mode!=="n") specs.push(20); }
+    else { for(const part of String(qr.dice||"").replace(/\s/g,"").replace(/-/g,"+-").split("+").filter(Boolean)){ const mm=part.match(/^(-?)(\d*)d(\d+)$/i); if(mm){const count=Math.min(+(mm[2]||1),100),faces=+mm[3],sign=mm[1]?-1:1;for(let j=0;j<count;j++){specs.push(faces);parts.push(sign)}} else if(/^-?\d+$/.test(part))fixed+=+part;else{T.roll3dPending=false;setBanner("Cette formule ne peut pas être lancée en 3D.");return} } }
+    if(!specs.length||specs.length>100||specs.some(f=>![4,6,8,10,12,20,100].includes(f))){T.roll3dPending=false;setBanner("Ce jet utilise des dés indisponibles en 3D.");return}
+    (async()=>{ try{
+      const values=await studioGameRoll(specs);
+      if(S.cur!==charId||S.T!==T||T.pop!=="qroll"||T.qr!==qr||!virtualDiceEnabled()) return;
+      if(r==="hit"||r==="d20"){if(!ensureTableRollUse()){render();return}T.d1=String(values[0]);T.d2=T.mode!=="n"?String(values[1]):"";render();if(logD20(false))tableRollCommitted("d20")}
+      else {let sum=fixed;const bd=[];for(let j=0;j<values.length;j++){let v=values[j];if(qr.re1&&v===1){const extra=await studioGameRoll([specs[j]]);if(S.cur!==charId||T.pop!=="qroll"||T.qr!==qr)return;bd.push('1→'+extra[0]);v=extra[0]}else bd.push(String(v));sum+=parts[j]*v}if(!ensureTableRollUse()){render();return}T.dmg=String(sum);T.dmgBd=(qr.crit?"Critique · ":"")+qr.dice+" ["+bd.join(", ")+"]";render();if(logDmg(false))tableRollCommitted("dmg")}
+      render();
+    }catch(_){if(S.cur===charId&&S.T===T&&T.pop==="qroll"&&T.qr===qr){T.roll3dPending=false;render();setBanner("Le lancer 3D n’a pas abouti. Réessaie ou désactive les dés 3D dans Réglages.")}}finally{if(S.T===T)T.roll3dPending=false}})();return;
+  }
   if(virtualDiceEnabled()){ if(!ensureTableRollUse()){ render(); return; }
     if(r==="hit"||r==="d20"){ T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; render(); if(logD20(false)) tableRollCommitted("d20"); }
     else { const x=rollExpr(T.qr.dice,T.qr.re1); T.dmg=String(x.total); T.dmgBd=(T.qr.crit?"Critique · ":"")+x.bd; render(); if(logDmg(false)) tableRollCommitted("dmg"); }
@@ -1458,7 +1471,7 @@ function logDmg(phys){ if(phys&&virtualDiceEnabled()) return; const T=S.T, dt=do
   addLog({label:selName()+(isHeal?" · soins":" · dégâts"),total:(+T.dmg)+f,bd:(T.dmgBd||"dés "+T.dmg)+(f?" "+sg(f):"")+(phys?" · dés physiques":""),quiet:true}); return true; }
 function totalHtml(mod){
   const T=S.T, a=parseInt(T.d1), b=parseInt(T.d2);
-  if(isNaN(a)) return `<span class="muted">${virtualDiceEnabled()?"Lance le dé pour le total":"Saisis ton dé pour le total"}</span>`;
+  if(isNaN(a)) return `<span class="muted">${T.roll3dPending?"Les dés roulent…":virtualDiceEnabled()?"Lance le dé pour le total":"Saisis ton dé pour le total"}</span>`;
   let d=a;
   if(T.mode!=="n"){ if(isNaN(b)) return `<span class="muted">Saisis le 2e dé</span>`; d=T.mode==="a"?Math.max(a,b):Math.min(a,b); }
   const nat = d===20?` <span class="badge srd">20 naturel</span>`:(d===1?` <span class="badge perso">1 naturel</span>`:"");

@@ -533,3 +533,7 @@ En mode 3D activé, les tirages synchrones issus d'un clic ou d'une soumission �
 
 Dans le document isolé du studio, `studioRoll3D([faces, ...])` lance les dés demandés et renvoie les valeurs lues sur leurs faces une fois stabilisées. Les types pris en charge sont d4, d6, d8, d10, d12, d20 et d100 ; ce dernier utilise deux d10. La fonction refuse un lancer lorsque les jets virtuels sont verrouillés. Les fenêtres de jeu ne l'appellent pas encore : les jets 3D en partie restent à raccorder.
 
+# Jets rapides 3D — branchement partiel
+
+En mode 3D, `quickRoll` lance les d20 et les dés de dégâts dans le moteur du studio et utilise les faces stabilisées. En mode avec plateau, le rendu est dans la fenêtre existante ; en mode sans plateau, il est transparent au-dessus de la page. Les jets directs restent inchangés. Les autres parcours (notamment les contrôles de la fiche, les jets libres, le repos et la création) ne sont pas encore raccordés au moteur 3D : le chantier reste incomplet.
+
