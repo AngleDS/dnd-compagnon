@@ -2857,6 +2857,24 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [defSummary(cur()), DMG_TYPES.length]), ['', 13], 'humain : aucune défense ; 13 types de dégâts');
   });
 
+  await test('Dégâts typés : résistance montrée et appliquée, immunité, vulnérabilité, lien vers les défenses', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'srd:guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); const ch = cur(); ch.hp.cur = 20; delete ch.conc; defToggle(ch, 'imm', 'Feu'); defToggle(ch, 'vul', 'Froid'); render(); });
+    const hit = async (n, type) => { await p.click('[data-act="hpask"][data-v="dmg"]'); await p.fill('#hp-amt', String(n)); if (type) await p.selectOption('#hp-type', type); };
+    await hit(14, 'Poison');
+    eq([await p.innerText('#hp-calc'), await p.innerText('.hpbox button[type=submit]')], ['Résistance poison : 14 → 7 dégâts', 'Appliquer 7 dégâts'], 'calcul montré avant validation');
+    await p.click('.hpbox button[type=submit]');
+    eq(await p.evaluate(() => [cur().hp.cur, cur().rollLog[0].bd.startsWith('poison · résistance poison : 14 → 7.')]), [13, true], 'résistance appliquée et notée');
+    await hit(10, 'Feu'); eq(await p.innerText('.hpbox button[type=submit]'), 'Aucun dégât (immunité)', 'immunité annoncée');
+    await p.click('.hpbox button[type=submit]'); eq(await p.evaluate(() => [cur().hp.cur, cur().rollLog[0].total]), [13, '0'], 'immunité : aucun dégât');
+    await hit(4, 'Froid'); await p.click('.hpbox button[type=submit]'); eq(await p.evaluate(() => cur().hp.cur), 5, 'vulnérabilité : dégâts doublés');
+    await hit(2, ''); ok(await p.locator('#hp-calc').isHidden(), 'sans type : pas de calcul'); await p.click('.hpbox button[type=submit]'); eq(await p.evaluate(() => cur().hp.cur), 3, 'sans type : montant tel quel');
+    await p.click('[data-act="hpask"][data-v="dmg"]');
+    ok(/Défenses : résistance poison · immunité feu · vulnérabilité froid/.test(await p.innerText('.hpbox .hpdef')), 'résumé des défenses dans la fenêtre');
+    await p.click('.hpbox .hpdef'); ok(await p.locator('.tpop[aria-label="Défenses"]').isVisible() && !(await p.locator('.hpbox').count()), '« modifier » ouvre les défenses');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));

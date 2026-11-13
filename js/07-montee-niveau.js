@@ -117,11 +117,15 @@ function ccResolve(a,b,virt){
 function hpApply(n){
   const ch=cur(), D=derive(ch), P=S.pending; if(!P||P.type!=="hp"||!(n>0)) return; const dmg=P.mode==="dmg";
   const crit=dmg&&!!document.getElementById("hp-crit")?.checked;
+  // Dégâts typés (chantier 5) : défenses appliquées au montant, calcul gardé dans l'historique
+  const ty=dmg?(document.getElementById("hp-type")?.value||""):""; let tyNote="";
+  if(ty){ const r=dmgTyped(ch,n,ty); tyNote=ty.toLowerCase()+(r.why?" · "+r.why.toLowerCase()+" : "+n+" → "+r.n:"")+". "; n=r.n;
+    if(n<=0){ addLog({label:"Dégâts subis",total:"0",bd:tyNote+"Aucun dégât.",kind:"info"}); S.pending=null; renderModal(); touch(S.cur); render(); return; } }
   ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const before=+ch.hp.cur||0; let msg="";
   if(dmg){ let rest=n; const t=+ch.hp.temp||0; if(t){ const a=Math.min(t,rest); ch.hp.temp=t-a; rest-=a; if(a) msg+=a+" absorbés par les PV temporaires. "; }
     if(before>0){ ch.hp.cur=Math.max(0,before-rest); const over=rest-before; if(ch.hp.cur===0){ if(over>=D.hpMax) msg+="Dégâts restants ≥ PV max : mort instantanée. "; else msg+="Tu tombes à 0 PV : jets contre la mort. "; } }
     else if(rest>0){ ch.death=ch.death||{s:0,f:0}; if(rest>=D.hpMax) msg+="Dégâts ≥ PV max à 0 PV : mort instantanée. "; else { ch.death.f=Math.min(3,(ch.death.f||0)+(crit?2:1)); msg+=(crit?"Deux échecs":"Un échec")+" de jet contre la mort. "; } }
-    addLog({label:"Dégâts subis",total:"−"+n,bd:(msg||"")+"PV "+ch.hp.cur+" / "+D.hpMax,kind:"info",quiet:!msg});
+    addLog({label:"Dégâts subis",total:"−"+n,bd:tyNote+(msg||"")+"PV "+ch.hp.cur+" / "+D.hpMax,kind:"info",quiet:!msg});
     if(ch.conc&&before>0){ S.pending=null; renderModal(); touch(S.cur); if(S.view==="sheet"&&S.tab==="table"){ S.T=S.T||{}; concDamage(n,true); } else { addLog({label:"Concentration : "+ch.conc,total:"DD "+Math.max(10,Math.floor(n/2)),bd:"Fais un jet de sauvegarde de Constitution.",kind:"info"}); render(); } return; }
   } else { ch.hp.cur=Math.min(D.hpMax,before+n); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0}; addLog({label:"Soins reçus",total:"+"+(ch.hp.cur-before),bd:"PV "+ch.hp.cur+" / "+D.hpMax,quiet:true}); }
   S.pending=null; renderModal(); touch(S.cur); render();
@@ -176,6 +180,8 @@ function renderModal(){
       ${winHead(dmg?"Dégâts subis":"Soins reçus","closeModal",dmg?"color:#c0473f":"color:#5b9a68")}
       <form class="stack" id="hpform" data-form="hpamt" novalidate><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="1" step="1" style="width:100%;font-size:var(--fs-xl)" autofocus></label>
         <div id="hp-amt-err" class="warntxt" role="alert" style="font-size:var(--fs-sm)"></div>
+        ${dmg?`<label class="field"><span>Type (facultatif)</span><select id="hp-type"><option value="">Non précisé</option>${DMG_TYPES.map(v=>`<option>${v}</option>`).join("")}</select></label><div id="hp-calc" class="tnotes hpcalc" role="status" hidden></div>
+        <button type="button" class="btn small ghost hpdef" data-act="defOpen">Défenses : ${esc(defSummary(ch)||"aucune")} · <u>modifier</u></button>`:""}
         ${dmg?`<label class="row" style="gap:6px;font-size:var(--fs-sm)"><input type="checkbox" id="hp-crit"> Coup critique (compte deux échecs si tu es à 0 PV)</label>`:""}
         <div class="muted" style="font-size:var(--fs-sm)">PV ${+hp.cur||0} / ${D.hpMax}${+hp.temp?` · ${+hp.temp} PV temporaires${dmg?" (perdus en premier)":""}`:""}${dmg&&ch.conc?` · concentration sur ${esc(ch.conc)} : un jet sera demandé`:""}</div></form>
       <div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,3,4,5,6,8,10,12].map(n=>`<button class="btn small" data-act="hpquick" data-v="${n}">${dmg?"−":"+"}${n}</button>`).join("")}</div>

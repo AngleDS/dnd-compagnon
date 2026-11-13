@@ -34,3 +34,11 @@ function defPop(ch,D,wrap){ const T=S.T, d=defenses(ch), edit=T.defEdit||null;
     return `<div class="lusec"><div class="row" style="justify-content:space-between;align-items:center"><div class="label">${lab}${sub?` <span class="muted" style="text-transform:none;letter-spacing:0">· ${sub}</span>`:""}</div><button class="btn small" data-act="defEdit" data-c="${c}">${edit===c?"Fini":"+ Ajouter"}</button></div>${list}</div>`; }).join("");
   const sp=DEF_SPECIES[ch.species]?`« espèce » : vient de ton espèce. Tu peux la retirer ou ajouter les tiennes. `:"";
   return wrap("Défenses",rows+`<div class="muted" style="font-size:var(--fs-sm);margin-top:12px">${sp}Les défenses servent dans « Dégâts subis » : choisis le type de dégâts, le calcul est montré.</div>`); }
+// « Dégâts subis » : calcul montré dès que le montant et le type sont saisis ; le bouton annonce ce qui sera appliqué
+function hpCalcShow(){ const amt=document.getElementById("hp-amt"), ty=document.getElementById("hp-type"), out=document.getElementById("hp-calc"); if(!amt||!ty||!out) return;
+  const n=parseInt(amt.value,10), btn=document.querySelector(".hpbox button[type=submit]"), ch=cur();
+  if(!(n>0)||!ty.value||!ch){ out.hidden=true; if(btn) btn.textContent="Appliquer les dégâts"; return; }
+  const r=dmgTyped(ch,n,ty.value); out.hidden=!r.why; out.innerHTML=r.why?esc(r.why)+" : <b class=\"num\">"+n+" → "+r.n+"</b> dégât"+(r.n>1?"s":""):"";
+  if(btn) btn.textContent=r.n?"Appliquer "+r.n+" dégât"+(r.n>1?"s":""):"Aucun dégât (immunité)"; }
+document.addEventListener("input",e=>{ if(e.target&&e.target.id==="hp-amt") hpCalcShow(); });
+document.addEventListener("change",e=>{ if(e.target&&e.target.id==="hp-type") hpCalcShow(); });

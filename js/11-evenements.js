@@ -104,6 +104,7 @@ document.addEventListener("click",e=>{
     // Défenses (chantier 5)
     case "defEdit": S.T.defEdit=S.T.defEdit===t.dataset.c?null:t.dataset.c; render(); break;
     case "defTog": defToggle(ch,t.dataset.c,t.dataset.v); touch(S.cur); render(); break;
+    case "defOpen": S.pending=null; renderModal(); if(!(S.view==="sheet"&&S.tab==="table")){ S.view="sheet"; S.tab="table"; } render(); S.T.pop="def"; S.T.defEdit=null; render(); break;
     case "nav": if(t.dataset.v==="hb"||t.dataset.v==="comp"){ if(S.view==="sheet") S.navFrom="perso"; else if(S.view==="list") S.navFrom="menu"; }
       if(t.dataset.v==="main"||t.dataset.v==="table"){ // rester sur le perso affiché ; le perso principal seulement en venant d'ailleurs
         const here=S.cur&&S.docs[S.cur]&&S.docs[S.cur].type==="perso"; const m=here?S.cur:mainId(); if(m){ S.tab = t.dataset.v==="table" ? "table" : (S.cur===m&&S.tab!=="table"?S.tab:"jeu"); if(t.dataset.v==="main") S.unlockEdit=false; S.cur=m; S.view="sheet"; render(); window.scrollTo(0,0); } break; } S.view=t.dataset.v; S.cur=S.view==="list"?null:S.cur; render(); break;
