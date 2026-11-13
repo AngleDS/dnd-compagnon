@@ -8,54 +8,58 @@ function matchItem(name){
   for(const c of cands){ let best=null; for(const k in I){ if(k.length>=4&&(c===k||c.startsWith(k+" ")||c.startsWith(k+"s ")||c===k+"s")&&(!best||k.length>best.length)) best=k; } if(best) return I[best].ref; }
   return null;
 }
+/* Bulles d'info : même modèle que les fenêtres (lot 2) — nom et sous-titre en tête, valeurs, cadre d'infos, description.
+   L'en-tête ne contient pas de <div> intérieur : la fiche « Détails » le retire avec une expression simple. */
+const tipHead=(n,sub)=>`<div class="tiphead"><span class="tchw"><b class="tipname">${esc(n)}</b>${sub?`<span class="tcsub"><span>${esc(sub)}</span></span>`:""}</span><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div>`;
+const tipMeta=rows=>{ rows=rows.filter(x=>x[1]); return rows.length?`<div class="tcmeta">${rows.map(([l,v])=>`<div><span class="tkl">${l}</span><b>${esc(v)}</b></div>`).join("")}</div>`:""; };
 function itemTipHtml(ref){
   if(ref.startsWith("hb:")){ const h=hb(ref); if(!h) return "";
-    return `<div class="tiphead"><b class="tipname">${esc(h.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">Objet hors SRD</div>${hbFoot(h)}${h.dice?`<div class="tipmeta"><div><span class="tkl">Dégâts</span> ${esc(h.dice+" "+(h.dmgType||""))}</div>${h.properties?`<div><span class="tkl">Propriétés</span> ${esc(h.properties)}</div>`:""}</div>`:""}<div class="prose tiptext">${prose(h.text)||`<p class="muted">Pas encore de description.</p>`}</div>`; }
+    return tipHead(h.name,"Objet hors SRD")+(h.dice?tipMeta([["Dégâts",h.dice+" "+(h.dmgType||"")],["Propriétés",h.properties]]):"")+`<div class="prose tiptext">${prose(h.text)||`<p class="muted">Pas encore de description.</p>`}</div>`+hbFoot(h); }
   const [,kind,id]=ref.split(":");
-  let h=""; const head=(n,sub)=>`<div class="tiphead"><b class="tipname">${esc(n)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">${esc(sub)}</div>`;
   if(kind==="arme"){ const w=S.idx.weapons[id]; if(!w) return "";
-    h=head(w.name,"Arme "+(w.category==="courante"?"courante":"de guerre")+(w.kind==="dist"?" à distance":" de corps à corps"));
-    h+=`<div class="tipmeta"><div><span class="tkl">Dégâts</span> ${esc(w.damage+" "+w.damageType)}</div><div><span class="tkl">Propriétés</span> ${esc(w.properties)}</div><div><span class="tkl">Botte d'arme</span> ${esc(w.mastery)}</div><div><span class="tkl">Poids</span> ${esc(w.weight)} · <span class="tkl">Prix</span> ${esc(w.cost)}</div></div>`; return h; }
+    return tipHead(w.name,"Arme "+(w.category==="courante"?"courante":"de guerre")+(w.kind==="dist"?" à distance":" de corps à corps"))+tipMeta([["Dégâts",w.damage+" "+w.damageType],["Propriétés",w.properties],["Botte d'arme",w.mastery],["Poids",w.weight],["Prix",w.cost]]); }
   if(kind==="armure"){ const a=S.idx.armors[id]; if(!a) return "";
-    h=head(a.name,a.category==="bouclier"?"Bouclier":"Armure "+a.category);
-    h+=`<div class="tipmeta"><div><span class="tkl">CA</span> ${a.category==="bouclier"?"+2":a.ac+(a.dexMax===0?"":a.dexMax?" + Dex (max "+a.dexMax+")":" + Dex")}</div>${a.strength?`<div><span class="tkl">Force</span> ${a.strength}</div>`:""}${a.stealthDisadvantage?`<div>Désavantage en Discrétion</div>`:""}<div><span class="tkl">Poids</span> ${esc(a.weight)} · <span class="tkl">Prix</span> ${esc(a.cost)}</div></div>`; return h; }
+    return tipHead(a.name,a.category==="bouclier"?"Bouclier":"Armure "+a.category)+tipMeta([["CA",a.category==="bouclier"?"+2":a.ac+(a.dexMax===0?"":a.dexMax?" + Dex (max "+a.dexMax+")":" + Dex")],["Force",a.strength?String(a.strength):""],["Discrétion",a.stealthDisadvantage?"désavantage":""],["Poids",a.weight],["Prix",a.cost]]); }
   const x=S.idx.items[id]; if(!x) return "";
-  h=head(x.name, kind==="magique"?x.category:((kind==="outil"?"Outil":"Matériel d'aventurier")+(x.cost?" · "+x.cost:"")));
-  h+=`<div class="prose tiptext">${prose(x.text)}</div>`; return h;
+  return tipHead(x.name, kind==="magique"?x.category:((kind==="outil"?"Outil":"Matériel d'aventurier")+(x.cost?" · "+x.cost:"")))+`<div class="prose tiptext">${prose(x.text)}</div>`;
 }
 function itemName(b){ const ref=b.ref||matchItem(b.name); return ref?`<span class="tipl" data-act="tip" data-k="${esc(ref)}">${esc(b.name)}</span>`:esc(b.name); }
  
 /* ---------- info-bulles ---------- */
 function tipHtml(i,ch,D){
   const kv=(l,v)=>`<span class="tk"><span class="tkl">${esc(l)}</span><b class="num">${esc(v)}</b></span>`;
-  let h=`<div class="tiphead"><b class="tipname">${esc(i.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div>`;
+  const vals=x=>x?`<div class="tcvals">${x}</div>`:"";
+  // Description repliée, sauf si la bulle n'a rien d'autre (décision d'Angle, lot 2)
+  const desc=(l,html,alone)=>html?`<details class="tdesc"${alone?" open":""}><summary class="label">${l}</summary><div class="prose tiptext">${html}</div></details>`:"";
+  let h="";
   if(i.kind==="spell"){
     const sp=i.sp;
-    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(sp.level?(sp.school+" du "+sp.level+(sp.level===1?"er":"e")+" niveau"):(sp.school+" · sort mineur"))}</div>`;
-    h+=`<div class="tipmeta">${[["Incantation",sp.casting_time],["Portée",sp.range],["Composantes",sp.components],["Durée",sp.duration]].filter(x=>x[1]).map(([l,v])=>`<div><span class="tkl">${l}</span> ${esc(v)}</div>`).join("")}</div>`;
-    const vals=(i.roll? (i.roll.startsWith("DD")?kv("DD",i.roll.slice(3)):kv("Toucher",i.roll)) : "")+(i.dice?kv(i.heal?"Soins":"Dégâts",i.dice):"");
-    if(vals) h+=`<div class="row" style="gap:14px">${vals}</div>`;
-    h+=`<div class="prose tiptext">${prose(sp.text)}</div>`;
+    h=tipHead(i.name,(sp.school?sp.school+" · ":"")+(sp.level?"niveau "+sp.level:"sort mineur"));
+    h+=vals((i.roll?(i.roll.startsWith("DD")?kv("DD",i.roll.slice(3)):kv("Toucher",i.roll)):"")+(i.dice?kv(i.heal?"Soins":"Dégâts",(()=>{ const b=beamsAt(i.m||spellMech(sp),sp,sp.level,D); return (b>1?b+" × ":"")+i.dice; })()):""));
+    h+=tipMeta([["Incantation",sp.casting_time],["Portée",sp.range],["Durée",sp.duration],["Composantes",sp.components]]);
+    h+=desc("Description du sort",prose(sp.text),false);
   } else if(i.kind==="atk"){
-    h+=`<div class="row" style="gap:14px">${kv("Toucher",sg(i.mod))}${kv("Dégâts",i.dmg)}</div>`;
-    if(i.dtype) h+=`<div class="muted" style="font-size:var(--fs-sm)">Dégâts ${esc(i.dtype)}</div>`;
-    h+=`<div class="tipmeta">${i.sub?`<div>${esc(i.sub)}</div>`:""}${i.mastery?`<div><span class="tkl">Botte d'arme</span> ${esc(i.mastery)}</div>`:""}</div>`;
-    const g=i.mastery&&S.C.glossary.find(x=>norm(x.name)===norm(i.mastery)); if(g) h+=`<div class="prose tiptext">${prose(g.text)}</div>`;
+    h=tipHead(i.name,i.sub||"");
+    h+=vals(kv("Toucher",sg(i.mod))+kv("Dégâts",i.dmg));
+    h+=tipMeta([["Type de dégâts",i.dtype],["Botte d'arme",i.mastery]]);
+    const g=i.mastery&&S.C.glossary.find(x=>norm(x.name)===norm(i.mastery)); if(g) h+=desc("Botte d'arme : "+esc(i.mastery),prose(g.text),false);
   } else if(["skill","save","abil","init"].includes(i.kind)){
-    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(i.sub||"")}</div>`;
-    h+=`<div class="row" style="gap:14px">${kv("Bonus",sg(i.mod))}</div>`;
+    let sub=i.sub||"";
+    if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); sub+=(sub?" · ":"")+["Non maîtrisée","Maîtrisée","Expertise"][D.skills[sk.id].lv]; }
+    h=tipHead(i.name,sub)+vals(kv("Bonus",sg(i.mod)));
     h+=`<div class="tparts">${(i.parts||[]).map(p=>`<span>${esc(p.l)} <b class="num">${sg(p.v)}</b></span>`).join("")}</div>`;
-    if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); const lv=D.skills[sk.id].lv;
-      h+=`<div style="font-size:var(--fs-sm)">${["Non maîtrisée","Maîtrisée","Expertise"][lv]}</div>`;
-      if(sk.examples) h+=`<div class="prose tiptext"><p><b>Exemples d'application.</b> ${esc(sk.examples)}</p></div>`; }
+    if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); if(sk.examples) h+=`<div class="prose tiptext"><p><b>Exemples d'application.</b> ${esc(sk.examples)}</p></div>`; }
   } else {
-    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(i.sub||"")}</div>`;
-    if(i.res){ const r=i.res, used=+(ch.resUsed?.[r.id]||0); h+=`<div class="row" style="gap:14px">${kv("Reste",(r.max-used)+" / "+r.max+(r.pool?" d"+r.die:""))}<span class="muted" style="font-size:var(--fs-sm)">${esc(rechargeLabel(r.recharge))}</span></div>`; }
-    if(i.counter) h+=`<div class="row">${kv("Reste",(+i.counter.cur||0)+" / "+(+i.counter.max||0))}</div>`;
-    if(i.text) h+=`<div class="prose tiptext">${prose(i.text)}</div>`;
+    h=tipHead(i.name,i.sub||"");
+    let v="";
+    if(i.res){ const r=i.res, used=+(ch.resUsed?.[r.id]||0); v=kv("Reste",(r.max-used)+" / "+r.max+(r.pool?" d"+r.die:"")); }
+    if(i.counter) v=kv("Reste",(+i.counter.cur||0)+" / "+(+i.counter.max||0));
+    h+=vals(v);
+    if(i.res) h+=tipMeta([["Récupération",rechargeLabel(i.res.recharge)]]);
+    if(i.text) h+=desc("Description",prose(i.text),!v);
   }
   { const r=i.ref||i.src; if(r&&isHb(r)) h+=hbFoot(hb(r)); }
-   return h;
+  return h;
 }
 function bagTipRef(ch,b){ let r=b.ref||matchItem(b.name); if(r) return r;
   const a=(ch.attacks||[]).find(x=>{ const bb=atkBag(ch,x); return bb&&bb.id===b.id; }); if(a&&a.weapon){ if(a.weapon.startsWith("srd:")) return "item:arme:"+a.weapon.slice(4); if(a.weapon.startsWith("hb:")) return a.weapon; } return ""; }
@@ -63,7 +67,7 @@ function openTip(key,anchor){
   if(key.startsWith("bag:")){ const ch=cur(); const b=ch&&(ch.bag||[]).find(x=>x.id===key.slice(4)); if(!b) return; const ref=bagTipRef(ch,b); const tip=document.getElementById("tip");
     let html=ref?itemTipHtml(ref):"";
     if(ref&&ref.startsWith("item:arme:")&&!(b.ref||matchItem(b.name))) html=html.replace(/<b class="tipname">[^<]*<\/b>/,`<b class="tipname">${esc(b.name)}</b>`);
-    if(!html) html=`<div class="tiphead"><b class="tipname">${esc(b.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">${b.note?esc(b.note)+"<br>":""}Pas encore de description pour cet objet.</div><div style="margin-top:8px"><button class="btn small" data-act="mkItem" data-id="${esc(b.id)}">Créer sa fiche</button></div>`;
+    if(!html) html=`${tipHead(b.name,b.note||"")}<div class="muted" style="font-size:var(--fs-sm)">Pas encore de description pour cet objet.</div><div style="margin-top:8px"><button class="btn small" data-act="mkItem" data-id="${esc(b.id)}">Créer sa fiche</button></div>`;
     tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; }
   if(key.startsWith("item:")||key.startsWith("hb:")){ const tip=document.getElementById("tip"); const html=itemTipHtml(key); if(!html) return; tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; }
   const ch=cur(); if(!ch) return; const D=derive(ch);

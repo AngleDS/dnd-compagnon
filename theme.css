@@ -564,6 +564,7 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .tcmeta>div{display:grid;gap:1px;min-width:0}.tcmeta b{font-weight:500;font-size:var(--fs-md);overflow-wrap:anywhere}
 .tcardpop .tdesc{margin-top:4px;border-top:1px solid var(--line);padding-top:2px}.tcardpop .tdesc>summary{min-height:44px}
 #t-action-state:empty{display:none}
+.tiphead{align-items:flex-start}.tiphead .tchw{display:grid;min-width:0}.tip .tcvals{margin-top:2px}.tip .tdesc{margin-top:0;border-top:1px solid var(--line)}.tip .tdesc>summary{min-height:44px}
 .tpop:has(.wfoot){overflow:hidden} /* le fond du pied ne déborde pas des coins arrondis */
 .tpopbody.more-b:has(.wfoot){-webkit-mask-image:none;mask-image:none} /* le pied collé suffit : le fondu recouvrait son bouton */
 @media (max-width:720px){

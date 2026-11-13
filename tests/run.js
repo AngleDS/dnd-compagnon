@@ -2440,6 +2440,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [!!document.querySelector('.tpop #t-dmg'), /4 traits : des dégâts par trait/.test(document.querySelector('.tpop').textContent), cur().slotsUsed[2]]), [true, true, 1], 'lancé au niveau 2 : 4 traits, saisie des dégâts d’un trait, emplacement de niveau 2 dépensé');
   });
 
+  await test('Bulles d’info : même modèle que les fenêtres (nom et sous-titre, valeurs, cadre d’infos, description repliée)', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'magicien');
+    await p.evaluate(() => { const ch = cur(); ch.level = 3; ch.spells = [{ prepared: true, ref: 'srd:projectile-magique' }]; render(); openTip('spell:srd:projectile-magique', document.querySelector('.health-card')); });
+    const r = await p.evaluate(() => { const t = document.getElementById('tip'), x = t.querySelector('[data-act="tipclose"]').getBoundingClientRect(), d = t.querySelector('.tdesc');
+      return [t.querySelector('.tipname').textContent, t.querySelector('.tcsub').textContent, t.querySelector('.tcvals b').textContent, [...t.querySelectorAll('.tcmeta .tkl')].map(e => e.textContent), !!d && !d.open, Math.round(x.width)]; });
+    eq(r, ['Projectile magique', 'Évocation · niveau 1', '3 × 1d4+1', ['Incantation', 'Portée', 'Durée', 'Composantes'], true, 44], 'sort : en-tête, valeurs, cadre d’infos, description repliée, croix 44 px');
+    await p.evaluate(() => { closeTip(); openTip('rule:aveugle', document.querySelector('.health-card')); });
+    ok(await p.evaluate(() => { const d = document.querySelector('#tip .tdesc'); return !!d && d.open && /Aveuglé/.test(document.querySelector('#tip .tipname').textContent); }), 'règle seule : description ouverte');
+    await p.evaluate(() => { closeTip(); const k = Object.keys(S.idx.weapons)[0]; openTip('item:arme:' + k, document.querySelector('.health-card')); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('#tip .tcmeta .tkl')].map(e => e.textContent).slice(0, 2)), ['Dégâts', 'Propriétés'], 'arme : cadre d’infos');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');
