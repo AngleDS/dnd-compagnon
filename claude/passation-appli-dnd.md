@@ -513,3 +513,7 @@ Décisions d'Angle (10 nov. 2026). Chantier prévu plus tard ; rien n'est codé.
 
 Le studio validé est accessible depuis le Menu. Sa source est `studio/studio.html` ; Three.js 0.180.0 et cannon-es 0.20.0 et leurs licences sont dans `vendor/` et intégrés au fichier construit par `build.py`. Les réglages sont propres au navigateur (`registre-dice-studio-v1`) et incluent l'apparence individuelle des deux dés, le plateau, son mode d'affichage, la lumière, les ombres, le son et le volume. Le lancer d'essai est disponible uniquement lorsque les dés virtuels sont activés. Les jets de l'application, notamment les jets rapides, ne sont pas encore reliés au moteur 3D : c'est une étape ultérieure. Les jets rapides doivent rester immédiats et fluides, sans fenêtre supplémentaire.
 
+# Studio de dés — affichage et choix 3D
+
+Le cadre du studio utilise une règle de grille plus spécifique que la fenêtre générique : son contenu est visible. Il suit le thème de l'application, sans sélecteur de thème propre. Dans Réglages, lorsque les dés virtuels sont actifs, le choix Résultat direct / Dés 3D est conservé sous `registre-virtual-dice-display`. L'interface indique que les jets 3D ne sont pas encore reliés ; les jets rapides gardent leur comportement immédiat pour l'instant.
+

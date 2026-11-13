@@ -2,8 +2,12 @@
 
 /* Global browser preference; deliberately independent of character/import data. */
 const VIRTUAL_DICE_KEY="registre-virtual-dice";
+const VIRTUAL_DICE_DISPLAY_KEY="registre-virtual-dice-display";
 const VIRTUAL_ACTIONS=new Set(["wroll", "r20", "dmg", "death", "spendhd", "pool", "ccroll", "hdvirt", "tvroll", "tvdmg", "cast", "sdmg", "smiteRoll", "chargeRecoveryRoll", "studioRoll"]);
 let virtualDiceFallback=null;
+let diceDisplayFallback=null;
+function diceDisplayMode(){ if(diceDisplayFallback!==null) return diceDisplayFallback; try{ return localStorage.getItem(VIRTUAL_DICE_DISPLAY_KEY)==="3d"?"3d":"direct"; }catch(e){ return "direct"; } }
+function setDiceDisplayMode(mode){ const value=mode==="3d"?"3d":"direct"; try{ localStorage.setItem(VIRTUAL_DICE_DISPLAY_KEY,value); diceDisplayFallback=null; }catch(e){ diceDisplayFallback=value; setBanner("Le mode d’affichage des dés sera conservé pour cette session seulement."); } }
 function virtualDiceEnabled(){
   if(virtualDiceFallback!==null) return virtualDiceFallback;
   try{ return localStorage.getItem(VIRTUAL_DICE_KEY)==="1"; }catch(e){ return false; }

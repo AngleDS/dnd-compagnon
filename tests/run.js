@@ -2601,6 +2601,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); return r.bottom < innerHeight - 20 && r.width < 700; }), 'ordinateur : fenêtre centrée, pas collée en bas');
   });
 
+  await test('Dés : choix du résultat direct ou de la 3D conservé dans les réglages', async p => {
+    await open(p, { noClaude: true });
+    await menuClick(p, '[data-act="settingsOpen"]');
+    eq(await p.locator('[data-act="diceDisplay"]').count(), 0, 'choix masqué tant que les dés virtuels sont désactivés');
+    await p.click('[data-act="virtualDice"]');
+    eq(await p.getAttribute('[data-act="diceDisplay"][data-v="direct"]', 'aria-pressed'), 'true', 'résultat direct par défaut');
+    await p.click('[data-act="diceDisplay"][data-v="3d"]');
+    eq(await p.evaluate(() => [diceDisplayMode(), localStorage.getItem(VIRTUAL_DICE_DISPLAY_KEY)]), ['3d', '3d'], 'choix enregistré');
+    ok(await p.locator('.rg-help').filter({hasText:'prochaine étape'}).isVisible(), 'disponibilité des jets 3D expliquée');
+    await p.reload(); await p.waitForFunction(() => S.C && S.CAT); await menuClick(p, '[data-act="settingsOpen"]');
+    eq(await p.getAttribute('[data-act="diceDisplay"][data-v="3d"]', 'aria-pressed'), 'true', 'choix conservé après rechargement');
+    await p.click('[data-act="diceDisplay"][data-v="direct"]');
+    eq(await p.evaluate(() => diceDisplayMode()), 'direct', 'retour au résultat direct');
+  });
+
   await test('Studio de dés : autonome, préférences conservées et verrou des dés respecté', async p => {
     await p.route(/^https?:/, r => r.abort());
     await open(p, { noClaude: true });
