@@ -2625,12 +2625,12 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); return r.bottom < innerHeight - 20 && r.width < 700; }), 'ordinateur : fenêtre centrée, pas collée en bas');
   });
 
-  await test('Dés 3D : jet rapide avec avantage utilise les faces du moteur', async p => {
-    await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); S.T.pop='eco:action'; render(); });
+  await test('Dés 3D : jet rapide avec avantage utilise les faces du moteur, dés au-dessus de la page', async p => {
+    await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); localStorage.setItem('registre-dice-studio-v1', JSON.stringify({ trayMode: 'tray' })); S.T.pop='eco:action'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="a"]');
-    ok(await p.locator('.tpop .game-dice-slot').isVisible(), 'place réservée dans la fenêtre de jet existante');
-    await p.locator('.game-dice-frame.engine.on').waitFor({timeout:30000});
-    await p.frameLocator('.game-dice-frame').locator('.stage canvas').waitFor({timeout:30000});
+    await p.locator('.game-dice-overlay').waitFor({timeout:30000});
+    eq(await p.locator('.game-dice-slot').count(), 0, 'plus de plateau dans la fenêtre de jet, même avec une ancienne préférence « plateau »');
+    ok(await p.locator('.game-dice-overlay').isVisible(), 'les dés sont dessinés sur la page');
     eq(await p.frameLocator('.game-dice-frame').locator('.preview canvas').count(),0,'pas de rendu des aperçus cachés pendant le jet');
     eq(await p.evaluate(() => (cur().rollLog||[]).length),0,'pas de résultat avant stabilisation');
     await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1 && S.T.d2, null, {timeout:35000});
@@ -2641,7 +2641,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.locator('.qhitnext .qchain[data-m="n"]').click();
     await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.dmg !== '', null, {timeout:35000});
     ok(await p.evaluate(() => +S.T.dmg>0 && /\[/.test(cur().rollLog[0].bd)), 'dégâts issus des dés physiques');
-    await p.evaluate(() => {const pref=JSON.parse(localStorage.getItem('registre-dice-studio-v1')||'{}');pref.trayMode='screen';localStorage.setItem('registre-dice-studio-v1',JSON.stringify(pref));S.T.pop=null;render()});
+    await p.evaluate(() => { S.T.pop=null; render(); });
     await p.locator('[data-act="tqroll"][data-k="init"]').first().click(); await p.click('.qmenu [data-m="n"]');
     eq(await p.evaluate(() => [S.T.qr.k,S.T.d1]),['init',''],'initiative ouverte sans résultat avant stabilisation');
     await p.locator('.game-dice-overlay').waitFor({timeout:30000});
@@ -2657,7 +2657,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, colorScheme: 'dark' });
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
-      await diceTable(t); await t.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); localStorage.setItem('registre-dice-studio-v1', JSON.stringify({ trayMode: 'screen' })); S.T.pop = null; render(); });
+      await diceTable(t); await t.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); S.T.pop = null; render(); });
       await t.locator('[data-act="tqroll"][data-k="init"]').first().click(); await t.click('.qmenu [data-m="n"]');
       await t.locator('.game-dice-overlay').waitFor({ timeout: 30000 });
       const g = await t.evaluate(() => { const c = document.querySelector('.game-dice-overlay'); return [c.width, c.height, Math.round(c.clientWidth * Math.min(devicePixelRatio, 2)), Math.round(c.clientHeight * Math.min(devicePixelRatio, 2))]; });
@@ -2758,7 +2758,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await f.locator('#physics-dice-demo.dark').waitFor();
     ok(await f.locator('#launch-dice').isDisabled(), 'lancer interdit lorsque les dés virtuels sont verrouillés');
     await f.locator('[data-view="ambiance"]').click();
-    await f.locator('#studio-tray-mode').selectOption('screen');
+    eq(await f.locator('#studio-tray-mode').count(), 0, 'plus de choix avec ou sans plateau');
     await f.locator('#studio-volume').fill('35');
     await f.locator('[data-view="dice"]').click();
     await f.locator('[data-color-target="studio-numbers"][aria-label="Cuivre ancien"]').click();
@@ -2769,7 +2769,6 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await f.locator('#die-preview canvas').waitFor({ timeout: 30000 });
     eq(await f.locator('#studio-numbers').inputValue(), '#c17852', 'couleur conservée');
     eq(await f.locator('#studio-texture').inputValue(), 'speckled', 'texture conservée');
-    eq(await f.locator('#studio-tray-mode').inputValue(), 'screen', 'mode de plateau conservé');
     eq(await f.locator('#studio-volume').inputValue(), '35', 'volume conservé');
     ok(await f.locator('#launch-dice').isEnabled(), 'lancer disponible quand les dés virtuels sont activés');
     await p.setViewportSize({ width: 390, height: 844 });
