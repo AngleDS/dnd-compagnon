@@ -338,14 +338,25 @@ function diceAt(m, sp, slot, D){
 }
  
 /* ---------- dice ---------- */
-function rnd(f){ if(!virtualDiceEnabled()) throw new Error("Dés virtuels désactivés"); const a=new Uint32Array(1); crypto.getRandomValues(a); return 1+(a[0]%f); }
+// Les tirages d'une même interaction sont regroupés pour la future animation.
+// Le calcul et l'enregistrement restent synchrones, y compris pour les jets rapides.
+let diceTrace=null;
+function beginDiceTrace(){
+  if(!virtualDiceEnabled()||diceDisplayMode()!=="3d") return;
+  const trace={dice:[]}; diceTrace=trace;
+  setTimeout(()=>{ if(diceTrace===trace) diceTrace=null; if(trace.dice.length) document.dispatchEvent(new CustomEvent("dice-trace",{detail:trace})); },0);
+}
+document.addEventListener("click",beginDiceTrace,true);
+document.addEventListener("submit",beginDiceTrace,true);
+function rnd(f){ if(!virtualDiceEnabled()) throw new Error("Dés virtuels désactivés"); const a=new Uint32Array(1); crypto.getRandomValues(a); const value=1+(a[0]%f); if(diceTrace) diceTrace.dice.push({faces:f,value,sign:1,discarded:false}); return value; }
+function markDiceTrace(sign,discarded){ if(diceTrace&&diceTrace.dice.length) Object.assign(diceTrace.dice[diceTrace.dice.length-1],{sign,discarded}); }
 function rollExpr(expr,re1){
   if(!virtualDiceEnabled()) throw new Error("Dés virtuels désactivés");
   const parts=String(expr).replace(/\s+/g,"").replace(/-/g,"+-").split("+").filter(Boolean);
   let total=0; const bd=[], dice=[];
   for(const p of parts){
     const m=p.match(/^(-?)(\d*)d(\d+)$/i);
-    if(m){ const n=+(m[2]||1), f=+m[3], sgn=m[1]?-1:1; const rs=[]; let tot1=0; for(let i=0;i<Math.min(n,100);i++){ let v=rnd(f); if(re1&&v===1){ dice.push({faces:f,value:v,sign:sgn,discarded:true}); const w=rnd(f); rs.push("1→"+w); v=w; } else rs.push(v); dice.push({faces:f,value:v,sign:sgn,discarded:false}); tot1+=v; } total+=sgn*tot1; bd.push(`${m[1]}${n}d${f} [${rs.join(", ")}]`); }
+    if(m){ const n=+(m[2]||1), f=+m[3], sgn=m[1]?-1:1; const rs=[]; let tot1=0; for(let i=0;i<Math.min(n,100);i++){ let v=rnd(f); if(re1&&v===1){ markDiceTrace(sgn,true); dice.push({faces:f,value:v,sign:sgn,discarded:true}); const w=rnd(f); rs.push("1→"+w); v=w; } else rs.push(v); markDiceTrace(sgn,false); dice.push({faces:f,value:v,sign:sgn,discarded:false}); tot1+=v; } total+=sgn*tot1; bd.push(`${m[1]}${n}d${f} [${rs.join(", ")}]`); }
     else if(/^-?\d+$/.test(p)){ total+=+p; bd.push(p); }
   }
   return {total, bd:bd.join(" + ").replace(/\+ -/g,"− "), dice};

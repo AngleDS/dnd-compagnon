@@ -2601,6 +2601,22 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); return r.bottom < innerHeight - 20 && r.width < 700; }), 'ordinateur : fenêtre centrée, pas collée en bas');
   });
 
+  await test('Dés : traces des jets rapides pour la future animation', async p => {
+    await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); window.__diceTraces=[]; document.addEventListener('dice-trace', e => window.__diceTraces.push(e.detail)); S.T.pop='eco:action'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="a"]');
+    await p.waitForFunction(() => window.__diceTraces.length >= 1);
+    const hit=await p.evaluate(() => ({trace:window.__diceTraces[0],d1:+S.T.d1,d2:+S.T.d2}));
+    eq(hit.trace.dice.map(d=>[d.faces,d.value]), [[20,hit.d1],[20,hit.d2]], 'deux valeurs exactes du jet avec avantage');
+    await p.locator('.qhitnext .qchain[data-m="n"]').click();
+    await p.waitForFunction(() => window.__diceTraces.length >= 2);
+    const damage=await p.evaluate(() => ({trace:window.__diceTraces[1], result:+S.T.dmg}));
+    ok(damage.trace.dice.length>0 && damage.trace.dice.every(d=>d.faces>0), 'dés de dégâts regroupés');
+    eq(damage.trace.dice.reduce((sum,d)=>sum+(d.discarded?0:d.sign*d.value),0),damage.result,'valeurs conformes au résultat des dés');
+    await p.evaluate(() => { setDiceDisplayMode('direct'); window.__diceTraces=[]; S.T.pop='eco:action'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    eq(await p.evaluate(() => window.__diceTraces.length),0,'pas de trace en mode direct');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));

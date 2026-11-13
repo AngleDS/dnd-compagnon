@@ -525,3 +525,7 @@ Le studio n'a plus de titre ni de cadre internes : il utilise la fenêtre de l'a
 
 `rollExpr` expose maintenant, en plus du total et du texte existants, un tableau `dice` avec `faces`, `value`, `sign` et `discarded`, dans l'ordre des tirages. Une relance d'un 1 conserve le dé écarté et le nouveau dé. `rollD20` ne tire plus inutilement un second d20 en mode normal. L'animation 3D des jets de jeu n'est pas encore raccordée : ne pas présenter cette préparation comme le point 2 terminé.
 
+# Préparation des jets 3D — regroupement des tirages
+
+En mode 3D activé, les tirages synchrones issus d'un clic ou d'une soumission émettent après l'interaction un événement `dice-trace`, avec les faces, valeurs, signes et relances écartées. Les tests vérifient le toucher rapide avec avantage et les dégâts, sans ralentir ni modifier leur résultat. Aucun rendu ne consomme encore cet événement : le point 2 reste incomplet, notamment l'affichage 3D, le plateau et la prise en charge de tous les parcours.
+
