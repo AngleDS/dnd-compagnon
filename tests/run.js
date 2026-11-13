@@ -813,7 +813,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.fill('#tq','empois');
     ok((await p.innerText('#tres')).includes('Empoisonné'),'état trouvé par la recherche');
     await p.click('#tres .trow .tname b');
-    ok((await p.innerText('.tcard')).includes('Désavantage aux jets d’attaque'),'règle de l’état dans la carte');
+    ok(await p.evaluate(() => { const d = document.querySelector('.tcard .tdesc'); return !!d && !d.open && /Désavantage aux jets d’attaque/.test(d.textContent); }),'règle de l’état dans la carte, description repliée (lot 2)');
     ok(!await p.locator('.tcard [data-act="lockCost"]').count(),'pas de coût modifiable pour un état');
     await p.click('.tcard [data-act="cond"]');
     eq(await p.evaluate(() => cur().conditions),['Empoisonné'],'état activé depuis la carte');
@@ -2158,8 +2158,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Tour : action sans jet explicite, carte ouverte et annulation isolée',async p=>{
     await diceTable(p);
     await p.evaluate(()=>{cur().turn={bonus:true,move:true};tSelect(S.Titems.find(i=>i.kind==='basic'&&i.cost==='action'&&!['basic:attaque','basic:magie'].includes(i.key)).key);});
-    eq(await p.innerText('#t-action-state button'),'Utiliser l’action','validation manuelle');
-    await p.click('#t-action-state button');
+    eq(await p.innerText('.tpop .wfoot [data-act="tuse"]'),'Utiliser l’action','validation manuelle, dans le pied de la fenêtre');
+    await p.click('.tpop .wfoot [data-act="tuse"]');
     eq(await p.evaluate(()=>[cur().turn,S.T.pop]),[{bonus:true,move:true,action:true},'card'],'suivi et carte');
     await p.click('#t-action-state [data-off="1"]');
     eq(await p.evaluate(()=>cur().turn),{bonus:true,move:true,action:false},'autres états conservés');
@@ -2399,6 +2399,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="raccourcis"] [data-act="insp"]') && !!document.querySelector('.health-card [data-act="insp"]')), 'Inspiration dans la carte PV, plus dans les Raccourcis');
     const bad = await p.evaluate(() => { const ch = JSON.parse(JSON.stringify(cur())); ch.layout.pvTile = 5; try { importPack({ registre: 1, dataVersion: DATA_VERSION, perso: ch, hb: [] }); } catch (e) { return e.detail || e.message; } return ''; });
     ok(/Points de vie/.test(bad), 'import : tuile de la carte PV invalide refusée');
+  });
+
+  await test('Fenêtres, lot 2 : fenêtre Détails avec le vrai nom, cadre d’infos, description repliée avant le pied, bouton principal en pied', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'magicien');
+    await p.evaluate(() => { const ch = cur(); ch.level = 3; ch.spells = [{ prepared: true, ref: 'srd:projectile-magique' }]; render(); tSelect('spell:srd:projectile-magique'); });
+    const r = await p.evaluate(() => { const t = document.querySelector('.tpop'), b = t.querySelector('.tpopbody'), kids = [...t.querySelector('.tcbody').children].filter(e => e.offsetHeight), last = kids[kids.length - 1], f = t.querySelector('.wfoot .btn.primary'), tr = t.getBoundingClientRect(), fr = f && f.getBoundingClientRect();
+      return { title: t.querySelector('.tpophead b').textContent, sub: t.querySelector('.tcsub').textContent.trim(), meta: [...t.querySelectorAll('.tcmeta .tkl')].map(e => e.textContent), desc: last.matches('details.tdesc') && !last.open, foot: f && f.dataset.act + ':' + f.textContent.trim(), footIn: !!fr && fr.bottom <= tr.bottom + 1, mask: getComputedStyle(b).maskImage || getComputedStyle(b).webkitMaskImage }; });
+    eq([r.title, r.sub, r.meta, r.desc, r.foot, r.footIn], ['Projectile magique', 'Évocation · niveau 1Action', ['Incantation', 'Portée', 'Durée', 'Composantes'], true, 'tcast:Lancer le sort', true], 'sort : titre, sous-titre et coût, cadre d’infos, description repliée en dernier, Lancer en pied');
+    ok(!r.mask || r.mask === 'none', 'pas de fondu qui recouvre le bouton du pied : ' + r.mask);
+    await p.click('.tpop .tdesc > summary'); ok(await p.evaluate(() => /trois traits/.test(document.querySelector('.tpop .tdesc').innerText)), 'la description s’ouvre au toucher');
+    await p.click('.tpop .wfoot [data-act="tcast"]');
+    ok(await p.evaluate(() => S.T.castDone === 'spell:srd:projectile-magique' && !document.querySelector('.tpop .wfoot [data-act="tcast"]') && /Lancé/.test(document.querySelector('.tpop .tcastdone')?.textContent || '')), 'le bouton du pied lance le sort (emplacement dépensé, plus de bouton Lancer)');
+    // règle seule : rien d'autre dans la fenêtre, la description reste ouverte
+    await p.evaluate(() => { S.T.pop = null; render(); const i = S.Titems.find(x => x.kind === 'rule' && !x.cond && !x.rest && !x.cost); tSelect(i.key); });
+    ok(await p.evaluate(() => { const d = document.querySelector('.tpop .tdesc'); return !!d && d.open && !document.querySelector('.tpop .wfoot'); }), 'règle sans bouton : description ouverte');
   });
 
   await test('Fenêtres harmonisées : au milieu de l’écran sur téléphone, même croix, bouton principal en pied, rouge / vert pour Dégâts / Soins', async p => {

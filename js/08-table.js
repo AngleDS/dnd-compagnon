@@ -314,7 +314,8 @@ function tPop(ch,D){
       ${winFoot(`<button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button>`)}`); }
   if(k==="search") return wrap("Recherche",searchBar()," tsearchpop");
   if(k==="notes") return wrap("Notes de partie",`<textarea id="t-notes" data-bind="sessionNotes" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="min-height:260px;width:100%">${esc(ch.sessionNotes||"")}</textarea><div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Séparées des notes du personnage. Enregistrées au fil de la frappe.</div>`);
-  if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } return wrap("Détails",c," wide"); }
+  if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } // fenêtres harmonisées, lot 2 : le vrai nom en titre, sous-titre et coût dessous
+    return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop wide" role="dialog" aria-modal="true" aria-label="${esc(c.title)}" data-act="noop"><div class="tpophead tchead"><div class="tchw"><b>${esc(c.title)}</b>${c.sub||c.cost?`<div class="tcsub">${c.sub?`<span>${esc(c.sub)}</span>`:""}${c.cost}</div>`:""}</div><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${c.html}</div></div></div>`; }
   if(k==="hist") return wrap("Historique des jets", histBody(ch));
   // Raccourcis Sorts, Attaques, Actions (lot T5) : listes de ce que le perso peut faire, un toucher ouvre la fiche (jet, dégâts)
   if(k.startsWith("list:")){ const w=k.slice(5), it=S.Titems||[], grp=(title,list)=>list.length?`<div class="tgrp"><div class="label">${esc(title)}</div><div class="tlist">${list.map(i=>tRow(i,false,false)).join("")}</div></div>`:"";
@@ -1209,7 +1210,7 @@ function tCard(ch,D){
   const costSel=canEditCost&&S.unlockCost
     ? `<label class="row" style="gap:6px;font-size:var(--fs-sm)"><span class="muted">Coût</span><select id="t-cost" data-act-change="tcost" data-k="${esc(i.key)}">${[["","Aucun"],...Object.entries(ECO)].map(([k,l])=>`<option value="${k}" ${(i.cost||"")===k?"selected":""}>${l}</option>`).join("")}</select><button class="btn small ghost lock" data-act="lockCost" aria-pressed="true" title="Verrouiller le coût">${lockIc(true)}</button></label>`
     : `<span class="row" style="gap:4px">${i.costs&&i.use&&i.use.spells?`<span class="badge">${ECO[costOfSpell((i.use.spells[Math.min(i.use.spells.length-1,+T.itemSp||0)]||{}).sp)||"action"]}</span>`:i.cost?`<span class="badge">${ECO[i.cost]}</span>`:(canEditCost?`<span class="muted" style="font-size:var(--fs-sm)">sans coût</span>`:"")}${canEditCost?`<button class="btn small ghost lock" data-act="lockCost" aria-pressed="false" title="Modifier le coût">${lockIc(false)}</button>`:""}</span>`;
-  const head=costSel?`<div class="row" style="justify-content:flex-end">${costSel}</div>`:"";
+  let foot=""; // bouton principal, dans le pied de la fenêtre
   const d20=(kind,mod,parts,ab,label,noBig)=>{
     const adv=condAdvice(ch,kind,ab), mode=T.mode;
     const sugg = adv.mode && adv.mode!=="n" && adv.mode!==mode ? `<div class="tadvice">${adv.mode==="f"?"<b>Échec automatique</b> à cause de ton état.":`Suggestion : <b>${adv.mode==="a"?"avantage":"désavantage"}</b>.`} ${adv.mode!=="f"?`<button class="btn small" data-act="tmode" data-v="${adv.mode}">Appliquer</button>`:""}</div>`:"";
@@ -1251,16 +1252,17 @@ function tCard(ch,D){
     const al=arcLevel(D,i.ref), arcUsed=al&&+(ch.resUsed?.["arc:"+al]||0)>=1;
     const canCast = al ? !arcUsed : (sp.level===0 || opts.length);
     const done = T.castDone===i.key;
-    const info=`<div class="muted" style="font-size:var(--fs-sm)">${esc([sp.casting_time,sp.range,sp.duration,sp.components].filter(Boolean).join(" · "))}${sp.concentration?" · <b>Concentration</b>":""}</div>`;
+    const info=`<div class="tcmeta">${[["Incantation",sp.casting_time],["Portée",sp.range],["Durée",sp.duration],["Composantes",sp.components],["Concentration",sp.concentration&&!/concentration/i.test(sp.duration||"")?"oui":""]].filter(x=>x[1]).map(([l,v])=>`<div><span class="tkl">${l}</span><b>${esc(v)}</b></div>`).join("")}</div>`;
     let castCtl="";
     if(sp.level>0 && !done){
       const fr=(D.res||[]).find(r=>r.freeSpell===i.ref), frLeft=fr?fr.max-(+ch.resUsed?.[fr.id]||0):0;
-      body=info; castCtl=`${fr?`<div class="row" style="margin:6px 0">${frLeft>0?`<button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${sp.level}" data-free="${esc(fr.id)}">Lancer sans emplacement</button><span class="muted" style="font-size:var(--fs-sm)">${frLeft}/${fr.max} · revient au repos long</span>`:`<span class="muted" style="font-size:var(--fs-sm)">Lancer gratuit déjà utilisé (revient au repos long).</span>`}</div>`:""}<div class="row" style="margin:6px 0">${sel}${canCast?`<button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${al||lvl}" ${al?`data-arc="${al}"`:""}>Lancer le sort</button>`:`<span class="muted">${al?"Arcanum déjà utilisé : revient au repos long.":"Aucun emplacement disponible."}</span>`}${sp.ritual?`<button class="btn" data-act="tcast" data-rit="1" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${sp.level}">En rituel</button>`:""}</div>
-        <div class="muted" style="font-size:var(--fs-sm)">${al?"Arcanum mystique : une fois par repos long, sans emplacement.":"Lancer le sort dépense l'emplacement de "+(D.cast.type==="pact"?"pacte":"sort")+", puis affiche les jets."}</div>`;
+      body=info;
+      castCtl=sec("Lancer",`${sel?`<div class="row" style="margin:2px 0 6px">${sel}</div>`:""}${canCast?"":`<div class="muted">${al?"Arcanum déjà utilisé : revient au repos long.":"Aucun emplacement disponible."}</div>`}${fr?`<div class="muted" style="font-size:var(--fs-sm)">${frLeft>0?`Lancer gratuit : ${frLeft}/${fr.max} · revient au repos long.`:"Lancer gratuit déjà utilisé (revient au repos long)."}</div>`:""}<div class="muted" style="font-size:var(--fs-sm)">${al?"Arcanum mystique : une fois par repos long, sans emplacement.":"Lancer le sort dépense l'emplacement de "+(D.cast.type==="pact"?"pacte":"sort")+", puis affiche les jets."}</div>`);
+      foot=`${fr&&frLeft>0?`<button class="btn" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${sp.level}" data-free="${esc(fr.id)}">Lancer sans emplacement</button>`:""}${canCast?`<button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${al||lvl}" ${al?`data-arc="${al}"`:""}>Lancer le sort</button>`:""}${sp.ritual?`<button class="btn" data-act="tcast" data-rit="1" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${sp.level}">En rituel</button>`:""}`;
     } else {
       const used = done ? (T.castRit?"en rituel":"niv. "+T.castLvl) : "";
       const cOK=costOfSpell(sp);
-      castCtl=done?`<div class="row tcastdone"><span class="badge srd">Lancé ${sp.level>0?esc(used):""}</span><span class="muted">${T.castRit||sp.level===0?"Aucun emplacement dépensé.":"Emplacement ou ressource de lancement dépensé."}</span></div>`:(!m.attack&&!m.dice?`<div class="row"><button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="0">Lancer le sort</button></div>`:""); body=info;
+      castCtl=done?`<div class="row tcastdone"><span class="badge srd">Lancé ${sp.level>0?esc(used):""}</span><span class="muted">${T.castRit||sp.level===0?"Aucun emplacement dépensé.":"Emplacement ou ressource de lancement dépensé."}</span></div>`:""; if(!done&&!m.attack&&!m.dice) foot=`<button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="0">Lancer le sort</button>`; body=info;
       const ex=diceAt(m,sp,done?(T.castRit?sp.level:T.castLvl):(lvl||sp.level),D);
       if(m.attack) body+=sec("Toucher",d20("spellatk",D.cast.atk,[{l:ABN[D.cast.ability],v:D.mods[D.cast.ability]},{l:"Maîtrise",v:D.pb}],null,sp.name+" — toucher"));
       else if(m.save) body+=sec("Jet de sauvegarde de la cible",`<div class="tbig"><span class="num">DD ${D.cast.dc}</span><span class="muted">JS de ${esc(m.save)}</span></div>`);
@@ -1272,7 +1274,7 @@ function tCard(ch,D){
     { const nn=invNotes(D,i.ref,sp); if(nn.length) body+=`<div class="tnotes" style="margin-top:6px">${nn.map(esc).join("<br>")}</div>`; }
     if(sp.level===0&&m.beams){ const b=1+(D.L>=5)+(D.L>=11)+(D.L>=17); if(b>1) body+=`<div class="muted">${b} rayons : une attaque et des dégâts par rayon.</div>`; }
     body+=`<details class="tdesc"><summary class="label">Description du sort</summary><div class="prose">${prose(sp.text)}</div></details>`;
-    if(castCtl) body+=`<div class="tuse">${castCtl}</div>`;
+    if(castCtl) body+=castCtl.startsWith("<section")?castCtl:`<div class="tuse">${castCtl}</div>`;
   }
   else if(i.kind==="feat"){
     const r=i.res; let ctl="";
@@ -1314,21 +1316,29 @@ function tCard(ch,D){
     const lab=uCost&&ECO[uCost]?ECO[uCost]:"";
     x+=`<details class="tdesc"><summary class="label">Description</summary><div class="prose">${i.html||prose(i.text)}</div></details>`;
     const canUse=u.c&&u.c.max?(u.left||0)>=nUse:(+b.qty||0)>0;
-    x+=`<div class="tuse">${S.T.itemUseReceipt===tableItemReceipt()?`<span class="badge srd">Objet utilisé · ressource dépensée</span>`:canUse?`<button class="btn primary" data-act="itemUse" data-id="${esc(b.id)}" data-n="${nUse}" data-cost="${esc(uCost||"")}">Utiliser${lab?" · "+lab:""}</button><span class="muted" style="font-size:var(--fs-sm)">${u.c&&u.c.max?(nUse>1?nUse+" charges dépensées":"1 charge dépensée"):"1 "+esc(b.name)+" consommé"}${lab&&uCost!=="autre"?" · barre « "+lab+" »":""}</span>`:`<span class="muted">${u.c&&u.c.max?"Plus assez de charges.":"Plus aucun exemplaire."}</span>`}</div>`;
+    if(S.T.itemUseReceipt===tableItemReceipt()) x+=`<div class="tuse"><span class="badge srd">Objet utilisé · ressource dépensée</span></div>`;
+    else if(canUse){ foot=`<button class="btn primary" data-act="itemUse" data-id="${esc(b.id)}" data-n="${nUse}" data-cost="${esc(uCost||"")}">Utiliser${lab?" · "+lab:""}</button>`; x+=`<div class="muted" style="font-size:var(--fs-sm);margin-top:8px">${u.c&&u.c.max?(nUse>1?nUse+" charges dépensées":"1 charge dépensée"):"1 "+esc(b.name)+" consommé"}${lab&&uCost!=="autre"?" · barre « "+lab+" »":""}</div>`; }
+    else x+=`<div class="muted" style="margin-top:8px">${u.c&&u.c.max?"Plus assez de charges.":"Plus aucun exemplaire."}</div>`;
     body=x; }
   else body=`<details class="tdesc" open><summary class="label">Description</summary><div class="prose">${i.html||prose(i.text)}</div></details>`;
-  if(i.cond){ const on=(ch.conditions||[]).includes(i.cond); body=`<div class="tuse"><button class="btn${on?"":" primary"}" data-act="cond" data-v="${esc(i.cond)}" aria-pressed="${on}">${on?"Retirer l’état":"Activer l’état"}</button></div>`+body; }
-  if(i.rest) body=`<div class="tuse"><button class="btn primary" data-act="restOpen" data-v="${i.rest}">${i.rest==="court"?"Faire un repos court":"Faire un repos long"}</button></div>`+body;
+  if(i.cond){ const on=(ch.conditions||[]).includes(i.cond); foot+=`<button class="btn${on?"":" primary"}" data-act="cond" data-v="${esc(i.cond)}" aria-pressed="${on}">${on?"Retirer l’état":"Activer l’état"}</button>`; }
+  if(i.rest) foot+=`<button class="btn primary" data-act="restOpen" data-v="${i.rest}">${i.rest==="court"?"Faire un repos court":"Faire un repos long"}</button>`;
   const kv=(l,v)=>`<span class="tk"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
   let sum="";
   if(["abil","save","skill","init"].includes(i.kind)) sum=kv("Bonus",sg(i.mod-exhN));
   else if(i.kind==="atk") sum=kv("Toucher",sg(i.mod-exhN))+kv("Dégâts",i.dmg);
-  else if(i.kind==="spell"){ const m=i.m; if(m.attack) sum+=kv("Toucher",sg(D.cast.atk-exhN)); else if(m.save) sum+=kv("DD",D.cast.dc); if(i.dice) sum+=kv(m.heal?"Soins":"Dégâts",i.dice); if(i.sp.level) sum+=`<span class="tklvl">niv. ${i.sp.level}</span>`; }
+  else if(i.kind==="spell"){ const m=i.m; if(m.attack) sum+=kv("Toucher",sg(D.cast.atk-exhN)); else if(m.save) sum+=kv("DD",D.cast.dc); if(i.dice) sum+=kv(m.heal?"Soins":"Dégâts",i.dice); }
   else if(i.kind==="feat"&&i.res){ const r=i.res; sum=kv("Reste",(r.max-(+ch.resUsed?.[r.id]||0))+"/"+r.max+(r.pool?" d"+r.die:"")); }
   else if(i.kind==="counter") sum=kv("Reste",(+i.counter.cur||0)+"/"+(+i.counter.max||0));
   const lkRef=i.kind==="spell"?i.ref:i.kind==="feat"?i.src:i.kind==="bagitem"?(((ch.bag||[]).find(z=>z.id===i.bagId)||{}).ref||matchItem(i.name)):null;
-  if(lkRef&&isHb(lkRef)) body+=hbFoot(hb(lkRef));
-  return `<div class="tcard tcardpop"><div class="tcsum"><span class="tcname"><b>${esc(i.name)}</b><span class="muted"> · ${esc(i.sub)}</span></span><span class="tright">${sum}</span></div><div class="tcbody">${head}<div id="t-action-state">${tableActionFeedback(ch,i)}</div>${body}</div></div>`;
+  const src=lkRef&&isHb(lkRef)?hbFoot(hb(lkRef)):"";
+  let fb=tableActionFeedback(ch,i); if(fb.startsWith('<div class="tuse">')){ foot+=fb.slice(18,-6); fb=""; }
+  // Descriptions : toujours repliées, toujours au même endroit (juste avant le pied) ; ouvertes seulement si la fenêtre n'a rien d'autre (décision d'Angle, lot 2)
+  const descs=[]; body=body.replace(/<details class="tdesc"[^>]*><summary class="label">([^<]*)<\/summary>([\s\S]*?)<\/details>/g,(m0,l,x)=>{ descs.push([l,x]); return ""; });
+  const alone=!foot&&!fb&&!sum&&!body.replace(/<[^>]*>/g,"").trim();
+  const desc=descs.map(([l,x])=>`<details class="tdesc"${alone?" open":""}><summary class="label">${l}</summary>${x}</details>`).join("");
+  const sub=i.kind==="spell"?(i.sp.school?i.sp.school+" · ":"")+(i.sp.level?"niveau "+i.sp.level:"sort mineur"):i.sub;
+  return {title:i.name,sub,cost:costSel,html:`<div class="tcard tcardpop"><div class="tcbody">${sum?`<div class="tcvals">${sum}</div>`:""}<div id="t-action-state">${fb}</div>${body}${desc}${src}</div>${foot?winFoot(foot):""}</div>`};
 }
 function smiteBlock(ch,D,i){
   if(!i.pact||!D.inv.has("frappe-occulte")||!D.cast||D.cast.type!=="pact"||D.L<5) return "";
@@ -1507,7 +1517,7 @@ function ensureTableRollUse(){
   if(i?.kind==="spell") return performTableCast({ref:i.ref,k:i.key,l:String(i.sp.level===0?0:S.T.castLvl||i.sp.level)});
   if(i?.kind==="bagitem"&&i.use){
     if(S.T.itemUseReceipt===tableItemReceipt()) return true;
-    const button=document.querySelector('.tcard [data-act="itemUse"]');
+    const button=document.querySelector('.tpop [data-act="itemUse"]');
     return !!button&&performTableItemUse(button.dataset);
   }
   return true;

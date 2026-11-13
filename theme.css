@@ -555,6 +555,16 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .wfoot{position:sticky;bottom:-22px;z-index:2;display:flex;gap:8px;margin:14px -20px -22px;padding:12px 20px 14px;background:var(--sheet);border-top:1px solid var(--line)}
 .picker .box>.wfoot{bottom:-14px;margin:4px -14px -14px;padding:12px 14px 14px}
 .wfoot .btn{flex:1;min-height:48px;font-size:var(--fs-md)}
+/* Lot 2 : contenu de la fenêtre Détails (vrai nom en titre, valeurs, cadre d'infos, description repliée avant le pied) */
+.tchead{align-items:flex-start}.tchw{min-width:0}.tchw>b{font-weight:400;line-height:1.2}
+.tcsub{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:4px;font-family:var(--f-ui);font-size:var(--fs-sm);color:var(--muted)}
+.tcardpop{margin-top:0}.tcardpop .tcbody{padding:0}
+.tcvals{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}.tcvals .tk b{font-size:var(--fs-xl)}
+.tcmeta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.tcmeta>div{display:grid;gap:1px;min-width:0}.tcmeta b{font-weight:500;font-size:var(--fs-md);overflow-wrap:anywhere}
+.tcardpop .tdesc{margin-top:4px;border-top:1px solid var(--line);padding-top:2px}.tcardpop .tdesc>summary{min-height:44px}
+#t-action-state:empty{display:none}
+.tpopbody.more-b:has(.wfoot){-webkit-mask-image:none;mask-image:none} /* le pied collé suffit : le fondu recouvrait son bouton */
 @media (max-width:720px){
  .tpopback,.picker{place-items:center;padding:12px}
  .tpop,.picker .box{width:100%;max-width:none!important;max-height:85vh}
