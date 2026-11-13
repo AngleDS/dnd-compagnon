@@ -2797,6 +2797,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(r, [r[1], r[1], 0, false, n + 1], 'total = faces du moteur, bouton retiré, une entrée d’historique');
   });
 
+  await test('Dés 3D : moteur en panne, le jet donne son résultat direct ; studio sans WebGL : raison affichée', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); studioGameRoll = async () => { throw new Error('WebGL perdu'); }; cur().turn = {}; tSelect(S.Titems.find(i => i.kind === 'atk').key); });
+    const n = await p.evaluate(() => (cur().rollLog || []).length);
+    await p.click('[data-act="tvroll"]');
+    await p.waitForFunction(() => S.T.d1 !== '');
+    eq(await p.evaluate(() => [validDie(S.T.d1, 20), (cur().rollLog || []).length, /Dés 3D indisponibles ici \(WebGL perdu\)/.test(document.body.innerText), dice3dCan([20])]), [true, n + 1, true, false], 'résultat direct, raison affichée, la session continue sans 3D');
+    await p.evaluate(() => { studioBroken = ''; webglOk.v = false; S.T.pop = null; render(); studioOpen(); });
+    ok(await p.locator('.dice-studio-box .studio-error').isVisible(), 'studio : message au lieu d’une fenêtre vide');
+    ok(/WebGL/.test(await p.innerText('.dice-studio-box .studio-error')), 'studio : raison donnée');
+    eq(await p.evaluate(() => dice3dCan([20])), false, 'sans WebGL, pas de jet 3D');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));

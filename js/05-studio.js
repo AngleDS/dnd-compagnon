@@ -1,6 +1,13 @@
 /* Studio de dés : les ressources sont embarquées par build.py dans le HTML autonome. */
 let studioUrls=[];
 function studioDecode(s){ return s; } // ressources embarquées en texte par build.py (plus de base64 : fichier plus léger, rien à décoder)
+/* Le moteur 3D peut ne pas démarrer (WebGL absent ou coupé, script refusé…). Les erreurs du document 3D sont recueillies
+   dans __studioErr pour être affichées (studio) ou pour basculer sur le résultat direct (jets de partie). */
+const STUDIO_ERRCATCH="<script>window.__studioErr=[];addEventListener('error',e=>__studioErr.push(e.message||'erreur de script'));addEventListener('unhandledrejection',e=>__studioErr.push(String(e.reason&&e.reason.message||e.reason)));</"+"script>";
+let studioBroken=""; // raison du dernier échec du moteur : les jets suivants de la session passent en résultat direct
+function webglOk(){ if(webglOk.v===undefined){ try{ const c=document.createElement('canvas'); webglOk.v=!!(c.getContext('webgl2')||c.getContext('webgl')); }catch(_){ webglOk.v=false; } } return webglOk.v; }
+function studioErrShow(msg){ const box=document.querySelector('.dice-studio-box'); if(!box||box.querySelector('.studio-error')) return; const p=document.createElement('p'); p.className='studio-error'; p.setAttribute('role','alert');
+  p.textContent='Le studio 3D n’a pas pu démarrer ici : '+msg+'. Les jets restent possibles, avec le résultat direct.'; box.querySelector('.dice-studio-frame')?.before(p); }
 function studioClose(){ if(S.studio) studioEngineDrop(); const m=document.getElementById('modal'); if(m&&m.querySelector('.dice-studio-box')) m.innerHTML=''; studioUrls.forEach(URL.revokeObjectURL); studioUrls=[]; S.studio=false; document.querySelector('.hmenu')?.focus(); }
 function studioOpen(){
   studioClose(); S.studio=true;
@@ -8,7 +15,12 @@ function studioOpen(){
   studioUrls=sources.map(src=>URL.createObjectURL(new Blob([src],{type:'text/javascript'})));
   const content=studioPatch(html,STUDIO_URLS.map((a,k)=>[a,JSON.stringify(studioUrls[k])]));
   const m=document.getElementById('modal'); m.innerHTML=`<div class="picker" data-act="studioClose"><div class="box dice-studio-box" role="dialog" aria-modal="true" aria-label="Studio de dés" data-act="noop">${winHead('Studio de dés','studioClose')}<iframe class="dice-studio-frame" title="Studio de dés" sandbox="allow-scripts allow-same-origin"></iframe></div></div>`;
-  const frame=m.querySelector('iframe'); frame.srcdoc='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;background:#f8f2e4}html[data-theme="dark"],html[data-theme="dark"] body{background:#1b1c20}*{box-sizing:border-box}</style></head><body>'+content+'</body></html>';
+  const frame=m.querySelector('iframe');
+  if(!webglOk()){ studioErrShow('rendu 3D (WebGL) indisponible dans ce navigateur'); }
+  else { const t0=Date.now(), chk=setInterval(()=>{ const win=frame.isConnected&&frame.contentWindow; if(!win||!S.studio){ clearInterval(chk); return; }
+    if(win.__studioErr&&win.__studioErr.length){ clearInterval(chk); studioErrShow(win.__studioErr[0]); } else if(typeof win.studioRoll3D==='function') clearInterval(chk);
+    else if(Date.now()-t0>20000){ clearInterval(chk); studioErrShow('le moteur ne répond pas'); } },250); }
+  frame.srcdoc='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+STUDIO_ERRCATCH+'<style>html,body{margin:0;padding:0;background:#f8f2e4}html[data-theme="dark"],html[data-theme="dark"] body{background:#1b1c20}*{box-sizing:border-box}</style></head><body>'+content+'</body></html>';
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&S.studio){ e.preventDefault(); studioClose(); } });
 
@@ -46,14 +58,15 @@ function studioWarm(){
   const style='#physics-dice-demo{border:0!important;background:transparent!important;padding:0!important;max-width:none!important;width:100%!important;height:100%!important;overflow:hidden}#physics-dice-demo>.head,#physics-dice-demo>.ecrin-tabs,#physics-dice-demo>.studio:not(.launch-section){display:none!important}#physics-dice-demo .launch-section{display:block!important;margin:0!important;padding:0!important;border:0!important;height:100%!important}#physics-dice-demo .launch-section>*:not(.stage){display:none!important}#physics-dice-demo .stage{display:block!important;width:100%!important;height:100%!important;margin:0!important;border:0!important;background:'+(screen?'transparent':'#211b17')+'!important}';
   const iframe=document.createElement('iframe'); iframe.title='Lancer des dés 3D'; iframe.className='game-dice-frame engine'; iframe.setAttribute('aria-hidden','true'); iframe.setAttribute('tabindex','-1'); iframe.setAttribute('sandbox','allow-scripts allow-same-origin');
   const E={iframe,urls,overlay:null,raf:0,busy:false,t0:performance.now()}; studioEngine=E;
-  E.ready=new Promise((resolve,reject)=>{ const timer=setTimeout(()=>reject(new Error('Lancer 3D indisponible')),30000);
+  E.ready=new Promise((resolve,reject)=>{ const timer=setTimeout(()=>reject(new Error('le moteur ne répond pas')),20000);
     iframe.onload=()=>{ const poll=setInterval(()=>{ if(studioEngine!==E){ clearInterval(poll); clearTimeout(timer); reject(new Error('Moteur 3D remplacé')); return; }
-      const win=iframe.contentWindow; if(win&&typeof win.studioRoll3D==='function'){ clearInterval(poll); clearTimeout(timer); win.studioGameMode=true;
+      const win=iframe.contentWindow; if(win&&win.__studioErr&&win.__studioErr.length){ clearInterval(poll); clearTimeout(timer); reject(new Error(win.__studioErr[0])); return; }
+      if(win&&typeof win.studioRoll3D==='function'){ clearInterval(poll); clearTimeout(timer); win.studioGameMode=true;
         const canvas=iframe.contentDocument.querySelector('.stage canvas'); if(!canvas){ reject(new Error('Rendu 3D indisponible')); return; } E.overlay=document.adoptNode(canvas); E.overlay.className='game-dice-overlay'; E.overlay.setAttribute('aria-hidden','true'); E.overlay.hidden=true; document.body.append(E.overlay);
         E.warm=Math.round(performance.now()-E.t0); resolve(win); } },50); };
   });
   E.ready.catch(()=>{ if(studioEngine===E) studioEngineDrop(); });
-  iframe.srcdoc='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden}'+style+'</style></head><body>'+html+'</body></html>';
+  iframe.srcdoc='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+STUDIO_ERRCATCH+'<style>html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden}'+style+'</style></head><body>'+html+'</body></html>';
   document.body.append(iframe); return E;
 }
 // Jet qui n'est plus attendu (fenêtre fermée, autre personnage…) : les dés s'arrêtent tout de suite.
@@ -87,21 +100,24 @@ const DICE3D_FACES=[4,6,8,10,12,20,100];
 let dice3dBusy=false;
 function d20Specs(mode){ return mode==="a"||mode==="d"?[20,20]:[20]; }
 function exprSpecs(expr){ const out=[]; for(const p of String(expr||"").replace(/\s+/g,"").replace(/-/g,"+-").split("+").filter(Boolean)){ const m=p.match(/^(-?)(\d*)d(\d+)$/i); if(m) for(let i=0;i<Math.min(+(m[2]||1),100);i++) out.push(+m[3]); } return out; }
-function dice3dCan(specs){ return virtualDiceEnabled()&&diceDisplayMode()==="3d"&&specs.length>0&&specs.length<=100&&specs.every(f=>DICE3D_FACES.includes(f)); }
+function dice3dCan(specs){ return virtualDiceEnabled()&&diceDisplayMode()==="3d"&&!studioBroken&&webglOk()&&specs.length>0&&specs.length<=100&&specs.every(f=>DICE3D_FACES.includes(f)); }
 function rollAlive(){ const key=()=>[S.cur,S.view,S.tab,S.T,S.T&&S.T.pop,S.W], k=key(); return ()=>key().every((x,i)=>x===k[i]); }
 async function roll3d(specs,apply,o={}){
   if(!dice3dCan(specs)){ apply(); return true; }
   if(dice3dBusy){ o.pending?.(false); return false; } // un seul lancer à la fois
-  const alive=o.alive||rollAlive(); let skip=null; dice3dBusy=true; document.body.classList.add("dice3d-busy");
+  const alive=o.alive||rollAlive(); let skip=null, applied=false; dice3dBusy=true; document.body.classList.add("dice3d-busy");
   if(o.pending) o.pending(true); else { skip=document.createElement("button"); skip.className="btn small dice3dskip dice3dfloat"; skip.dataset.act="dice3dSkip"; skip.textContent="Passer l’animation"; document.body.append(skip); }
   try{
     const values=await studioGameRoll(specs,alive);
     const again=o.re1?specs.filter((f,j)=>values[j]===1):[], extra=again.length?await studioGameRoll(again,alive):[];
     if(!alive()||!virtualDiceEnabled()) return false;
     const queue=[]; let x=0; specs.forEach((f,j)=>{ queue.push({f,v:values[j]}); if(o.re1&&values[j]===1) queue.push({f,v:extra[x++]}); });
-    diceQueue=queue; try{ apply(); } finally { diceQueue=null; }
+    applied=true; diceQueue=queue; try{ apply(); } finally { diceQueue=null; }
     return true;
-  }catch(_){ if(alive()) setBanner("Le lancer 3D n’a pas abouti. Réessaie ou désactive les dés 3D dans Réglages."); return false; }
+  }catch(e){ const msg=String(e&&e.message||e);
+    if(applied||/annulé|remplacé/.test(msg)||!alive()||!virtualDiceEnabled()) return false; // jet annulé ou déjà appliqué : rien de plus
+    // moteur 3D en panne : le jet n'est pas perdu, il donne son résultat direct ; la session continue sans 3D
+    studioBroken=msg; studioEngineDrop(); apply(); setBanner("Dés 3D indisponibles ici ("+msg+") : résultat direct."); return true; }
   finally{ dice3dBusy=false; document.body.classList.remove("dice3d-busy"); skip?.remove(); if(o.pending) o.pending(false); }
 }
 
