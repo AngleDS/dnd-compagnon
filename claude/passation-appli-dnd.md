@@ -537,3 +537,7 @@ Dans le document isolé du studio, `studioRoll3D([faces, ...])` lance les dés d
 
 En mode 3D, `quickRoll` lance les d20 et les dés de dégâts dans le moteur du studio et utilise les faces stabilisées. En mode avec plateau, le rendu est dans la fenêtre existante ; en mode sans plateau, il est transparent au-dessus de la page. Les jets directs restent inchangés. Les autres parcours (notamment les contrôles de la fiche, les jets libres, le repos et la création) ne sont pas encore raccordés au moteur 3D : le chantier reste incomplet.
 
+# Jets 3D sans plateau — rendu et performances
+
+Le canvas du moteur est maintenant placé directement au-dessus de la page, tandis que le document du moteur reste invisible : aucun fond blanc ne doit recouvrir l'interface. Le fond de la fenêtre de jet ne floute pas la page pendant cette animation. Le lancer sans plateau utilise une force supérieure ; les deux aperçus cachés ne créent plus de contexte WebGL et ne sont plus rendus pendant un jet de jeu. Le résultat reste celui des faces stabilisées.
+

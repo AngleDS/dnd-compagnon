@@ -2606,6 +2606,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="a"]');
     ok(await p.locator('.game-dice-frame').isVisible(), 'animation dans la fenêtre de jet existante');
     await p.frameLocator('.game-dice-frame').locator('.stage canvas').waitFor({timeout:30000});
+    eq(await p.frameLocator('.game-dice-frame').locator('.preview canvas').count(),0,'pas de rendu des aperçus cachés pendant le jet');
     eq(await p.evaluate(() => (cur().rollLog||[]).length),0,'pas de résultat avant stabilisation');
     await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1 && S.T.d2, null, {timeout:35000});
     const result=await p.evaluate(() => ({d1:+S.T.d1,d2:+S.T.d2, log:cur().rollLog[0], action:cur().turn.action}));
@@ -2618,8 +2619,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => {const pref=JSON.parse(localStorage.getItem('registre-dice-studio-v1')||'{}');pref.trayMode='screen';localStorage.setItem('registre-dice-studio-v1',JSON.stringify(pref));S.T.pop=null;render()});
     await p.locator('[data-act="tqroll"][data-k="init"]').first().click(); await p.click('.qmenu [data-m="n"]');
     eq(await p.evaluate(() => [S.T.qr.k,S.T.d1]),['init',''],'initiative ouverte sans résultat avant stabilisation');
-    ok(await p.locator('.game-dice-frame.fullscreen').isVisible(),'mode sans plateau affiché sur l’écran');
-    await p.frameLocator('.game-dice-frame').locator('.stage canvas').waitFor({timeout:30000});
+    await p.locator('.game-dice-overlay').waitFor({timeout:30000});
+    ok(await p.locator('.game-dice-overlay').isVisible(),'les dés sont dessinés sur la page actuelle');
+    eq(await p.evaluate(() => getComputedStyle(document.querySelector('.tpopback')).backdropFilter),'none','page non floutée pendant le lancer sans plateau');
+    eq(await p.frameLocator('.game-dice-frame').locator('#physics-dice-demo').getAttribute('data-external-power'),'1.9','lancer plus énergique sans plateau');
     eq(await p.frameLocator('.game-dice-frame').locator('.stage').evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0)','surface transparente au-dessus de la page');
     await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1, null, {timeout:35000});
     eq(await p.evaluate(() => [S.T.qr.k,cur().rollLog[0].label]),['init','Initiative'],'résultat affiché dans la fenêtre Initiative');
