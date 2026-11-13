@@ -2466,6 +2466,17 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const v = document.querySelector('.tpop .pvline'), n = document.querySelector('.tpop .pvnote'); return v.nextElementSibling && v.nextElementSibling.classList.contains('pvset') ? false : v.compareDocumentPosition(n) & 4 && n.previousElementSibling === v; }), 'PV temporaires : l’aide est juste sous la valeur');
   });
 
+  await test('Remplissage automatique : même en-tête (croix) et même pied que les autres fenêtres', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await open(p);
+    const look = () => p.evaluate(() => { const b = document.querySelector('#modal .picker .box'), x = b.querySelector('.whead .wclose'), f = b.querySelector('.wfoot');
+      return [b.querySelector('.whead h2').textContent, x ? Math.round(x.getBoundingClientRect().width) : 0, f ? [...f.querySelectorAll('button')].map(e => e.dataset.act) : null, /Annuler/.test(b.textContent)]; });
+    await p.evaluate(() => { S.af = { state: 'ok', name: 'Objet test', kind: 'objet', data: { summary: 'Résumé.', book: 'Livre test' }, target: { mode: 'hb', id: 'x' } }; renderModal(); });
+    eq(await look(), ['Objet test', 44, ['afApply'], false], 'résultat : titre et croix, « Appliquer à la fiche » en pied, plus de « Annuler »');
+    await p.evaluate(() => { S.af = { state: 'err', msg: 'Erreur test.', target: { mode: 'hb', id: 'x' } }; renderModal(); });
+    eq(await look(), ['Remplissage impossible', 44, ['afClose'], false], 'erreur : « Saisie manuelle » en pied');
+    await p.click('#modal .whead .wclose'); ok(await p.evaluate(() => !S.af), 'la croix ferme');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');
