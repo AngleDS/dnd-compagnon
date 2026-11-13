@@ -420,7 +420,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const m = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number); return m[0] + m[1] + m[2] > 600; }), 'fond clair');
     await p.click('#modal [data-act="themeSet"][data-v="dark"]'); eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'retour au sombre');
     await p.click('#modal [data-act="themeSet"][data-v="auto"]');
-    await p.emulateMedia({ colorScheme: 'light' }); await p.waitForTimeout(100);
+    await p.emulateMedia({ colorScheme: 'light' }); await p.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 }).catch(() => {}); // attendre le changement plutôt qu'un délai fixe (tests simultanés)
     eq(await p.evaluate(() => [S.docs.prefs.theme, document.documentElement.dataset.theme]), ['auto', 'light'], 'Automatique : l’appareil passe en clair, l’appli aussi');
     await p.evaluate(() => { localStorage.setItem('registre-theme', 'dark'); delete S.docs.prefs.theme; }); await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
     eq(await p.evaluate(() => [themePref(), document.documentElement.dataset.theme]), ['dark', 'dark'], 'un choix Sombre déjà enregistré reste sombre, même sur un appareil clair');
