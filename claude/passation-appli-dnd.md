@@ -315,6 +315,16 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 
 **Phase 1 — socles** (d'autres chantiers s'appuient dessus)
 - 10. Fenêtres harmonisées : même structure, tailles et boutons pour Tests, Sauvegardes, États, Inventaire, Équipement, Repos, cartes… — Claude (Opus). Avant 2, 4, 5, 6, 7.
+- 28. **Mode combat** (idée d'Angle, 13 nov. 2026 ; placé juste après 10, décision d'Angle) — Claude (Opus). Deux dispositions par perso, « Exploration » (l'actuelle) et « Combat » (préremplie selon la classe, modifiable au crayon comme aujourd'hui). Décisions d'Angle : bascule **à la main** par un interrupteur dans le bandeau du personnage (à côté de la loupe) ; **l'Initiative ne propose pas** le mode combat (le jet reste tel quel, avec tous ses effets) ; **« Fin du combat » revient directement en exploration**, sans demander. Lié à 2 (moins de touchers) et 5 (compteur de rounds). Au début du chantier : vérifier quelles aptitudes « quand tu lances l'Initiative » l'appli applique déjà (Rage persistante, Métabolisme surnaturel, Inspiration bardique niv. 18, Destin, avantage d'Instinct sauvage, Vigilant, surprise) et proposer d'ajouter les manquantes.
+  Contenu validé par Angle (13 nov. 2026) :
+  - Toujours visible : PV, PV temp., Dégâts / Soins ; CA ; états actifs et leurs effets ; Concentration (sort, jet, fin) pour les lanceurs ; suivi du tour (Action, Action bonus, Réaction, Mouvement, Autre, Nouveau tour) ; vitesse(s) ; loupe ; compteur de rounds (à créer, chantier 5).
+  - Mon tour : attaques d'arme (toucher, dégâts, critique, avantage / désavantage), attaques par action, bottes d'arme, munitions, Agripper / Bousculer ; sorts par temps d'incantation, emplacements, DD, attaque de sort ; ressources et dés de classe ; actions de base ; potions et objets à charges ; formes actives (rage, Forme sauvage…) ; compagnon.
+  - Hors de mon tour : réactions, jets de sauvegarde, jet de Concentration, résistances / immunités / vulnérabilités (à créer, chantier 5), Inspiration héroïque.
+  - À 0 PV : jets contre la mort, stabilisation, Acharnement, mort instantanée.
+  - Effets qui durent : effets en cours avec durée et sauvegardes répétées (à créer, chantier 5).
+  - Fin du combat : moitié des munitions récupérées, remise à zéro du tour, retour en exploration.
+  - Gardés aussi (choix d'Angle) : Lumière, Perception passive, **dernier jet seulement** (pas l'historique complet).
+  - Cachés en mode combat (trouvables par la loupe) : identité détaillée, notes de partie, Or, inventaire complet, rations, Repères hors combat (Saut, Taille, Investigation et Intuition passives, Harmonisation), tests de compétence, Repos (sa case de la carte PV peut accueillir autre chose en combat, par exemple le compteur de rounds).
 - 20. Menu « Réglages » : thème, dés virtuels, préférences — Claude (Sonnet). Accueille 4, 21, 22, 24.
 - 1. Compteurs : Lumière, Rations, Munitions, compteur maison posé dans un bloc — Claude (Opus). **Fait le 12 nov. 2026, publié en v168** : voir l'entrée « Compteurs » de la section 11.
 
