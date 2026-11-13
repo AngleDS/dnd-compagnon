@@ -2607,6 +2607,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="menuToggle"]'); await p.click('[data-act="studioOpen"]');
     const f = p.frameLocator('.dice-studio-frame');
     await f.locator('#die-preview canvas').waitFor({ timeout: 30000 });
+    ok(await p.locator('.dice-studio-frame').evaluate(e => e.getBoundingClientRect().height > 300), 'cadre du studio visible dans la fenêtre');
+    ok(await f.locator('#physics-dice-demo').evaluate(e => e.classList.contains('dark')), 'thème sombre de l’application');
+    eq(await f.locator('.theme-toggle').count(), 0, 'pas de sélecteur de thème dans le studio');
+    await p.evaluate(() => setTheme('light'));
+    await f.locator('#physics-dice-demo:not(.dark)').waitFor();
+    await p.evaluate(() => setTheme('dark'));
+    await f.locator('#physics-dice-demo.dark').waitFor();
     ok(await f.locator('#launch-dice').isDisabled(), 'lancer interdit lorsque les dés virtuels sont verrouillés');
     await f.locator('[data-view="ambiance"]').click();
     await f.locator('#studio-tray-mode').selectOption('screen');
