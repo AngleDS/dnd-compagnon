@@ -2320,6 +2320,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { cur().conditions = []; S.T.pop = null; render(); });
     ok(await p.evaluate(() => !document.querySelector('.tblk[data-blk="recherche"]') && !!document.querySelector('.tblk[data-blk="perso"] .hpsearch')), 'Recherche : loupe dans le bandeau, plus de bloc par défaut');
     await p.click('.tblk[data-blk="perso"] .hpsearch');
+    await p.waitForFunction(() => document.activeElement && document.activeElement.id === 'tq');
     ok(await p.evaluate(() => S.T.pop === 'search' && document.activeElement && document.activeElement.id === 'tq' && document.querySelector('.tpop').getBoundingClientRect().top < 40), 'la loupe ouvre la recherche en haut de l’écran, clavier prêt');
     await p.fill('#tq', 'Discrétion');
     ok(await p.locator('.tpop .trow .tkb[data-k="skill:discretion"][data-r="d20"]').first().isVisible(), 'Recherche : Discrétion se lance depuis sa valeur');
