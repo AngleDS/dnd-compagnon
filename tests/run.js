@@ -2805,6 +2805,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(r.dice, [{faces:6,value:1,sign:1,discarded:true},{faces:6,value:4,sign:1,discarded:false},{faces:6,value:6,sign:1,discarded:false},{faces:4,value:2,sign:-1,discarded:false}], 'chaque face, signe et dé relancé sont conservés dans l’ordre');
     const n = await p.evaluate(() => { const old=rnd; let calls=0; try { rnd=()=>{ calls++; return 10; }; rollD20('Test', 0, {mode:'n'}); return calls; } finally { rnd=old; } });
     eq(n, 1, 'un jet normal ne tire qu’un seul d20');
+    eq(await p.evaluate(() => [typeof beginDiceTrace, typeof markDiceTrace, typeof diceTrace]), ['undefined', 'undefined', 'undefined'], 'ancienne trace des tirages retirée (les dés 3D passent par roll3d)');
     await p.evaluate(() => setVirtualDice(false));
     ok(await p.evaluate(() => { try { rollExpr('1d6'); return false; } catch (_) { return true; } }), 'le verrou interdit toujours le tirage');
   });
