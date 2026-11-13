@@ -595,5 +595,8 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .picker .dice-studio-box{width:min(96vw,960px);max-width:960px;height:min(85vh,900px);grid-template-rows:auto minmax(0,1fr)}
 .dice-studio-frame{display:block;width:100%;height:100%;border:0;background:var(--sheet)}
 .game-dice-frame.engine{position:fixed;inset:0;width:100vw;height:100dvh;margin:0;z-index:-1;opacity:0;pointer-events:none;border:0;background:transparent}.dice3dskip{margin-bottom:8px}
+/* Jets sans fenêtre de jet (fiche, création, tuiles) : « Passer l'animation » flotte au-dessus des dés ; les autres contrôles de dés attendent l'arrêt. */
+.dice3dskip.dice3dfloat{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);margin:0;z-index:1001;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+body.dice3d-busy [data-virtual]{opacity:.5;pointer-events:none}
 .game-dice-overlay{position:fixed;inset:0;width:100vw!important;height:100dvh!important;z-index:1000;pointer-events:none;background:transparent}
 body.game-dice-screen .tpopback{background:transparent;backdrop-filter:none}

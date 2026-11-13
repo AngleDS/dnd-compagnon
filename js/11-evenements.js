@@ -17,6 +17,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.act==="tipclose"){ closeTip(); return; }
   const a=t.dataset.act, ch=cur();
   if(S.T?.roll3dPending&&["tqgo","tmiss"].includes(a)) return;
+  if(dice3dBusy&&VIRTUAL_ACTIONS.has(a)) return; // des dés 3D roulent déjà
   if(VIRTUAL_ACTIONS.has(a)&&!virtualDiceEnabled()){ e.preventDefault(); return; }
   if(a==="closeModal"){ if(e.target===t||t.tagName==="BUTTON"){ S.pending=null; renderModal(); render(); } return; }
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;
@@ -95,7 +96,8 @@ document.addEventListener("click",e=>{
     case "cblkDelYes": if(ch){ const id=t.dataset.v; if(id.startsWith("c_")){ saveCustom(ch,customCopy(ch).filter(b=>b.id!==id)); saveTableOrder(ch,tableOrder(ch)); } else if(!BLK_KEEP.includes(id)){ setBlkHidden(ch,id,true); setBanner("Bloc retiré : « Ajouter un bloc » permet de le remettre."); } S.T.cdel=null; S.T.pop=null; render(); } break;
     case "blkRestore": if(ch){ setBlkHidden(ch,t.dataset.v,false); S.T.pop=null; render(); } break;
     case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
-    case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
+    case "chargeRecoveryRoll": { const id=t.dataset.id, b=(ch.bag||[]).find(b=>b.id===id); if(!b?.charges?.pendingRecovery) break;
+      roll3d(exprSpecs(b.charges.rec),()=>{ const c=cur(), bb=(c.bag||[]).find(x=>x.id===id); if(bb?.charges?.pendingRecovery) applyChargeRecovery(c,id,rollExpr(bb.charges.rec).total,true); render(); }); break; }
     case "virtualDice": setVirtualDice(!virtualDiceEnabled()); try{ studioWarm(); }catch(_){} render(); renderDice(); renderModal(); break;
     case "diceDisplay": setDiceDisplayMode(diceDisplayMode()==="3d"?"direct":"3d"); try{ studioWarm(); }catch(_){} renderModal(); break;
     case "dice3dSkip": studioSkip(); break;
@@ -114,8 +116,8 @@ document.addEventListener("click",e=>{
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; }
       W[k]=v; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } render(); break; }
     case "wpt": { const a=t.dataset.a; S.W.pts[a]=Math.max(8,Math.min(15,(+S.W.pts[a]||8)+(+t.dataset.v))); render(); break; }
-    case "wroll": { const W=S.W; if(W.rolled||W.dice.some(v=>v!=="")) break; const bd=[]; W.dice=W.dice.map(()=>{ const r=[rnd(6),rnd(6),rnd(6),rnd(6)].sort((x,y)=>y-x); bd.push(r[0]+r[1]+r[2]); return r[0]+r[1]+r[2]; }); W.rolled=true; W.rollBd=bd.join(", "); W.diceAs={};
-      addLog({label:"Création · 6 jets de 4d6",total:"✓",bd:W.rollBd,kind:"info",quiet:true}); render(); break; }
+    case "wroll": { const W=S.W; if(W.rolled||W.dice.some(v=>v!=="")) break; roll3d(Array(W.dice.length*4).fill(6),()=>{ if(W.rolled||W.dice.some(v=>v!=="")) return; const bd=[]; W.dice=W.dice.map(()=>{ const r=[rnd(6),rnd(6),rnd(6),rnd(6)].sort((x,y)=>y-x); bd.push(r[0]+r[1]+r[2]); return r[0]+r[1]+r[2]; }); W.rolled=true; W.rollBd=bd.join(", "); W.diceAs={};
+      addLog({label:"Création · 6 jets de 4d6",total:"✓",bd:W.rollBd,kind:"info",quiet:true}); render(); }); break; }
     case "wskill": { const W=S.W, v=t.dataset.v, n=wCls(W).skillChoices.count; if(W.skills.includes(v)) W.skills=W.skills.filter(x=>x!==v); else if(W.skills.length<n) W.skills.push(v); if(W.extraSkill===v) W.extraSkill=""; render(); break; }
     case "weq": { S.W.eqOff[t.dataset.v]=!t.checked; render(); break; }
     case "wcreate": wCreate(); break;
@@ -144,21 +146,21 @@ document.addEventListener("click",e=>{
     case "tab": S.tab=t.dataset.v; render(); { const tb=document.querySelector(".sheettabs"); if(tb&&tb.getBoundingClientRect().top<0) window.scrollTo(0,0); } break;
     case "ask": S.confirm=t.dataset.v; render(); break;
     case "rest": applyRest(t.dataset.v); S.confirm=null; touch(S.cur); render(); break; // applyRest refuse à 0 PV
-    case "r20": rollD20(t.dataset.l, +t.dataset.m); break;
-    case "dmg": rollDmg(t.dataset.l, t.dataset.e, t.dataset.crit==="1"); break;
+    case "r20": { const l=t.dataset.l, m=+t.dataset.m, adv=S.adv; roll3d(d20Specs(adv),()=>rollD20(l,m,{mode:adv})); break; }
+    case "dmg": { const l=t.dataset.l, e1=t.dataset.e, crit=t.dataset.crit==="1"; roll3d(exprSpecs(crit?doubleDice(e1):e1),()=>rollDmg(l,e1,crit)); break; }
     case "adv": S.adv=t.dataset.v; renderDice(); break;
     case "histDel": { const ix=String(t.dataset.i).split(",").map(Number).sort((a,b)=>b-a); if(ch&&ch.rollLog&&ix.length&&ix.every(i=>Number.isInteger(i)&&ch.rollLog[i])){ for(const i of ix) ch.rollLog.splice(i,1); touch(S.cur); render(); } break; }
     case "histDay": S.hist={day:t.dataset.v,n:HIST_PAGE}; S.histConfirm=false; render(); break;
     case "histMore": if(S.hist) S.hist.n+=HIST_PAGE; render(); break;
     case "clearLog": S.log=[]; if(ch&&S.T&&S.T.pop==="hist"){ if(t.dataset.ok){ ch.rollLog=[]; touch(S.cur); S.histConfirm=false; } else { S.histConfirm=true; } } renderDice(); render(); break;
-    case "death": { const r=rnd(20); ch.death=ch.death||{s:0,f:0}; let txt;
+    case "death": roll3d([20],()=>{ const ch=cur(), r=rnd(20); ch.death=ch.death||{s:0,f:0}; let txt;
       if(r===20){ ch.hp.cur=1; ch.death={s:0,f:0}; txt="20 naturel : tu reprends conscience avec 1 PV."; }
       else if(r===1){ ch.death.f=Math.min(3,ch.death.f+2); txt="1 naturel : deux échecs."; }
       else if(r>=10){ ch.death.s=Math.min(3,ch.death.s+1); txt="Réussite."+(ch.death.s>=3?" Trois réussites : tu es stabilisé.":""); }
       else { ch.death.f=Math.min(3,ch.death.f+1); txt="Échec."+(ch.death.f>=3?" Trois échecs : ton personnage meurt.":""); }
-      addLog({label:"Jet contre la mort",total:r,bd:txt,crit:r===20,fumble:r===1}); touch(S.cur); render(); break; }
-    case "spendhd": { const D=derive(ch); if((+ch.hdUsed||0)>=D.L) break; const r=rollExpr("1d"+D.hd); const heal=Math.max(1,r.total+D.mods.con); ch.hdUsed=(+ch.hdUsed||0)+1; ch.hp=ch.hp||{cur:0,temp:0}; ch.hp.cur=Math.min(D.hpMax,(+ch.hp.cur||0)+heal);
-      addLog({label:"Dé de vie dépensé",total:heal,bd:r.bd+" "+sg(D.mods.con)+" Con"}); touch(S.cur); render(); break; }
+      addLog({label:"Jet contre la mort",total:r,bd:txt,crit:r===20,fumble:r===1}); touch(S.cur); render(); }); break;
+    case "spendhd": { if((+ch.hdUsed||0)>=derive(ch).L) break; roll3d([derive(ch).hd],()=>{ const ch=cur(), D=derive(ch); if((+ch.hdUsed||0)>=D.L) return; const r=rollExpr("1d"+D.hd); const heal=Math.max(1,r.total+D.mods.con); ch.hdUsed=(+ch.hdUsed||0)+1; ch.hp=ch.hp||{cur:0,temp:0}; ch.hp.cur=Math.min(D.hpMax,(+ch.hp.cur||0)+heal);
+      addLog({label:"Dé de vie dépensé",total:heal,bd:r.bd+" "+sg(D.mods.con)+" Con"}); touch(S.cur); render(); }); break; }
     case "pip": { const k=t.dataset.k, i=+t.dataset.i, max=+t.dataset.max, isUsed=t.dataset.used==="1";
       if(k.startsWith("cnt:")){ const c=(ch.counters||[]).find(x=>x.id===k.slice(4)); if(!c) break; const left=+c.cur||0; c.cur = i<left ? i : i+1; touch(S.cur); render(); break; }
       let cv = k==="pact"?(+ch.pactUsed||0) : k.startsWith("slot:")?+(ch.slotsUsed?.[k.slice(5)]||0) : k.startsWith("res:")?+(ch.resUsed?.[k.slice(4)]||0) : +(getPath(ch,k)||0);
@@ -177,7 +179,8 @@ document.addEventListener("click",e=>{
       ch.companion=c; touch(S.cur); render(); } break;
     case "resstep": if(ch){ const D=derive(ch), r=D.res.find(x=>x.id===t.dataset.id); if(!r) break; ch.resUsed=Object.assign({},ch.resUsed); ch.resUsed[r.id]=Math.max(0,Math.min(r.max,(+ch.resUsed[r.id]||0)+(+t.dataset.v))); if(+t.dataset.v>0) cardSpendMarks(r.id); touch(S.cur); render(); } break;
     case "resuse": { const id=t.dataset.id, inp=document.getElementById("resn-"+id.replace(/[^a-z0-9]/g,"")); const n=+inp.value||0; if(!n) break; const D=derive(ch); const r=D.res.find(x=>x.id===id); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=Math.max(0,Math.min(r.max,(+ch.resUsed[id]||0)+n)); touch(S.cur); render(); break; }
-    case "pool": { const id=t.dataset.id, D=derive(ch), r=D.res.find(x=>x.id===id); const inp=document.getElementById("pool-"+id.replace(/[^a-z0-9]/g,"")); let n=Math.max(1,+inp.value||1); const left=r.max-(+ch.resUsed?.[id]||0); n=Math.min(n,left,r.maxUse||n); if(n<=0) break; const rr=rollExpr(n+"d"+r.die); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=(+ch.resUsed[id]||0)+n; addLog({label:r.name+" ("+n+"d"+r.die+")",total:rr.total,bd:rr.bd}); touch(S.cur); render(); break; }
+    case "pool": { const id=t.dataset.id, D=derive(ch), r=D.res.find(x=>x.id===id); const inp=document.getElementById("pool-"+id.replace(/[^a-z0-9]/g,"")); let n=Math.max(1,+inp.value||1); const left=r.max-(+ch.resUsed?.[id]||0); n=Math.min(n,left,r.maxUse||n); if(n<=0) break;
+      roll3d(Array(n).fill(+r.die),()=>{ const ch=cur(); if(n>r.max-(+ch.resUsed?.[id]||0)) return; const rr=rollExpr(n+"d"+r.die); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=(+ch.resUsed[id]||0)+n; addLog({label:r.name+" ("+n+"d"+r.die+")",total:rr.total,bd:rr.bd}); touch(S.cur); render(); }); break; }
     case "rouerie": { const D=derive(ch); if(!D.cast||D.cast.type!=="pact") break; const used=+(ch.resUsed?.["cls:rouerie-magique"]||0); if(used>=1) break;
       const spent=+ch.pactUsed||0; if(spent<=0){ addLog({label:"Rouerie magique",total:"—",bd:"Aucun emplacement de pacte à récupérer : la Rouerie n'a pas été utilisée.",kind:"info"}); break; }
       const gain=D.L>=20?spent:Math.min(spent,Math.ceil(D.cast.pactSlots/2)); ch.pactUsed=spent-gain; ch.resUsed=ch.resUsed||{}; ch.resUsed["cls:rouerie-magique"]=1;
@@ -210,9 +213,10 @@ document.addEventListener("click",e=>{
     case "eqatt": { ch.attuned=ch.attuned||[]; const id=t.dataset.id; if(ch.attuned.includes(id)) ch.attuned=ch.attuned.filter(x=>x!==id); else { if(ch.attuned.length>=3){ addLog({label:"Harmonisation",total:"3/3",bd:"Tu es déjà harmonisé avec 3 objets : retire-en un d'abord.",kind:"info"}); break; } ch.attuned.push(id); } touch(S.cur); render(); break; }
     case "ccopen": S.T.cc={dmg:0,mode:"n",d1:"",d2:"",res:null}; S.T.pop="concchk"; render(); break;
     case "ccmode": if(S.T.cc){ S.T.cc.mode=t.dataset.v; S.T.cc.d2=""; render(); } break;
-    case "ccroll": { const c=S.T.cc; if(!c||c.res) break; const a1=rnd(20), b1=c.mode==="n"?0:rnd(20); ccResolve(a1,b1,true); break; }
+    case "ccroll": { const c=S.T.cc; if(!c||c.res) break; const mode=c.mode, alive=rollAlive();
+      roll3d(d20Specs(mode),()=>{ if(c.res) return; const a1=rnd(20), b1=mode==="n"?0:rnd(20); ccResolve(a1,b1,true); },{alive:()=>alive()&&S.T.cc===c&&c.mode===mode}); break; }
     case "ccclose": S.T.pop=null; S.T.cc=null; render(); break;
-    case "hdvirt": { const D=derive(ch); const r=rnd(D.hd); hdSpend(ch,D,r,false); break; }
+    case "hdvirt": roll3d([derive(ch).hd],()=>{ const ch=cur(), D=derive(ch); hdSpend(ch,D,rnd(D.hd),false); }); break;
     case "bannerClose": { const k=t.dataset.k; if(k){ try{ localStorage.setItem("registre-banner-"+k,"1"); }catch(e){} } setBanner(""); break; }
     case "menuToggle": S.menuOpen=!S.menuOpen; render(); break;
     case "settingsOpen": S.menuOpen=false; S.settings=true; S.helpReset=false; render(); renderModal(); break;
@@ -231,10 +235,11 @@ document.addEventListener("click",e=>{
     case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); break; } S.T.pop=null; render(); } break;
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
-    case "tvroll": { if(!ensureTableRollUse()) break; const T=S.T; T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; if(logD20(false)) tableRollCommitted("d20"); render(); break; }
+    case "tvroll": { const T=S.T, mode=T.mode, alive=rollAlive();
+      roll3d(d20Specs(mode),()=>{ if(!ensureTableRollUse()) return; T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; if(logD20(false)) tableRollCommitted("d20"); render(); },{alive:()=>alive()&&T.mode===mode}); break; }
     case "gdie": { S.T.gdie=+t.dataset.v; S.T.dmg=""; S.T.dmgBd=""; render(); break; }
     case "hbGuessLink": { const d=S.docs[t.dataset.id]; if(!d) break; d.link=aideGuess(Object.assign({_id:t.dataset.id},d)); touch(t.dataset.id); render(); break; }
-    case "tvdmg": { if(!ensureTableRollUse()) break; const T=S.T; const r=rollExpr(t.dataset.e,!!t.dataset.re1); T.dmg=String(r.total); T.dmgBd=(t.dataset.crit?"Critique · ":"")+r.bd; if(logDmg(false)) tableRollCommitted("dmg"); render(); break; }
+    case "tvdmg": { const T=S.T, e1=t.dataset.e, re1=!!t.dataset.re1, crit=!!t.dataset.crit; roll3d(exprSpecs(e1),()=>{ if(!ensureTableRollUse()) return; const r=rollExpr(e1,re1); T.dmg=String(r.total); T.dmgBd=(crit?"Critique · ":"")+r.bd; if(logDmg(false)) tableRollCommitted("dmg"); render(); },{re1}); break; }
     case "hpstep": { const D=derive(ch); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const v=+t.dataset.v, before=+ch.hp.cur||0;
       if(v<0&&before<=0){ ch.death=ch.death||{s:0,f:0}; if((ch.death.s||0)<3){ ch.death.f=Math.min(3,(ch.death.f||0)+1); addLog({label:"Dégâts à 0 PV",total:"échec",bd:"Subir des dégâts à 0 PV compte comme un échec (deux sur un coup critique).",kind:"info"}); } }
       ch.hp.cur=Math.max(0,Math.min(D.hpMax,before+v)); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0};
@@ -304,26 +309,33 @@ document.addEventListener("click",e=>{
     case "rmSpell": ch.spells=(ch.spells||[]).filter(s=>s.ref!==t.dataset.ref); touch(S.cur); render(); break;
     case "prep": { const s=(ch.spells||[]).find(s=>s.ref===t.dataset.ref); if(s){ s.prepared=!(s.prepared!==false); touch(S.cur); render(); } break; }
     case "cast": { const D=derive(ch), sp=spellOf(t.dataset.ref), m=spellMech(sp), rit=t.dataset.rit==="1"; const sel=document.getElementById(t.dataset.sel||("slot-"+t.dataset.ref.replace(/[^a-z0-9]/gi,""))); const arc=+t.dataset.arc||0; const lvl=arc||(sp.level===0?0:+(sel?.value||sp.level));
+      // Emplacement indisponible : pas de dés, le message part tout de suite. Sinon : dépense et jets après l'arrêt des dés (roll3d).
+      const L0=rit?sp.level:lvl, ex0=diceAt(m,sp,L0,D), nb0=beamsAt(m,sp,L0,D);
+      const blocked=arc?+(ch.resUsed?.["arc:"+arc]||0)>=1:sp.level>0&&!rit&&(D.cast.type==="pact"?(+ch.pactUsed||0)>=D.cast.pactSlots:(+ch.slotsUsed?.[lvl]||0)>=(D.cast.slots[lvl-1]||0));
+      const specs=blocked?[]:Array.from({length:nb0},(_,b)=>[...(m.attack?d20Specs(b===0?S.adv:"n"):[]),...(ex0?exprSpecs(ex0):[])]).flat();
+      roll3d(specs,()=>{ const ch=cur();
       let left="";
-      if(arc){ ch.resUsed=ch.resUsed||{}; if(+(ch.resUsed["arc:"+arc]||0)>=1){ addLog({label:"Arcanum déjà utilisé",total:"0",bd:"Il revient au repos long."}); break; } ch.resUsed["arc:"+arc]=1; left="Arcanum mystique utilisé (revient au repos long)."; }
+      if(arc){ ch.resUsed=ch.resUsed||{}; if(+(ch.resUsed["arc:"+arc]||0)>=1){ addLog({label:"Arcanum déjà utilisé",total:"0",bd:"Il revient au repos long."}); return; } ch.resUsed["arc:"+arc]=1; left="Arcanum mystique utilisé (revient au repos long)."; }
       else if(sp.level>0 && !rit){
-        if(D.cast.type==="pact"){ if((+ch.pactUsed||0)>=D.cast.pactSlots){ addLog({label:"Plus d'emplacement de pacte",total:"0",bd:"Un repos court les restaure."}); break; } ch.pactUsed=(+ch.pactUsed||0)+1; left=(D.cast.pactSlots-ch.pactUsed)+" emplacement(s) de pacte restant(s)"; }
-        else { ch.slotsUsed=ch.slotsUsed||{}; const n=D.cast.slots[lvl-1]||0; if((+ch.slotsUsed[lvl]||0)>=n){ addLog({label:"Plus d'emplacement de niveau "+lvl,total:"0",bd:"Choisis un autre niveau ou fais un repos long."}); break; } ch.slotsUsed[lvl]=(+ch.slotsUsed[lvl]||0)+1; left=(n-ch.slotsUsed[lvl])+" emplacement(s) de niveau "+lvl+" restant(s)"; }
+        if(D.cast.type==="pact"){ if((+ch.pactUsed||0)>=D.cast.pactSlots){ addLog({label:"Plus d'emplacement de pacte",total:"0",bd:"Un repos court les restaure."}); return; } ch.pactUsed=(+ch.pactUsed||0)+1; left=(D.cast.pactSlots-ch.pactUsed)+" emplacement(s) de pacte restant(s)"; }
+        else { ch.slotsUsed=ch.slotsUsed||{}; const n=D.cast.slots[lvl-1]||0; if((+ch.slotsUsed[lvl]||0)>=n){ addLog({label:"Plus d'emplacement de niveau "+lvl,total:"0",bd:"Choisis un autre niveau ou fais un repos long."}); return; } ch.slotsUsed[lvl]=(+ch.slotsUsed[lvl]||0)+1; left=(n-ch.slotsUsed[lvl])+" emplacement(s) de niveau "+lvl+" restant(s)"; }
       }
       if(sp.concentration) ch.conc=sp.name;
       addLog({label:sp.name+(rit?" lancé en rituel":" lancé"),total:sp.level?"niv. "+(rit?sp.level:lvl):"mineur",bd:[rit?"Aucun emplacement dépensé.":left,sp.concentration?"Concentration notée.":"",m.save?"Cibles : JS de "+m.save+" DD "+D.cast.dc+".":""].filter(Boolean).join(" "),kind:"info"});
       const ex=diceAt(m,sp,rit?sp.level:lvl,D);
       const beams=beamsAt(m,sp,rit?sp.level:lvl,D);
       for(let b=1;b<=beams;b++){ const tag=beams>1?" ("+beamWord(m)+" "+b+")":""; if(m.attack) rollD20(sp.name+tag+" — toucher",D.cast.atk); if(ex) rollDmg(sp.name+tag+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); }
-      touch(S.cur); render(); break; }
-    case "sdmg": { const D=derive(ch), sp=spellOf(t.dataset.ref), m=spellMech(sp); const sel=document.getElementById("slot-"+t.dataset.ref.replace(/[^a-z0-9]/gi,"")); const lvl=+(sel?.value||sp.level); const ex=diceAt(m,sp,lvl,D), nb=beamsAt(m,sp,lvl,D); for(let b=1;b<=nb;b++) rollDmg(sp.name+(nb>1?" ("+beamWord(m)+" "+b+")":"")+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); break; }
+      touch(S.cur); render(); });
+      break; }
+    case "sdmg": { const D=derive(ch), sp=spellOf(t.dataset.ref), m=spellMech(sp); const sel=document.getElementById("slot-"+t.dataset.ref.replace(/[^a-z0-9]/gi,"")); const lvl=+(sel?.value||sp.level); const ex=diceAt(m,sp,lvl,D), nb=beamsAt(m,sp,lvl,D);
+      roll3d(Array.from({length:nb},()=>exprSpecs(ex)).flat(),()=>{ for(let b=1;b<=nb;b++) rollDmg(sp.name+(nb>1?" ("+beamWord(m)+" "+b+")":"")+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); }); break; }
     case "saveProf": { const v=t.dataset.v; ch.saveProfs=ch.saveProfs||[]; ch.saveProfs=t.checked?[...new Set([...ch.saveProfs,v])]:ch.saveProfs.filter(x=>x!==v); touch(S.cur); render(); break; }
     case "addInv": { const s1=document.getElementById("addInvSel"); if(!s1||!s1.value) break; const id=s1.value, s2=document.getElementById("addInvCh"); const c=INV_CHOICE[id]?(s2&&s2.value||""):"";
       if(INV_CHOICE[id]&&!c) break; ch.invocations=ch.invocations||[]; const v=id+(c?"|"+c:""); if(!ch.invocations.includes(v)) ch.invocations.push(v); S.invSel=null; touch(S.cur); render(); break; }
     case "smite": { const D=derive(ch); if((+ch.pactUsed||0)>=D.cast.pactSlots) break; ch.pactUsed=(+ch.pactUsed||0)+1; ch.turn=ch.turn||{}; ch.turn.smite=true; S.T.smiteBd="";
       addLog({label:"Frappe occulte",total:"niv. "+D.cast.pactLevel,bd:"Emplacement de pacte dépensé.",kind:"info",quiet:true}); touch(S.cur); render(); break; }
     case "smiteUndo": { ch.pactUsed=Math.max(0,(+ch.pactUsed||0)-1); ch.turn=ch.turn||{}; ch.turn.smite=false; S.T.smiteBd=""; addLog({label:"Frappe occulte annulée",total:"↺",bd:"Emplacement rendu.",kind:"info",quiet:true}); touch(S.cur); render(); break; }
-    case "smiteRoll": { const r=rollExpr(t.dataset.e); S.T.smiteBd=r.total+" · "+r.bd; addLog({label:"Frappe occulte · dégâts de force",total:r.total,bd:(t.dataset.crit?"Critique · ":"")+r.bd,quiet:true}); render(); break; }
+    case "smiteRoll": { const e1=t.dataset.e, crit=!!t.dataset.crit; roll3d(exprSpecs(e1),()=>{ const r=rollExpr(e1); S.T.smiteBd=r.total+" · "+r.bd; addLog({label:"Frappe occulte · dégâts de force",total:r.total,bd:(crit?"Critique · ":"")+r.bd,quiet:true}); render(); }); break; }
     case "itemSp": S.T.itemSp=+t.dataset.v; S.T.itemN=1; render(); break;
     case "addList": { const src=document.getElementById(t.dataset.src); if(!src||!src.value) break; const k=t.dataset.k, v=catRes(src.value); if(!v) break; ch[k]=ch[k]||[]; if(!ch[k].includes(v)) ch[k].push(v); touch(S.cur); render(); if(v!==src.value) rvStart(S.cur); break; }
     case "rmList": { const k=t.dataset.k; ch[k].splice(+t.dataset.i,1); touch(S.cur); render(); break; }
@@ -439,7 +451,7 @@ document.addEventListener("submit",e=>{
     if(!/^(?:\d*d\d+|\d+)(?:\s*[+-]\s*(?:\d*d\d+|\d+))*$/i.test(v)) return;
     if(e.submitter?.name==="virtual"){
       if(!virtualDiceEnabled()) return;
-      const r=rollExpr(v); addLog({label:"Jet libre "+v,total:r.total,bd:r.bd});
+      roll3d(exprSpecs(v),()=>{ const r=rollExpr(v); addLog({label:"Jet libre "+v,total:r.total,bd:r.bd}); });
     }else{
       if(virtualDiceEnabled()) return;
       const value=f.elements.physical.value; if(!validDiceTotal(value)) return;

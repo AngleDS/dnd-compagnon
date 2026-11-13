@@ -2694,6 +2694,109 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [!!cur().turn?.action,(cur().rollLog||[]).length]),[false,0],'aucun résultat ni action consommée après fermeture');
   });
 
+  await test('Dés 3D : tous les jets virtuels passent par le moteur (faces lues, rien avant l’arrêt, annulation, verrou)', async p => {
+    await diceTable(p);
+    // moteur simulé : le test décide quand les dés s'arrêtent et quelles faces sortent
+    await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); window.__rolls = []; window.__face = f => f === 20 ? 17 : 2;
+      studioGameRoll = (specs, alive) => new Promise(res => { window.__rolls.push(specs.join(',')); window.__alive = alive; window.__release = () => res(specs.map(f => window.__face(f))); }); });
+    const release = () => p.evaluate(async () => { const r = window.__release; window.__release = null; r(); await new Promise(z => setTimeout(z, 0)); });
+    const last = () => p.evaluate(() => window.__rolls.at(-1));
+    const nlog = () => p.evaluate(() => (cur().rollLog || []).length);
+    // Détails : toucher puis dégâts
+    await p.evaluate(() => { cur().turn = {}; tSelect(S.Titems.find(i => i.kind === 'atk').key); });
+    let n = await nlog(); await p.click('[data-act="tvroll"]');
+    eq(await p.evaluate(() => [window.__rolls.at(-1), S.T.d1, !!cur().turn?.action, (cur().rollLog || []).length]), ['20', '', false, n], 'Détails : d20 en train de rouler, rien d’appliqué ni dépensé');
+    ok(await p.locator('.dice3dfloat').isVisible(), '« Passer l’animation » affiché');
+    await release();
+    eq(await p.evaluate(() => [S.T.d1, !!cur().turn?.action, (cur().rollLog || []).length, !!document.querySelector('.dice3dfloat')]), ['17', true, n + 1, false], 'Détails : face du moteur, action consommée, bouton retiré');
+    await p.click('[data-act="tvdmg"]:not([data-crit])'); eq(await p.evaluate(() => S.T.dmg), '', 'dégâts : rien avant l’arrêt');
+    const dmgDice = (await last()).split(','); await release();
+    eq(await p.evaluate(() => S.T.dmg), String(2 * dmgDice.length), 'dégâts = faces du moteur');
+    // fermer la fenêtre pendant le lancer : rien d'appliqué ni dépensé
+    await p.evaluate(() => { cur().turn = {}; tSelect(S.Titems.find(i => i.kind === 'atk').key); });
+    n = await nlog(); await p.click('[data-act="tvroll"]'); await p.click('.tpophead [data-act="tpopclose"]');
+    eq(await p.evaluate(() => window.__alive()), false, 'jet plus attendu');
+    await release();
+    eq(await p.evaluate(() => [!!cur().turn?.action, (cur().rollLog || []).length]), [false, n], 'fermeture : aucun résultat ni action consommée');
+    // concentration, dé de vie au repos, jet contre la mort
+    await p.evaluate(() => { cur().conc = 'Sort test'; S.T.cc = { dmg: 10, mode: 'a', d1: '', d2: '', res: null }; S.T.pop = 'concchk'; render(); });
+    await p.click('[data-act="ccroll"]'); eq([await last(), await p.evaluate(() => S.T.cc.res)], ['20,20', null], 'concentration : deux d20, pas de résultat avant l’arrêt');
+    await release(); eq(await p.evaluate(() => S.T.cc.res.total), await p.evaluate(() => 17 + derive(cur()).saves.con.val), 'concentration : faces du moteur');
+    await p.evaluate(() => { S.T.pop = null; S.T.cc = null; cur().hp.cur = 1; cur().hdUsed = 0; S.T.pop = 'rest'; S.T.restKind = 'court'; render(); });
+    await p.click('[data-act="hdvirt"]'); eq([await last(), await p.evaluate(() => +cur().hdUsed)], [await p.evaluate(() => String(derive(cur()).hd)), 0], 'dé de vie : rien de dépensé avant l’arrêt');
+    await release(); eq(await p.evaluate(() => [+cur().hdUsed, cur().hp.cur]), await p.evaluate(() => [1, 1 + Math.max(1, 2 + derive(cur()).mods.con)]), 'dé de vie : face du moteur');
+    await p.evaluate(() => { S.T.pop = null; cur().hp.cur = 0; cur().death = { s: 0, f: 0 }; render(); });
+    await p.locator('[data-act="death"]').first().click(); eq(await p.evaluate(() => cur().death.s), 0, 'jet contre la mort : rien avant l’arrêt');
+    await release(); eq(await p.evaluate(() => cur().death), { s: 1, f: 0 }, 'jet contre la mort : 17, une réussite');
+    // onglets de la fiche : test, dégâts, dé de vie, formule libre ; un seul lancer à la fois
+    await p.evaluate(() => { cur().hp.cur = 5; cur().hdUsed = 0; S.adv = 'n'; S.tab = 'jeu'; render(); renderDice(); });
+    n = await nlog(); await p.locator('[data-act="r20"]').first().click(); eq([await last(), await nlog()], ['20', n], 'fiche : d20 en train de rouler');
+    const k0 = await p.evaluate(() => window.__rolls.length); await p.evaluate(() => document.querySelector('[data-act="spendhd"]').click());
+    eq(await p.evaluate(() => [window.__rolls.length, +cur().hdUsed]), [k0, 0], 'pendant un lancer, un autre jet attend');
+    await release(); ok(await p.evaluate(() => /17/.test(cur().rollLog[0].bd)), 'fiche : test avec la face du moteur');
+    await p.locator('[data-act="dmg"]:not([data-crit])').first().click(); const fd = (await last()).split(','); await release();
+    eq(await p.evaluate(() => cur().rollLog[0].total), await p.evaluate(k => { const e = document.querySelector('[data-act="dmg"]:not([data-crit])').dataset.e; return 2 * k + expressionBonus(e); }, fd.length), 'fiche : dégâts avec les faces du moteur');
+    await p.click('[data-act="spendhd"]'); await release(); eq(await p.evaluate(() => +cur().hdUsed), 1, 'fiche : dé de vie dépensé après l’arrêt');
+    await p.fill('#freeExpr', '2d6+4'); await p.click('[data-form="free"] [name="virtual"]'); eq(await last(), '6,6', 'formule libre : deux d6');
+    await release(); eq(await p.evaluate(() => S.log[0].total), 8, 'formule libre : faces du moteur + bonus');
+    // création : 6 jets de 4d6
+    await p.evaluate(() => { S.view = 'wizard'; S.W = wNew(); S.W.cls = 'guerrier'; S.W.step = 3; S.W.method = 'dice'; render(); });
+    await p.click('[data-act="wroll"]'); eq([await last(), await p.evaluate(() => S.W.rolled)], [Array(24).fill(6).join(','), false], 'création : 24 d6, rien avant l’arrêt');
+    await release(); eq(await p.evaluate(() => S.W.dice), [6, 6, 6, 6, 6, 6], 'création : faces du moteur (3 meilleurs de 4)');
+    // relance des 1 (Guérisseur) : la relance roule aussi en 3D
+    const re = await p.evaluate(async () => { const tick = () => new Promise(z => setTimeout(z, 0));
+      const pr = roll3d([6, 6], () => { window.__r = rollExpr('2d6', true); }, { re1: true, alive: () => true });
+      window.__face = () => 1; window.__release(); await tick(); const again = window.__rolls.at(-1); window.__face = () => 5; window.__release(); await pr; return [again, window.__r.total, window.__r.bd]; });
+    eq(re, ['6,6', 10, '2d6 [1→5, 1→5]'], 'relance des 1 lancée en 3D puis appliquée');
+    eq(await p.evaluate(() => dice3dMiss), 0, 'chaque tirage a lu une face du moteur');
+    // dés virtuels verrouillés : aucun lancer
+    await p.evaluate(() => { setVirtualDice(false); window.__rolls = []; S.view = 'sheet'; S.tab = 'table'; S.T.pop = null; cur().hp.cur = 0; cur().death = { s: 0, f: 0 }; render(); });
+    await p.evaluate(() => document.querySelector('[data-act="death"]').click());
+    eq(await p.evaluate(() => [window.__rolls.length, cur().death, dice3dCan([20])]), [0, { s: 0, f: 0 }, false], 'verrouillé : rien n’est lancé');
+  });
+
+  await test('Dés 3D : sort lancé depuis la fiche, Frappe occulte et recharge d’objet après l’arrêt des dés', async p => {
+    await diceTable(p, 'occultiste');
+    await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); window.__rolls = []; window.__face = f => f === 20 ? 17 : 2;
+      studioGameRoll = specs => new Promise(res => { window.__rolls.push(specs.join(',')); window.__release = () => res(specs.map(f => window.__face(f))); }); });
+    const release = () => p.evaluate(async () => { const r = window.__release; window.__release = null; r(); await new Promise(z => setTimeout(z, 0)); });
+    const state = () => p.evaluate(() => [(cur().rollLog || []).length, +cur().pactUsed || 0]);
+    // sort : emplacement et jets seulement après l'arrêt
+    // bouton « lancer » d'un sort de niveau 1 à jet d'attaque et dés (même bouton que la liste d'attaques de la fiche)
+    await p.evaluate(() => { const id = Object.keys(S.idx.spells).find(k => { const sp = S.idx.spells[k], m = spellMech(sp); return sp.level === 1 && m.attack && m.dice; });
+      cur().pactUsed = 0; S.tab = 'jeu'; render(); document.body.insertAdjacentHTML('beforeend', `<input type="hidden" id="slot-test" value="1"><button class="rollbtn" data-virtual data-act="cast" data-ref="srd:${id}" data-sel="slot-test">Lancer</button>`); });
+    const before = await state(); await p.locator('[data-act="cast"]').first().click();
+    ok(await p.evaluate(() => /^20,/.test(window.__rolls.at(-1)) && !!window.__release), 'sort : toucher et dégâts lancés');
+    eq(await state(), before, 'sort : rien de dépensé ni journalisé avant l’arrêt');
+    await release(); const after = await state(); ok(after[0] > before[0] && after[1] === before[1] + 1, 'sort : emplacement dépensé et jets journalisés après l’arrêt');
+    ok(await p.evaluate(() => cur().rollLog.some(e => /toucher/.test(e.label) && e.total >= 17)), 'sort : toucher avec la face du moteur');
+    // Frappe occulte
+    await p.evaluate(() => { S.tab = 'table'; const ch = cur(); ch.level = 5; ch.invocations = ['frappe-occulte']; ch.turn = { smite: true }; render();
+      document.body.insertAdjacentHTML('beforeend', smiteBlock(ch, derive(ch), { pact: true })); });
+    const [specs, want] = await p.evaluate(() => { const e = document.querySelector('[data-act="smiteRoll"]:not([data-crit])').dataset.e; return [exprSpecs(e).join(','), 2 * exprSpecs(e).length + expressionBonus(e)]; }); const n = (await state())[0];
+    await p.click('[data-act="smiteRoll"]:not([data-crit])'); eq([await p.evaluate(() => window.__rolls.at(-1)), (await state())[0]], [specs, n], 'Frappe occulte : rien avant l’arrêt');
+    await release(); eq(await p.evaluate(() => cur().rollLog[0].total), want, 'Frappe occulte : faces du moteur');
+    // recharge d'objet en attente
+    await p.evaluate(() => { cur().bag.push({ id: 'test-charges', name: 'Baguette test', qty: 1, charges: { max: 10, used: 8, when: 'long', rec: '1d6+1', auto: false, pendingRecovery: true } }); render(); });
+    await p.locator('[data-act="chargeRecoveryRoll"]').first().click();
+    eq(await p.evaluate(() => [window.__rolls.at(-1), cur().bag.find(b => b.id === 'test-charges').charges.used]), ['6', 8], 'recharge : rien avant l’arrêt');
+    await release(); eq(await p.evaluate(() => { const c = cur().bag.find(b => b.id === 'test-charges').charges; return [c.used, !!c.pendingRecovery]; }), [5, false], 'recharge : 2 + 1 = 3 charges');
+    eq(await p.evaluate(() => dice3dMiss), 0, 'chaque tirage a lu une face du moteur');
+  });
+
+  await test('Dés 3D : vrai moteur dans la fenêtre Détails, dégâts = faces stabilisées, « Passer l’animation » flottant', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); window.__faces = []; const orig = studioGameRoll; studioGameRoll = async (...a) => { const v = await orig(...a); window.__faces.push(v); return v; }; cur().turn = {}; tSelect(S.Titems.find(i => i.kind === 'atk').key); });
+    const n = await p.evaluate(() => (cur().rollLog || []).length);
+    await p.click('[data-act="tvdmg"]:not([data-crit])');
+    await p.locator('.game-dice-overlay').waitFor({ timeout: 30000 });
+    eq(await p.evaluate(() => [S.T.dmg, (cur().rollLog || []).length]), ['', n], 'rien avant l’arrêt des dés');
+    await p.locator('.dice3dfloat').click();
+    await p.waitForFunction(() => S.T.dmg !== '', null, { timeout: 35000 });
+    const r = await p.evaluate(() => [+S.T.dmg, window.__faces[0].reduce((a, b) => a + b, 0), dice3dMiss, !!document.querySelector('.dice3dfloat'), (cur().rollLog || []).length]);
+    eq(r, [r[1], r[1], 0, false, n + 1], 'total = faces du moteur, bouton retiré, une entrée d’historique');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));

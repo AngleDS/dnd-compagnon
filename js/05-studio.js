@@ -56,16 +56,16 @@ function studioWarm(){
   iframe.srcdoc='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden}'+style+'</style></head><body>'+html+'</body></html>';
   document.body.append(iframe); return E;
 }
-// Fenêtre de jet fermée pendant le lancer : les dés s'arrêtent tout de suite.
+// Jet qui n'est plus attendu (fenêtre fermée, autre personnage…) : les dés s'arrêtent tout de suite.
 function studioFollow(E){ cancelAnimationFrame(E.raf); const step=()=>{ if(studioEngine!==E||!E.busy) return;
-    if(!document.querySelector('.tpop')) E.win?.studioSkip?.();
+    if(!E.alive()) E.win?.studioSkip?.();
     E.raf=requestAnimationFrame(step); }; step(); }
 function studioSkip(){ const E=studioEngine; if(E&&E.busy) E.win?.studioSkip?.(); }
-async function studioGameRoll(specs){
+async function studioGameRoll(specs,alive=()=>!!document.querySelector('.tpop')){
   if(!virtualDiceEnabled()||diceDisplayMode()!=='3d') throw new Error('Jets 3D désactivés');
   const E=studioWarm(); if(!E) throw new Error('Jets 3D désactivés'); if(E.busy) throw new Error('Un lancer est déjà en cours');
-  const wasReady=!!E.warm; E.busy=true; const t1=performance.now();
-  try{ let iv=0; const closed=new Promise((_,rej)=>{ iv=setInterval(()=>{ if(!document.querySelector('.tpop')) rej(new Error('Lancer annulé')); },100); }); // fenêtre fermée pendant que le moteur démarre
+  const wasReady=!!E.warm; E.busy=true; E.alive=alive; const t1=performance.now();
+  try{ let iv=0; const closed=new Promise((_,rej)=>{ iv=setInterval(()=>{ if(!alive()) rej(new Error('Lancer annulé')); },100); }); // fenêtre fermée pendant que le moteur démarre
     let win; try{ win=await Promise.race([E.ready,closed]); } finally{ clearInterval(iv); } E.win=win; if(studioEngine!==E) throw new Error('Lancer annulé');
     // le moteur était prêt : on ne compte que le roulement ; sinon, le temps de démarrage est noté à part
     const t2=performance.now(); E.overlay.hidden=false; document.body.classList.add('game-dice-screen'); studioFollow(E);
@@ -73,6 +73,36 @@ async function studioGameRoll(specs){
     studioTimes.unshift([wasReady?0:Math.round(t2-t1),Math.round(performance.now()-t2)]); studioTimes.length=Math.min(studioTimes.length,10);
     return values;
   } finally { if(studioEngine===E){ E.busy=false; cancelAnimationFrame(E.raf); if(E.overlay) E.overlay.hidden=true; document.body.classList.remove('game-dice-screen'); } }
+}
+
+/* Chemin commun de tous les jets virtuels (chantier 29).
+   specs : faces des dés que le calcul va tirer, dans l'ordre (sans les relances). Dés 3D actifs : le moteur lance ces dés ;
+   une fois arrêtés, apply() tourne en lisant leurs faces (rnd les prend dans l'ordre) : aucun résultat, journal ni dépense
+   avant l'arrêt des dés. o.re1 : un dé qui fait 1 est relancé une fois (Guérisseur) ; la relance roule aussi en 3D.
+   o.alive : le jet est-il toujours attendu ? Par défaut : même personnage, même vue, même onglet, même fenêtre. Sinon le jet
+   est annulé sans rien appliquer (fermer la fenêtre pendant le lancer ne dépense rien).
+   o.pending(v) : affichage propre à une fenêtre de jet (jets rapides) ; sinon « Passer l'animation » flotte en bas de l'écran.
+   Sans dés 3D, ou avec des dés que le moteur ne sait pas lancer, apply() tourne tout de suite avec des tirages directs. */
+const DICE3D_FACES=[4,6,8,10,12,20,100];
+let dice3dBusy=false;
+function d20Specs(mode){ return mode==="a"||mode==="d"?[20,20]:[20]; }
+function exprSpecs(expr){ const out=[]; for(const p of String(expr||"").replace(/\s+/g,"").replace(/-/g,"+-").split("+").filter(Boolean)){ const m=p.match(/^(-?)(\d*)d(\d+)$/i); if(m) for(let i=0;i<Math.min(+(m[2]||1),100);i++) out.push(+m[3]); } return out; }
+function dice3dCan(specs){ return virtualDiceEnabled()&&diceDisplayMode()==="3d"&&specs.length>0&&specs.length<=100&&specs.every(f=>DICE3D_FACES.includes(f)); }
+function rollAlive(){ const key=()=>[S.cur,S.view,S.tab,S.T,S.T&&S.T.pop,S.W], k=key(); return ()=>key().every((x,i)=>x===k[i]); }
+async function roll3d(specs,apply,o={}){
+  if(!dice3dCan(specs)){ apply(); return true; }
+  if(dice3dBusy){ o.pending?.(false); return false; } // un seul lancer à la fois
+  const alive=o.alive||rollAlive(); let skip=null; dice3dBusy=true; document.body.classList.add("dice3d-busy");
+  if(o.pending) o.pending(true); else { skip=document.createElement("button"); skip.className="btn small dice3dskip dice3dfloat"; skip.dataset.act="dice3dSkip"; skip.textContent="Passer l’animation"; document.body.append(skip); }
+  try{
+    const values=await studioGameRoll(specs,alive);
+    const again=o.re1?specs.filter((f,j)=>values[j]===1):[], extra=again.length?await studioGameRoll(again,alive):[];
+    if(!alive()||!virtualDiceEnabled()) return false;
+    const queue=[]; let x=0; specs.forEach((f,j)=>{ queue.push({f,v:values[j]}); if(o.re1&&values[j]===1) queue.push({f,v:extra[x++]}); });
+    diceQueue=queue; try{ apply(); } finally { diceQueue=null; }
+    return true;
+  }catch(_){ if(alive()) setBanner("Le lancer 3D n’a pas abouti. Réessaie ou désactive les dés 3D dans Réglages."); return false; }
+  finally{ dice3dBusy=false; document.body.classList.remove("dice3d-busy"); skip?.remove(); if(o.pending) o.pending(false); }
 }
 
 // Le moteur se prépare à l'avance : quelques secondes après l'ouverture de l'appli si les jets 3D sont actifs.

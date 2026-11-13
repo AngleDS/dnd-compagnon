@@ -348,7 +348,12 @@ function beginDiceTrace(){
 }
 document.addEventListener("click",beginDiceTrace,true);
 document.addEventListener("submit",beginDiceTrace,true);
-function rnd(f){ if(!virtualDiceEnabled()) throw new Error("Dés virtuels désactivés"); const a=new Uint32Array(1); crypto.getRandomValues(a); const value=1+(a[0]%f); if(diceTrace) diceTrace.dice.push({faces:f,value,sign:1,discarded:false}); return value; }
+// Dés 3D (roll3d) : les faces stabilisées attendent dans diceQueue et sont lues dans l'ordre ; un tirage inattendu
+// (ce qui ne devrait pas arriver, compté dans dice3dMiss et vérifié par les tests) revient au tirage direct.
+let diceQueue=null, dice3dMiss=0;
+function rnd(f){ if(!virtualDiceEnabled()) throw new Error("Dés virtuels désactivés");
+  if(diceQueue){ const d=diceQueue.shift(); if(d&&d.f===f) return d.v; diceQueue=null; dice3dMiss++; }
+  const a=new Uint32Array(1); crypto.getRandomValues(a); const value=1+(a[0]%f); if(diceTrace) diceTrace.dice.push({faces:f,value,sign:1,discarded:false}); return value; }
 function markDiceTrace(sign,discarded){ if(diceTrace&&diceTrace.dice.length) Object.assign(diceTrace.dice[diceTrace.dice.length-1],{sign,discarded}); }
 function rollExpr(expr,re1){
   if(!virtualDiceEnabled()) throw new Error("Dés virtuels désactivés");
