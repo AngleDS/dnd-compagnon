@@ -2653,6 +2653,20 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.T.qr.k,cur().rollLog[0].label]),['init','Initiative'],'résultat affiché dans la fenêtre Initiative');
   });
 
+  await test('Dés 3D : sans plateau, les dés restent nets sur un écran haute définition', async p => {
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, colorScheme: 'dark' });
+    const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+    try {
+      await diceTable(t); await t.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); localStorage.setItem('registre-dice-studio-v1', JSON.stringify({ trayMode: 'screen' })); S.T.pop = null; render(); });
+      await t.locator('[data-act="tqroll"][data-k="init"]').first().click(); await t.click('.qmenu [data-m="n"]');
+      await t.locator('.game-dice-overlay').waitFor({ timeout: 30000 });
+      const g = await t.evaluate(() => { const c = document.querySelector('.game-dice-overlay'); return [c.width, c.height, Math.round(c.clientWidth * Math.min(devicePixelRatio, 2)), Math.round(c.clientHeight * Math.min(devicePixelRatio, 2))]; });
+      eq([g[0], g[1]], [g[2], g[3]], 'largeur et hauteur de dessin = taille affichée × min(densité de l’écran, 2)');
+      await t.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1, null, { timeout: 35000 });
+      ok(!errs.length, 'Erreur JS : ' + errs.join(' | '));
+    } finally { await ctx.close(); }
+  });
+
   await test('Dés 3D : moteur gardé prêt d’un jet à l’autre, préparé à l’ouverture du menu ; « Passer l’animation »', async p => {
     await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); S.T.pop='eco:action'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();

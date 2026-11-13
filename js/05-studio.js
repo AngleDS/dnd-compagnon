@@ -23,7 +23,7 @@ const STUDIO_GAME_PATCHES=[
   ['dieRenderer.render(dieScene,dieCamera);trayPreviewGroup.rotation.y+=delta*.32;trayRenderer.render(trayScene,trayCamera);','']];
 const STUDIO_SCREEN_PATCHES=[
   ['antialias:true,alpha:false','antialias:true,alpha:true'],
-  ['renderer.setPixelRatio(Math.min(devicePixelRatio||1,2))','renderer.setPixelRatio(1)'],
+  // La définition reste celle du studio (jusqu'à 2) : à 1, la toile agrandie sur un écran d'iPhone (2x ou 3x) rendait les dés flous.
   ['force.value=1.02;prepareAudio();',"force.value=1.9;root.dataset.externalPower='1.9';prepareAudio();"],
   ["function polygon(shape){return basePolygon(shape).map(([x,z])=>[x*1.45,z*1.45])}","function polygon(shape){const z=5.45,x=z*stage.clientWidth/Math.max(1,stage.clientHeight);return [[-x,-z],[x,-z],[x,z],[-x,z]]}"],
   ['function fitTray(){camera.zoom=1;','function fitTray(){camera.position.set(0,18,.001);camera.lookAt(0,0,0);camera.zoom=1;camera.updateProjectionMatrix();return;'],
