@@ -2401,18 +2401,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(/Points de vie/.test(bad), 'import : tuile de la carte PV invalide refusée');
   });
 
-  await test('Fenêtres harmonisées : en bas de l’écran sur téléphone, même croix, bouton principal en pied, rouge / vert pour Dégâts / Soins', async p => {
+  await test('Fenêtres harmonisées : au milieu de l’écran sur téléphone, même croix, bouton principal en pied, rouge / vert pour Dégâts / Soins', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin');
     const geo = async sel => { await p.waitForTimeout(250); return p.evaluate(sel => { const w = document.querySelector(sel); if (!w) return null; const r = w.getBoundingClientRect(), x = w.querySelector('[data-act="tpopclose"],[data-act="closeModal"],[data-act="ccclose"],[data-act="catClose"]'), xr = x && x.getBoundingClientRect();
-      return { bottom: Math.round(innerHeight - r.bottom), w: Math.round(r.width), x: x ? [Math.round(xr.width), Math.round(xr.height), x.textContent.trim()] : null }; }, sel); };
+      return { mid: Math.abs(Math.round(innerHeight - r.bottom) - Math.round(r.top)) <= 2 && r.top >= 10, w: Math.round(r.width), x: x ? [Math.round(xr.width), Math.round(xr.height), x.textContent.trim()] : null }; }, sel); };
     for (const k of ['saves', 'rest', 'cond', 'hptemp', 'info:ca']) {
       await p.evaluate(k => { S.T.pop = k; render(); }, k);
-      eq(await geo('.tpop'), { bottom: 0, w: 390, x: [44, 44, '×'] }, k + ' : collée en bas, pleine largeur, croix 44 px');
+      eq(await geo('.tpop'), { mid: true, w: 366, x: [44, 44, '×'] }, k + ' : au milieu de l’écran, presque pleine largeur, croix 44 px');
     }
     await p.evaluate(() => { S.T.pop = 'rest'; S.T.restKind = 'court'; render(); });
     ok(await p.evaluate(() => { const f = document.querySelector('.tpop .wfoot .btn.primary'), b = document.querySelector('.tpop').getBoundingClientRect(), r = f.getBoundingClientRect(); return /Terminer le repos court/.test(f.textContent) && r.bottom <= b.bottom && r.top >= b.top; }), 'Repos : « Terminer le repos » en pied, visible');
     await p.evaluate(() => { S.T.pop = null; render(); S.pending = { type: 'hp', mode: 'dmg' }; renderModal(); });
-    eq(await geo('.picker .box'), { bottom: 0, w: 390, x: [44, 44, '×'] }, 'Dégâts : même gabarit (croix, en bas)');
+    eq(await geo('.picker .box'), { mid: true, w: 366, x: [44, 44, '×'] }, 'Dégâts : même gabarit (croix, au milieu)');
     ok(await p.evaluate(() => { const b = document.querySelector('.hpbox .wfoot .btn.hpdmgb'), h = document.querySelector('.hpbox .whead h2'); return !!b && b.form && b.form.id === 'hpform' && /rgb\(192, 71, 63\)/.test(getComputedStyle(h).color) && getComputedStyle(b).backgroundColor === 'rgb(155, 47, 47)'; }), 'Dégâts : titre et bouton rouges, bouton en pied relié au formulaire');
     await p.fill('#hp-amt', '3'); await p.click('.hpbox .wfoot .btn.hpdmgb');
     eq(await p.evaluate(() => [cur().hp.cur, derive(cur()).hpMax - 3, S.pending]), [await p.evaluate(() => derive(cur()).hpMax - 3), await p.evaluate(() => derive(cur()).hpMax - 3), null], 'le bouton du pied applique les dégâts');
