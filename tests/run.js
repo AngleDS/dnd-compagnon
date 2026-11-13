@@ -2576,6 +2576,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .qhitnext button')].map(b => b.disabled)), [false, false, false], 'dés arrêtés : boutons actifs');
   });
 
+  await test('Studio de dés : onglets sombres en thème sombre, tailles de texte de l’échelle de l’appli', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await open(p);
+    await p.evaluate(() => studioOpen()); await p.waitForFunction(() => { const d = document.querySelector('.dice-studio-frame')?.contentDocument; return d && d.querySelector('#physics-dice-demo .ecrin-tabs button'); });
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(() => { const d = document.querySelector('.dice-studio-frame').contentDocument, ok = ['11px', '13px', '16px', '18px', '22px', '28px'];
+      const lum = c => { const m = c.match(/\d+/g).map(Number); return m[0] + m[1] + m[2]; };
+      const tabs = [...d.querySelectorAll('#physics-dice-demo .ecrin-tabs button')].filter(b => b.getAttribute('aria-selected') !== 'true').map(b => lum(getComputedStyle(b).backgroundColor));
+      return [d.querySelector('#physics-dice-demo').classList.contains('dark'), tabs.length > 0 && tabs.every(v => v < 200), [...d.querySelectorAll('#physics-dice-demo *')].map(e => getComputedStyle(e).fontSize).filter(f => !ok.includes(f))]; });
+    eq(r, [true, true, []], 'thème sombre : onglets non choisis foncés ; aucune taille hors échelle');
+    await p.keyboard.press('Escape');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');
