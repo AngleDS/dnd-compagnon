@@ -2623,6 +2623,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const f = p.frameLocator('.dice-studio-frame');
     await f.locator('#die-preview canvas').waitFor({ timeout: 30000 });
     ok(await p.locator('.dice-studio-frame').evaluate(e => e.getBoundingClientRect().height > 300), 'cadre du studio visible dans la fenêtre');
+    eq(await f.locator('#physics-dice-demo .head').count(), 0, 'le titre de la fenêtre n’est pas répété dans son contenu');
+    eq(await f.locator('#physics-dice-demo').evaluate(e => [getComputedStyle(e).borderTopWidth, getComputedStyle(e).backgroundColor]), ['0px', 'rgba(0, 0, 0, 0)'], 'le contenu ne dessine pas une deuxième fenêtre');
     ok(await f.locator('#physics-dice-demo').evaluate(e => e.classList.contains('dark')), 'thème sombre de l’application');
     eq(await f.locator('.theme-toggle').count(), 0, 'pas de sélecteur de thème dans le studio');
     await p.evaluate(() => setTheme('light'));
