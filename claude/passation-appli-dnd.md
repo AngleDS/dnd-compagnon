@@ -346,6 +346,15 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 - 8. Retrouver plus simplement un bloc retiré — Claude (Sonnet).
 - 4. Dés libres — design ChatGPT d'abord, puis code Claude (Sonnet). Après 10 et 20.
 - 29. **Dés 3D** (studio de dés et jets animés) — **ChatGPT** puis **Claude**, depuis le 13 nov. 2026 (voir l'entrée « Dés 3D » de la section 11) : studio fait, **tous les jets virtuels branchés sur le moteur 3D le 13 nov. 2026 (Claude, publié en v180)** ; mode « avec plateau » retiré à la demande d'Angle. Reste : essai sur iPhone (netteté, vitesse) ; voisin du 4.
+- 30. **Audit UX de ChatGPT (13 nov. 2026, `claude/audit-ux-chatgpt.md`) : corrections rapides**, sans maquette — Claude (Sonnet). Après 2. Validé par Angle le 13 nov. 2026 :
+  - fenêtre de jet : phrase d'aide adaptée au mode (dés physiques : « Saisis ton d20, puis choisis la suite » ; virtuels et 3D : rien à saisir, suite grisée tant que les dés roulent) ; Dégâts, Critique, Raté restent visibles (ils accélèrent le tour) ;
+  - utilisation d'une réserve (Imposition des mains…) : titre « Combien de PV utiliser ? », saisie séparée des autres usages (Tout, Retirer un état, Détails) ; résultat et « Annuler l'utilisation » gardés ;
+  - « Ce tour » : indice discret d'état (à faire / terminé) sur Mouvement, qui bascule sans ouvrir de fenêtre ; les tuiles qui ouvrent une fenêtre ne changent pas ;
+  - tuiles sans option propre : « Aucune » en gris (tient dans le gabarit de 76 px), explication dans la fenêtre, marquage de l'action toujours possible ;
+  - listes de sorts : condition détaillée de réaction déplacée dans la fiche du sort (bouton d'information) ; la ligne garde nom, temps court, portée, niveau, Toucher / Dégâts / Lancer (ex. Bouclier : « Réaction · personnelle »).
+- 31. **Sens des compteurs de « Ce tour »** (audit, points 5 et 9 : « 4 options » à côté de « Autres actions (10) ») — Claude (Opus). Après 30. À trancher avec Angle : compter aussi les actions communes, ou dire clairement le périmètre ; la formulation doit rester juste pour actions, actions bonus, réactions, sorts et aptitudes.
+- 32. **Carte PV et ressources** (audit, points 1 à 3) — chantier de design : maquettes **ChatGPT**, puis code Claude (Opus). **Avec le 5** (maquettes Défenses, dégâts typés, « États et effets » encore à valider par Angle) pour ne refaire la carte qu'une fois ; avant 23 et 28. Pistes : PV comme point focal ; emplacements en lignes « niv. 1 : 4/4 » qui ouvrent une petite fenêtre pour dépenser ou rendre (garder la dépense rapide) ; concentration dans une zone distincte ; ressource présente à deux endroits (choix du joueur, `layout.pvTile`) avec le même affichage des deux côtés (fraction et pastilles), sans restreindre les ressources possibles ; noms courts par capacité rangés dans les données du catalogue (nom complet dans la fenêtre et dans le nom accessible), ex. « Initié à la magie ».
+  - À couvrir aux vérifications de 30 à 32 (absents de l'audit) : vrai iPhone (Safari), pas seulement l'émulation 390 px ; dés physiques et virtuels ; thème clair et sombre.
 - 3. Nouveau design des tuiles les plus utilisées (CA, Vitesse…) — **ChatGPT**. De préférence après 1.
 - 9. Crayon pour Personnage et PV (largeur, titre) — petit, à confirmer par Angle (point non retenu pour l'instant).
 
@@ -366,7 +375,7 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 - 21. Accueil plus léger sur téléphone — Claude (Sonnet). Après 20.
 - 24. Sauvegarde entre appareils — Claude (**Fable**). Après 20 ; à concevoir avec la PWA (hors ligne, conflits).
 - 25. Pack de table (partager le contenu hors SRD) — Claude (Opus). Après 24 (même format d'export).
-- 23. Créer ses propres tuiles depuis un menu — Claude (Opus), pas prioritaire. Après 1 et 3.
+- 23. Créer ses propres tuiles depuis un menu — Claude (Opus), pas prioritaire. Après 1 et 3. Inclure (audit UX, point 10) : au choix des tuiles, montrer les capacités propres à l'espèce et à la classe avec leur nom complet ; pas de disposition imposée identique pour tous.
 - 22. Skins par classe (mode clair et sombre) — **ChatGPT**. Après 3 et 20.
 - 26. PWA : **en v178 depuis le 13 nov. 2026** ; mise à jour quand Angle le demande — Claude (Haiku). Publication iPhone, iPad, App Store seulement après stabilisation (et après 24).
 - 27. Petits restes : reliquats Claude, essai du catalogue dans l'app Claude sur ordinateur — à voir ensemble.
