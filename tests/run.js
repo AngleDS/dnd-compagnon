@@ -2838,6 +2838,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { try { studioLib('const a=1;', 'X'); return false; } catch (e) { return /inattendu/.test(e.message); } }), 'moteur embarqué inattendu : échec propre');
   });
 
+  await test('Défenses : poison du nain prérempli (espèce), ajout et retrait, immunités aux états, loupe', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'srd:guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); S.T.pop = 'def'; render(); });
+    ok(await p.locator('.tpop[aria-label="Défenses"]').isVisible(), 'fenêtre Défenses');
+    ok(/Poison\s*espèce/i.test(await p.innerText('.tpop .lusec >> nth=0')), 'résistance au poison venue de l’espèce');
+    await p.click('[data-act="defEdit"][data-c="res"]'); await p.click('[data-act="defTog"][data-c="res"][data-v="Feu"]');
+    await p.click('[data-act="defTog"][data-c="res"][data-v="Poison"]');
+    eq(await p.evaluate(() => [cur().defenses.res, cur().defenses.off, defenses(cur()).res.map(x => x.v)]), [['Feu'], ['res:Poison'], ['Feu']], 'feu ajouté, poison de l’espèce retiré (mémorisé)');
+    await p.click('[data-act="defTog"][data-c="res"][data-v="Poison"]'); await p.click('[data-act="defEdit"][data-c="res"]');
+    await p.click('[data-act="defEdit"][data-c="cond"]'); await p.click('[data-act="defTog"][data-c="cond"][data-v="Charmé"]');
+    eq(await p.evaluate(() => [defenses(cur()).res.map(x => x.v + (x.src ? '·' + x.src : '')), defenses(cur()).cond.map(x => x.v), defSummary(cur())]), [['Poison·espèce', 'Feu'], ['Charmé'], 'résistance poison, feu · immunité aux états charmé'], 'retour du poison, immunité à Charmé, résumé');
+    await p.evaluate(() => { S.T.pop = null; S.T.defEdit = null; render(); tSelect('def'); });
+    await p.click('.tpop [data-act="tpop"][data-v="def"]');
+    ok(await p.locator('.tpop[aria-label="Défenses"]').isVisible(), 'loupe : carte Défenses puis fenêtre');
+    await newWizardChar(p, { cls: 'srd:guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
+    eq(await p.evaluate(() => [defSummary(cur()), DMG_TYPES.length]), ['', 13], 'humain : aucune défense ; 13 types de dégâts');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));

@@ -77,6 +77,8 @@ function tableItems(ch,D){
     else if(g.tag==="État") add({key:"rule:"+g.id,kind:"rule",name:g.name,sub:"État",al:["etat"],cost:null,text:g.text,info:true,cond:CONDS.includes(g.name)?g.name:null});
     else if(g.id==="repos-court"||g.id==="repos-long") add({key:"rule:"+g.id,kind:"rule",name:g.name,sub:"Règle",al:["repos"],cost:null,text:g.text,info:true,rest:g.id==="repos-court"?"court":"long"});
   }
+  // Défenses (chantier 5) : trouvables par la loupe, sans tuile
+  add({key:"def",kind:"rule",name:"Défenses",sub:"Résistances, immunités, vulnérabilités",al:["defenses","defense","resistance","resistances","immunite","immunites","vulnerabilite","vulnerabilites"],cost:null,text:esc(defSummary(ch)?"Tes défenses : "+defSummary(ch)+".":"Aucune défense notée."),info:true,def:true});
   for(const b of ch.bag||[]){ if(!((+b.qty||0)>0)) continue; const ref=b.ref||matchItem(b.name);
     const html=ref?itemTipHtml(ref).replace(/<div class="tiphead">[\s\S]*?<\/div>/,""):"";
     const u=itemUse(ch,b);
@@ -264,6 +266,7 @@ function tPop(ch,D){
   const anim=S.lastPop!==k; S.lastPop=k;
   const wrap=(title,inner,extra="")=>`<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop${extra}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-act="noop"><div class="tpophead"><b>${esc(title)}</b><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${inner}</div></div></div>`;
   if(k.startsWith("tiles:c_")) return customPop(ch,D,k.slice(6),wrap);
+  if(k==="def") return defPop(ch,D,wrap); // chantier 5
   if(k.startsWith("blk:")){ const id=k.slice(4); if(!TBLK.some(b=>b[0]===id)||BLK_FIXED.includes(id)){ T.pop=null; return ""; } return builtinPop(ch,D,id,wrap); }
   if(k==="blkadd"){ const gone=TBLK.filter(b=>blkHidden(ch,b[0]));
     return wrap("Ajouter un bloc",`${gone.length?`<div class="label" style="margin-bottom:6px">Blocs retirés</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px">${gone.map(b=>`<button class="btn small" data-act="blkRestore" data-v="${b[0]}">+ ${esc(b[1])}</button>`).join("")}</div>`:""}<div class="label" style="margin-bottom:6px">Nouveau bloc : choisis son format</div><div class="muted" style="font-size:var(--fs-sm);margin-bottom:10px">Largeur sur la page (sur 4 colonnes) et nombre de rangées de tuiles. Tu places ensuite les tuiles dans la même fenêtre.</div>
@@ -1333,6 +1336,7 @@ function tCard(ch,D){
   else body=`<details class="tdesc" open><summary class="label">Description</summary><div class="prose">${i.html||prose(i.text)}</div></details>`;
   if(i.cond){ const on=(ch.conditions||[]).includes(i.cond); foot+=`<button class="btn${on?"":" primary"}" data-act="cond" data-v="${esc(i.cond)}" aria-pressed="${on}">${on?"Retirer l’état":"Activer l’état"}</button>`; }
   if(i.rest) foot+=`<button class="btn primary" data-act="restOpen" data-v="${i.rest}">${i.rest==="court"?"Faire un repos court":"Faire un repos long"}</button>`;
+  if(i.def) foot+=`<button class="btn primary" data-act="tpop" data-v="def">Voir et modifier les défenses</button>`;
   const kv=(l,v)=>`<span class="tk"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
   let sum="";
   if(["abil","save","skill","init"].includes(i.kind)) sum=kv("Bonus",sg(i.mod-exhN));
