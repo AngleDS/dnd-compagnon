@@ -2647,6 +2647,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => diceDisplayMode()), 'direct', 'retour au résultat direct');
   });
 
+  await test('Studio : le moteur renvoie les faces physiques stabilisées', async p => {
+    await open(p, { noClaude:true }); await menuClick(p, '[data-act="studioOpen"]');
+    const f=p.frameLocator('.dice-studio-frame'); await f.locator('#die-preview canvas').waitFor({timeout:30000});
+    const child=p.frames().find(frame=>frame.url()==='about:srcdoc');
+    ok(child,'document du studio disponible');
+    ok(await child.evaluate(async()=>{try{await window.studioRoll3D([20]);return false}catch(_){return true}}),'lancer interdit si jets virtuels désactivés');
+    await p.evaluate(()=>setVirtualDice(true));
+    const r=await child.evaluate(async()=>{const values=await window.studioRoll3D([20,6]);return {values,faces:window.studioReadFaces()}});
+    eq(r.values,r.faces,'résultats lus sur les faces réelles après stabilisation');
+    ok(r.values[0]>=1&&r.values[0]<=20&&r.values[1]>=1&&r.values[1]<=6,'d20 et d6 dans leurs bornes');
+    const hundred=await child.evaluate(async()=>{const values=await window.studioRoll3D([100]);return {values,faces:window.studioReadFaces()}});
+    eq(hundred.values,hundred.faces,'d100 lu sur les deux dés stabilisés');
+    ok(hundred.values[0]>=1&&hundred.values[0]<=100,'d100 dans ses bornes');
+  });
+
   await test('Studio de dés : autonome, préférences conservées et verrou des dés respecté', async p => {
     await p.route(/^https?:/, r => r.abort());
     await open(p, { noClaude: true });

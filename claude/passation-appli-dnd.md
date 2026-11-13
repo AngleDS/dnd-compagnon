@@ -529,3 +529,7 @@ Le studio n'a plus de titre ni de cadre internes : il utilise la fenêtre de l'a
 
 En mode 3D activé, les tirages synchrones issus d'un clic ou d'une soumission émettent après l'interaction un événement `dice-trace`, avec les faces, valeurs, signes et relances écartées. Les tests vérifient le toucher rapide avec avantage et les dégâts, sans ralentir ni modifier leur résultat. Aucun rendu ne consomme encore cet événement : le point 2 reste incomplet, notamment l'affichage 3D, le plateau et la prise en charge de tous les parcours.
 
+# Préparation des jets 3D — lecture du moteur physique
+
+Dans le document isolé du studio, `studioRoll3D([faces, ...])` lance les dés demandés et renvoie les valeurs lues sur leurs faces une fois stabilisées. Les types pris en charge sont d4, d6, d8, d10, d12, d20 et d100 ; ce dernier utilise deux d10. La fonction refuse un lancer lorsque les jets virtuels sont verrouillés. Les fenêtres de jeu ne l'appellent pas encore : les jets 3D en partie restent à raccorder.
+
