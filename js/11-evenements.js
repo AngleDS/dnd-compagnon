@@ -96,7 +96,7 @@ document.addEventListener("click",e=>{
     case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
     case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); renderModal(); break;
-    case "diceDisplay": setDiceDisplayMode(t.dataset.v); renderModal(); break;
+    case "diceDisplay": setDiceDisplayMode(diceDisplayMode()==="3d"?"direct":"3d"); renderModal(); break;
     case "nav": if(t.dataset.v==="hb"||t.dataset.v==="comp"){ if(S.view==="sheet") S.navFrom="perso"; else if(S.view==="list") S.navFrom="menu"; }
       if(t.dataset.v==="main"||t.dataset.v==="table"){ // rester sur le perso affiché ; le perso principal seulement en venant d'ailleurs
         const here=S.cur&&S.docs[S.cur]&&S.docs[S.cur].type==="perso"; const m=here?S.cur:mainId(); if(m){ S.tab = t.dataset.v==="table" ? "table" : (S.cur===m&&S.tab!=="table"?S.tab:"jeu"); if(t.dataset.v==="main") S.unlockEdit=false; S.cur=m; S.view="sheet"; render(); window.scrollTo(0,0); } break; } S.view=t.dataset.v; S.cur=S.view==="list"?null:S.cur; render(); break;

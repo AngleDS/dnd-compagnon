@@ -576,6 +576,7 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .rg-sw{position:relative;width:60px;min-width:60px;height:44px;min-height:44px;padding:0;border:0;background:none;cursor:pointer}
 .rg-sw::before{content:"";position:absolute;left:4px;top:6px;width:52px;height:32px;border-radius:16px;border:1px solid var(--line);box-sizing:border-box;background:var(--bg,#111)}
 .rg-sw::after{content:"";position:absolute;top:10px;left:8px;width:24px;height:24px;border-radius:50%;background:var(--muted);transition:left .15s}
+.rg-row.rg-disabled{opacity:.45}.rg-sw:disabled{cursor:not-allowed}
 .rg-sw.on::before{background:var(--brass);border-color:var(--brass)}.rg-sw.on::after{left:28px;background:var(--sheet)}
 /* Saisies de dés : champ (libellé au-dessus), puis Appliquer et Lancer alignés sur le bas du champ, même hauteur */
 .row.tin{gap:8px}.row.tin .btn{min-height:44px}.tinbonus{align-self:center;font-size:var(--fs-sm);color:var(--muted)}

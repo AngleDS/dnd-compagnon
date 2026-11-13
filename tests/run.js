@@ -2604,15 +2604,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Dés : choix du résultat direct ou de la 3D conservé dans les réglages', async p => {
     await open(p, { noClaude: true });
     await menuClick(p, '[data-act="settingsOpen"]');
-    eq(await p.locator('[data-act="diceDisplay"]').count(), 0, 'choix masqué tant que les dés virtuels sont désactivés');
+    ok(await p.locator('[data-act="diceDisplay"]').isVisible() && await p.locator('[data-act="diceDisplay"]').isDisabled(), 'dés 3D visibles et désactivés tant que les jets virtuels sont coupés');
     await p.click('[data-act="virtualDice"]');
-    eq(await p.getAttribute('[data-act="diceDisplay"][data-v="direct"]', 'aria-pressed'), 'true', 'résultat direct par défaut');
-    await p.click('[data-act="diceDisplay"][data-v="3d"]');
+    eq(await p.getAttribute('[data-act="virtualDice"]', 'aria-label'), 'Jets virtuels', 'nouveau libellé des jets');
+    eq(await p.getAttribute('[data-act="diceDisplay"]', 'aria-checked'), 'false', 'dés 3D désactivés par défaut');
+    await p.click('[data-act="diceDisplay"]');
     eq(await p.evaluate(() => [diceDisplayMode(), localStorage.getItem(VIRTUAL_DICE_DISPLAY_KEY)]), ['3d', '3d'], 'choix enregistré');
+    await p.click('[data-act="virtualDice"]'); ok(await p.locator('[data-act="diceDisplay"]').isDisabled(), 'dés 3D grisés lorsque les jets sont désactivés');
+    await p.click('[data-act="virtualDice"]'); eq(await p.getAttribute('[data-act="diceDisplay"]', 'aria-checked'), 'true', 'choix 3D conservé à la réactivation');
     ok(await p.locator('.rg-help').filter({hasText:'prochaine étape'}).isVisible(), 'disponibilité des jets 3D expliquée');
     await p.reload(); await p.waitForFunction(() => S.C && S.CAT); await menuClick(p, '[data-act="settingsOpen"]');
-    eq(await p.getAttribute('[data-act="diceDisplay"][data-v="3d"]', 'aria-pressed'), 'true', 'choix conservé après rechargement');
-    await p.click('[data-act="diceDisplay"][data-v="direct"]');
+    eq(await p.getAttribute('[data-act="diceDisplay"]', 'aria-checked'), 'true', 'choix conservé après rechargement');
+    await p.click('[data-act="diceDisplay"]');
     eq(await p.evaluate(() => diceDisplayMode()), 'direct', 'retour au résultat direct');
   });
 

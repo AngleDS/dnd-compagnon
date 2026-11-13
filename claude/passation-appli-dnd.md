@@ -517,3 +517,7 @@ Le studio validé est accessible depuis le Menu. Sa source est `studio/studio.ht
 
 Le cadre du studio utilise une règle de grille plus spécifique que la fenêtre générique : son contenu est visible. Il suit le thème de l'application, sans sélecteur de thème propre. Dans Réglages, lorsque les dés virtuels sont actifs, le choix Résultat direct / Dés 3D est conservé sous `registre-virtual-dice-display`. L'interface indique que les jets 3D ne sont pas encore reliés ; les jets rapides gardent leur comportement immédiat pour l'instant.
 
+# Studio et réglages — harmonisation
+
+Le studio n'a plus de titre ni de cadre internes : il utilise la fenêtre de l'application. Dans Réglages, « Jets virtuels » et « Dés 3D » utilisent les mêmes interrupteurs ; le second est visible mais grisé et inactif si les jets virtuels sont désactivés. Le choix 3D reste conservé à la réactivation. Les jets 3D ne sont pas encore reliés aux jets de jeu.
+
