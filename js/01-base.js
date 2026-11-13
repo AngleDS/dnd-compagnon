@@ -68,3 +68,8 @@ function hbClassEditor(id,h){ const b=k=>`data-hb="${id}" data-bind="${k}"`; con
   <label class="field"><span>Sorts mineurs (20 valeurs, niveaux 1→20)</span><input type="text" ${b("cantrips")} value="${esc(h.cantrips||"")}" placeholder="2,2,2,3,3,3,3,3,3,4,…"></label>
   <label class="field"><span>Sorts préparés (20 valeurs)</span><input type="text" ${b("prepared")} value="${esc(h.prepared||"")}" placeholder="vide = table standard du type"></label>`:""}</div>
   ${h.castType?`<div class="muted" style="font-size:var(--fs-sm)">Emplacements : table du ${h.castType==="pact"?"Occultiste":h.castType==="half"?"Paladin":"Magicien"}.</div>`:""}`; }
+/* Fenêtres harmonisées (chantier 10, décisions d'Angle, 13 nov. 2026) : en-tête unique (titre + croix 44 px), pied avec le bouton principal
+   toujours visible ; sur téléphone, les fenêtres montent du bas de l'écran (CSS en fin de theme.css). */
+function winHead(title,act="closeModal",style=""){ return `<div class="whead"><h2${style?` style="${style}"`:""}>${title}</h2><button class="btn small ghost wclose" type="button" data-act="${act}" aria-label="Fermer">×</button></div>`; }
+const winFoot=inner=>`<div class="wfoot">${inner}</div>`;
+

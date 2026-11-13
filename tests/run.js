@@ -2401,6 +2401,31 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(/Points de vie/.test(bad), 'import : tuile de la carte PV invalide refusée');
   });
 
+  await test('Fenêtres harmonisées : en bas de l’écran sur téléphone, même croix, bouton principal en pied, rouge / vert pour Dégâts / Soins', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin');
+    const geo = async sel => { await p.waitForTimeout(250); return p.evaluate(sel => { const w = document.querySelector(sel); if (!w) return null; const r = w.getBoundingClientRect(), x = w.querySelector('[data-act="tpopclose"],[data-act="closeModal"],[data-act="ccclose"],[data-act="catClose"]'), xr = x && x.getBoundingClientRect();
+      return { bottom: Math.round(innerHeight - r.bottom), w: Math.round(r.width), x: x ? [Math.round(xr.width), Math.round(xr.height), x.textContent.trim()] : null }; }, sel); };
+    for (const k of ['saves', 'rest', 'cond', 'hptemp', 'info:ca']) {
+      await p.evaluate(k => { S.T.pop = k; render(); }, k);
+      eq(await geo('.tpop'), { bottom: 0, w: 390, x: [44, 44, '×'] }, k + ' : collée en bas, pleine largeur, croix 44 px');
+    }
+    await p.evaluate(() => { S.T.pop = 'rest'; S.T.restKind = 'court'; render(); });
+    ok(await p.evaluate(() => { const f = document.querySelector('.tpop .wfoot .btn.primary'), b = document.querySelector('.tpop').getBoundingClientRect(), r = f.getBoundingClientRect(); return /Terminer le repos court/.test(f.textContent) && r.bottom <= b.bottom && r.top >= b.top; }), 'Repos : « Terminer le repos » en pied, visible');
+    await p.evaluate(() => { S.T.pop = null; render(); S.pending = { type: 'hp', mode: 'dmg' }; renderModal(); });
+    eq(await geo('.picker .box'), { bottom: 0, w: 390, x: [44, 44, '×'] }, 'Dégâts : même gabarit (croix, en bas)');
+    ok(await p.evaluate(() => { const b = document.querySelector('.hpbox .wfoot .btn.hpdmgb'), h = document.querySelector('.hpbox .whead h2'); return !!b && b.form && b.form.id === 'hpform' && /rgb\(192, 71, 63\)/.test(getComputedStyle(h).color) && getComputedStyle(b).backgroundColor === 'rgb(155, 47, 47)'; }), 'Dégâts : titre et bouton rouges, bouton en pied relié au formulaire');
+    await p.fill('#hp-amt', '3'); await p.click('.hpbox .wfoot .btn.hpdmgb');
+    eq(await p.evaluate(() => [cur().hp.cur, derive(cur()).hpMax - 3, S.pending]), [await p.evaluate(() => derive(cur()).hpMax - 3), await p.evaluate(() => derive(cur()).hpMax - 3), null], 'le bouton du pied applique les dégâts');
+    await p.evaluate(() => { S.pending = { type: 'hp', mode: 'heal' }; renderModal(); });
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector('.hpbox .wfoot .btn.hphealb')).backgroundColor === 'rgb(63, 107, 74)'), 'Soins : bouton vert');
+    await p.click('.picker .wclose'); ok(await p.evaluate(() => !S.pending), 'la croix ferme');
+    await p.evaluate(() => { cur().conc = 'Bénédiction'; S.T.cc = { dmg: 0, mode: 'n', d1: '', d2: '', res: null }; S.T.pop = 'concchk'; render(); });
+    eq((await geo('.tpop')).x, [44, 44, '×'], 'Jet de concentration : croix');
+    await p.click('.tpop [data-act="ccclose"]'); ok(await p.evaluate(() => S.T.pop === null), 'la croix referme le jet de concentration');
+    await p.setViewportSize({ width: 1200, height: 900 }); await p.evaluate(() => { S.T.pop = 'saves'; render(); });
+    ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); return r.bottom < innerHeight - 20 && r.width < 700; }), 'ordinateur : fenêtre centrée, pas collée en bas');
+  });
+
   if (BROWSER) await BROWSER.close();
   const ko = results.filter(r => !r[1]).length;
   if (ONLY.length) {

@@ -31,7 +31,7 @@ function levelPlan(ch){
 }
 function lvlModal(){
   const ch=cur(), P=S.pending, p=levelPlan(ch), D0=p.D0;
-  if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto"><div class="row" style="justify-content:space-between"><h2>Niveau 20</h2><button class="btn small ghost" data-act="closeModal">Fermer</button></div><p>Niveau maximum atteint.</p></div></div>`;
+  if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto">${winHead("Niveau 20")}<p>Niveau maximum atteint.</p></div></div>`;
   const o=(v,l,c)=>`<option value="${esc(v)}" ${String(v)===String(c)?"selected":""}>${esc(l)}</option>`;
   const lu=(k,i)=>`data-lu="${k}"${i!==undefined?` data-i="${i}"`:""}`;
   const sec=(t,b)=>`<div class="lusec"><div class="label">${t}</div>${b}</div>`;
@@ -75,7 +75,7 @@ function lvlModal(){
   const foot=chain&&P.stop?`<div class="panel stack" style="border-color:var(--blood)"><div>Arrêter la création ici ? ${esc(ch.name||"Le personnage")} restera au <b>niveau ${p.from}</b> au lieu du niveau ${chain.to}. Tu pourras continuer plus tard avec le bouton « Niveau ${p.to} ↑ » en haut de la fiche.</div><div class="row" style="justify-content:flex-end;gap:6px"><button class="btn" data-act="lvlStopNo">Reprendre la montée</button><button class="btn danger" data-act="lvlStopYes">Arrêter au niveau ${p.from}</button></div></div>`
     :`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:var(--fs-sm)">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
   return `<div class="picker" data-act="${chain?"noop":"closeModal"}"><div class="box" role="dialog" aria-label="Monter de niveau" style="grid-template-rows:auto 1fr auto">
-    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2>${chain?`<div class="muted" style="font-size:var(--fs-sm)">Création du personnage · niveau ${p.to} sur ${chain.to}</div>`:""}</div>${chain?`<button class="btn small ghost" data-act="lvlStop">Arrêter ici</button>`:`<button class="btn small ghost" data-act="closeModal">Annuler</button>`}</div>
+    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2>${chain?`<div class="muted" style="font-size:var(--fs-sm)">Création du personnage · niveau ${p.to} sur ${chain.to}</div>`:""}</div>${chain?`<button class="btn small ghost" data-act="lvlStop">Arrêter ici</button>`:`<button class="btn small ghost wclose" type="button" data-act="closeModal" aria-label="Fermer">×</button>`}</div>
     <div class="stack" style="overflow-y:auto;min-height:0">${h}</div>
     ${foot}</div></div>`;
 }
@@ -90,7 +90,7 @@ function ccPop(ch,D,anim){
   let res="";
   if(c.res){ const ok=c.res.total>=dd;
     res=`<div class="ccres ${ok?"ok":"ko"}"><div class="num" style="font-size:34px;font-weight:700">${c.res.total}</div><div><b>${ok?"Concentration maintenue":"Concentration perdue"}</b><div class="muted" style="font-size:var(--fs-sm)">${esc(c.res.bd)} contre DD ${dd}${ok?"":` · ${esc(c.res.spell)} prend fin`}</div></div></div>
-      <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn primary" data-act="ccclose">Continuer</button></div>`; }
+      ${winFoot(`<button class="btn primary" data-act="ccclose">Continuer</button>`)}`; }
   const body=`<div class="muted" style="font-size:var(--fs-sm)">Tu as subi des dégâts en te concentrant sur <b>${esc(ch.conc||(c.res&&c.res.spell)||"")}</b> : jet de sauvegarde de Constitution obligatoire.</div>
     <div class="row" style="gap:18px;margin:10px 0;align-items:flex-end">
       <label class="field"><span>Dégâts subis</span><input id="cc-dmg" type="number" min="0" value="${esc(String(c.dmg||0))}" style="width:80px" ${c.res?"disabled":""}></label>
@@ -101,7 +101,7 @@ function ccPop(ch,D,anim){
     <form class="row tin" data-form="cc" style="margin-top:8px"><label class="field"><span>${c.mode==="n"?"Ton d20":"1er d20"}</span><input id="cc-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(c.d1)}"></label>
       ${c.mode!=="n"?`<label class="field"><span>2e d20</span><input id="cc-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(c.d2)}"></label>`:""}
       <button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="ccroll">Lancer virtuellement</button></form>`}`;
-  return `<div class="tpopback${anim?"":" still"}" data-act="noop"><div class="tpop" role="dialog" aria-modal="true" aria-label="Jet de concentration" data-act="noop"><div class="tpophead"><b>Jet de concentration</b></div><div class="tpopbody">${body}</div></div></div>`;
+  return `<div class="tpopback${anim?"":" still"}" data-act="noop"><div class="tpop" role="dialog" aria-modal="true" aria-label="Jet de concentration" data-act="noop"><div class="tpophead"><b>Jet de concentration</b><button class="btn small ghost wclose" data-act="ccclose" aria-label="Fermer">×</button></div><div class="tpopbody">${body}</div></div></div>`;
 }
 function ccResolve(a,b,virt){
   if(!virt&&virtualDiceEnabled()) return;
@@ -171,18 +171,18 @@ function renderModal(){
   const D=derive(ch);
   if(S.pending.type==="lvl"){ m.innerHTML=lvlModal(); return; }
   if(S.pending.type==="hp"){ const P=S.pending, dmg=P.mode==="dmg", hp=ch.hp||{cur:D.hpMax,temp:0};
-    m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box hpbox" role="dialog" aria-label="${dmg?"Dégâts":"Soins"}" style="grid-template-rows:auto auto auto;max-width:420px">
-      <div class="row" style="justify-content:space-between"><h2 style="color:${dmg?"#9b2f2f":"#3f6b4a"}">${dmg?"Dégâts subis":"Soins reçus"}</h2><button class="btn small ghost" data-act="closeModal">Annuler</button></div>
-      <form class="stack" data-form="hpamt" novalidate><div class="row" style="gap:10px;align-items:flex-end"><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="1" step="1" style="width:110px;font-size:var(--fs-xl)" autofocus></label>
-        <button class="btn primary ${dmg?"hpdmgb":"hphealb"}" type="submit" style="height:46px">${dmg?"Appliquer les dégâts":"Appliquer les soins"}</button></div>
+    m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box hpbox" role="dialog" aria-label="${dmg?"Dégâts":"Soins"}" style="grid-template-rows:auto auto auto auto;max-width:420px">
+      ${winHead(dmg?"Dégâts subis":"Soins reçus","closeModal",dmg?"color:#c0473f":"color:#5b9a68")}
+      <form class="stack" id="hpform" data-form="hpamt" novalidate><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="1" step="1" style="width:100%;font-size:var(--fs-xl)" autofocus></label>
         <div id="hp-amt-err" class="warntxt" role="alert" style="font-size:var(--fs-sm)"></div>
         ${dmg?`<label class="row" style="gap:6px;font-size:var(--fs-sm)"><input type="checkbox" id="hp-crit"> Coup critique (compte deux échecs si tu es à 0 PV)</label>`:""}
         <div class="muted" style="font-size:var(--fs-sm)">PV ${+hp.cur||0} / ${D.hpMax}${+hp.temp?` · ${+hp.temp} PV temporaires${dmg?" (perdus en premier)":""}`:""}${dmg&&ch.conc?` · concentration sur ${esc(ch.conc)} : un jet sera demandé`:""}</div></form>
-      <div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,3,4,5,6,8,10,12].map(n=>`<button class="btn small" data-act="hpquick" data-v="${n}">${dmg?"−":"+"}${n}</button>`).join("")}</div></div></div>`;
+      <div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,3,4,5,6,8,10,12].map(n=>`<button class="btn small" data-act="hpquick" data-v="${n}">${dmg?"−":"+"}${n}</button>`).join("")}</div>
+      ${winFoot(`<button class="btn primary ${dmg?"hpdmgb":"hphealb"}" type="submit" form="hpform">${dmg?"Appliquer les dégâts":"Appliquer les soins"}</button>`)}</div></div>`;
     setTimeout(()=>{ const i=document.getElementById("hp-amt"); if(i) i.focus(); },0); return; }
   if(S.pending.type==="chg"){ const b=(ch.bag||[]).find(x=>x.id===S.pending.id); const c=b&&itemCharges(ch,b)||{max:"",when:"long",rec:""};
     m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box" role="dialog" aria-label="Compteur" style="grid-template-rows:auto auto auto;max-width:460px">
-      <div class="row" style="justify-content:space-between"><h2>Compteur · ${esc(b?b.name:"")}</h2><button class="btn small ghost" data-act="closeModal">Annuler</button></div>
+      ${winHead("Compteur · "+esc(b?b.name:""))}
       <div class="stack">
         <label class="field"><span>Nombre de charges ou d'utilisations (0 pour retirer le compteur)</span><input id="chg-max" type="number" min="0" max="99" value="${esc(String(c.max||""))}" style="width:100px"></label>
         <label class="field"><span>Récupération</span><select id="chg-when"><option value="long" ${c.when!=="court"&&c.when!=="aucune"?"selected":""}>Au repos long (ou à l'aube)</option><option value="court" ${c.when==="court"?"selected":""}>Au repos court et long</option><option value="aucune" ${c.when==="aucune"?"selected":""}>Jamais (consommable)</option></select></label>
@@ -190,7 +190,7 @@ function renderModal(){
         <label class="field"><span>Utilisation en jeu</span><select id="chg-cost">${[["auto","Automatique (d'après la description)"],["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["autre","Autre"],["none","Pas dans les actions"]].map(([v,l])=>`<option value="${v}" ${(c.cost||"auto")===v?"selected":""}>${l}</option>`).join("")}</select></label>
         ${c.auto?`<div class="muted" style="font-size:var(--fs-sm)">Valeurs lues dans la description de l'objet.</div>`:""}
       </div>
-      <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="chgSave">Enregistrer</button></div></div></div>`; return; }
+      ${winFoot(`<button class="btn primary" data-act="chgSave">Enregistrer</button>`)}</div></div>`; return; }
   if(S.pending.type==="spell"){
     const q=norm(S.pending.q||""), cls=D.cls?.name, all=S.pending.all;
     const have=new Set((ch.spells||[]).map(s=>s.ref).concat(Object.keys(D.always)));
@@ -199,7 +199,7 @@ function renderModal(){
     list=list.filter(x=>(all||!cls||isHb(x.ref)||x.s.classes.includes(cls))&&(all||x.s.level<=maxL)&&(!q||norm(x.s.name).includes(q)));
     list.sort((a,b)=>a.s.level-b.s.level||a.s.name.localeCompare(b.s.name,"fr"));
     m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box" role="dialog" aria-label="Ajouter des sorts">
-      <div class="row" style="justify-content:space-between"><h2>Ajouter des sorts</h2><button class="btn small ghost" data-act="closeModal">Fermer</button></div>
+      ${winHead("Ajouter des sorts")}
       <div class="row"><form data-form="spellq" class="row" style="flex:1"><input id="spellQ" type="text" value="${esc(S.pending.q||"")}" placeholder="Chercher un sort" style="flex:1" aria-label="Chercher un sort"><button class="btn small" type="submit">Chercher</button></form>
       <label class="row"><input id="spellAll" type="checkbox" data-act="spellAll" ${all?"checked":""}>Tous les sorts</label></div>
       <div class="res-list">${list.slice(0,150).map(x=>`<div class="pick-row"><div><b>${esc(x.s.name)}</b> ${badge(x.ref)} <span class="muted" style="font-size:var(--fs-sm)">${x.s.level?"niv. "+x.s.level:"mineur"} · ${esc(x.s.school||"")}</span></div>${have.has(x.ref)?`<span class="muted" style="font-size:var(--fs-sm)">Déjà sur la fiche</span>`:`<button class="btn small" data-act="addSpell" data-ref="${esc(x.ref)}">Ajouter</button>`}</div>`).join("")||`<div class="muted">Aucun sort.</div>`}</div>
@@ -211,7 +211,7 @@ function renderModal(){
     const wOpts=[["","— Arme libre —"],...S.C.weapons.map(w=>["srd:"+w.id,w.name+" ("+w.damage+")"]),...hbs("objet").filter(h=>h.dice).map(h=>["hb:"+h._id,h.name+hbTag(h)])];
     const b=k=>`data-att="${a.id}" data-bind="${k}"`;
     m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box" role="dialog" aria-label="Modifier l'attaque" style="grid-template-rows:auto 1fr auto">
-      <div class="row" style="justify-content:space-between"><h2>Attaque</h2><button class="btn small ghost" data-act="closeModal">Fermer</button></div>
+      ${winHead("Attaque")}
       <div class="stack" style="overflow-y:auto">
       <label class="field"><span>Arme</span><select id="at-w" ${b("weapon")}>${wOpts.map(([v,l])=>o(v,l,a.weapon||"")).join("")}</select></label>
       <label class="field"><span>Nom affiché</span><input id="at-n" type="text" ${b("name")} value="${esc(a.name||"")}" placeholder="ex. Canne-épée"></label>
