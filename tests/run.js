@@ -2629,9 +2629,11 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await f.locator('#physics-dice-demo .head').count(), 0, 'le titre de la fenêtre n’est pas répété dans son contenu');
     eq(await f.locator('#physics-dice-demo').evaluate(e => [getComputedStyle(e).borderTopWidth, getComputedStyle(e).backgroundColor]), ['0px', 'rgba(0, 0, 0, 0)'], 'le contenu ne dessine pas une deuxième fenêtre');
     ok(await f.locator('#physics-dice-demo').evaluate(e => e.classList.contains('dark')), 'thème sombre de l’application');
+    eq(await f.locator('body').evaluate(e => getComputedStyle(e).backgroundColor), 'rgb(27, 28, 32)', 'fond sombre du document embarqué');
     eq(await f.locator('.theme-toggle').count(), 0, 'pas de sélecteur de thème dans le studio');
     await p.evaluate(() => setTheme('light'));
     await f.locator('#physics-dice-demo:not(.dark)').waitFor();
+    eq(await f.locator('body').evaluate(e => getComputedStyle(e).backgroundColor), 'rgb(248, 242, 228)', 'fond clair du document embarqué');
     await p.evaluate(() => setTheme('dark'));
     await f.locator('#physics-dice-demo.dark').waitFor();
     ok(await f.locator('#launch-dice').isDisabled(), 'lancer interdit lorsque les dés virtuels sont verrouillés');
