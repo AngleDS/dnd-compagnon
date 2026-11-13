@@ -1005,6 +1005,8 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 /* Lancer un sort, enchaîner les jets, message au premier plan (12 nov. 2026) */
 .trow .tkb.tkcast b{color:var(--brass)}
 .qchains{gap:8px}.qchain{display:inline-flex;align-items:baseline;gap:6px}.qchain b{color:var(--brass)}
+.qmpvf{display:flex;align-items:flex-end;gap:8px;padding:8px}.qmpvf input{width:90px;-moz-appearance:textfield;appearance:textfield}.qmpvf input::-webkit-inner-spin-button,.qmpvf input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.qmpvf .btn{min-height:44px}.tusedb{display:inline-block;font-size:var(--fs-sm);padding:4px 8px;white-space:normal;text-transform:none;letter-spacing:0}
+.qhitnext{margin-top:12px;flex-wrap:wrap}.qhitnext .btn{min-height:44px}.qcrit.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}.qmiss{color:var(--muted)}
 .qbd{font-size:var(--fs-sm)}
 .toast{z-index:10001}
 
@@ -1054,6 +1056,46 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .character-rest .hpsearch{width:44px;padding:0}
 .tpopback:has(.tsearchpop){place-items:start center;padding-top:12px}
 .tsearchpop .tpopbody{padding-top:8px}
+
+/* Fenêtres harmonisées (chantier 10, 13 nov. 2026) : même en-tête, même croix, bouton principal en pied ; au milieu de l'écran, téléphone compris (décision d'Angle, lot 2) */
+.picker .box>.whead,.whead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-14px -14px 4px;padding:12px 14px 12px 20px;border-bottom:1px solid var(--line);background:var(--df-ceb07806)}
+.whead h2{margin:0;font-family:var(--f-display);font-size:var(--fs-xl);color:var(--df-e7cfa4);font-weight:400}
+.btn.wclose,.wclose{font-size:var(--fs-2xl);line-height:1;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;display:inline-grid;place-items:center}
+.wfoot{position:sticky;bottom:-22px;z-index:2;display:flex;gap:8px;margin:14px -20px -22px;padding:12px 20px 14px;background:var(--sheet);border-top:1px solid var(--line)}
+.picker .box>.wfoot{bottom:-14px;margin:4px -14px -14px;padding:12px 14px 14px}
+.wfoot .btn{flex:1;min-height:48px;font-size:var(--fs-md)}
+/* Lot 2 : contenu de la fenêtre Détails (vrai nom en titre, valeurs, cadre d'infos, description repliée avant le pied) */
+.tchead{align-items:flex-start}.tchw{min-width:0}.tchw>b{font-weight:400;line-height:1.2}
+.tcsub{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:4px;font-family:var(--f-ui);font-size:var(--fs-sm);color:var(--muted)}
+.tcardpop{margin-top:0}.tcardpop .tcbody{padding:0}
+.tcvals{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}.tcvals .tk b{font-size:var(--fs-xl)}
+.tcmeta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+.tcmeta>div{display:grid;gap:1px;min-width:0}.tcmeta b{font-weight:500;font-size:var(--fs-md);overflow-wrap:anywhere}
+.tcardpop .tdesc{margin-top:4px;border-top:1px solid var(--line);padding-top:2px}.tcardpop .tdesc>summary{min-height:44px}
+#t-action-state:empty{display:none}
+.tcardpop .pip{width:28px;height:28px}.tcardpop .pips{gap:8px}
+/* Réglages (chantier 20) */
+.rgbox{gap:0}.rgscroll{overflow-y:auto;min-height:0;overscroll-behavior:contain}.rg-sec{padding:14px 0;border-top:1px solid var(--line)}.rgscroll>.rg-sec:first-child{border-top:0}
+.rg-sec h3{margin:0 0 10px;font-size:var(--fs-sm);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.rg-lab{font-size:var(--fs-md);margin-bottom:8px}.rg-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}.rg-row .rg-lab{margin:0}
+.rg-help{font-size:var(--fs-sm);color:var(--muted);margin-top:6px}.rg-sel{width:100%;min-height:44px}.rgbox .adv button{min-height:44px}
+.rg-btns{display:grid;gap:8px;margin-top:6px}.rg-btns .btn{min-height:44px;justify-content:flex-start;text-align:left}
+.rg-sw{position:relative;width:60px;min-width:60px;height:44px;min-height:44px;padding:0;border:0;background:none;cursor:pointer}
+.rg-sw::before{content:"";position:absolute;left:4px;top:6px;width:52px;height:32px;border-radius:16px;border:1px solid var(--line);box-sizing:border-box;background:var(--bg,#111)}
+.rg-sw::after{content:"";position:absolute;top:10px;left:8px;width:24px;height:24px;border-radius:50%;background:var(--muted);transition:left .15s}
+.rg-sw.on::before{background:var(--brass);border-color:var(--brass)}.rg-sw.on::after{left:28px;background:var(--sheet)}
+/* Saisies de dés : champ (libellé au-dessus), puis Appliquer et Lancer alignés sur le bas du champ, même hauteur */
+.row.tin{gap:8px}.row.tin .btn{min-height:44px}.tinbonus{align-self:center;font-size:var(--fs-sm);color:var(--muted)}
+.tiphead{align-items:flex-start}.tiphead .tchw{display:grid;min-width:0}.tip .tcvals{margin-top:2px}.tip .tdesc{margin-top:0;border-top:1px solid var(--line)}.tip .tdesc>summary{min-height:44px}
+.tpop:has(.wfoot){overflow:hidden} /* le fond du pied ne déborde pas des coins arrondis */
+.tpopbody.more-b:has(.wfoot){-webkit-mask-image:none;mask-image:none} /* le pied collé suffit : le fondu recouvrait son bouton */
+@media (max-width:720px){
+ .tpopback,.picker{place-items:center;padding:12px}
+ .tpop,.picker .box{width:100%;max-width:none!important;max-height:85vh}
+ .tpop.xl{max-height:96vh}
+ .tpopback:has(.tsearchpop){place-items:start center}
+}
+
 </style>
 </head>
 <body>
@@ -1144,6 +1186,11 @@ function hbClassEditor(id,h){ const b=k=>`data-hb="${id}" data-bind="${k}"`; con
   <label class="field"><span>Sorts mineurs (20 valeurs, niveaux 1→20)</span><input type="text" ${b("cantrips")} value="${esc(h.cantrips||"")}" placeholder="2,2,2,3,3,3,3,3,3,4,…"></label>
   <label class="field"><span>Sorts préparés (20 valeurs)</span><input type="text" ${b("prepared")} value="${esc(h.prepared||"")}" placeholder="vide = table standard du type"></label>`:""}</div>
   ${h.castType?`<div class="muted" style="font-size:var(--fs-sm)">Emplacements : table du ${h.castType==="pact"?"Occultiste":h.castType==="half"?"Paladin":"Magicien"}.</div>`:""}`; }
+/* Fenêtres harmonisées (chantier 10, décisions d'Angle, 13 nov. 2026) : en-tête unique (titre + croix 44 px), pied avec le bouton principal
+   toujours visible ; sur téléphone, les fenêtres montent du bas de l'écran (CSS en fin de theme.css). */
+function winHead(title,act="closeModal",style=""){ return `<div class="whead"><h2${style?` style="${style}"`:""}>${title}</h2><button class="btn small ghost wclose" type="button" data-act="${act}" aria-label="Fermer">×</button></div>`; }
+const winFoot=inner=>`<div class="wfoot">${inner}</div>`;
+
 /* ---------- adaptateur de plateforme ---------- */
 /* Le reste de l'application ne dépend jamais directement de l'API Claude. */
 const PLATFORM={
@@ -1349,14 +1396,14 @@ function afApply(){ const A=S.af; if(!A||A.state!=="ok") return; const p=afPatch
   else if(S.W&&S.W.nh){ const n=S.W.nh; n.text=p.text; if(p.link) n.link=p.link; if(p.links) n.links=p.links; if(p.label) n.label=p.label; if(p.speed) n.speed=p.speed; if(p.abilities) n.abs=p.abilities.slice(); if(p.effects) n.sk=[...p.effects.map(e=>e.cible.slice(5)),"",""].slice(0,2); if(p.tools) n.tools=p.tools; if(A.kind==="classe"){ for(const k of ["hitDie","primary1","save1","save2","castType","castAbility"]) if(p[k]!==undefined) n[k]=p[k]; } n.patch=p; }
   S.af=null; renderModal(); render(); }
 function afModal(){ const A=S.af;
-  const box=(inner)=>`<div class="picker" data-act="${A.state==="run"?"noop":"afClose"}"><div class="box" role="dialog" aria-label="Remplissage automatique" data-act="noop" style="max-width:620px;grid-template-rows:auto 1fr auto">${inner}${A.state!=="run"&&S.afTabNote?`<div class="muted warntxt" style="font-size:var(--fs-sm)">${esc(S.afTabNote)} Ferme-le à la main dans le navigateur de l'app.</div>`:""}</div></div>`;
-  if(A.state==="run") return box(`<h2>Remplissage automatique</h2><div class="stack"><div>${esc(A.msg)}</div><div class="muted" style="font-size:var(--fs-sm)">${esc(A.url||"")}</div><div class="muted" style="font-size:var(--fs-sm)">L'app Claude peut te demander d'autoriser l'accès. Ça peut prendre jusqu'à une minute.</div></div><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-act="afClose">Annuler</button></div>`);
-  if(A.state==="mem") return box(`<h2>Sources web indisponibles</h2><div class="stack"><div>${esc(A.msg)}</div><div>Claude peut remplir la fiche <b>de mémoire</b>, à partir de ce qu'il sait du livre. Le résultat sera marqué « à vérifier », sans lien de source.</div></div>
-    <div class="row" style="justify-content:flex-end;gap:6px;flex-wrap:wrap"><button class="btn ghost" data-act="afClose">Saisie manuelle</button><button class="btn primary" data-act="afMem">Remplir de mémoire</button></div>`);
-  if(A.state==="near") return box(`<h2>Pas de page exacte</h2><div class="stack"><div>${esc(A.msg)}</div>${A.near?`<div>Page la plus proche sur AideDD : <a class="aidelink" href="${esc(A.near.url)}" target="_blank" rel="noopener noreferrer">${esc(A.near.title)} ↗</a></div>${A.near.why?`<div class="muted" style="font-size:var(--fs-sm)">${esc(A.near.why)}</div>`:""}<div class="muted" style="font-size:var(--fs-sm)">Le résumé précisera de quelle version il s'agit. Tu valides avant l'enregistrement.</div>`:""}
+  const box=(inner)=>`<div class="picker" data-act="${A.state==="run"?"noop":"afClose"}"><div class="box" role="dialog" aria-label="Remplissage automatique" data-act="noop" style="max-width:620px;grid-template-rows:auto 1fr auto">${(note=>note?inner.replace('<div class="wfoot"',note+'<div class="wfoot"'):inner)(A.state!=="run"&&S.afTabNote?`<div class="muted warntxt" style="font-size:var(--fs-sm)">${esc(S.afTabNote)} Ferme-le à la main dans le navigateur de l'app.</div>`:"")}</div></div>`; // lot 2 : même en-tête (croix) et même pied que les autres fenêtres
+  if(A.state==="run") return box(`${winHead("Remplissage automatique","afClose")}<div class="stack"><div>${esc(A.msg)}</div><div class="muted" style="font-size:var(--fs-sm)">${esc(A.url||"")}</div><div class="muted" style="font-size:var(--fs-sm)">L'app Claude peut te demander d'autoriser l'accès. Ça peut prendre jusqu'à une minute.</div></div>`);
+  if(A.state==="mem") return box(`${winHead("Sources web indisponibles","afClose")}<div class="stack"><div>${esc(A.msg)}</div><div>Claude peut remplir la fiche <b>de mémoire</b>, à partir de ce qu'il sait du livre. Le résultat sera marqué « à vérifier », sans lien de source.</div></div>
+    <div class="wfoot" style="flex-wrap:wrap"><button class="btn ghost" data-act="afClose">Saisie manuelle</button><button class="btn primary" data-act="afMem">Remplir de mémoire</button></div>`);
+  if(A.state==="near") return box(`${winHead("Pas de page exacte","afClose")}<div class="stack"><div>${esc(A.msg)}</div>${A.near?`<div>Page la plus proche sur AideDD : <a class="aidelink" href="${esc(A.near.url)}" target="_blank" rel="noopener noreferrer">${esc(A.near.title)} ↗</a></div>${A.near.why?`<div class="muted" style="font-size:var(--fs-sm)">${esc(A.near.why)}</div>`:""}<div class="muted" style="font-size:var(--fs-sm)">Le résumé précisera de quelle version il s'agit. Tu valides avant l'enregistrement.</div>`:""}
     <div class="muted" style="font-size:var(--fs-sm)">« Chercher sur le web » lit jusqu'à 3 pages de référence : D&D Beyond en priorité, puis des guides reconnus.</div></div>
-    <div class="row" style="justify-content:flex-end;gap:6px;flex-wrap:wrap"><button class="btn ghost" data-act="afClose">Saisie manuelle</button>${A.near?`<button class="btn" data-act="afNearLink">Garder juste le lien</button>`:""}<button class="btn" data-act="afMem">Remplir de mémoire</button><button class="btn${A.near?"":" primary"}" data-act="afWeb">Chercher sur le web</button>${A.near?`<button class="btn primary" data-act="afNearUse">Remplir depuis cette page</button>`:""}</div>`);
-  if(A.state==="err") return box(`<h2>Remplissage impossible</h2><div class="stack"><div>${esc(A.msg)}</div>${A.manual?`<div class="muted">Saisis la fiche à la main. Tu peux aussi corriger le lien AideDD puis réessayer.</div>`:""}</div><div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="afClose">Saisie manuelle</button></div>`);
+    <div class="wfoot" style="flex-wrap:wrap"><button class="btn ghost" data-act="afClose">Saisie manuelle</button>${A.near?`<button class="btn" data-act="afNearLink">Garder juste le lien</button>`:""}<button class="btn" data-act="afMem">Remplir de mémoire</button><button class="btn${A.near?"":" primary"}" data-act="afWeb">Chercher sur le web</button>${A.near?`<button class="btn primary" data-act="afNearUse">Remplir depuis cette page</button>`:""}</div>`);
+  if(A.state==="err") return box(`${winHead("Remplissage impossible","afClose")}<div class="stack"><div>${esc(A.msg)}</div>${A.manual?`<div class="muted">Saisis la fiche à la main. Tu peux aussi corriger le lien AideDD puis réessayer.</div>`:""}</div><div class="wfoot"><button class="btn primary" data-act="afClose">Saisie manuelle</button></div>`);
   const d=A.data, rows=[];
   if(d.book) rows.push(["Livre",d.book]);
   if(A.kind==="sort") rows.push(["Sort",`niv. ${d.level} · ${d.school||""} · ${d.casting_time||""} · ${d.range||""} · ${d.duration||""}${d.concentration?" · concentration":""}${d.ritual?" · rituel":""}`],["Mécanique",[d.mech?.attack?"attaque de sort":"",d.mech?.save?"JS "+d.mech.save:"",d.mech?.dice?(d.mech.dice+" "+(d.mech.dmgType||"")+(d.mech.upDice?" (+"+d.mech.upDice+"/niv.)":"")):"",d.mech?.heal?"soins":"",+d.mech?.tempHp?d.mech.tempHp+" PV temp./niv.":""].filter(Boolean).join(" · ")||"—"]);
@@ -1365,8 +1412,8 @@ function afModal(){ const A=S.af;
   if(A.kind==="objet"&&d.dice) rows.push(["Dégâts",d.dice+" "+(d.dmgType||"")]);
   if(A.kind==="classe") rows.push(["Profil",`d${d.hitDie} · JS ${(d.saves||[]).map(a=>ABN[a]||a).join(", ")} · ${d.skillCount} compétences${d.castType?" · "+(({full:"lanceur complet",half:"demi-lanceur",pact:"magie de pacte"})[d.castType]||d.castType):""}`]);
   if((A.kind==="classe"||A.kind==="sous-classe")&&(d.features||[]).length) rows.push(["Aptitudes",(d.features||[]).map(f=>"niv. "+f.level+" "+f.name).join(" · ")]);
-  return box(`<h2>${esc(A.name)}</h2><div class="stack" style="overflow:auto;max-height:60vh">${rows.map(([l,v])=>`<div><span class="label">${esc(l)}</span> ${esc(String(v))}</div>`).join("")}<div class="prose">${prose(d.summary)}</div>${A.links?`<div style="font-size:var(--fs-sm)"><span class="label">Sources</span> ${A.links.map(l=>`<a class="aidelink" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(hostOf(l.url))} ↗</a>`).join(" · ")}</div>`:(A.memory?`<div class="muted warntxt" style="font-size:var(--fs-sm)">Rempli de mémoire : vérifie avant de t'en servir en partie.</div>`:`<a class="aidelink" href="${esc(A.url)}" target="_blank" rel="noopener noreferrer">Voir sur AideDD ↗</a>`)}</div>
-    <div class="row" style="justify-content:flex-end;gap:6px"><button class="btn ghost" data-act="afClose">Annuler</button><button class="btn primary" data-act="afApply">Appliquer à la fiche</button></div>`); }
+  return box(`${winHead(esc(A.name),"afClose")}<div class="stack" style="overflow:auto;max-height:60vh">${rows.map(([l,v])=>`<div><span class="label">${esc(l)}</span> ${esc(String(v))}</div>`).join("")}<div class="prose">${prose(d.summary)}</div>${A.links?`<div style="font-size:var(--fs-sm)"><span class="label">Sources</span> ${A.links.map(l=>`<a class="aidelink" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(hostOf(l.url))} ↗</a>`).join(" · ")}</div>`:(A.memory?`<div class="muted warntxt" style="font-size:var(--fs-sm)">Rempli de mémoire : vérifie avant de t'en servir en partie.</div>`:`<a class="aidelink" href="${esc(A.url)}" target="_blank" rel="noopener noreferrer">Voir sur AideDD ↗</a>`)}</div>
+    <div class="wfoot"><button class="btn primary" data-act="afApply">Appliquer à la fiche</button></div>`); }
 /* ---------- boot ---------- */
 
 /* Global browser preference; deliberately independent of character/import data. */
@@ -1386,8 +1433,13 @@ function setVirtualDice(enabled){
 window.addEventListener("storage",e=>{ if(e.key===VIRTUAL_DICE_KEY||e.key===null){ applyDicePreference(); render(); renderDice(); } });
 applyDicePreference();
 
-/* thème : sombre par défaut, clair au choix (Menu) ; enregistré dans les préférences et dans ce navigateur */
-function curTheme(){ const p=S.docs&&S.docs.prefs; if(p&&(p.theme==="light"||p.theme==="dark")) return p.theme; try{ const t=localStorage.getItem("registre-theme"); if(t==="light"||t==="dark") return t; }catch(e){} return "dark"; }
+/* thème (chantier 20, décision d'Angle) : Sombre, Clair ou Automatique (suit l'appareil), Automatique par défaut ;
+   enregistré dans les préférences et dans ce navigateur. Un choix déjà enregistré (sombre ou clair) est gardé. */
+const THEMES=["dark","light","auto"];
+function themePref(){ const p=S.docs&&S.docs.prefs; if(p&&THEMES.includes(p.theme)) return p.theme; try{ const t=localStorage.getItem("registre-theme"); if(THEMES.includes(t)) return t; }catch(e){} return "auto"; }
+const deviceTheme=()=>{ try{ return matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"; }catch(e){ return "dark"; } };
+function curTheme(){ const t=themePref(); return t==="auto"?deviceTheme():t; }
+try{ matchMedia("(prefers-color-scheme: light)").addEventListener("change",()=>{ if(themePref()==="auto"){ applyTheme(); if(typeof render==="function"&&S.C) render(); } }); }catch(e){}
 function applyTheme(){ const t=curTheme(); if(document.documentElement.dataset.theme!==t) document.documentElement.dataset.theme=t; }
 function setTheme(t){ if(!S.docs.prefs) S.docs.prefs={type:"prefs"}; S.docs.prefs.theme=t; touch("prefs"); try{ localStorage.setItem("registre-theme",t); }catch(e){} applyTheme(); }
 applyTheme();
@@ -1569,7 +1621,7 @@ function rvModal(){ const R=S.rv, n=R.items.length, ready=R.items.filter(i=>i.st
 function catPickList(){ const P=S.catPick, q=norm(P.q||""); const l=catAll().filter(e=>(!P.k||e.k===P.k)&&(!q||norm(e.n+" "+(e.vo||"")+" "+(e.alt||"")+" "+e.b).includes(q)));
   return l.slice(0,80).map(e=>{ const h=catHb(e); return `<div class="pick-row"><div><b>${esc(e.n)}</b>${e.vo&&e.vo!==e.n?` <span class="muted" style="font-size:var(--fs-sm)">(${esc(e.vo)})</span>`:""}<div class="muted" style="font-size:var(--fs-sm)">${esc(HB_KINDS[e.k])}${e.k==="sort"?" niv. "+e.lv:""}${e.cat?" · "+esc(e.cat):""} · ${esc(catShort(e.b))}</div></div>${h?`<button class="btn small" data-act="catOpen" data-id="${h._id}">Ouvrir</button>`:`<button class="btn small primary" data-act="catAdd" data-id="${e.id}">Ajouter</button>`}</div>`; }).join("")+(l.length>80?`<div class="muted" style="padding:8px 0">${l.length-80} autres : précise la recherche.</div>`:"")+(!l.length?`<div class="muted" style="padding:8px 0">Rien trouvé.</div>`:""); }
 function catPickModal(){ const P=S.catPick; return `<div class="picker" data-act="catClose"><div class="box" role="dialog" aria-label="Catalogue hors SRD" data-act="noop">
-  <div class="row" style="justify-content:space-between"><h2>Catalogue hors SRD</h2><button class="btn small ghost" data-act="catClose">Fermer</button></div>
+  ${winHead("Catalogue hors SRD","catClose")}
   <div class="row"><input type="text" id="catq" placeholder="Nom (français ou VO), livre…" value="${esc(P.q||"")}" style="flex:1"><select id="catk"><option value="">Tous les types</option>${["classe","sous-classe","historique","espece","don","sort"].map(k=>`<option value="${k}" ${P.k===k?"selected":""}>${HB_KINDS[k]}</option>`).join("")}</select></div>
   <div class="res-list" id="catlist">${catPickList()}</div>
   <div class="muted" style="font-size:var(--fs-sm)">Règles 2024 hors SRD : Manuel des joueurs et suppléments (noms en VO). L'élément ajouté est vide ; remplis-le avec « Remplir automatiquement ».</div></div></div>`; }
@@ -1888,15 +1940,21 @@ function spellMech(sp){
   const sv=t.match(/jet de sauvegarde (?:de |d’)(Force|Dextérité|Constitution|Intelligence|Sagesse|Charisme)/i);
   if(sv) m.save=sv[1];
   const first=t.split(/\n(?:Emplacement de niveau supérieur|Amélioration de sort mineur)\./)[0];
-  const dm=first.match(/(\d+d\d+)(?:\s*\+\s*votre modificateur de caractéristique d’incantation)?\s+(?:dégâts?|points de dégâts)\s+(?:de\s+)?([a-zéèêàç]+)/i);
+  const dm=first.match(/(\d+d\d+)(?:\s*\+\s*(\d+)(?![\dd]))?(?:\s*\+\s*votre modificateur de caractéristique d’incantation)?\s+(?:dégâts?|points de dégâts)\s+(?:de\s+)?([a-zéèêàç]+)/i);
   const heal=first.match(/(?:récupère|regagne)[^.]{0,80}?(\d+d\d+)(\s*\+\s*votre modificateur de caractéristique d’incantation)?/i)||first.match(/points de vie égal à (\d+d\d+)(\s*\+\s*votre modificateur de caractéristique d’incantation)?/i);
   if(heal&&(!dm||first.indexOf(heal[1])<first.indexOf(dm[1]))){ m.dice=heal[1]; m.heal=true; m.addMod=!!heal[2]; }
-  else if(dm){ m.dice=dm[1]; m.dmgType=dm[2]; m.addMod=/\d+d\d+\s*\+\s*votre modificateur de caractéristique d’incantation/.test(first); }
+  else if(dm){ m.dice=dm[1]; m.dmgType=dm[3]; if(+dm[2]) m.flat=+dm[2]; m.addMod=/\d+d\d+\s*\+\s*votre modificateur de caractéristique d’incantation/.test(first); }
+  // Plusieurs traits à la fois (Projectile magique : trois traits de 1d4 + 1, un de plus par niveau d'emplacement)
+  const dn=dm&&first.match(/\b(deux|trois|quatre|cinq) (?:traits|projectiles|fléchettes)\b/i);
+  if(dn){ m.beams=true; m.darts={deux:2,trois:3,quatre:4,cinq:5}[dn[1].toLowerCase()]; if(/(?:un|une) (?:trait|projectile|fléchette) supplémentaire par niveau d’emplacement/i.test(t)) m.upDarts=1; }
   const up=t.match(/Emplacement de niveau supérieur\.[^\n]*?(\d+d\d+)[^.\n]{0,50}?par niveau d’emplacement au-delà du (\d+)/);
   if(up){ m.upDice=up[1]; }
   if(sp.level===0 && /Amélioration de sort mineur/.test(t)){ m.scale=true; m.beams=/rayons/.test(t); }
   return m;
 }
+// Nombre de rayons (sorts mineurs) ou de traits (Projectile magique) au niveau d'emplacement donné
+function beamsAt(m, sp, slot, D){ if(!m||!m.beams||!sp) return 1; if(m.darts) return m.darts+(m.upDarts&&slot>sp.level?slot-sp.level:0); return sp.level===0&&D?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1; }
+const beamWord=m=>m&&m.darts?"trait":"rayon";
 function diceAt(m, sp, slot, D){
   if(!m.dice) return null;
   let [n,f]=m.dice.split("d").map(Number);
@@ -1907,6 +1965,7 @@ function diceAt(m, sp, slot, D){
   if(m.addMod) bonus+=D.mods[D.cast?.ability||"cha"];
   if(sp.level===0 && (D.invPick||[]).some(p=>p.id==="decharge-dechirante"&&(p.c?norm((spellOf(p.c)||{}).name)===norm(sp.name):norm(sp.name)===norm("Décharge occulte")))) bonus+=D.mods.cha;
   if(m.bonus) bonus+=evalF(m.bonus,D.ctx);
+  if(m.flat) bonus+=m.flat;
   return expr+(bonus?sg(bonus):"");
 }
  
@@ -1964,6 +2023,17 @@ function softRender(){
 }
 document.addEventListener("focusout",()=>{ if(renderQueued){ renderQueued=false; setTimeout(()=>{ if(!document.activeElement||!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) render(); else renderQueued=true; },0);} });
  
+/* Fenêtre « Réglages » (chantier 20, maquette A validée par Angle) : chaque choix s'applique tout de suite */
+function settingsModal(){
+  const atTable=S.view==="sheet"&&S.tab==="table"&&!!S.cur, vd=virtualDiceEnabled(), tp=themePref(), ps=persos(), main=mainId();
+  const sec=(t,x)=>`<section class="rg-sec"><h3>${t}</h3>${x}</section>`;
+  return `<div class="picker" data-act="setClose"><div class="box rgbox" role="dialog" aria-label="Réglages" data-act="noop" style="max-width:560px;grid-template-rows:auto 1fr">${winHead("Réglages","setClose")}<div class="rgscroll">
+    ${sec("Apparence",`<div class="rg-lab">Thème</div><div class="adv" role="group" aria-label="Thème" style="grid-template-columns:repeat(3,1fr)">${[["dark","Sombre"],["light","Clair"],["auto","Automatique"]].map(([k,l])=>`<button aria-pressed="${tp===k}" data-act="themeSet" data-v="${k}">${l}</button>`).join("")}</div><div class="rg-help">Automatique : sombre ou clair comme ton appareil (souvent sombre le soir).</div>`)}
+    ${sec("Dés",`<div class="rg-row"><span class="rg-lab">Dés virtuels</span><button class="rg-sw${vd?" on":""}" role="switch" aria-checked="${vd}" aria-label="Dés virtuels" data-act="virtualDice"></button></div><div class="rg-help">${vd?"Activés : l'appli peut lancer les dés à ta place.":"Désactivés : tu lances tes vrais dés et tu saisis les résultats."}</div>`)}
+    ${ps.length?sec("Personnage actif",`<select class="rg-sel" aria-label="Personnage actif" data-act-change="setMainSel">${main?"":`<option value="" selected>Aucun</option>`}${ps.map(p=>`<option value="${p._id}"${p._id===main?" selected":""}>${esc(p.name||"Sans nom")}</option>`).join("")}</select><div class="rg-help">Celui qui s'ouvre au démarrage, directement « À la table ».</div>`):""}
+    ${sec("Sauvegarde",`<div class="rg-row"><span class="rg-lab">Tes données</span><span class="muted" style="font-size:var(--fs-sm)">${S.mode==="cloud"?"en ligne, avec ton compte":"sur cet appareil (ce navigateur)"}</span></div><div class="rg-btns"><button class="btn" data-act="saveApp">Télécharger ma copie personnelle</button><label class="btn" for="importFileSet">Importer un personnage</label><input id="importFileSet" type="file" accept=".json,application/json" hidden></div><div class="rg-help">La copie personnelle contient tes personnages, portraits, notes et Mes contenus : ne la partage pas sans le vouloir.</div>`)}
+    ${sec("« À la table »",`<div class="rg-btns">${atTable?`<button class="btn" data-act="layoutEdit">Personnaliser l’interface</button>`:""}<button class="btn" data-act="helpReset">Réafficher les messages d’aide masqués</button></div>${S.helpReset?`<div class="rg-help" role="status">✓ Les messages d’aide réapparaîtront.</div>`:""}`)}
+  </div></div></div>`; }
 function mainId(){ const m=S.docs.prefs?.main; return m&&S.docs[m]&&S.docs[m].type==="perso"?m:null; }
 function setMain(id){ if(!S.docs.prefs) S.docs.prefs={type:"prefs"}; S.docs.prefs.main=id; touch("prefs"); }
 function renderNav(){
@@ -1979,8 +2049,7 @@ function renderNav(){
   const atTable=S.view==="sheet"&&S.tab==="table"&&!!S.cur, mi=(attrs,label,extra="")=>`<button class="hditem" role="menuitem" ${attrs}>${label}${extra}</button>`;
   document.getElementById("hmenu").innerHTML=`<button class="hmenu" data-act="menuToggle" aria-haspopup="menu" aria-expanded="${!!S.menuOpen}" ${S.view==="list"||(S.view==="sheet"&&!onMine)?'aria-current="page"':""}>Menu <span aria-hidden="true">▾</span></button>${S.menuOpen?`<div class="hdrop" role="menu" aria-label="Menu">
     ${mi('data-act="nav" data-v="list"',"Mes personnages")}
-    ${mi('data-act="theme"',curTheme()==="dark"?"Mode clair":"Mode sombre")}
-    ${mi(`data-act="virtualDice" role="menuitemcheckbox" aria-checked="${virtualDiceEnabled()}"`,"Dés virtuels",`<span class="hdstate">${virtualDiceEnabled()?"activés":"désactivés"}</span>`)}
+    ${mi('data-act="settingsOpen"',"Réglages")}
     ${atTable?`<div class="hdsep" role="separator"></div>${mi('data-act="layoutEdit"',"Personnaliser l’interface")}`:""}</div>`:""}`;
   document.getElementById("hchar").innerHTML="";
 }
@@ -2217,11 +2286,11 @@ function attackRows(ch,D){
     const opts=al?[s.sp.level]:slotsAvail.filter(l=>l>=s.sp.level); if(!opts.length) continue;
     const sid="aslot-"+s.ref.replace(/[^a-z0-9]/gi,"");
     const sel=opts.length>1?`<select id="${sid}" aria-label="Niveau d'emplacement">${opts.map(l=>`<option value="${l}">niv. ${l}</option>`).join("")}</select>`:`<input type="hidden" id="${sid}" value="${opts[0]}"><span class="muted" style="font-size:var(--fs-sm)">empl. niv. ${opts[0]}</span>`;
-    const dmg=diceAt(m,s.sp,opts[0],D);
+    const dmg=diceAt(m,s.sp,opts[0],D), nb=beamsAt(m,s.sp,opts[0],D);
     const hitTxt = m.attack?sg(D.cast.atk):(m.save?"JS "+m.save.slice(0,3)+" DD "+D.cast.dc:"Lancer");
     rows.push(`<tr><td><b class="tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(s.sp.name)}</b> <span class="muted" style="font-size:var(--fs-sm)">sort niv. ${s.sp.level} · ${esc(s.sp.range||"")}</span><div>${sel}</div></td>
       <td><button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${esc(hitTxt)}</button></td>
-      <td>${dmg?`<button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${esc(dmg)}</button> <span class="muted" style="font-size:var(--fs-sm)">${esc(m.heal?"soins":(m.dmgType||""))}</span>`:""}</td>
+      <td>${dmg?`<button class="rollbtn" data-virtual data-act="cast" data-ref="${esc(s.ref)}" data-sel="${sid}" ${al?`data-arc="${al}"`:""} title="${al?"Arcanum mystique (1/repos long)":"Dépense un emplacement et lance les dés"}">${nb>1?nb+" × ":""}${esc(dmg)}</button> <span class="muted" style="font-size:var(--fs-sm)">${esc(m.heal?"soins":(m.dmgType||""))}</span>`:""}</td>
       <td><span class="muted" style="font-size:var(--fs-sm)">1 clic = 1 emplacement</span></td></tr>`);
   }
   if(!rows.length) return "";
@@ -2264,7 +2333,7 @@ function tabSorts(ch,D){
     const rit = sp.ritual && sp.level>0 ? `<button class="btn small" data-virtual data-act="cast" data-rit="1" data-ref="${esc(s.ref)}" title="Sans emplacement, 10 minutes de plus">En rituel</button>` : "";
     const atk = m.attack?`<button class="rollbtn" data-virtual data-act="r20" data-l="${esc(sp.name)} — toucher" data-m="${D.cast.atk}" title="Relancer l'attaque sans dépenser d'emplacement">${sg(D.cast.atk)}</button>`:"";
     const sv = m.save?`<span class="badge">JS ${esc(m.save)} DD ${D.cast.dc}</span>`:"";
-    const dm = m.dice?`<button class="rollbtn" data-virtual data-act="sdmg" data-ref="${esc(s.ref)}" title="Relancer les dés sans dépenser d'emplacement">${m.heal?"Soins":"Dégâts"} ${esc(diceAt(m,sp,opts[0]||sp.level,D))}</button>`:"";
+    const dm = m.dice?`<button class="rollbtn" data-virtual data-act="sdmg" data-ref="${esc(s.ref)}" title="Relancer les dés sans dépenser d'emplacement">${m.heal?"Soins":"Dégâts"} ${(n=>n>1?n+" × ":"")(beamsAt(m,sp,opts[0]||sp.level,D))}${esc(diceAt(m,sp,opts[0]||sp.level,D))}</button>`:"";
     h+=`<div class="spell"><div class="h"><span class="nm tipl" data-act="tip" data-k="spell:${esc(s.ref)}">${esc(sp.name)}</span>${badge(s.ref)}
       ${sp.concentration?`<span class="badge" title="Concentration">C</span>`:""}${sp.ritual?`<span class="badge" title="Rituel">R</span>`:""}
       ${s.always?`<span class="badge" title="Toujours préparé">${esc(s.always)}</span>`:(sp.level>0?`<button class="chip" aria-pressed="${s.prepared}" data-act="prep" data-ref="${esc(s.ref)}">Préparé</button>`:"")}
@@ -2535,7 +2604,7 @@ function levelPlan(ch){
 }
 function lvlModal(){
   const ch=cur(), P=S.pending, p=levelPlan(ch), D0=p.D0;
-  if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto"><div class="row" style="justify-content:space-between"><h2>Niveau 20</h2><button class="btn small ghost" data-act="closeModal">Fermer</button></div><p>Niveau maximum atteint.</p></div></div>`;
+  if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto">${winHead("Niveau 20")}<p>Niveau maximum atteint.</p></div></div>`;
   const o=(v,l,c)=>`<option value="${esc(v)}" ${String(v)===String(c)?"selected":""}>${esc(l)}</option>`;
   const lu=(k,i)=>`data-lu="${k}"${i!==undefined?` data-i="${i}"`:""}`;
   const sec=(t,b)=>`<div class="lusec"><div class="label">${t}</div>${b}</div>`;
@@ -2579,7 +2648,7 @@ function lvlModal(){
   const foot=chain&&P.stop?`<div class="panel stack" style="border-color:var(--blood)"><div>Arrêter la création ici ? ${esc(ch.name||"Le personnage")} restera au <b>niveau ${p.from}</b> au lieu du niveau ${chain.to}. Tu pourras continuer plus tard avec le bouton « Niveau ${p.to} ↑ » en haut de la fiche.</div><div class="row" style="justify-content:flex-end;gap:6px"><button class="btn" data-act="lvlStopNo">Reprendre la montée</button><button class="btn danger" data-act="lvlStopYes">Arrêter au niveau ${p.from}</button></div></div>`
     :`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:var(--fs-sm)">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
   return `<div class="picker" data-act="${chain?"noop":"closeModal"}"><div class="box" role="dialog" aria-label="Monter de niveau" style="grid-template-rows:auto 1fr auto">
-    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2>${chain?`<div class="muted" style="font-size:var(--fs-sm)">Création du personnage · niveau ${p.to} sur ${chain.to}</div>`:""}</div>${chain?`<button class="btn small ghost" data-act="lvlStop">Arrêter ici</button>`:`<button class="btn small ghost" data-act="closeModal">Annuler</button>`}</div>
+    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2>${chain?`<div class="muted" style="font-size:var(--fs-sm)">Création du personnage · niveau ${p.to} sur ${chain.to}</div>`:""}</div>${chain?`<button class="btn small ghost" data-act="lvlStop">Arrêter ici</button>`:`<button class="btn small ghost wclose" type="button" data-act="closeModal" aria-label="Fermer">×</button>`}</div>
     <div class="stack" style="overflow-y:auto;min-height:0">${h}</div>
     ${foot}</div></div>`;
 }
@@ -2594,7 +2663,7 @@ function ccPop(ch,D,anim){
   let res="";
   if(c.res){ const ok=c.res.total>=dd;
     res=`<div class="ccres ${ok?"ok":"ko"}"><div class="num" style="font-size:34px;font-weight:700">${c.res.total}</div><div><b>${ok?"Concentration maintenue":"Concentration perdue"}</b><div class="muted" style="font-size:var(--fs-sm)">${esc(c.res.bd)} contre DD ${dd}${ok?"":` · ${esc(c.res.spell)} prend fin`}</div></div></div>
-      <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn primary" data-act="ccclose">Continuer</button></div>`; }
+      ${winFoot(`<button class="btn primary" data-act="ccclose">Continuer</button>`)}`; }
   const body=`<div class="muted" style="font-size:var(--fs-sm)">Tu as subi des dégâts en te concentrant sur <b>${esc(ch.conc||(c.res&&c.res.spell)||"")}</b> : jet de sauvegarde de Constitution obligatoire.</div>
     <div class="row" style="gap:18px;margin:10px 0;align-items:flex-end">
       <label class="field"><span>Dégâts subis</span><input id="cc-dmg" type="number" min="0" value="${esc(String(c.dmg||0))}" style="width:80px" ${c.res?"disabled":""}></label>
@@ -2605,7 +2674,7 @@ function ccPop(ch,D,anim){
     <form class="row tin" data-form="cc" style="margin-top:8px"><label class="field"><span>${c.mode==="n"?"Ton d20":"1er d20"}</span><input id="cc-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(c.d1)}"></label>
       ${c.mode!=="n"?`<label class="field"><span>2e d20</span><input id="cc-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(c.d2)}"></label>`:""}
       <button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="ccroll">Lancer virtuellement</button></form>`}`;
-  return `<div class="tpopback${anim?"":" still"}" data-act="noop"><div class="tpop" role="dialog" aria-modal="true" aria-label="Jet de concentration" data-act="noop"><div class="tpophead"><b>Jet de concentration</b></div><div class="tpopbody">${body}</div></div></div>`;
+  return `<div class="tpopback${anim?"":" still"}" data-act="noop"><div class="tpop" role="dialog" aria-modal="true" aria-label="Jet de concentration" data-act="noop"><div class="tpophead"><b>Jet de concentration</b><button class="btn small ghost wclose" data-act="ccclose" aria-label="Fermer">×</button></div><div class="tpopbody">${body}</div></div></div>`;
 }
 function ccResolve(a,b,virt){
   if(!virt&&virtualDiceEnabled()) return;
@@ -2670,23 +2739,24 @@ function renderModal(){
   if(S.rv){ m.innerHTML=rvModal(); return; }
   if(S.catPick){ m.innerHTML=catPickModal(); return; }
   if(S.af){ m.innerHTML=afModal(); return; }
+  if(S.settings){ m.innerHTML=settingsModal(); return; }
   if(!S.pending){ m.innerHTML=""; return; }
   const ch=cur(); if(!ch){ S.pending=null; m.innerHTML=""; return; }
   const D=derive(ch);
   if(S.pending.type==="lvl"){ m.innerHTML=lvlModal(); return; }
   if(S.pending.type==="hp"){ const P=S.pending, dmg=P.mode==="dmg", hp=ch.hp||{cur:D.hpMax,temp:0};
-    m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box hpbox" role="dialog" aria-label="${dmg?"Dégâts":"Soins"}" style="grid-template-rows:auto auto auto;max-width:420px">
-      <div class="row" style="justify-content:space-between"><h2 style="color:${dmg?"#9b2f2f":"#3f6b4a"}">${dmg?"Dégâts subis":"Soins reçus"}</h2><button class="btn small ghost" data-act="closeModal">Annuler</button></div>
-      <form class="stack" data-form="hpamt" novalidate><div class="row" style="gap:10px;align-items:flex-end"><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="1" step="1" style="width:110px;font-size:var(--fs-xl)" autofocus></label>
-        <button class="btn primary ${dmg?"hpdmgb":"hphealb"}" type="submit" style="height:46px">${dmg?"Appliquer les dégâts":"Appliquer les soins"}</button></div>
+    m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box hpbox" role="dialog" aria-label="${dmg?"Dégâts":"Soins"}" style="grid-template-rows:auto auto auto auto;max-width:420px">
+      ${winHead(dmg?"Dégâts subis":"Soins reçus","closeModal",dmg?"color:#c0473f":"color:#5b9a68")}
+      <form class="stack" id="hpform" data-form="hpamt" novalidate><label class="field"><span>Montant</span><input id="hp-amt" type="number" inputmode="numeric" min="1" step="1" style="width:100%;font-size:var(--fs-xl)" autofocus></label>
         <div id="hp-amt-err" class="warntxt" role="alert" style="font-size:var(--fs-sm)"></div>
         ${dmg?`<label class="row" style="gap:6px;font-size:var(--fs-sm)"><input type="checkbox" id="hp-crit"> Coup critique (compte deux échecs si tu es à 0 PV)</label>`:""}
         <div class="muted" style="font-size:var(--fs-sm)">PV ${+hp.cur||0} / ${D.hpMax}${+hp.temp?` · ${+hp.temp} PV temporaires${dmg?" (perdus en premier)":""}`:""}${dmg&&ch.conc?` · concentration sur ${esc(ch.conc)} : un jet sera demandé`:""}</div></form>
-      <div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,3,4,5,6,8,10,12].map(n=>`<button class="btn small" data-act="hpquick" data-v="${n}">${dmg?"−":"+"}${n}</button>`).join("")}</div></div></div>`;
+      <div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,3,4,5,6,8,10,12].map(n=>`<button class="btn small" data-act="hpquick" data-v="${n}">${dmg?"−":"+"}${n}</button>`).join("")}</div>
+      ${winFoot(`<button class="btn primary ${dmg?"hpdmgb":"hphealb"}" type="submit" form="hpform">${dmg?"Appliquer les dégâts":"Appliquer les soins"}</button>`)}</div></div>`;
     setTimeout(()=>{ const i=document.getElementById("hp-amt"); if(i) i.focus(); },0); return; }
   if(S.pending.type==="chg"){ const b=(ch.bag||[]).find(x=>x.id===S.pending.id); const c=b&&itemCharges(ch,b)||{max:"",when:"long",rec:""};
     m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box" role="dialog" aria-label="Compteur" style="grid-template-rows:auto auto auto;max-width:460px">
-      <div class="row" style="justify-content:space-between"><h2>Compteur · ${esc(b?b.name:"")}</h2><button class="btn small ghost" data-act="closeModal">Annuler</button></div>
+      ${winHead("Compteur · "+esc(b?b.name:""))}
       <div class="stack">
         <label class="field"><span>Nombre de charges ou d'utilisations (0 pour retirer le compteur)</span><input id="chg-max" type="number" min="0" max="99" value="${esc(String(c.max||""))}" style="width:100px"></label>
         <label class="field"><span>Récupération</span><select id="chg-when"><option value="long" ${c.when!=="court"&&c.when!=="aucune"?"selected":""}>Au repos long (ou à l'aube)</option><option value="court" ${c.when==="court"?"selected":""}>Au repos court et long</option><option value="aucune" ${c.when==="aucune"?"selected":""}>Jamais (consommable)</option></select></label>
@@ -2694,7 +2764,7 @@ function renderModal(){
         <label class="field"><span>Utilisation en jeu</span><select id="chg-cost">${[["auto","Automatique (d'après la description)"],["action","Action"],["bonus","Action bonus"],["reaction","Réaction"],["autre","Autre"],["none","Pas dans les actions"]].map(([v,l])=>`<option value="${v}" ${(c.cost||"auto")===v?"selected":""}>${l}</option>`).join("")}</select></label>
         ${c.auto?`<div class="muted" style="font-size:var(--fs-sm)">Valeurs lues dans la description de l'objet.</div>`:""}
       </div>
-      <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="chgSave">Enregistrer</button></div></div></div>`; return; }
+      ${winFoot(`<button class="btn primary" data-act="chgSave">Enregistrer</button>`)}</div></div>`; return; }
   if(S.pending.type==="spell"){
     const q=norm(S.pending.q||""), cls=D.cls?.name, all=S.pending.all;
     const have=new Set((ch.spells||[]).map(s=>s.ref).concat(Object.keys(D.always)));
@@ -2703,7 +2773,7 @@ function renderModal(){
     list=list.filter(x=>(all||!cls||isHb(x.ref)||x.s.classes.includes(cls))&&(all||x.s.level<=maxL)&&(!q||norm(x.s.name).includes(q)));
     list.sort((a,b)=>a.s.level-b.s.level||a.s.name.localeCompare(b.s.name,"fr"));
     m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box" role="dialog" aria-label="Ajouter des sorts">
-      <div class="row" style="justify-content:space-between"><h2>Ajouter des sorts</h2><button class="btn small ghost" data-act="closeModal">Fermer</button></div>
+      ${winHead("Ajouter des sorts")}
       <div class="row"><form data-form="spellq" class="row" style="flex:1"><input id="spellQ" type="text" value="${esc(S.pending.q||"")}" placeholder="Chercher un sort" style="flex:1" aria-label="Chercher un sort"><button class="btn small" type="submit">Chercher</button></form>
       <label class="row"><input id="spellAll" type="checkbox" data-act="spellAll" ${all?"checked":""}>Tous les sorts</label></div>
       <div class="res-list">${list.slice(0,150).map(x=>`<div class="pick-row"><div><b>${esc(x.s.name)}</b> ${badge(x.ref)} <span class="muted" style="font-size:var(--fs-sm)">${x.s.level?"niv. "+x.s.level:"mineur"} · ${esc(x.s.school||"")}</span></div>${have.has(x.ref)?`<span class="muted" style="font-size:var(--fs-sm)">Déjà sur la fiche</span>`:`<button class="btn small" data-act="addSpell" data-ref="${esc(x.ref)}">Ajouter</button>`}</div>`).join("")||`<div class="muted">Aucun sort.</div>`}</div>
@@ -2715,7 +2785,7 @@ function renderModal(){
     const wOpts=[["","— Arme libre —"],...S.C.weapons.map(w=>["srd:"+w.id,w.name+" ("+w.damage+")"]),...hbs("objet").filter(h=>h.dice).map(h=>["hb:"+h._id,h.name+hbTag(h)])];
     const b=k=>`data-att="${a.id}" data-bind="${k}"`;
     m.innerHTML=`<div class="picker" data-act="closeModal"><div class="box" role="dialog" aria-label="Modifier l'attaque" style="grid-template-rows:auto 1fr auto">
-      <div class="row" style="justify-content:space-between"><h2>Attaque</h2><button class="btn small ghost" data-act="closeModal">Fermer</button></div>
+      ${winHead("Attaque")}
       <div class="stack" style="overflow-y:auto">
       <label class="field"><span>Arme</span><select id="at-w" ${b("weapon")}>${wOpts.map(([v,l])=>o(v,l,a.weapon||"")).join("")}</select></label>
       <label class="field"><span>Nom affiché</span><input id="at-n" type="text" ${b("name")} value="${esc(a.name||"")}" placeholder="ex. Canne-épée"></label>
@@ -2796,11 +2866,12 @@ function tableItems(ch,D){
   for(const s of D.sources) featText.push({o:s.origin,n:s.name,t:s.text,ref:s.ref,effects:s.effects});
   const spc=srd("species",ch.species); if(spc) for(const t of spc.traits) featText.push({o:spc.name,n:t.name,t:t.text,ref:"srd"});
   for(const x of ch.invocations||[]){ const id=invId(x), i=S.idx.invocations[id]; if(i) featText.push({o:"Manifestation",n:invLabel(x),t:i.text,ref:"srd",cost:id==="armure-dombres"?"action":undefined,magic:id==="armure-dombres"}); }
+  const baseN=n=>norm(String(n).replace(/\s*\([^)]*\)\s*$/,"")); // « Imposition des mains (PV) » est la réserve de l'aptitude « Imposition des mains »
   for(const f of featText){
-    const res=D.res.find(r=>norm(r.name)===norm(f.n));
+    const res=D.res.find(r=>norm(r.name)===norm(f.n))||D.res.find(r=>baseN(r.name)===norm(f.n));
     add({key:"feat:"+norm(f.o+"/"+f.n),kind:"feat",name:f.n,sub:f.o,al:["aptitude"],cost:f.cost||costGuess(f.t)||(res&&res.id==="cls:rouerie-magique"?"autre":null),text:f.t,src:f.ref,res,magic:f.magic});
   }
-  for(const r of D.res) if(!featText.some(f=>norm(f.n)===norm(r.name))) add({key:"res:"+r.id,kind:"feat",name:r.name,sub:"Ressource · "+r.origin,al:["ressource"],cost:r.id==="cls:rouerie-magique"?"autre":null,text:"",res:r});
+  for(const r of D.res) if(!featText.some(f=>norm(f.n)===norm(r.name)||norm(f.n)===baseN(r.name))) add({key:"res:"+r.id,kind:"feat",name:r.name,sub:"Ressource · "+r.origin,al:["ressource"],cost:r.id==="cls:rouerie-magique"?"autre":null,text:"",res:r});
   for(const c of ch.counters||[]) add({key:"cnt:"+c.id,kind:"counter",name:c.name,sub:"Consommable",al:["objet"],cost:null,counter:c});
   for(const g of S.C.glossary){
     if(g.tag==="Action") add({key:"basic:"+g.id,kind:"basic",name:g.name,sub:"Action de base",al:["action"],cost:"action",text:g.text});
@@ -3026,6 +3097,7 @@ function tPop(ch,D){
       info:`Base <b class="num">${D.hpBase}</b> · Maximum actuel <b class="num">${D.hpMax}</b>`,
       note:"Un bonus augmente aussi tes PV actuels du même montant (comme le sort Aide). Un malus les plafonne au nouveau maximum. Tout revient à la normale au repos long."}); }
   if(k==="qroll") return qrollPop(ch,D,wrap);
+  if(k==="used") return usedPop(ch,D,wrap);
   if(k==="insp"){ const human=(()=>{ const sp=srd("species",ch.species); return !!(sp&&sp.traits.some(t=>t.name==="Ingénieux")); })();
     return wrap("Inspiration héroïque",`<div class="texpl inspgain"><p>Tu as déjà utilisé ton Inspiration héroïque.</p><p class="muted">${human?"Tu la regagnes à la fin de ton prochain repos long (Ingénieux). ":""}Le MJ peut aussi t'en accorder une. On n'en a qu'une à la fois.</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="inspGain">Le MJ me l'accorde</button></div></div>`); }
   if(k==="rest"){ const hdLeft=Math.max(0,D.L-(+ch.hdUsed||0)), cur0=+(ch.hp?.cur||0);
@@ -3035,19 +3107,20 @@ function tPop(ch,D){
     if(kind==="long"){ const human=(()=>{ const sp=srd("species",ch.species); return !!(sp&&sp.traits.some(t=>t.name==="Ingénieux")); })();
       return wrap("Repos",pick+`<div class="row" style="gap:18px;align-items:flex-end"><div><div class="label">Points de vie</div><b class="num" style="font-size:var(--fs-2xl)">${cur0}</b><span class="muted num"> / ${D.hpBase}</span></div><div><div class="label">Dés de vie restants</div><b class="num" style="font-size:var(--fs-2xl)">${hdLeft}</b><span class="muted num"> / ${D.L}</span></div></div>
         <div class="lusec"><div class="label">À la fin du repos long</div><ul class="lul"><li>PV au maximum (${D.hpBase})${D.hpBonus?", bonus de PV max temporaire retiré":""}</li><li>Tous les dés de vie récupérés</li><li>${D.cast?"Tous les emplacements de sorts récupérés":"Ressources récupérées"}</li>${D.res.length?`<li>${D.res.map(r=>esc(r.name)).join(", ")}</li>`:""}${(ch.counters||[]).some(c=>c&&c.recharge)?`<li>${(ch.counters||[]).filter(c=>c&&c.recharge).map(c=>esc(c.name)).join(", ")}</li>`:""}${+ch.exhaustion?`<li>Épuisement : ${+ch.exhaustion} → ${+ch.exhaustion-1}</li>`:""}${human?"<li>Inspiration héroïque regagnée (Ingénieux)</li>":""}</ul></div>
-        ${cur0<=0?`<div class="tnotes" style="color:var(--blood)">Il faut au moins 1 PV pour commencer un repos long.</div>`:""}<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="restLong" ${cur0<=0?"disabled":""}>Terminer le repos long</button></div>`); }
+        ${cur0<=0?`<div class="tnotes" style="color:var(--blood)">Il faut au moins 1 PV pour commencer un repos long.</div>`:""}<div class="wfoot"><button class="btn primary" data-act="restLong" ${cur0<=0?"disabled":""}>Terminer le repos long</button></div>`); }
     return wrap("Repos",pick+`${cur0<=0?`<div class="tnotes" style="color:var(--blood)">Il faut au moins 1 PV pour commencer un repos court.</div>`:""}
       <div class="row" style="gap:18px;align-items:flex-end"><div><div class="label">Points de vie</div><b class="num" style="font-size:var(--fs-2xl)">${cur0}</b><span class="muted num"> / ${D.hpMax}</span></div>
       <div><div class="label">Dés de vie restants</div><b class="num" style="font-size:var(--fs-2xl)">${hdLeft}</b><span class="muted num"> / ${D.L} · d${D.hd} ${sg(D.mods.con)}</span></div></div>
       <div class="lusec"><div class="label">Dépenser un dé de vie</div>
-        ${hdLeft>0?`${cur0>=D.hpMax?`<div class="muted hdfull" style="font-size:var(--fs-sm)">PV déjà au maximum : dépenser un dé maintenant ne rendrait rien.</div>`:""}<form class="row" data-form="hdroll"${cur0>=D.hpMax?" data-full":""} style="gap:8px"><label class="row" style="gap:6px">Ton d${D.hd}<input id="t-hd" type="number" inputmode="numeric" min="1" max="${D.hd}" style="width:70px;font-size:var(--fs-lg)"${cur0>=D.hpMax?" disabled":""}></label><button class="btn primary" type="submit"${cur0>=D.hpMax?" disabled":""}>Appliquer</button><button class="btn" type="button" data-virtual data-act="hdvirt"${cur0>=D.hpMax?" disabled":""}>Lancer virtuellement</button></form>
+        ${hdLeft>0?`${cur0>=D.hpMax?`<div class="muted hdfull" style="font-size:var(--fs-sm)">PV déjà au maximum : dépenser un dé maintenant ne rendrait rien.</div>`:""}<form class="row tin" data-form="hdroll"${cur0>=D.hpMax?" data-full":""} style="gap:8px"><label class="field"><span>Ton d${D.hd}</span><input id="t-hd" type="number" inputmode="numeric" min="1" max="${D.hd}"${cur0>=D.hpMax?" disabled":""}></label><button class="btn primary" type="submit"${cur0>=D.hpMax?" disabled":""}>Appliquer</button><button class="btn" type="button" data-virtual data-act="hdvirt"${cur0>=D.hpMax?" disabled":""}>Lancer virtuellement</button></form>
         <div class="muted" style="font-size:var(--fs-sm)">Chaque dé rend son résultat ${sg(D.mods.con)} PV (minimum 1). Tu peux en dépenser plusieurs, un par un.</div>`:`<div class="muted" style="font-size:var(--fs-sm)">Plus de dé de vie : ils reviennent au repos long.</div>`}
         ${S.T.hdLast?`<div class="tnotes">${esc(S.T.hdLast)}</div>`:""}</div>
       <div class="lusec"><div class="label">À la fin du repos</div><ul class="lul"><li>${D.cast&&D.cast.type==="pact"?"Emplacements de pacte récupérés":"Pas d'emplacement récupéré (repos long)"}</li>${shortRes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
-      <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button></div>`); }
+      ${winFoot(`<button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button>`)}`); }
   if(k==="search") return wrap("Recherche",searchBar()," tsearchpop");
   if(k==="notes") return wrap("Notes de partie",`<textarea id="t-notes" data-bind="sessionNotes" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="min-height:260px;width:100%">${esc(ch.sessionNotes||"")}</textarea><div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Séparées des notes du personnage. Enregistrées au fil de la frappe.</div>`);
-  if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } return wrap("Détails",c," wide"); }
+  if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } // fenêtres harmonisées, lot 2 : le vrai nom en titre, sous-titre et coût dessous
+    return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop wide" role="dialog" aria-modal="true" aria-label="${esc(c.title)}" data-act="noop"><div class="tpophead tchead"><div class="tchw"><b>${esc(c.title)}</b>${c.sub||c.cost?`<div class="tcsub">${c.sub?`<span>${esc(c.sub)}</span>`:""}${c.cost}</div>`:""}</div><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${c.html}</div></div></div>`; }
   if(k==="hist") return wrap("Historique des jets", histBody(ch));
   // Raccourcis Sorts, Attaques, Actions (lot T5) : listes de ce que le perso peut faire, un toucher ouvre la fiche (jet, dégâts)
   if(k.startsWith("list:")){ const w=k.slice(5), it=S.Titems||[], grp=(title,list)=>list.length?`<div class="tgrp"><div class="label">${esc(title)}</div><div class="tlist">${list.map(i=>tRow(i,false,false)).join("")}</div></div>`:"";
@@ -3057,7 +3130,8 @@ function tPop(ch,D){
     if(w==="actions") return wrap("Actions",`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">À ton tour : une action, une action bonus si une aptitude t'en donne une, ton déplacement, et une réaction avant ton prochain tour.</div>${it.some(i=>i.kind==="basic")?`<div class="tgrp"><div class="label">Actions de base</div><div class="tlist">${it.filter(i=>i.kind==="basic").map(i=>tRow(i,false,true)).join("")}</div></div>`:""}${grp("Réaction",it.filter(i=>i.kind==="rule"&&i.cost==="reaction"))}`);
     T.pop=null; return ""; }
   if(k.startsWith("eco:")){ const e=k.slice(4); T.eco=e; const used=!!(ch.turn||{})[e];
-    return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop" role="dialog" aria-modal="true" aria-label="${ECO[e]}" data-act="noop"><div class="tpophead"><b>${ECO[e]}</b><span class="row" style="gap:6px"><button class="btn small" data-act="tturn" data-v="${e}">${used?"Annuler":e==="autre"?"Marquer Autre terminé":"Marquer comme consommée"}</button><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></span></div><div class="tpopbody">${used?`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">✓ ${TURN_DONE[e]}</div>`:""}${tEco(ch,D)}</div></div></div>`; }
+    // lot 2 : le bouton « Marquer » passe dans le pied, l'en-tête n'a plus que la croix
+    return wrap(ECO[e],`${used?`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">✓ ${TURN_DONE[e]}</div>`:""}${tEco(ch,D)}${winFoot(`<button class="btn${used?"":" primary"}" data-act="tturn" data-v="${e}">${used?"Annuler : "+(e==="autre"?"Autre non terminé":"pas encore consommée"):e==="autre"?"Marquer Autre terminé":"Marquer comme consommée"}</button>`)}`); }
   const B={skills:["Tests de caractéristique",`<div class="tabil">${AB.map(a=>`<div class="tabrow"><button class="tabhead ${sgc(D.mods[a])}" data-act="tqroll" data-r="d20" data-k="abil:${a}"><span>${ABN[a]}</span><b class="num">${sg(D.mods[a])}</b></button><div class="tabsk">${S.C.skills.filter(s=>s.ability===a).map(s=>`<button class="tskc ${sgc(D.skills[s.id].val)}" data-act="tqroll" data-r="d20" data-k="skill:${s.id}">${D.skills[s.id].lv?`<span class="pdot p${D.skills[s.id].lv}" title="${D.skills[s.id].lv>1?"Expertise":"Maîtrise"}"></span>`:""}${esc(s.name)} <b class="num">${sg(D.skills[s.id].val)}</b></button>`).join("")||`<span class="muted" style="font-size:var(--fs-sm)">Aucune compétence</span>`}</div></div>`).join("")}</div>${pLegend(true)}`],saves:["Jets de sauvegarde",`<div class="tsavegrid">${saves}</div>${pLegend(false)}`],cond:["États",`<div class="condgrid">${CONDS.map(c=>`<span class="condpick"><button class="chip" aria-pressed="${(ch.conditions||[]).includes(c)}" data-act="cond" data-v="${esc(c)}">${esc(c)}</button>${S.idx.cond[c]?`<span class="tinfo" role="button" data-act="tip" data-k="rule:${esc(S.idx.cond[c].id)}" aria-label="Règle : ${esc(c)}" title="Règle">i</span>`:""}</span>`).join("")}</div>
         <div class="row"><span class="label">Épuisement</span><span class="hpstep"><button class="btn small stepq" data-act="exh" data-v="-1" aria-label="Retirer un niveau">−</button><b class="num">${+ch.exhaustion||0}</b><button class="btn small stepq" data-act="exh" data-v="1" aria-label="Ajouter un niveau">+</button></span>${+ch.exhaustion?`<span class="muted" style="font-size:var(--fs-sm)">−${2*ch.exhaustion} aux tests d20, vitesse −${String(1.5*ch.exhaustion).replace(".",",")} m</span>`:""}</div>`],inv:["Inventaire",`${(ch.counters||[]).map(c=>`<div class="res"><b class="tipl" data-act="tip" data-k="cnt:${esc(c.id)}">${esc(c.name)}</b><div class="row">${(+c.max||0)<=20?pips("cnt:"+c.id,+c.max||0,(+c.max||0)-(+c.cur||0),true):""}<span class="muted num" style="font-size:var(--fs-sm)">${+c.cur||0}/${+c.max||0}</span>${c.recharge?`<span class="muted" style="font-size:var(--fs-sm)">· ${esc(rechargeLabel(c.recharge))}</span>`:""}</div></div>`).join("")}
         <div class="tbag">${(ch.bag||[]).map(b=>`<div class="tbagrow${(+b.qty||0)>0?"":" empty"}"><span>${itemName(b)}${b.note?` <span class="muted" style="font-size:var(--fs-sm)">· ${esc(b.note)}</span>`:""}${(b.ref||matchItem(b.name))?"":` <button class="btn small ghost infob mk" data-act="mkItem" data-id="${b.id}" title="Créer la fiche de cet objet dans Mes contenus">+ fiche</button>`}${chargePips(ch,b)}<button class="btn small ghost chgb" data-act="chgedit" data-id="${b.id}" title="${itemCharges(ch,b)?"Modifier le compteur":"Ajouter un compteur (charges, utilisations)"}">${itemCharges(ch,b)?"⚙":"+ compteur"}</button></span><span class="hpstep"><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="-1" aria-label="Utiliser un">−</button><b class="num">${+b.qty||0}</b><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="1" aria-label="Ajouter un">+</button>${S.bagDel===b.id?`<button class="btn small danger" data-act="bagrm" data-id="${b.id}">Supprimer</button>`:`<button class="btn small ghost btndel" data-act="bagdel" data-id="${b.id}" aria-label="Supprimer ${esc(b.name)}" title="Supprimer de l'inventaire">${ICON_TRASH}</button>`}</span></div>`).join("")||`<div class="muted" style="font-size:var(--fs-sm)">Le sac est vide.</div>`}</div>
@@ -3118,7 +3192,7 @@ function viewTable(ch,D,banner=""){
     ressources:pair?"":resBlock(ch,D),
     pv:`${(+hp.cur||0)<=0?`<div class="tdeath"><div class="row" style="justify-content:space-between"><b>À 0 PV : jets contre la mort</b><span class="muted" style="font-size:var(--fs-sm)">10 ou plus : réussite · 1 : deux échecs · 20 : tu reviens à 1 PV</span></div>
         <div class="row" style="gap:16px"><span class="row" style="gap:6px"><span class="label">Réussites</span>${pips("death.s",3,ch.death?.s||0)}</span><span class="row" style="gap:6px"><span class="label">Échecs</span>${pips("death.f",3,ch.death?.f||0)}</span></div>
-        ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row" data-form="death"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20" style="width:84px;font-size:var(--fs-lg)"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
+        ${(ch.death?.s||0)>=3?`<div><b>Stabilisé.</b> Tu restes inconscient à 0 PV, mais tu ne fais plus de jets.</div>`:(ch.death?.f||0)>=3?`<div style="color:var(--blood)"><b>Trois échecs : ton personnage meurt.</b></div>`:`<form class="row tin" data-form="death" style="gap:8px"><label class="field"><span>Ton d20</span><input id="t-death" type="number" inputmode="numeric" min="1" max="20"></label><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="death">Lancer virtuellement</button></form>`}</div>`:""}${healthBlk}`,
     recherche:blkHidden(ch,"recherche")?"":`<div class="tgrid tb-solo"><div class="tmain">${tbHead("recherche","Recherche","blk:recherche")}${searchBar()}</div></div>`,
     tour:`<div class="tgrid tb-solo"><div class="tside table-turn">
       <div class="tturnb"${colsStyle(ch,"tour")}>${turnBtns}</div>
@@ -3881,7 +3955,7 @@ function hpStepper(ch,D){
 function pvPop(wrap,o){ return wrap(o.title,`<div class="pvpop"><div class="label">${o.label}</div>
   <div class="pvline"><span class="hpstep"><button class="btn stepb" data-act="${o.act}" data-v="-1" aria-label="Retirer 1" ${o.minusOff?"disabled":""}>−</button><b class="num pvval">${o.val}</b><button class="btn stepb" data-act="${o.act}" data-v="1" aria-label="Ajouter 1">+</button></span>
   <input type="number" inputmode="numeric" class="pvset" data-pvset="${o.kind}" min="${o.min}" max="999" placeholder="Valeur" aria-label="${esc(o.label)} : saisir une valeur"></div>
-  ${o.info?`<div class="pvinfo">${o.info}</div>`:""}<div class="row pvquick">${o.quick}</div><div class="muted pvnote">${o.note}</div></div>`); }
+  <div class="muted pvnote">${o.note}</div>${o.info?`<div class="pvinfo">${o.info}</div>`:""}<div class="row pvquick">${o.quick}</div></div>`); } // lot 2 : l'aide juste sous la valeur qu'elle explique
 function hpMaxAdd(ch,d){ const D=derive(ch); ch.hpMaxBonus=(+ch.hpMaxBonus||0)+d; if(D.hpBase+ch.hpMaxBonus<1) ch.hpMaxBonus=1-D.hpBase; const real=ch.hpMaxBonus-D.hpBonus; ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const D2=derive(ch); ch.hp.cur=Math.max(0,Math.min(D2.hpMax,(+ch.hp.cur||0)+(real>0?real:0))); touch(S.cur); }
 function tempStepper(ch){
   const t=+(ch.hp?.temp||0);
@@ -3896,24 +3970,28 @@ function tResults(){
   if(!r.length) return `<div class="muted" style="padding:6px 2px">Rien trouvé pour « ${esc(T.q)} ».</div>`;
   return `<div class="tlist">${r.map((i,n)=>tRow(i,n===0)).join("")}</div>`;
 }
-function tRow(i,first,inEco){
+function tRow(i,first,inEco,from){
   const kv=(l,v)=>`<span class="tk"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
   // Jet direct (Toucher, Dégâts, Soins) : la valeur est un bouton ; le reste de la ligne ouvre la fiche
-  const kb=(l,v,r)=>`<span class="tk tkb" role="button" tabindex="0" data-act="tqroll" data-k="${esc(i.key)}" data-r="${r}" aria-label="${l} : lancer (${esc(i.name)})" title="${l} : lancer"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
+  const kb=(l,v,r)=>`<span class="tk tkb" role="button" tabindex="0" data-act="tqroll" data-k="${esc(i.key)}" data-r="${r}"${from?` data-from="${from}"`:""} aria-label="${l} : lancer (${esc(i.name)})" title="${l} : lancer"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
   let right="";
   if(i.kind==="atk") right=kb("Toucher",sg(i.mod),"hit")+kb("Dégâts",i.dmg,"dmg");
   else if(i.kind==="spell"){
     // Sort de niveau 1+ : un seul bouton « Lancer » (emplacement choisi dans le mini-menu, puis jets dans la fenêtre de résultat) ; sort mineur : Toucher / Dégâts, ou « Lancer » s'il n'a pas de jet
     const lv=i.sp.level>0, cl=`<span class="tk tkb tkcast" role="button" tabindex="0" data-act="tqroll" data-k="${esc(i.key)}" data-r="cast" aria-label="Lancer ${esc(i.name)}" title="Lancer le sort"><b>Lancer</b></span>`;
     if(i.roll) right+= i.roll.startsWith("DD") ? kv("DD",i.roll.slice(3)) : (lv?kv("Toucher",i.roll):kb("Toucher",i.roll,"hit"));
-    if(i.dice){ const D=S.Tderived; const b=(i.sp.level===0&&i.m&&i.m.beams&&D)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1; const t=(b>1?b+" × ":"")+i.dice; right+=lv?kv(i.heal?"Soins":"Dégâts",t):kb(i.heal?"Soins":"Dégâts",t,"dmg"); }
+    if(i.dice){ const D=S.Tderived; const b=beamsAt(i.m,i.sp,i.sp.level,D); const t=(b>1?b+" × ":"")+i.dice; right+=lv?kv(i.heal?"Soins":"Dégâts",t):kb(i.heal?"Soins":"Dégâts",t,"dmg"); }
     if(lv||(!i.dice&&!(i.roll&&!i.roll.startsWith("DD")))) right+=cl;
     right+=`<span class="tklvl">${i.sp.level?"niv. "+i.sp.level:"mineur"}</span>`;
   }
   else if(["abil","save","skill","init"].includes(i.kind)) right=kb("Jet",sg(i.mod),"d20");
+  else if(useKind(i)){ const u=useKind(i), ch=cur(), r=i.res, left=r?r.max-(+((ch.resUsed||{})[r.id]||0)):0, b=i.kind==="bagitem"?(ch.bag||[]).find(z=>z.id===i.bagId):null, off=(r&&left<=0)||(b&&!(+b.qty>0));
+    right=(u==="pv"?kv("Réserve",String(left)):u==="res"?kv("Reste",left+"/"+r.max):u==="drink"?kv("Quantité",String(+b.qty||0)):"")+`<span class="tk tkb tkcast tkuse" role="button" tabindex="0" data-act="${off?"tsel":u==="pv"?"tusepv":"tuseq"}" data-k="${esc(i.key)}" aria-label="${u==="drink"?"Boire":"Utiliser"} : ${esc(i.name)}"${off?' aria-disabled="true"':""}><b>${u==="drink"?"Boire":"Utiliser"}</b></span>`; }
   else if(i.mod!==undefined) right=`<b class="num tkv">${sg(i.mod)}</b>`;
   else if(i.cost&&!inEco) right=`<span class="badge">${ECO[i.cost]}</span>`;
-  return `<button class="trow ${first?"first":""}${(i.kind==="atk"||i.kind==="bagitem")&&i.held===false?" sheathed":""}" data-act="tsel" data-k="${esc(i.key)}"><span class="tname"><b>${esc(i.name)}</b>${(()=>{ const sub = inEco ? (i.kind==="spell" ? (i.sp.range||"") : (i.kind==="atk" ? (i.held===true?(i.pact?"arme de pacte":"en main"):i.held===false?"au fourreau":"") : i.sub)) : i.sub; return sub?`<span class="muted"> · ${esc(sub)}</span>`:""; })()}</span><span class="tinfo" role="button" data-act="tip" data-k="${esc(i.key)}" aria-label="Règle : ${esc(i.name)}" title="Règle">i</span><span class="tright">${right}</span></button>`;
+  // Tests, sauvegardes, initiative, concentration : toucher la ligne ouvre le mini-menu (avantage…, Détails), comme les tuiles (demande d'Angle, lot 2)
+  const d20=["abil","save","skill","init"].includes(i.kind);
+  return `<button class="trow ${first?"first":""}${(i.kind==="atk"||i.kind==="bagitem")&&i.held===false?" sheathed":""}" ${d20?`data-act="tqroll" data-r="d20"`:`data-act="tsel"`} data-k="${esc(i.key)}"><span class="tname"><b>${esc(i.name)}</b>${(()=>{ const sub = inEco ? (i.kind==="spell" ? (i.sp.range||"") : (i.kind==="atk" ? (i.held===true?(i.pact?"arme de pacte":"en main"):i.held===false?"au fourreau":"") : i.sub)) : i.sub; return sub?`<span class="muted"> · ${esc(sub)}</span>`:""; })()}</span><span class="tinfo" role="button" data-act="tip" data-k="${esc(i.key)}" aria-label="Règle : ${esc(i.name)}" title="Règle">i</span><span class="tright">${right}</span></button>`;
 }
 function tEco(ch,D){
   const T=S.T; if(!T.eco) return `<div class="muted" style="font-size:var(--fs-sm);padding:8px 0">Choisis un type d'action pour voir tout ce que ${esc(ch.name||"ton personnage")} peut faire avec.</div>`;
@@ -3931,6 +4009,9 @@ function tEco(ch,D){
     h=grp("Sorts",own.filter(i=>i.kind==="spell"))+grp("Aptitudes",own.filter(i=>i.kind!=="spell"&&i.kind!=="bagitem"))+grp("Objets",own.filter(i=>i.kind==="bagitem"));
   } else h=own.length?`<div class="tlist">${own.map(i=>tRow(i,false,true)).join("")}</div>`:"";
   if(!own.length) h=`<div class="muted" style="padding:6px 2px">Rien de propre à ton personnage.</div>`;
+  // Attaque d'opportunité (chantier 2, décision d'Angle) : tes armes de corps à corps en tête ; l'attaque lancée d'ici consomme la réaction
+  if(T.eco==="reaction"){ const melee=S.Titems.filter(i=>i.kind==="atk"&&!(i.wref&&i.wref.startsWith("srd:")&&(S.idx.weapons[i.wref.slice(4)]||{}).kind==="dist")).sort((x,y)=>(y.held===true)-(x.held===true));
+    if(melee.length) h=`<div class="tgrp topp"><div class="label">Attaque d’opportunité · consomme ta réaction</div><div class="tlist">${melee.map(i=>tRow(i,false,true,"opp")).join("")}</div></div>`+(own.length?h:""); }
   if(basic.length) h+=`<details class="tskills" style="margin-top:8px"><summary class="label">Autres actions${T.eco==="action"?"":" communes"} (${basic.length})</summary><div class="tlist">${basic.map(i=>tRow(i,false,true)).join("")}</div></details>`;
   return h;
 }
@@ -3942,7 +4023,7 @@ function tCard(ch,D){
   const costSel=canEditCost&&S.unlockCost
     ? `<label class="row" style="gap:6px;font-size:var(--fs-sm)"><span class="muted">Coût</span><select id="t-cost" data-act-change="tcost" data-k="${esc(i.key)}">${[["","Aucun"],...Object.entries(ECO)].map(([k,l])=>`<option value="${k}" ${(i.cost||"")===k?"selected":""}>${l}</option>`).join("")}</select><button class="btn small ghost lock" data-act="lockCost" aria-pressed="true" title="Verrouiller le coût">${lockIc(true)}</button></label>`
     : `<span class="row" style="gap:4px">${i.costs&&i.use&&i.use.spells?`<span class="badge">${ECO[costOfSpell((i.use.spells[Math.min(i.use.spells.length-1,+T.itemSp||0)]||{}).sp)||"action"]}</span>`:i.cost?`<span class="badge">${ECO[i.cost]}</span>`:(canEditCost?`<span class="muted" style="font-size:var(--fs-sm)">sans coût</span>`:"")}${canEditCost?`<button class="btn small ghost lock" data-act="lockCost" aria-pressed="false" title="Modifier le coût">${lockIc(false)}</button>`:""}</span>`;
-  const head=costSel?`<div class="row" style="justify-content:flex-end">${costSel}</div>`:"";
+  let foot=""; // bouton principal, dans le pied de la fenêtre
   const d20=(kind,mod,parts,ab,label,noBig)=>{
     const adv=condAdvice(ch,kind,ab), mode=T.mode;
     const sugg = adv.mode && adv.mode!=="n" && adv.mode!==mode ? `<div class="tadvice">${adv.mode==="f"?"<b>Échec automatique</b> à cause de ton état.":`Suggestion : <b>${adv.mode==="a"?"avantage":"désavantage"}</b>.`} ${adv.mode!=="f"?`<button class="btn small" data-act="tmode" data-v="${adv.mode}">Appliquer</button>`:""}</div>`:"";
@@ -3984,16 +4065,17 @@ function tCard(ch,D){
     const al=arcLevel(D,i.ref), arcUsed=al&&+(ch.resUsed?.["arc:"+al]||0)>=1;
     const canCast = al ? !arcUsed : (sp.level===0 || opts.length);
     const done = T.castDone===i.key;
-    const info=`<div class="muted" style="font-size:var(--fs-sm)">${esc([sp.casting_time,sp.range,sp.duration,sp.components].filter(Boolean).join(" · "))}${sp.concentration?" · <b>Concentration</b>":""}</div>`;
+    const info=`<div class="tcmeta">${[["Incantation",sp.casting_time],["Portée",sp.range],["Durée",sp.duration],["Composantes",sp.components],["Concentration",sp.concentration&&!/concentration/i.test(sp.duration||"")?"oui":""]].filter(x=>x[1]).map(([l,v])=>`<div><span class="tkl">${l}</span><b>${esc(v)}</b></div>`).join("")}</div>`;
     let castCtl="";
     if(sp.level>0 && !done){
       const fr=(D.res||[]).find(r=>r.freeSpell===i.ref), frLeft=fr?fr.max-(+ch.resUsed?.[fr.id]||0):0;
-      body=info; castCtl=`${fr?`<div class="row" style="margin:6px 0">${frLeft>0?`<button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${sp.level}" data-free="${esc(fr.id)}">Lancer sans emplacement</button><span class="muted" style="font-size:var(--fs-sm)">${frLeft}/${fr.max} · revient au repos long</span>`:`<span class="muted" style="font-size:var(--fs-sm)">Lancer gratuit déjà utilisé (revient au repos long).</span>`}</div>`:""}<div class="row" style="margin:6px 0">${sel}${canCast?`<button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${al||lvl}" ${al?`data-arc="${al}"`:""}>Lancer le sort</button>`:`<span class="muted">${al?"Arcanum déjà utilisé : revient au repos long.":"Aucun emplacement disponible."}</span>`}${sp.ritual?`<button class="btn" data-act="tcast" data-rit="1" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${sp.level}">En rituel</button>`:""}</div>
-        <div class="muted" style="font-size:var(--fs-sm)">${al?"Arcanum mystique : une fois par repos long, sans emplacement.":"Lancer le sort dépense l'emplacement de "+(D.cast.type==="pact"?"pacte":"sort")+", puis affiche les jets."}</div>`;
+      body=info;
+      castCtl=sec("Lancer",`${sel?`<div class="row" style="margin:2px 0 6px">${sel}</div>`:""}${canCast?"":`<div class="muted">${al?"Arcanum déjà utilisé : revient au repos long.":"Aucun emplacement disponible."}</div>`}${fr?`<div class="muted" style="font-size:var(--fs-sm)">${frLeft>0?`Lancer gratuit : ${frLeft}/${fr.max} · revient au repos long.`:"Lancer gratuit déjà utilisé (revient au repos long)."}</div>`:""}<div class="muted" style="font-size:var(--fs-sm)">${al?"Arcanum mystique : une fois par repos long, sans emplacement.":"Lancer le sort dépense l'emplacement de "+(D.cast.type==="pact"?"pacte":"sort")+", puis affiche les jets."}</div>`);
+      foot=`${fr&&frLeft>0?`<button class="btn" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${sp.level}" data-free="${esc(fr.id)}">Lancer sans emplacement</button>`:""}${canCast?`<button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${al||lvl}" ${al?`data-arc="${al}"`:""}>Lancer le sort</button>`:""}${sp.ritual?`<button class="btn" data-act="tcast" data-rit="1" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="${sp.level}">En rituel</button>`:""}`;
     } else {
       const used = done ? (T.castRit?"en rituel":"niv. "+T.castLvl) : "";
       const cOK=costOfSpell(sp);
-      castCtl=done?`<div class="row tcastdone"><span class="badge srd">Lancé ${sp.level>0?esc(used):""}</span><span class="muted">${T.castRit||sp.level===0?"Aucun emplacement dépensé.":"Emplacement ou ressource de lancement dépensé."}</span></div>`:(!m.attack&&!m.dice?`<div class="row"><button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="0">Lancer le sort</button></div>`:""); body=info;
+      castCtl=done?`<div class="row tcastdone"><span class="badge srd">Lancé ${sp.level>0?esc(used):""}</span><span class="muted">${T.castRit||sp.level===0?"Aucun emplacement dépensé.":"Emplacement ou ressource de lancement dépensé."}</span></div>`:""; if(!done&&!m.attack&&!m.dice) foot=`<button class="btn primary" data-act="tcast" data-ref="${esc(i.ref)}" data-k="${esc(i.key)}" data-l="0">Lancer le sort</button>`; body=info;
       const ex=diceAt(m,sp,done?(T.castRit?sp.level:T.castLvl):(lvl||sp.level),D);
       if(m.attack) body+=sec("Toucher",d20("spellatk",D.cast.atk,[{l:ABN[D.cast.ability],v:D.mods[D.cast.ability]},{l:"Maîtrise",v:D.pb}],null,sp.name+" — toucher"));
       else if(m.save) body+=sec("Jet de sauvegarde de la cible",`<div class="tbig"><span class="num">DD ${D.cast.dc}</span><span class="muted">JS de ${esc(m.save)}</span></div>`);
@@ -4003,16 +4085,16 @@ function tCard(ch,D){
         body+=sec("PV temporaires",`<div class="tbig"><span class="num">${v}</span><span class="muted">au niveau ${Math.max(1,L2)}</span></div>${done?(()=>{ const ct=T.castTemp; return ct&&ct.b0>=ct.v?`<div class="muted" style="font-size:var(--fs-sm)">Tu avais déjà ${ct.b0} PV temporaires : on garde le plus haut, ils ne se cumulent pas.</div>`:`<div class="muted" style="font-size:var(--fs-sm)">✓ Ajoutés à tes PV temporaires.</div>`; })():`<div class="muted" style="font-size:var(--fs-sm)">Ajoutés automatiquement au lancement du sort.</div>`}${sp.mech.tempNote?`<div class="muted" style="font-size:var(--fs-sm);margin-top:4px">${esc(sp.mech.tempNote.replace(/\{n\}/g,v))}</div>`:""}`); }
     }
     { const nn=invNotes(D,i.ref,sp); if(nn.length) body+=`<div class="tnotes" style="margin-top:6px">${nn.map(esc).join("<br>")}</div>`; }
-    if(sp.level===0&&m.beams){ const b=1+(D.L>=5)+(D.L>=11)+(D.L>=17); if(b>1) body+=`<div class="muted">${b} rayons : une attaque et des dégâts par rayon.</div>`; }
+    { const b=beamsAt(m,sp,done?(T.castRit?sp.level:T.castLvl):(lvl||sp.level),D); if(b>1) body+=`<div class="muted">${b} ${beamWord(m)}s : ${m.attack?"une attaque et ":""}des dégâts par ${beamWord(m)}.</div>`; }
     body+=`<details class="tdesc"><summary class="label">Description du sort</summary><div class="prose">${prose(sp.text)}</div></details>`;
-    if(castCtl) body+=`<div class="tuse">${castCtl}</div>`;
+    if(castCtl) body+=castCtl.startsWith("<section")?castCtl:`<div class="tuse">${castCtl}</div>`;
   }
   else if(i.kind==="feat"){
     const r=i.res; let ctl="";
     if(r){ const used=+(ch.resUsed?.[r.id]||0), left=r.max-used;
       if(r.id==="cls:rouerie-magique") ctl=`<div class="row">${pips("res:"+r.id,r.max,used,true,true)}${left>0?`<button class="btn small primary" data-act="rouerie">Utiliser</button>`:`<span class="muted">Revient au repos long</span>`}</div>`;
       else if(r.pool) ctl=`<div class="row"><b class="num">${left} / ${r.max} d${r.die}</b><label class="row" style="gap:4px">Dés à dépenser <input id="t-pool" type="number" min="1" max="${Math.min(left,r.maxUse||left)}" value="${Math.min(left,r.maxUse||left)||1}" style="width:60px"></label><button class="btn small primary" data-act="tpool" data-id="${esc(r.id)}" ${left<=0?"disabled":""}>Dépenser</button></div><div class="muted" style="font-size:var(--fs-sm)">Dépense les dés, puis lance-les ci-dessous : dés physiques ou jet virtuel.</div>`;
-      else ctl=`<div class="row">${r.max<=10?pips("res:"+r.id,r.max,used,true):`<b class="num">${left} / ${r.max}</b>`}<span class="muted" style="font-size:var(--fs-sm)">${rechargeLabel(r.recharge)}</span></div>`;
+      else ctl=`<div class="row">${resCtl(ch,r)}<span class="muted" style="font-size:var(--fs-sm)">${rechargeLabel(r.recharge)}</span></div>`;
     }
     let roll="";
     if(r&&r.pool&&T.poolKey===i.key&&T.poolN){ const expr=T.poolN+"d"+r.die; const heal=/soin|récup|guéri/i.test(i.name+" "+(i.text||""));
@@ -4047,28 +4129,36 @@ function tCard(ch,D){
     const lab=uCost&&ECO[uCost]?ECO[uCost]:"";
     x+=`<details class="tdesc"><summary class="label">Description</summary><div class="prose">${i.html||prose(i.text)}</div></details>`;
     const canUse=u.c&&u.c.max?(u.left||0)>=nUse:(+b.qty||0)>0;
-    x+=`<div class="tuse">${S.T.itemUseReceipt===tableItemReceipt()?`<span class="badge srd">Objet utilisé · ressource dépensée</span>`:canUse?`<button class="btn primary" data-act="itemUse" data-id="${esc(b.id)}" data-n="${nUse}" data-cost="${esc(uCost||"")}">Utiliser${lab?" · "+lab:""}</button><span class="muted" style="font-size:var(--fs-sm)">${u.c&&u.c.max?(nUse>1?nUse+" charges dépensées":"1 charge dépensée"):"1 "+esc(b.name)+" consommé"}${lab&&uCost!=="autre"?" · barre « "+lab+" »":""}</span>`:`<span class="muted">${u.c&&u.c.max?"Plus assez de charges.":"Plus aucun exemplaire."}</span>`}</div>`;
+    if(S.T.itemUseReceipt===tableItemReceipt()) x+=`<div class="tuse"><span class="badge srd">Objet utilisé · ressource dépensée</span></div>`;
+    else if(canUse){ foot=`<button class="btn primary" data-act="itemUse" data-id="${esc(b.id)}" data-n="${nUse}" data-cost="${esc(uCost||"")}">Utiliser${lab?" · "+lab:""}</button>`; x+=`<div class="muted" style="font-size:var(--fs-sm);margin-top:8px">${u.c&&u.c.max?(nUse>1?nUse+" charges dépensées":"1 charge dépensée"):"1 "+esc(b.name)+" consommé"}${lab&&uCost!=="autre"?" · barre « "+lab+" »":""}</div>`; }
+    else x+=`<div class="muted" style="margin-top:8px">${u.c&&u.c.max?"Plus assez de charges.":"Plus aucun exemplaire."}</div>`;
     body=x; }
   else body=`<details class="tdesc" open><summary class="label">Description</summary><div class="prose">${i.html||prose(i.text)}</div></details>`;
-  if(i.cond){ const on=(ch.conditions||[]).includes(i.cond); body=`<div class="tuse"><button class="btn${on?"":" primary"}" data-act="cond" data-v="${esc(i.cond)}" aria-pressed="${on}">${on?"Retirer l’état":"Activer l’état"}</button></div>`+body; }
-  if(i.rest) body=`<div class="tuse"><button class="btn primary" data-act="restOpen" data-v="${i.rest}">${i.rest==="court"?"Faire un repos court":"Faire un repos long"}</button></div>`+body;
+  if(i.cond){ const on=(ch.conditions||[]).includes(i.cond); foot+=`<button class="btn${on?"":" primary"}" data-act="cond" data-v="${esc(i.cond)}" aria-pressed="${on}">${on?"Retirer l’état":"Activer l’état"}</button>`; }
+  if(i.rest) foot+=`<button class="btn primary" data-act="restOpen" data-v="${i.rest}">${i.rest==="court"?"Faire un repos court":"Faire un repos long"}</button>`;
   const kv=(l,v)=>`<span class="tk"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
   let sum="";
   if(["abil","save","skill","init"].includes(i.kind)) sum=kv("Bonus",sg(i.mod-exhN));
   else if(i.kind==="atk") sum=kv("Toucher",sg(i.mod-exhN))+kv("Dégâts",i.dmg);
-  else if(i.kind==="spell"){ const m=i.m; if(m.attack) sum+=kv("Toucher",sg(D.cast.atk-exhN)); else if(m.save) sum+=kv("DD",D.cast.dc); if(i.dice) sum+=kv(m.heal?"Soins":"Dégâts",i.dice); if(i.sp.level) sum+=`<span class="tklvl">niv. ${i.sp.level}</span>`; }
+  else if(i.kind==="spell"){ const m=i.m; if(m.attack) sum+=kv("Toucher",sg(D.cast.atk-exhN)); else if(m.save) sum+=kv("DD",D.cast.dc); if(i.dice){ const b=beamsAt(m,i.sp,i.sp.level,D); sum+=kv(m.heal?"Soins":"Dégâts",(b>1?b+" × ":"")+i.dice); } }
   else if(i.kind==="feat"&&i.res){ const r=i.res; sum=kv("Reste",(r.max-(+ch.resUsed?.[r.id]||0))+"/"+r.max+(r.pool?" d"+r.die:"")); }
   else if(i.kind==="counter") sum=kv("Reste",(+i.counter.cur||0)+"/"+(+i.counter.max||0));
   const lkRef=i.kind==="spell"?i.ref:i.kind==="feat"?i.src:i.kind==="bagitem"?(((ch.bag||[]).find(z=>z.id===i.bagId)||{}).ref||matchItem(i.name)):null;
-  if(lkRef&&isHb(lkRef)) body+=hbFoot(hb(lkRef));
-  return `<div class="tcard tcardpop"><div class="tcsum"><span class="tcname"><b>${esc(i.name)}</b><span class="muted"> · ${esc(i.sub)}</span></span><span class="tright">${sum}</span></div><div class="tcbody">${head}<div id="t-action-state">${tableActionFeedback(ch,i)}</div>${body}</div></div>`;
+  const src=lkRef&&isHb(lkRef)?hbFoot(hb(lkRef)):"";
+  let fb=tableActionFeedback(ch,i); if(fb.startsWith('<div class="tuse">')){ foot+=fb.slice(18,-6); fb=""; }
+  // Descriptions : toujours repliées, toujours au même endroit (juste avant le pied) ; ouvertes seulement si la fenêtre n'a rien d'autre (décision d'Angle, lot 2)
+  const descs=[]; body=body.replace(/<details class="tdesc"[^>]*><summary class="label">([^<]*)<\/summary>([\s\S]*?)<\/details>/g,(m0,l,x)=>{ descs.push([l,x]); return ""; });
+  const alone=!foot&&!fb&&!sum&&!body.replace(/<[^>]*>/g,"").trim();
+  const desc=descs.map(([l,x])=>`<details class="tdesc"${alone?" open":""}><summary class="label">${l}</summary>${x}</details>`).join("");
+  const sub=i.kind==="spell"?(i.sp.school?i.sp.school+" · ":"")+(i.sp.level?"niveau "+i.sp.level:"sort mineur"):i.sub;
+  return {title:i.name,sub,cost:costSel,html:`<div class="tcard tcardpop"><div class="tcbody">${sum?`<div class="tcvals">${sum}</div>`:""}<div id="t-action-state">${fb}</div>${body}${desc}${src}</div>${foot?winFoot(foot):""}</div>`};
 }
 function smiteBlock(ch,D,i){
   if(!i.pact||!D.inv.has("frappe-occulte")||!D.cast||D.cast.type!=="pact"||D.L<5) return "";
   const T=S.T, on=!!(ch.turn||{}).smite, left=(+D.cast.pactSlots||0)-(+ch.pactUsed||0), lv=+D.cast.pactLevel||1, ex=(1+lv)+"d8", cx=(2*(1+lv))+"d8";
   let x;
   if(on) x=`<div class="tbig"><span class="num">${ex}</span><span class="muted">force · emplacement niv. ${lv} dépensé</span></div>
-    <form class="row tin" data-form="smitePhysical"><label class="field"><span>Total des dés physiques (${ex}, critique ${cx})</span><input name="total" type="number" inputmode="numeric" min="0" step="1" required></label><button class="btn small" type="submit">Appliquer</button><span>Bonus : +0</span></form>
+    <form class="row tin" data-form="smitePhysical"><label class="field"><span>Total des dés physiques (${ex}, critique ${cx})</span><input name="total" type="number" inputmode="numeric" min="0" step="1" required></label><button class="btn primary" type="submit">Appliquer</button></form>
     <div class="row" style="gap:6px;margin-top:6px"><button class="btn small vroll" data-virtual data-act="smiteRoll" data-e="${ex}">Lancer ${ex}</button><button class="btn small ghost vroll" data-virtual data-act="smiteRoll" data-e="${cx}" data-crit="1">Critique</button><button class="btn small ghost" data-act="smiteUndo">Annuler</button></div>
     ${T.smiteBd?`<div class="muted num" style="font-size:var(--fs-sm);margin-top:4px">${esc(T.smiteBd)}</div>`:""}
     <div class="muted" style="font-size:var(--fs-sm);margin-top:4px">Si la cible est de taille TG ou moins, elle tombe À terre.</div>`;
@@ -4110,9 +4200,9 @@ function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,itemUseReceipt:null,mode:r==="hit"||r==="d20"?(m==="a"||m==="d"?m:"n"):"n"}); if(!keep) T.castDone=null;
   T.recent=[key,...(T.recent||[]).filter(k=>k!==key)].slice(0,6);
   const D=derive(ch), exh=2*(+ch.exhaustion||0), heal=!!i.heal;
-  if(r==="hit"){ const mod=(i.kind==="atk"?+i.mod:parseInt(i.roll,10)||0)-exh; T.qr={k:key,r,mode:T.mode,mod,label:i.name+" — toucher"}; }
+  if(r==="hit"){ const mod=(i.kind==="atk"?+i.mod:parseInt(i.roll,10)||0)-exh; T.qr={k:key,r,mode:T.mode,mod,label:i.name+" — toucher",from:from||""}; }
   else if(r==="d20"){ T.qr={k:key,r,mode:T.mode,mod:(+i.mod||0)-exh,label:i.name}; }
-  else { const b=(i.kind==="spell"&&i.sp&&i.sp.level===0&&i.m&&i.m.beams)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1;
+  else { const b=i.kind==="spell"?beamsAt(i.m,i.sp,keep&&i.sp?(T.castRit?i.sp.level:T.castLvl):(i.sp&&i.sp.level),D):1;
     const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,T.castRit?i.sp.level:T.castLvl,D):i.dice)||""), mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0);
     T.qr={k:key,r,crit:m==="c",dice:m==="c"?doubleDice(dice):dice,flat,heal,beams:b,re1:heal&&!!D.guerisseur}; }
   T.pop="qroll"; render();
@@ -4127,6 +4217,17 @@ function quickCast(key,m){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key
   const [kind,v]=String(m||"slot:0").split(":"), data={ref:i.ref,k:key,l:String(i.sp.level===0?0:i.sp.level)};
   if(kind==="slot"&&i.sp.level>0) data.l=String(+v||i.sp.level); if(kind==="free") data.free=v; if(kind==="arc") data.arc=v;
   const ok=performTableCast(data); T.qr={k:key,r:"cast",ok}; T.pop="qroll"; render(); }
+/* Chantier 2 (décision d'Angle) : après un jet de toucher, la suite dans la même fenêtre — Dégâts, Critique (mis en avant sur un 20 naturel), Raté.
+   L'appli n'annonce pas le touché : c'est le MJ qui le dit. */
+function nat20(){ const T=S.T, a=parseInt(T.d1), b=parseInt(T.d2); if(!validDie(T.d1,20)) return false; const d=T.mode==="n"?a:validDie(T.d2,20)?(T.mode==="a"?Math.max(a,b):Math.min(a,b)):null; return d===20; }
+function hitChain(ch,D,i,q){ const keep=q.from==="cast"&&S.T.castDone===q.k;
+  const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,S.T.castRit?i.sp.level:S.T.castLvl,D):i.dice)||""); if(!expr) return "";
+  const mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=mm[2]||"", crit=nat20();
+  const b=(m,l,v)=>`<button class="btn qchain${m==="c"?" qcrit"+(crit?" on":""):""}" data-act="tqgo" data-k="${esc(q.k)}" data-r="dmg" data-m="${m}" data-from="${esc(q.from||"")}"><span class="tkl">${l}</span> <b class="num">${esc(v)}</b></button>`;
+  return `<div class="row qchains qhitnext">${b("n","Dégâts",expr)}${b("c","Critique",doubleDice(dice)+flat)}<button class="btn qchain qmiss" data-act="tmiss" data-k="${esc(q.k)}">Raté</button></div>`; }
+// Les boutons de la suite gardent le focus dans la case du d20 (pas de nouvel affichage entre l'appui et le clic) ; le jet saisi est enregistré au clic.
+function hitCommit(){ const T=S.T; if(virtualDiceEnabled()||T.pop!=="qroll"||!T.qr||T.qr.r!=="hit") return; if(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))) return; if(ensureTableRollUse()&&logD20(true)) tableRollCommitted("d20"); }
+["pointerdown","mousedown"].forEach(ev=>document.addEventListener(ev,e=>{ if(e.target.closest&&e.target.closest(".qhitnext button")) e.preventDefault(); },true));
 function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x.key===q.k); if(!i){ T.pop=null; return ""; }
   const phys=!virtualDiceEnabled(), ML={n:"Normal",a:"Avantage",d:"Désavantage"};
   if(q.r==="cast"){ const sp=i.sp, m=i.m||{}, done=T.castDone===q.k, L=T.castRit?sp.level:T.castLvl, last=(ch.rollLog||[])[0]||{};
@@ -4139,8 +4240,8 @@ function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x
       ${m.attack||ex?`<div class="row qchains">${m.attack?btn("hit","Toucher",sg(D.cast.atk)):""}${ex?btn("dmg",m.heal?"Soins":"Dégâts",ex):""}</div>`:""}</div>`); }
   if(q.r==="hit"||q.r==="d20") return wrap(esc(i.name)+(q.r==="hit"?" · Toucher":""),`<div class="qres"><div class="qmode label">${ML[q.mode]}</div>
     ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
-    <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div></div>`);
-  return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un rayon sur ${q.beams}`:""}</div>
+    <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div>${q.r==="hit"?hitChain(ch,D,i,q):""}</div>`);
+  return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un ${beamWord(i.m)} sur ${q.beams}`:""}</div>
     ${phys?(()=>{ const rg=diceRange(q.dice); return `<div class="row tin"><label class="field"><span>Total de tes ${esc(q.dice)}${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`; })():""}
     ${!phys&&T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}
     <div class="ttotal qtot" id="t-dtot" data-flat="${q.flat}">${damageTotalHtml(T.dmg,q.flat)}</div></div>`); }
@@ -4184,7 +4285,7 @@ function expressionBonus(expr){
   return (String(expr).replace(/\s/g,"").match(/[+-]?[^+-]+/g)||[]).reduce((n,p)=>n+(/d/i.test(p)?0:Number(p)),0);
 }
 function chargeRecoveryForms(ch){
-  return (ch.bag||[]).filter(b=>b.charges?.pendingRecovery).map(b=>`<form class="row tin" data-form="chargeRecovery" data-id="${esc(b.id)}"><label class="field"><span>${esc(b.name)} · récupération ${esc(b.charges.rec)} : total des dés physiques</span><input name="total" type="number" min="0" step="1" inputmode="numeric" required></label><span>Bonus : ${sg(expressionBonus(b.charges.rec))}</span><button class="btn" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="chargeRecoveryRoll" data-id="${esc(b.id)}">Lancer virtuellement</button></form>`).join("");
+  return (ch.bag||[]).filter(b=>b.charges?.pendingRecovery).map(b=>`<form class="row tin" data-form="chargeRecovery" data-id="${esc(b.id)}"><label class="field"><span>${esc(b.name)} · récupération ${esc(b.charges.rec)} : total des dés physiques</span><input name="total" type="number" min="0" step="1" inputmode="numeric" required></label><span class="tinbonus">Bonus ${sg(expressionBonus(b.charges.rec))}</span><button class="btn primary" type="submit">Appliquer</button><button class="btn" type="button" data-virtual data-act="chargeRecoveryRoll" data-id="${esc(b.id)}">Lancer virtuellement</button></form>`).join("");
 }
 function applyChargeRecovery(ch,id,total,virtual=false){
   if(!virtual&&virtualDiceEnabled()) return;
@@ -4217,6 +4318,44 @@ function syncDiceInputMode(){
 
 const TURN_COSTS=["action","bonus","reaction"];
 const TURN_DONE={action:"Action consommée",bonus:"Action bonus consommée",reaction:"Réaction consommée",move:"Mouvement terminé",autre:"Autre terminé"};
+/* Chantier 2 (décisions d'Angle) : « Utiliser » / « Boire » sur la ligne — aptitudes à usages, réserve de PV (Imposition des mains),
+   potions, actions de base. Un toucher dépense, marque l'action du tour et ouvre la fenêtre de résultat (jet de soins, « Annuler l'utilisation »). */
+function cardSpendMarks(resId){ if(S.T&&S.T.pop==="card"){ const i=tableSelected(); if(i&&i.res&&i.res.id===resId&&TURN_COSTS.includes(i.cost)) consumeTableCost(i.cost); } }
+function useKind(i){ if(!i) return "";
+  if(i.kind==="bagitem"&&i.use&&i.use.potion&&!i.use.spells&&!i.use.sp) return "drink";
+  if(i.kind==="feat"&&i.res&&!i.res.pool&&i.res.id!=="cls:rouerie-magique"&&TURN_COSTS.includes(i.cost)) return /\(PV\)\s*$/.test(i.res.name||"")?"pv":"res";
+  if(i.kind==="basic"&&TURN_COSTS.includes(i.cost)) return "basic"; return ""; }
+function useHeal(ch,D,i){ if(i.kind==="bagitem"){ const b=(ch.bag||[]).find(z=>z.id===i.bagId), hm=b&&String(bagRefText(b).text).match(/(\d+d\d+(?:\s*\+\s*\d+)?) points de vie/i); return hm?hm[1].replace(/\s/g,""):""; }
+  const m=String(i.text||"").match(/(\d+d\d+)\s*\+\s*(?:votre|ton) niveau de/i); return m?m[1]+"+"+D.L:""; }
+function usePvMenu(btn){ qMenuClose(); const k=btn.dataset.k, i=(S.Titems||[]).find(x=>x.key===k), ch=cur(); if(!i||!ch) return; const r=i.res, left=r.max-(+((ch.resUsed||{})[r.id]||0));
+  const m=document.createElement("div"); m.className="qmenu qmpv"; m.setAttribute("role","menu"); m.setAttribute("aria-label","Combien de PV : "+i.name);
+  m.innerHTML=`<form class="qmpvf" data-form="usepv" data-k="${esc(k)}"><label class="field"><span>PV à prendre (reste ${left})</span><input id="t-pvn" type="number" inputmode="numeric" min="1" max="${left}" required></label><button class="btn primary" type="submit">Utiliser</button></form>
+    <button role="menuitem" data-act="tusepvgo" data-k="${esc(k)}" data-n="${left}"><span class="qmi" aria-hidden="true">✦</span>Tout (${left} PV)</button>${left>=5?`<button role="menuitem" data-act="tusepvgo" data-k="${esc(k)}" data-n="5" data-poison="1"><span class="qmi" aria-hidden="true">✚</span>Retirer Empoisonné (5)</button>`:""}<button role="menuitem" class="qm-det" data-act="tqdet" data-k="${esc(k)}"><span class="qmi" aria-hidden="true">i</span>Détails</button>`;
+  document.body.append(m); QMENU=m; const b=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
+  m.style.left=Math.max(8,Math.min(innerWidth-w-8,b.right-w))+"px"; m.style.top=(b.bottom+6+h>innerHeight-8?Math.max(8,b.top-6-h):b.bottom+6)+"px"; m.querySelector("#t-pvn")?.focus(); }
+function performUse(key,n=1,opt={}){ const ch=cur(), i=(S.Titems||[]).find(x=>x.key===key), u=useKind(i); if(!ch||!u) return false; const D=derive(ch), T=S.T;
+  const before={turn:Object.assign({},ch.turn||{}),resUsed:Object.assign({},ch.resUsed||{}),qty:null}; let note="";
+  if(u==="res"||u==="pv"){ const r=i.res, used=+((ch.resUsed||{})[r.id]||0), left=r.max-used; n=Math.min(left,Math.floor(+n||0)); if(left<=0||n<1) return false;
+    ch.resUsed=Object.assign({},ch.resUsed,{[r.id]:used+n}); note=(u==="pv"?(opt.poison?"5 points dépensés : l’état Empoisonné de la créature touchée prend fin (sans rendre de PV)":n+" PV pris dans la réserve"):(n>1?n+" usages dépensés":"1 usage dépensé"))+" · reste "+(left-n)+"/"+r.max; }
+  else if(u==="drink"){ const b=(ch.bag||[]).find(z=>z.id===i.bagId); if(!b||!(+b.qty>0)) return false; before.qty=[b.id,+b.qty]; b.qty=+b.qty-1; note="1 "+b.name+" bue · reste "+b.qty; }
+  consumeTableCost(i.cost);
+  addLog({label:i.name+(u==="drink"?" bue":" utilisée"),total:u==="pv"?(opt.poison?"−5":"−"+n+" PV"):"✓",bd:note||ECO[i.cost]+" consommée",kind:"info",quiet:true});
+  qMenuClose(); qBack();
+  Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,d1:"",d2:"",dmg:"",dmgBd:"",castDone:null});
+  T.itemUseReceipt=u==="drink"?tableItemReceipt():null;
+  T.used={k:key,n,poison:!!opt.poison,note,cost:i.cost,before,fixed:u==="pv",heal:u==="pv"?"":useHeal(ch,D,i)};
+  T.pop="used"; touch(S.cur); render();
+  if(T.used.heal&&!virtualDiceEnabled()) document.getElementById("t-dmg")?.focus();
+  return true; }
+function usedPop(ch,D,wrap){ const T=S.T, U=T.used, i=U&&(S.Titems||[]).find(x=>x.key===U.k); if(!i){ T.pop=null; return ""; }
+  const head=`<div class="badge srd tusedb">✓ ${esc(ECO[U.cost]||"")} consommée${U.note?" · "+esc(U.note):""}</div>`;
+  let x="";
+  if(U.fixed&&!U.poison) x=`<div class="tbig"><span class="num">${U.n}</span><span class="muted">PV rendus à la créature que tu touches</span></div><div id="t-dtot" data-flat="${U.n}" hidden></div><div class="row"><button class="btn" data-act="tpoolself">Appliquer à moi</button></div>`;
+  else if(U.heal){ const mm=U.heal.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=+(mm[2]||0), rg=diceRange(dice);
+    x=`<div class="tbig"><span class="num">${esc(U.heal)}</span><span class="muted">soins</span></div>
+      <div class="row tin"><label class="field"><span>Total de tes dés${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" inputmode="numeric" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" value="${esc(T.dmg)}" data-tin="dmg"></label><button class="btn small vroll" data-virtual data-act="tvdmg" data-e="${esc(dice)}">Lancer ${esc(dice)}</button></div>
+      <div class="ttotal qtot" id="t-dtot" data-flat="${flat}">${damageTotalHtml(T.dmg,flat)}</div>${T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}<div class="row" style="margin-top:8px"><button class="btn" data-act="tpoolself">Appliquer à moi</button></div>`; }
+  return wrap(i.name+(useKind(i)==="drink"?" · bue":" · utilisée"),`<div class="qres">${head}${x}<div class="row" style="margin-top:12px"><button class="btn small ghost" data-act="tuseundo">Annuler l’utilisation</button></div></div>`); }
 function tableSelected(){ return (S.Titems||[]).find(i=>i.key===S.T?.sel); }
 function tableCardCost(i=tableSelected()){
   if(!i) return null;
@@ -4240,7 +4379,7 @@ function ensureTableRollUse(){
   if(i?.kind==="spell") return performTableCast({ref:i.ref,k:i.key,l:String(i.sp.level===0?0:S.T.castLvl||i.sp.level)});
   if(i?.kind==="bagitem"&&i.use){
     if(S.T.itemUseReceipt===tableItemReceipt()) return true;
-    const button=document.querySelector('.tcard [data-act="itemUse"]');
+    const button=document.querySelector('.tpop [data-act="itemUse"]');
     return !!button&&performTableItemUse(button.dataset);
   }
   return true;
@@ -4249,7 +4388,7 @@ function tableRollCommitted(kind){
   const i=tableSelected();
   // Weapon damage never changes turn tracking, even after an explicit undo.
   if(i?.kind==="atk"&&kind!=="d20") return;
-  if(i?.kind==="atk"){ consumeTableCost(); ammoSpend(cur(),i); }
+  if(i?.kind==="atk"){ consumeTableCost(S.T.qr&&S.T.qr.from==="opp"?"reaction":undefined); ammoSpend(cur(),i); }
 }
 /* Munitions (lot T4, demande d'Angle) : une arme à munitions est reliée au consommable du même type (Flèches, Carreaux, Billes, Balles).
    Chaque jet d'attaque en retire une ; « Fin du combat » rend la moitié des munitions tirées depuis (arrondi à l'inférieur). */
@@ -4350,54 +4489,58 @@ function matchItem(name){
   for(const c of cands){ let best=null; for(const k in I){ if(k.length>=4&&(c===k||c.startsWith(k+" ")||c.startsWith(k+"s ")||c===k+"s")&&(!best||k.length>best.length)) best=k; } if(best) return I[best].ref; }
   return null;
 }
+/* Bulles d'info : même modèle que les fenêtres (lot 2) — nom et sous-titre en tête, valeurs, cadre d'infos, description.
+   L'en-tête ne contient pas de <div> intérieur : la fiche « Détails » le retire avec une expression simple. */
+const tipHead=(n,sub)=>`<div class="tiphead"><span class="tchw"><b class="tipname">${esc(n)}</b>${sub?`<span class="tcsub"><span>${esc(sub)}</span></span>`:""}</span><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div>`;
+const tipMeta=rows=>{ rows=rows.filter(x=>x[1]); return rows.length?`<div class="tcmeta">${rows.map(([l,v])=>`<div><span class="tkl">${l}</span><b>${esc(v)}</b></div>`).join("")}</div>`:""; };
 function itemTipHtml(ref){
   if(ref.startsWith("hb:")){ const h=hb(ref); if(!h) return "";
-    return `<div class="tiphead"><b class="tipname">${esc(h.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">Objet hors SRD</div>${hbFoot(h)}${h.dice?`<div class="tipmeta"><div><span class="tkl">Dégâts</span> ${esc(h.dice+" "+(h.dmgType||""))}</div>${h.properties?`<div><span class="tkl">Propriétés</span> ${esc(h.properties)}</div>`:""}</div>`:""}<div class="prose tiptext">${prose(h.text)||`<p class="muted">Pas encore de description.</p>`}</div>`; }
+    return tipHead(h.name,"Objet hors SRD")+(h.dice?tipMeta([["Dégâts",h.dice+" "+(h.dmgType||"")],["Propriétés",h.properties]]):"")+`<div class="prose tiptext">${prose(h.text)||`<p class="muted">Pas encore de description.</p>`}</div>`+hbFoot(h); }
   const [,kind,id]=ref.split(":");
-  let h=""; const head=(n,sub)=>`<div class="tiphead"><b class="tipname">${esc(n)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">${esc(sub)}</div>`;
   if(kind==="arme"){ const w=S.idx.weapons[id]; if(!w) return "";
-    h=head(w.name,"Arme "+(w.category==="courante"?"courante":"de guerre")+(w.kind==="dist"?" à distance":" de corps à corps"));
-    h+=`<div class="tipmeta"><div><span class="tkl">Dégâts</span> ${esc(w.damage+" "+w.damageType)}</div><div><span class="tkl">Propriétés</span> ${esc(w.properties)}</div><div><span class="tkl">Botte d'arme</span> ${esc(w.mastery)}</div><div><span class="tkl">Poids</span> ${esc(w.weight)} · <span class="tkl">Prix</span> ${esc(w.cost)}</div></div>`; return h; }
+    return tipHead(w.name,"Arme "+(w.category==="courante"?"courante":"de guerre")+(w.kind==="dist"?" à distance":" de corps à corps"))+tipMeta([["Dégâts",w.damage+" "+w.damageType],["Propriétés",w.properties],["Botte d'arme",w.mastery],["Poids",w.weight],["Prix",w.cost]]); }
   if(kind==="armure"){ const a=S.idx.armors[id]; if(!a) return "";
-    h=head(a.name,a.category==="bouclier"?"Bouclier":"Armure "+a.category);
-    h+=`<div class="tipmeta"><div><span class="tkl">CA</span> ${a.category==="bouclier"?"+2":a.ac+(a.dexMax===0?"":a.dexMax?" + Dex (max "+a.dexMax+")":" + Dex")}</div>${a.strength?`<div><span class="tkl">Force</span> ${a.strength}</div>`:""}${a.stealthDisadvantage?`<div>Désavantage en Discrétion</div>`:""}<div><span class="tkl">Poids</span> ${esc(a.weight)} · <span class="tkl">Prix</span> ${esc(a.cost)}</div></div>`; return h; }
+    return tipHead(a.name,a.category==="bouclier"?"Bouclier":"Armure "+a.category)+tipMeta([["CA",a.category==="bouclier"?"+2":a.ac+(a.dexMax===0?"":a.dexMax?" + Dex (max "+a.dexMax+")":" + Dex")],["Force",a.strength?String(a.strength):""],["Discrétion",a.stealthDisadvantage?"désavantage":""],["Poids",a.weight],["Prix",a.cost]]); }
   const x=S.idx.items[id]; if(!x) return "";
-  h=head(x.name, kind==="magique"?x.category:((kind==="outil"?"Outil":"Matériel d'aventurier")+(x.cost?" · "+x.cost:"")));
-  h+=`<div class="prose tiptext">${prose(x.text)}</div>`; return h;
+  return tipHead(x.name, kind==="magique"?x.category:((kind==="outil"?"Outil":"Matériel d'aventurier")+(x.cost?" · "+x.cost:"")))+`<div class="prose tiptext">${prose(x.text)}</div>`;
 }
 function itemName(b){ const ref=b.ref||matchItem(b.name); return ref?`<span class="tipl" data-act="tip" data-k="${esc(ref)}">${esc(b.name)}</span>`:esc(b.name); }
  
 /* ---------- info-bulles ---------- */
 function tipHtml(i,ch,D){
   const kv=(l,v)=>`<span class="tk"><span class="tkl">${esc(l)}</span><b class="num">${esc(v)}</b></span>`;
-  let h=`<div class="tiphead"><b class="tipname">${esc(i.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div>`;
+  const vals=x=>x?`<div class="tcvals">${x}</div>`:"";
+  // Description repliée, sauf si la bulle n'a rien d'autre (décision d'Angle, lot 2)
+  const desc=(l,html,alone)=>html?`<details class="tdesc"${alone?" open":""}><summary class="label">${l}</summary><div class="prose tiptext">${html}</div></details>`:"";
+  let h="";
   if(i.kind==="spell"){
     const sp=i.sp;
-    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(sp.level?(sp.school+" du "+sp.level+(sp.level===1?"er":"e")+" niveau"):(sp.school+" · sort mineur"))}</div>`;
-    h+=`<div class="tipmeta">${[["Incantation",sp.casting_time],["Portée",sp.range],["Composantes",sp.components],["Durée",sp.duration]].filter(x=>x[1]).map(([l,v])=>`<div><span class="tkl">${l}</span> ${esc(v)}</div>`).join("")}</div>`;
-    const vals=(i.roll? (i.roll.startsWith("DD")?kv("DD",i.roll.slice(3)):kv("Toucher",i.roll)) : "")+(i.dice?kv(i.heal?"Soins":"Dégâts",i.dice):"");
-    if(vals) h+=`<div class="row" style="gap:14px">${vals}</div>`;
-    h+=`<div class="prose tiptext">${prose(sp.text)}</div>`;
+    h=tipHead(i.name,(sp.school?sp.school+" · ":"")+(sp.level?"niveau "+sp.level:"sort mineur"));
+    h+=vals((i.roll?(i.roll.startsWith("DD")?kv("DD",i.roll.slice(3)):kv("Toucher",i.roll)):"")+(i.dice?kv(i.heal?"Soins":"Dégâts",(()=>{ const b=beamsAt(i.m||spellMech(sp),sp,sp.level,D); return (b>1?b+" × ":"")+i.dice; })()):""));
+    h+=tipMeta([["Incantation",sp.casting_time],["Portée",sp.range],["Durée",sp.duration],["Composantes",sp.components]]);
+    h+=desc("Description du sort",prose(sp.text),false);
   } else if(i.kind==="atk"){
-    h+=`<div class="row" style="gap:14px">${kv("Toucher",sg(i.mod))}${kv("Dégâts",i.dmg)}</div>`;
-    if(i.dtype) h+=`<div class="muted" style="font-size:var(--fs-sm)">Dégâts ${esc(i.dtype)}</div>`;
-    h+=`<div class="tipmeta">${i.sub?`<div>${esc(i.sub)}</div>`:""}${i.mastery?`<div><span class="tkl">Botte d'arme</span> ${esc(i.mastery)}</div>`:""}</div>`;
-    const g=i.mastery&&S.C.glossary.find(x=>norm(x.name)===norm(i.mastery)); if(g) h+=`<div class="prose tiptext">${prose(g.text)}</div>`;
+    h=tipHead(i.name,i.sub||"");
+    h+=vals(kv("Toucher",sg(i.mod))+kv("Dégâts",i.dmg));
+    h+=tipMeta([["Type de dégâts",i.dtype],["Botte d'arme",i.mastery]]);
+    const g=i.mastery&&S.C.glossary.find(x=>norm(x.name)===norm(i.mastery)); if(g) h+=desc("Botte d'arme : "+esc(i.mastery),prose(g.text),false);
   } else if(["skill","save","abil","init"].includes(i.kind)){
-    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(i.sub||"")}</div>`;
-    h+=`<div class="row" style="gap:14px">${kv("Bonus",sg(i.mod))}</div>`;
+    let sub=i.sub||"";
+    if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); sub+=(sub?" · ":"")+["Non maîtrisée","Maîtrisée","Expertise"][D.skills[sk.id].lv]; }
+    h=tipHead(i.name,sub)+vals(kv("Bonus",sg(i.mod)));
     h+=`<div class="tparts">${(i.parts||[]).map(p=>`<span>${esc(p.l)} <b class="num">${sg(p.v)}</b></span>`).join("")}</div>`;
-    if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); const lv=D.skills[sk.id].lv;
-      h+=`<div style="font-size:var(--fs-sm)">${["Non maîtrisée","Maîtrisée","Expertise"][lv]}</div>`;
-      if(sk.examples) h+=`<div class="prose tiptext"><p><b>Exemples d'application.</b> ${esc(sk.examples)}</p></div>`; }
+    if(i.kind==="skill"){ const sk=S.C.skills.find(x=>"skill:"+x.id===i.key); if(sk.examples) h+=`<div class="prose tiptext"><p><b>Exemples d'application.</b> ${esc(sk.examples)}</p></div>`; }
   } else {
-    h+=`<div class="muted" style="font-size:var(--fs-sm)">${esc(i.sub||"")}</div>`;
-    if(i.res){ const r=i.res, used=+(ch.resUsed?.[r.id]||0); h+=`<div class="row" style="gap:14px">${kv("Reste",(r.max-used)+" / "+r.max+(r.pool?" d"+r.die:""))}<span class="muted" style="font-size:var(--fs-sm)">${esc(rechargeLabel(r.recharge))}</span></div>`; }
-    if(i.counter) h+=`<div class="row">${kv("Reste",(+i.counter.cur||0)+" / "+(+i.counter.max||0))}</div>`;
-    if(i.text) h+=`<div class="prose tiptext">${prose(i.text)}</div>`;
+    h=tipHead(i.name,i.sub||"");
+    let v="";
+    if(i.res){ const r=i.res, used=+(ch.resUsed?.[r.id]||0); v=kv("Reste",(r.max-used)+" / "+r.max+(r.pool?" d"+r.die:"")); }
+    if(i.counter) v=kv("Reste",(+i.counter.cur||0)+" / "+(+i.counter.max||0));
+    h+=vals(v);
+    if(i.res) h+=tipMeta([["Récupération",rechargeLabel(i.res.recharge)]]);
+    if(i.text) h+=desc("Description",prose(i.text),!v);
   }
   { const r=i.ref||i.src; if(r&&isHb(r)) h+=hbFoot(hb(r)); }
-   return h;
+  return h;
 }
 function bagTipRef(ch,b){ let r=b.ref||matchItem(b.name); if(r) return r;
   const a=(ch.attacks||[]).find(x=>{ const bb=atkBag(ch,x); return bb&&bb.id===b.id; }); if(a&&a.weapon){ if(a.weapon.startsWith("srd:")) return "item:arme:"+a.weapon.slice(4); if(a.weapon.startsWith("hb:")) return a.weapon; } return ""; }
@@ -4405,7 +4548,7 @@ function openTip(key,anchor){
   if(key.startsWith("bag:")){ const ch=cur(); const b=ch&&(ch.bag||[]).find(x=>x.id===key.slice(4)); if(!b) return; const ref=bagTipRef(ch,b); const tip=document.getElementById("tip");
     let html=ref?itemTipHtml(ref):"";
     if(ref&&ref.startsWith("item:arme:")&&!(b.ref||matchItem(b.name))) html=html.replace(/<b class="tipname">[^<]*<\/b>/,`<b class="tipname">${esc(b.name)}</b>`);
-    if(!html) html=`<div class="tiphead"><b class="tipname">${esc(b.name)}</b><button class="btn small ghost" data-act="tipclose" aria-label="Fermer">×</button></div><div class="muted" style="font-size:var(--fs-sm)">${b.note?esc(b.note)+"<br>":""}Pas encore de description pour cet objet.</div><div style="margin-top:8px"><button class="btn small" data-act="mkItem" data-id="${esc(b.id)}">Créer sa fiche</button></div>`;
+    if(!html) html=`${tipHead(b.name,b.note||"")}<div class="muted" style="font-size:var(--fs-sm)">Pas encore de description pour cet objet.</div><div style="margin-top:8px"><button class="btn small" data-act="mkItem" data-id="${esc(b.id)}">Créer sa fiche</button></div>`;
     tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; }
   if(key.startsWith("item:")||key.startsWith("hb:")){ const tip=document.getElementById("tip"); const html=itemTipHtml(key); if(!html) return; tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; }
   const ch=cur(); if(!ch) return; const D=derive(ch);
@@ -4420,7 +4563,7 @@ function placeTip(tip,anchor){
   const th=tip.offsetHeight; let top=r.bottom+8; if(top+th>H-16) top=Math.max(16,r.top-th-8); tip.style.top=top+"px";
 }
 function closeTip(){ const t=document.getElementById("tip"); if(t&&!t.hidden){ t.hidden=true; S.tipKey=null; } }
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ const tp=document.getElementById("tip"), mb=document.querySelector('#modal .picker[data-act="closeModal"],#modal [data-act="catClose"],#modal [data-act="afClose"]'); if(tp&&!tp.hidden) closeTip(); else if(mb){ mb.click(); } /* garde-fou : Échap ferme aussi les fenêtres (Dégâts, Soins, compteur, catalogue…) */ else if(S.T&&S.T.pop){ if(S.T.pop==="concchk"&&!(S.T.cc&&S.T.cc.res)) return; if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); return; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); return; } S.T.pop=null; render(); } } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ const tp=document.getElementById("tip"), mb=document.querySelector('#modal .picker[data-act="closeModal"],#modal [data-act="catClose"],#modal [data-act="afClose"],#modal [data-act="setClose"]'); if(tp&&!tp.hidden) closeTip(); else if(mb){ mb.click(); } /* garde-fou : Échap ferme aussi les fenêtres (Dégâts, Soins, compteur, catalogue…) */ else if(S.T&&S.T.pop){ if(S.T.pop==="concchk"&&!(S.T.cc&&S.T.cc.res)) return; if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); return; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); return; } S.T.pop=null; render(); } } });
 document.addEventListener("click",e=>{ const t=document.getElementById("tip"); if(t&&!t.hidden&&!e.target.closest("#tip")){ e.preventDefault(); e.stopPropagation(); closeTip(); } },true);
 window.addEventListener("scroll",()=>closeTip(),{passive:true});
  
@@ -4709,7 +4852,7 @@ document.addEventListener("click",e=>{
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;
   if(a!=="ask"&&S.confirm&&!["del","hbDel","rest"].includes(a)) S.confirm=null;
   switch(a){
-    case "layoutEdit": S.layoutEdit=true; render(); break;
+    case "layoutEdit": S.layoutEdit=true; if(S.settings){ S.settings=false; renderModal(); } render(); break;
     case "layoutDone": S.layoutEdit=false; S.undo=null; render(); break;
     // Supprimer en mode édition : tout de suite, sans confirmation ; « Annuler » rétablit la disposition d'avant pendant quelques secondes
     case "blkDelNow": if(ch){ const id=t.dataset.v; if(BLK_KEEP.includes(id)) break; const label=blkLabel(ch,id), snap=JSON.parse(JSON.stringify(ch.layout||{}));
@@ -4783,7 +4926,7 @@ document.addEventListener("click",e=>{
     case "blkRestore": if(ch){ setBlkHidden(ch,t.dataset.v,false); S.T.pop=null; render(); } break;
     case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
-    case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); break;
+    case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); renderModal(); break;
     case "nav": if(t.dataset.v==="hb"||t.dataset.v==="comp"){ if(S.view==="sheet") S.navFrom="perso"; else if(S.view==="list") S.navFrom="menu"; }
       if(t.dataset.v==="main"||t.dataset.v==="table"){ // rester sur le perso affiché ; le perso principal seulement en venant d'ailleurs
         const here=S.cur&&S.docs[S.cur]&&S.docs[S.cur].type==="perso"; const m=here?S.cur:mainId(); if(m){ S.tab = t.dataset.v==="table" ? "table" : (S.cur===m&&S.tab!=="table"?S.tab:"jeu"); if(t.dataset.v==="main") S.unlockEdit=false; S.cur=m; S.view="sheet"; render(); window.scrollTo(0,0); } break; } S.view=t.dataset.v; S.cur=S.view==="list"?null:S.cur; render(); break;
@@ -4850,7 +4993,7 @@ document.addEventListener("click",e=>{
       let nv;
       if(isUsed){ const left=max-cv; nv = i<left ? max-i : max-(i+1); nv=Math.max(0,Math.min(max,nv)); }
       else { nv = cv===i+1 ? i : i+1; }
-      if(k==="pact") ch.pactUsed=nv; else if(k.startsWith("slot:")){ ch.slotsUsed=ch.slotsUsed||{}; ch.slotsUsed[k.slice(5)]=nv; } else if(k.startsWith("res:")){ ch.resUsed=ch.resUsed||{}; ch.resUsed[k.slice(4)]=nv; } else setPath(ch,k,nv);
+      if(k==="pact") ch.pactUsed=nv; else if(k.startsWith("slot:")){ ch.slotsUsed=ch.slotsUsed||{}; ch.slotsUsed[k.slice(5)]=nv; } else if(k.startsWith("res:")){ ch.resUsed=ch.resUsed||{}; ch.resUsed[k.slice(4)]=nv; if(nv>cv) cardSpendMarks(k.slice(4)); } else setPath(ch,k,nv);
       touch(S.cur); render(); break; }
     case "ammoNew": if(ch){ const name=String(t.dataset.v||"Munitions").slice(0,40); if(!ammoCounter(ch,name)&&!ammoItem(ch,name)){ ensureBag(ch); ch.bag.push({id:uid(),name,qty:20,note:""}); touch(S.cur); } render(); } break;
     case "ammoEnd": if(ch){ const c=t.dataset.obj?(ch.bag||[]).find(x=>x.id===t.dataset.obj):(ch.counters||[]).find(x=>x.id===t.dataset.id); if(!c) break; const back=Math.floor((+c.spent||0)/2);
@@ -4860,7 +5003,7 @@ document.addEventListener("click",e=>{
     case "compstep": if(ch){ const c=JSON.parse(JSON.stringify(ch.companion||{name:"",ac:10,hp:{cur:10,max:10}})); c.hp=c.hp||{cur:0,max:0}; const d=+t.dataset.v, k=t.dataset.k;
       if(k==="ac") c.ac=Math.max(0,Math.min(40,(+c.ac||10)+d)); else if(k==="max"){ c.hp.max=Math.max(1,Math.min(999,(+c.hp.max||0)+d)); c.hp.cur=Math.min(c.hp.cur,c.hp.max); } else if(k==="cur") c.hp.cur=Math.max(0,Math.min(+c.hp.max||0,(+c.hp.cur||0)+d));
       ch.companion=c; touch(S.cur); render(); } break;
-    case "resstep": if(ch){ const D=derive(ch), r=D.res.find(x=>x.id===t.dataset.id); if(!r) break; ch.resUsed=Object.assign({},ch.resUsed); ch.resUsed[r.id]=Math.max(0,Math.min(r.max,(+ch.resUsed[r.id]||0)+(+t.dataset.v))); touch(S.cur); render(); } break;
+    case "resstep": if(ch){ const D=derive(ch), r=D.res.find(x=>x.id===t.dataset.id); if(!r) break; ch.resUsed=Object.assign({},ch.resUsed); ch.resUsed[r.id]=Math.max(0,Math.min(r.max,(+ch.resUsed[r.id]||0)+(+t.dataset.v))); if(+t.dataset.v>0) cardSpendMarks(r.id); touch(S.cur); render(); } break;
     case "resuse": { const id=t.dataset.id, inp=document.getElementById("resn-"+id.replace(/[^a-z0-9]/g,"")); const n=+inp.value||0; if(!n) break; const D=derive(ch); const r=D.res.find(x=>x.id===id); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=Math.max(0,Math.min(r.max,(+ch.resUsed[id]||0)+n)); touch(S.cur); render(); break; }
     case "pool": { const id=t.dataset.id, D=derive(ch), r=D.res.find(x=>x.id===id); const inp=document.getElementById("pool-"+id.replace(/[^a-z0-9]/g,"")); let n=Math.max(1,+inp.value||1); const left=r.max-(+ch.resUsed?.[id]||0); n=Math.min(n,left,r.maxUse||n); if(n<=0) break; const rr=rollExpr(n+"d"+r.die); ch.resUsed=ch.resUsed||{}; ch.resUsed[id]=(+ch.resUsed[id]||0)+n; addLog({label:r.name+" ("+n+"d"+r.die+")",total:rr.total,bd:rr.bd}); touch(S.cur); render(); break; }
     case "rouerie": { const D=derive(ch); if(!D.cast||D.cast.type!=="pact") break; const used=+(ch.resUsed?.["cls:rouerie-magique"]||0); if(used>=1) break;
@@ -4870,7 +5013,13 @@ document.addEventListener("click",e=>{
     case "tsel": tSelect(t.dataset.k); break;
     case "tqroll": qMenuOpen(t); break; // jet direct depuis une ligne : d'abord le mini-menu (avantage… ou critique)
     case "tqdet": qMenuClose(); tSelect(t.dataset.k); break;
-    case "tqgo": qMenuClose(); if(t.dataset.r==="cast") quickCast(t.dataset.k,t.dataset.m); else quickRoll(t.dataset.k,t.dataset.r,t.dataset.m,t.dataset.from); break;
+    case "tuseq": performUse(t.dataset.k,1); break;
+    case "tusepv": usePvMenu(t); break;
+    case "tusepvgo": performUse(t.dataset.k,+t.dataset.n,{poison:t.dataset.poison==="1"}); break;
+    case "tuseundo": { const U=S.T.used; if(ch&&U){ const B=U.before; ch.turn=B.turn; ch.resUsed=B.resUsed; if(B.qty){ const b=(ch.bag||[]).find(z=>z.id===B.qty[0]); if(b) b.qty=B.qty[1]; } const i=(S.Titems||[]).find(x=>x.key===U.k); addLog({label:(i?i.name:"Utilisation")+" : utilisation annulée",total:"↺",bd:"Usage et action du tour rendus.",kind:"info",quiet:true}); touch(S.cur); }
+      S.T.used=null; S.T.itemUseReceipt=null; S.T.pop=S.T.qrBack||null; S.T.qrBack=null; render(); break; }
+    case "tmiss": hitCommit(); { const i=(S.Titems||[]).find(x=>x.key===t.dataset.k); addLog({label:(i?i.name:"Attaque")+" — raté",total:"raté",bd:"Le MJ annonce que l'attaque ne touche pas.",kind:"info"}); const T=S.T; T.pop=T.qrBack||null; T.qrBack=null; render(); break; }
+    case "tqgo": if(t.closest(".qhitnext")) hitCommit(); qMenuClose(); if(t.dataset.r==="cast") quickCast(t.dataset.k,t.dataset.m); else quickRoll(t.dataset.k,t.dataset.r,t.dataset.m,t.dataset.from); break;
     case "saveApp": saveApp(); break;
     case "hpmaxb": hpMaxAdd(ch,+t.dataset.v); render(); break;
     case "hpask": S.pending={type:"hp",mode:t.dataset.v}; renderModal(); break;
@@ -4894,13 +5043,17 @@ document.addEventListener("click",e=>{
     case "hdvirt": { const D=derive(ch); const r=rnd(D.hd); hdSpend(ch,D,r,false); break; }
     case "bannerClose": { const k=t.dataset.k; if(k){ try{ localStorage.setItem("registre-banner-"+k,"1"); }catch(e){} } setBanner(""); break; }
     case "menuToggle": S.menuOpen=!S.menuOpen; render(); break;
-    case "theme": setTheme(curTheme()==="dark"?"light":"dark"); render(); break;
+    case "settingsOpen": S.menuOpen=false; S.settings=true; S.helpReset=false; render(); renderModal(); break;
+    case "setClose": S.settings=false; renderModal(); break;
+    case "themeSet": setTheme(t.dataset.v); render(); renderModal(); break;
+    case "helpReset": { try{ Object.keys(localStorage).filter(k=>k.startsWith("registre-banner-")).forEach(k=>localStorage.removeItem(k)); }catch(e){} S.helpReset=true; renderModal(); break; }
     case "pvTileSet": if(ch){ const v=t.dataset.v; ch.layout=Object.assign({},ch.layout); if(v==="__def") delete ch.layout.pvTile; else ch.layout.pvTile=String(v).slice(0,80); touch(S.cur); render(); } break;
     case "restOpen": S.T=S.T||{}; S.T.restKind=t.dataset.v||""; S.T.pop="rest"; render(); break;
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
     case "restLong": if(applyRest("long")===false){ render(); break; } S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": if(applyRest("court")===false){ render(); break; } S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
-    case "tpop": S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
+    case "tpop": if(/^res:/.test(t.dataset.v||"")){ const it=(S.Titems||[]).find(x=>x.res&&"res:"+x.res.id===t.dataset.v); if(it){ tSelect(it.key); break; } } // une ressource : une seule fenêtre, celle de l'aptitude (lot 2)
+      S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
     case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); break; } S.T.pop=null; render(); } break;
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
@@ -4986,10 +5139,10 @@ document.addEventListener("click",e=>{
       if(sp.concentration) ch.conc=sp.name;
       addLog({label:sp.name+(rit?" lancé en rituel":" lancé"),total:sp.level?"niv. "+(rit?sp.level:lvl):"mineur",bd:[rit?"Aucun emplacement dépensé.":left,sp.concentration?"Concentration notée.":"",m.save?"Cibles : JS de "+m.save+" DD "+D.cast.dc+".":""].filter(Boolean).join(" "),kind:"info"});
       const ex=diceAt(m,sp,rit?sp.level:lvl,D);
-      const beams=(sp.level===0&&m.beams)?1+(D.L>=5)+(D.L>=11)+(D.L>=17):1;
-      for(let b=1;b<=beams;b++){ const tag=beams>1?" (rayon "+b+")":""; if(m.attack) rollD20(sp.name+tag+" — toucher",D.cast.atk); if(ex) rollDmg(sp.name+tag+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); }
+      const beams=beamsAt(m,sp,rit?sp.level:lvl,D);
+      for(let b=1;b<=beams;b++){ const tag=beams>1?" ("+beamWord(m)+" "+b+")":""; if(m.attack) rollD20(sp.name+tag+" — toucher",D.cast.atk); if(ex) rollDmg(sp.name+tag+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); }
       touch(S.cur); render(); break; }
-    case "sdmg": { const D=derive(ch), sp=spellOf(t.dataset.ref), m=spellMech(sp); const sel=document.getElementById("slot-"+t.dataset.ref.replace(/[^a-z0-9]/gi,"")); const lvl=+(sel?.value||sp.level); const ex=diceAt(m,sp,lvl,D); rollDmg(sp.name+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); break; }
+    case "sdmg": { const D=derive(ch), sp=spellOf(t.dataset.ref), m=spellMech(sp); const sel=document.getElementById("slot-"+t.dataset.ref.replace(/[^a-z0-9]/gi,"")); const lvl=+(sel?.value||sp.level); const ex=diceAt(m,sp,lvl,D), nb=beamsAt(m,sp,lvl,D); for(let b=1;b<=nb;b++) rollDmg(sp.name+(nb>1?" ("+beamWord(m)+" "+b+")":"")+(m.heal?" — soins":" — dégâts "+(m.dmgType||"")),ex,false); break; }
     case "saveProf": { const v=t.dataset.v; ch.saveProfs=ch.saveProfs||[]; ch.saveProfs=t.checked?[...new Set([...ch.saveProfs,v])]:ch.saveProfs.filter(x=>x!==v); touch(S.cur); render(); break; }
     case "addInv": { const s1=document.getElementById("addInvSel"); if(!s1||!s1.value) break; const id=s1.value, s2=document.getElementById("addInvCh"); const c=INV_CHOICE[id]?(s2&&s2.value||""):"";
       if(INV_CHOICE[id]&&!c) break; ch.invocations=ch.invocations||[]; const v=id+(c?"|"+c:""); if(!ch.invocations.includes(v)) ch.invocations.push(v); S.invSel=null; touch(S.cur); render(); break; }
@@ -5050,7 +5203,8 @@ document.addEventListener("change",e=>{
   if(t.id==="cc-dmg"&&S.T&&S.T.cc){ S.T.cc.dmg=Math.max(0,+t.value||0); render(); return; }
   if(t.dataset.arcsel){ const ch=cur(); if(ch){ ch.arcanum=ch.arcanum||{}; if(t.value) ch.arcanum[t.dataset.arcsel]=t.value; else delete ch.arcanum[t.dataset.arcsel]; touch(S.cur); render(); } return; }
   if(t.dataset.lu&&S.pending&&S.pending.type==="lvl"){ const P=S.pending,k=t.dataset.lu; if(t.dataset.i!==undefined){ P[k]=P[k]||[]; P[k][+t.dataset.i]=t.value; } else P[k]=t.value; renderModal(); return; }
-  if(t.id==="importFile"&&t.files&&t.files[0]){ const file=t.files[0]; if(file.size>20*1024*1024){ setBanner("Ce fichier dépasse 20 Mo et ne peut pas être importé."); t.value=""; return; } const fr=new FileReader(); fr.onload=()=>{ try{ const id=importPack(JSON.parse(fr.result)); S.cur=null; S.view="list"; render(); window.scrollTo(0,0); setBanner((S.docs[id].name||"Personnage")+" importé : il est dans ta liste de personnages."); }catch(err){ setBanner(err&&err.message==="version"?`Cet export utilise le format ${err.dataVersion}, plus récent que celui accepté par cette application. Mets l'application à jour avant de l'importer.`:err&&err.message==="import_invalid"?`Import refusé : ${err.detail}`:"Ce fichier JSON est illisible ou n'est pas un export du Registre."); } }; fr.onerror=()=>setBanner("Le fichier n'a pas pu être lu."); fr.readAsText(file); return; }
+  if((t.id==="importFile"||t.id==="importFileSet")&&t.files&&t.files[0]){ if(t.id==="importFileSet"){ S.settings=false; renderModal(); } const file=t.files[0]; if(file.size>20*1024*1024){ setBanner("Ce fichier dépasse 20 Mo et ne peut pas être importé."); t.value=""; return; } const fr=new FileReader(); fr.onload=()=>{ try{ const id=importPack(JSON.parse(fr.result)); S.cur=null; S.view="list"; render(); window.scrollTo(0,0); setBanner((S.docs[id].name||"Personnage")+" importé : il est dans ta liste de personnages."); }catch(err){ setBanner(err&&err.message==="version"?`Cet export utilise le format ${err.dataVersion}, plus récent que celui accepté par cette application. Mets l'application à jour avant de l'importer.`:err&&err.message==="import_invalid"?`Import refusé : ${err.detail}`:"Ce fichier JSON est illisible ou n'est pas un export du Registre."); } }; fr.onerror=()=>setBanner("Le fichier n'a pas pu être lu."); fr.readAsText(file); return; }
+  if(t.dataset.actChange==="setMainSel"){ if(t.value) setMain(t.value); else if(S.docs.prefs){ delete S.docs.prefs.main; touch("prefs"); } render(); renderModal(); return; }
   if(t.dataset.actChange==="hbFilter"){ S.hbFilter=t.value; render(); return; }
   if(t.dataset.actChange==="invsel"){ S.invSel=t.value; render(); return; }
   if(t.dataset.invfix!==undefined&&t.value){ const ch=cur(); const i=+t.dataset.invfix; if(ch.invocations&&ch.invocations[i]){ ch.invocations[i]=invId(ch.invocations[i])+"|"+t.value; touch(S.cur); render(); } return; }
@@ -5100,6 +5254,7 @@ document.addEventListener("input",e=>{
   if(t.dataset.bind==="sessionNotes"){ const ch=cur(); if(ch){ ch.sessionNotes=t.value; touch(S.cur); } return; }
   if(t.id==="tq"){ S.T.q=t.value; S.T.qOpen=true; const r=document.getElementById("tres"); if(r){ r.innerHTML=tResults(); r.classList.remove("closed"); } const c=document.querySelector(".tqclear"); if(c) c.hidden=!t.value; return; }
   if(t.dataset.tin){ S.T[t.dataset.tin]=t.value; S.T.logSig=""; if(t.dataset.tin==="dmg") S.T.dmgBd=""; const tt=document.getElementById("t-tot"); if(tt) tt.innerHTML=totalHtml(+tt.dataset.mod);
+    const qc=document.querySelector(".qhitnext .qcrit"); if(qc) qc.classList.toggle("on",nat20());
     const dt=document.getElementById("t-dtot"); if(dt&&t.dataset.tin==="dmg"){ const f=+dt.dataset.flat; dt.innerHTML=damageTotalHtml(t.value,f); } }
 });
 document.addEventListener("submit",e=>{
@@ -5138,7 +5293,8 @@ document.addEventListener("submit",e=>{
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
   if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
     if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
-  if(f.dataset.form==="tq"){ const r=searchItems(S.Titems||[],S.T.q); if(r[0]){ S.T.q=""; tSelect(r[0].key); } return; }
+  if(f.dataset.form==="usepv"){ performUse(f.dataset.k,+(document.getElementById("t-pvn")||{}).value||0); return; }
+  if(f.dataset.form==="tq"){ const r=searchItems(S.Titems||[],S.T.q); if(r[0]){ const row=document.querySelector('#tres .trow.first[data-act="tqroll"]'); if(row){ qMenuOpen(row); return; } S.T.q=""; tSelect(r[0].key); } return; } // Entrée sur un jet : le mini-menu, comme au toucher
   if(f.dataset.form==="comp"){ S.comp.q=document.getElementById("compQ").value; render(); }
   if(f.dataset.form==="spellq"){ S.pending.q=document.getElementById("spellQ").value; renderModal(); }
 });
