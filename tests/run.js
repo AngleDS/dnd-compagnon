@@ -2454,6 +2454,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [...document.querySelectorAll('#tip .tcmeta .tkl')].map(e => e.textContent).slice(0, 2)), ['Dégâts', 'Propriétés'], 'arme : cadre d’infos');
   });
 
+  await test('Saisies de dés alignées (Appliquer au bas du champ, même hauteur) ; aide des PV temporaires sous la valeur', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    const al = sel => p.evaluate(sel => { const f = document.querySelector(sel), i = f.querySelector('input').getBoundingClientRect(), b = f.querySelector('button[type="submit"]'), r = b.getBoundingClientRect();
+      return [!!f.querySelector('label.field'), Math.abs(i.bottom - r.bottom) <= 2, Math.round(r.height) >= 44, b.classList.contains('primary')]; }, sel);
+    await p.evaluate(() => { cur().hp = { cur: 1, temp: 0 }; S.T.pop = 'rest'; S.T.restKind = 'court'; render(); });
+    eq(await al('form[data-form="hdroll"]'), [true, true, true, true], 'dé de vie : libellé au-dessus, Appliquer aligné, 44 px');
+    await p.evaluate(() => { S.T.pop = null; cur().hp = { cur: 0, temp: 0 }; render(); });
+    eq(await al('form[data-form="death"]'), [true, true, true, true], 'jet contre la mort : même alignement');
+    await p.evaluate(() => { cur().hp = { cur: 5, temp: 0 }; S.T.pop = 'hptemp'; render(); });
+    ok(await p.evaluate(() => { const v = document.querySelector('.tpop .pvline'), n = document.querySelector('.tpop .pvnote'); return v.nextElementSibling && v.nextElementSibling.classList.contains('pvset') ? false : v.compareDocumentPosition(n) & 4 && n.previousElementSibling === v; }), 'PV temporaires : l’aide est juste sous la valeur');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');
