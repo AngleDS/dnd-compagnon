@@ -1,26 +1,42 @@
 /* Studio de dés : les ressources sont embarquées par build.py dans le HTML autonome. */
-let studioUrls=[];
 function studioDecode(s){ return s; } // ressources embarquées en texte par build.py (plus de base64 : fichier plus léger, rien à décoder)
 /* Le moteur 3D peut ne pas démarrer (WebGL absent ou coupé, script refusé…). Les erreurs du document 3D sont recueillies
    dans __studioErr pour être affichées (studio) ou pour basculer sur le résultat direct (jets de partie). */
-const STUDIO_ERRCATCH="<script>window.__studioErr=[];addEventListener('error',e=>__studioErr.push(e.message||'erreur de script'));addEventListener('unhandledrejection',e=>__studioErr.push(String(e.reason&&e.reason.message||e.reason)));</"+"script>";
+const STUDIO_ERRCATCH="<script>window.__studioErr=[];window.__studioCsp=[];addEventListener('error',e=>__studioErr.push(e.message||'erreur de script'));addEventListener('unhandledrejection',e=>__studioErr.push(String(e.reason&&e.reason.message||e.reason)));addEventListener('securitypolicyviolation',e=>__studioCsp.push(e.violatedDirective+(e.blockedURI?' ('+e.blockedURI+')':'')));</"+"script>";
+/* Pas de module chargé à la volée (URL blob:) : la vue artefact de l'app Claude sur Mac les refusait probablement (studio vide,
+   jets 3D muets, 13 nov. 2026, alors que le navigateur intégré affichait tout). Les deux moteurs sont mis tels quels dans le
+   document du studio, en modules intégrés ; leur unique « export{…} » final devient une variable du document (__STUDIO_THREE,
+   __STUDIO_CANNON). Chaque script et style reçoit le jeton de sécurité (nonce) de la page quand l'hébergeur en utilise un. */
+const STUDIO_IMPORTS=["import * as THREE from 'https://esm.sh/three@0.180.0'","import * as CANNON from 'https://esm.sh/cannon-es@0.20.0'"];
+function studioNonce(sel){ const el=document.querySelector(sel); return el&&(el.nonce||el.getAttribute('nonce'))||''; }
+function studioLib(src,name){ const i=src.indexOf('export{'), j=src.indexOf('}',i); if(i<0||j<0||src.indexOf('export{',i+1)>=0||/^import /m.test(src)) throw new Error('Studio de dés : moteur embarqué inattendu');
+  const names=src.slice(i+7,j).split(',').map(e=>{ const [a,b]=e.trim().split(/\s+as\s+/); return JSON.stringify(b||a)+':'+a; });
+  return src.slice(0,i)+'window.'+name+'={'+names.join(',')+'};'+src.slice(j+1); }
+function studioSrcdoc(html,css){
+  const sn=studioNonce('script[nonce]'), cn=studioNonce('style[nonce]')||sn, na=v=>v?' nonce="'+esc(v)+'"':'';
+  html=studioPatch(html,[[STUDIO_IMPORTS[0],'const THREE=window.__STUDIO_THREE'],[STUDIO_IMPORTS[1],'const CANNON=window.__STUDIO_CANNON']]);
+  html=html.replace(/<script(\s|>)/g,'<script'+na(sn)+'$1').replace(/<style(\s|>)/g,'<style'+na(cn)+'$1');
+  const lib=(k,name)=>'<script type="module"'+na(sn)+'>'+studioLib(studioDecode(STUDIO_ASSETS[k]),name).replace(/<\/script/gi,'<\\/script')+'</'+'script>';
+  return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+STUDIO_ERRCATCH.replace('<script>','<script'+na(sn)+'>')+'<style'+na(cn)+'>'+css+'</style>'+lib(1,'__STUDIO_THREE')+lib(2,'__STUDIO_CANNON')+'</head><body>'+html+'</body></html>'; }
+// Moteur qui ne démarre pas : à quelle étape ça bloque (affiché dans le studio et dans le bandeau des jets)
+function studioWhy(win){ if(!win) return 'document 3D absent'; const csp=win.__studioCsp&&win.__studioCsp[0]?' ; règle de sécurité : '+win.__studioCsp[0]:'';
+  if(win.__studioErr===undefined) return 'scripts du studio refusés par la page'+csp;
+  if(!win.__STUDIO_THREE) return 'moteur Three.js non chargé'+csp; if(!win.__STUDIO_CANNON) return 'moteur physique non chargé'+csp;
+  return 'le moteur ne répond pas'+csp; }
 let studioBroken=""; // raison du dernier échec du moteur : les jets suivants de la session passent en résultat direct
 function webglOk(){ if(webglOk.v===undefined){ try{ const c=document.createElement('canvas'); webglOk.v=!!(c.getContext('webgl2')||c.getContext('webgl')); }catch(_){ webglOk.v=false; } } return webglOk.v; }
 function studioErrShow(msg){ const box=document.querySelector('.dice-studio-box'); if(!box||box.querySelector('.studio-error')) return; const p=document.createElement('p'); p.className='studio-error'; p.setAttribute('role','alert');
   p.textContent='Le studio 3D n’a pas pu démarrer ici : '+msg+'. Les jets restent possibles, avec le résultat direct.'; box.querySelector('.dice-studio-frame')?.before(p); }
-function studioClose(){ if(S.studio) studioEngineDrop(); const m=document.getElementById('modal'); if(m&&m.querySelector('.dice-studio-box')) m.innerHTML=''; studioUrls.forEach(URL.revokeObjectURL); studioUrls=[]; S.studio=false; document.querySelector('.hmenu')?.focus(); }
+function studioClose(){ if(S.studio) studioEngineDrop(); const m=document.getElementById('modal'); if(m&&m.querySelector('.dice-studio-box')) m.innerHTML=''; S.studio=false; document.querySelector('.hmenu')?.focus(); }
 function studioOpen(){
   studioClose(); S.studio=true;
-  const html=studioDecode(STUDIO_ASSETS[0]), sources=STUDIO_ASSETS.slice(1,3).map(studioDecode);
-  studioUrls=sources.map(src=>URL.createObjectURL(new Blob([src],{type:'text/javascript'})));
-  const content=studioPatch(html,STUDIO_URLS.map((a,k)=>[a,JSON.stringify(studioUrls[k])]));
   const m=document.getElementById('modal'); m.innerHTML=`<div class="picker" data-act="studioClose"><div class="box dice-studio-box" role="dialog" aria-modal="true" aria-label="Studio de dés" data-act="noop">${winHead('Studio de dés','studioClose')}<iframe class="dice-studio-frame" title="Studio de dés" sandbox="allow-scripts allow-same-origin"></iframe></div></div>`;
   const frame=m.querySelector('iframe');
   if(!webglOk()){ studioErrShow('rendu 3D (WebGL) indisponible dans ce navigateur'); }
   else { const t0=Date.now(), chk=setInterval(()=>{ const win=frame.isConnected&&frame.contentWindow; if(!win||!S.studio){ clearInterval(chk); return; }
     if(win.__studioErr&&win.__studioErr.length){ clearInterval(chk); studioErrShow(win.__studioErr[0]); } else if(typeof win.studioRoll3D==='function') clearInterval(chk);
-    else if(Date.now()-t0>20000){ clearInterval(chk); studioErrShow('le moteur ne répond pas'); } },250); }
-  frame.srcdoc='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+STUDIO_ERRCATCH+'<style>html,body{margin:0;padding:0;background:#f8f2e4}html[data-theme="dark"],html[data-theme="dark"] body{background:#1b1c20}*{box-sizing:border-box}</style></head><body>'+content+'</body></html>';
+    else if(Date.now()-t0>20000){ clearInterval(chk); studioErrShow(studioWhy(win)); } },250); }
+  frame.srcdoc=studioSrcdoc(studioDecode(STUDIO_ASSETS[0]),'html,body{margin:0;padding:0;background:#f8f2e4}html[data-theme="dark"],html[data-theme="dark"] body{background:#1b1c20}*{box-sizing:border-box}');
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&S.studio){ e.preventDefault(); studioClose(); } });
 
@@ -28,7 +44,6 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&S.studio){ e.preve
    Le studio est adapté en remplaçant des morceaux exacts de studio.html : chaque morceau doit s'y trouver une seule fois
    (vérifié ici et par le test « Studio de dés : morceaux remplacés ») ; s'il manque, le lancer 3D échoue proprement au lieu de se dérégler.
    Les jets de partie roulent toujours au-dessus de la page (le mode « avec plateau » a été retiré à la demande d'Angle, 13 nov. 2026). */
-const STUDIO_URLS=["'https://esm.sh/three@0.180.0'","'https://esm.sh/cannon-es@0.20.0'"];
 const STUDIO_GAME_PATCHES=[
   ['tray.hidden=true;ambiance.hidden=true;','tray.hidden=true;ambiance.hidden=false;'],
   // Les aperçus du studio ne sont pas visibles pendant un jet de jeu.
@@ -48,17 +63,16 @@ function studioPatch(html,pairs){ for(const [a,b] of pairs){ if(html.split(a).le
    ou après un passage dans le Studio (nouvelles apparences). Sa toile passe au-dessus de toute la page pendant le lancer. */
 let studioEngine=null;
 const studioTimes=[]; // chronométrage des derniers jets 3D : [démarrage du moteur (ms, 0 si déjà prêt), roulement (ms)]
-function studioEngineDrop(){ const E=studioEngine; studioEngine=null; if(!E) return; cancelAnimationFrame(E.raf); E.overlay?.remove(); E.iframe.remove(); E.urls.forEach(URL.revokeObjectURL); document.body.classList.remove('game-dice-screen'); }
+function studioEngineDrop(){ const E=studioEngine; studioEngine=null; if(!E) return; cancelAnimationFrame(E.raf); E.overlay?.remove(); E.iframe.remove(); document.body.classList.remove('game-dice-screen'); }
 function studioWarm(){
   if(!virtualDiceEnabled()||diceDisplayMode()!=='3d'){ studioEngineDrop(); return null; }
   if(studioEngine) return studioEngine;
-  const urls=STUDIO_ASSETS.slice(1,3).map(s=>URL.createObjectURL(new Blob([studioDecode(s)],{type:'text/javascript'})));
-  let html=studioPatch(studioDecode(STUDIO_ASSETS[0]),STUDIO_URLS.map((x,k)=>[x,JSON.stringify(urls[k])]));
+  let html=studioDecode(STUDIO_ASSETS[0]);
   html=studioPatch(html,STUDIO_GAME_PATCHES); html=studioPatch(html,STUDIO_SCREEN_PATCHES);
   const style='#physics-dice-demo{border:0!important;background:transparent!important;padding:0!important;max-width:none!important;width:100%!important;height:100%!important;overflow:hidden}#physics-dice-demo>.head,#physics-dice-demo>.ecrin-tabs,#physics-dice-demo>.studio:not(.launch-section){display:none!important}#physics-dice-demo .launch-section{display:block!important;margin:0!important;padding:0!important;border:0!important;height:100%!important}#physics-dice-demo .launch-section>*:not(.stage){display:none!important}#physics-dice-demo .stage{display:block!important;width:100%!important;height:100%!important;margin:0!important;border:0!important;background:'+(screen?'transparent':'#211b17')+'!important}';
   const iframe=document.createElement('iframe'); iframe.title='Lancer des dés 3D'; iframe.className='game-dice-frame engine'; iframe.setAttribute('aria-hidden','true'); iframe.setAttribute('tabindex','-1'); iframe.setAttribute('sandbox','allow-scripts allow-same-origin');
-  const E={iframe,urls,overlay:null,raf:0,busy:false,t0:performance.now()}; studioEngine=E;
-  E.ready=new Promise((resolve,reject)=>{ const timer=setTimeout(()=>reject(new Error('le moteur ne répond pas')),20000);
+  const E={iframe,overlay:null,raf:0,busy:false,t0:performance.now()}; studioEngine=E;
+  E.ready=new Promise((resolve,reject)=>{ const timer=setTimeout(()=>reject(new Error(studioWhy(iframe.contentWindow))),20000);
     iframe.onload=()=>{ const poll=setInterval(()=>{ if(studioEngine!==E){ clearInterval(poll); clearTimeout(timer); reject(new Error('Moteur 3D remplacé')); return; }
       const win=iframe.contentWindow; if(win&&win.__studioErr&&win.__studioErr.length){ clearInterval(poll); clearTimeout(timer); reject(new Error(win.__studioErr[0])); return; }
       if(win&&typeof win.studioRoll3D==='function'){ clearInterval(poll); clearTimeout(timer); win.studioGameMode=true;
@@ -66,7 +80,7 @@ function studioWarm(){
         E.warm=Math.round(performance.now()-E.t0); resolve(win); } },50); };
   });
   E.ready.catch(()=>{ if(studioEngine===E) studioEngineDrop(); });
-  iframe.srcdoc='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+STUDIO_ERRCATCH+'<style>html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden}'+style+'</style></head><body>'+html+'</body></html>';
+  iframe.srcdoc=studioSrcdoc(html,'html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden}'+style);
   document.body.append(iframe); return E;
 }
 // Jet qui n'est plus attendu (fenêtre fermée, autre personnage…) : les dés s'arrêtent tout de suite.

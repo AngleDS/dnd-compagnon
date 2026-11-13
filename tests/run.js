@@ -2579,7 +2579,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Studio de dés : chaque morceau remplacé existe une seule fois dans studio.html ; pendant un lancer 3D, la suite du toucher est grisée', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
-    eq(await p.evaluate(() => { const h = studioDecode(STUDIO_ASSETS[0]); return [...STUDIO_URLS, ...STUDIO_GAME_PATCHES.map(x => x[0]), ...STUDIO_SCREEN_PATCHES.map(x => x[0])].filter(a => h.split(a).length !== 2).map(a => a.slice(0, 50)); }), [], 'aucun morceau manquant ou en double');
+    eq(await p.evaluate(() => { const h = studioDecode(STUDIO_ASSETS[0]); return [...STUDIO_IMPORTS, ...STUDIO_GAME_PATCHES.map(x => x[0]), ...STUDIO_SCREEN_PATCHES.map(x => x[0])].filter(a => h.split(a).length !== 2).map(a => a.slice(0, 50)); }), [], 'aucun morceau manquant ou en double');
     ok(await p.evaluate(() => { try { studioPatch('abc', [['x', 'y']]); return false; } catch (e) { return /introuvable/.test(e.message); } }), 'un morceau absent fait échouer le lancer proprement');
     await p.evaluate(() => { S.T.pop = 'eco:action'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
@@ -2821,6 +2821,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.locator('.dice-studio-box .studio-error').isVisible(), 'studio : message au lieu d’une fenêtre vide');
     ok(/WebGL/.test(await p.innerText('.dice-studio-box .studio-error')), 'studio : raison donnée');
     eq(await p.evaluate(() => dice3dCan([20])), false, 'sans WebGL, pas de jet 3D');
+  });
+
+  await test('Studio de dés : moteurs intégrés au document (pas d’URL blob:), jeton de sécurité de la page, étape bloquée nommée', async p => {
+    await open(p, { noClaude: true });
+    await p.evaluate(() => { window.__blobs = 0; const c = URL.createObjectURL; URL.createObjectURL = (...x) => { window.__blobs++; return c(...x); };
+      const sc = document.createElement('script'); sc.setAttribute('nonce', 'jeton-test'); document.head.append(sc); setVirtualDice(true); studioOpen(); });
+    await p.frameLocator('.dice-studio-frame').locator('#die-preview canvas').waitFor({ timeout: 30000 });
+    const r = await p.evaluate(() => { const d = document.querySelector('.dice-studio-frame').contentDocument, sc = [...d.scripts];
+      return [window.__blobs, sc.length, sc.every(x => x.nonce === 'jeton-test' && !x.src), [...d.querySelectorAll('style')].every(x => x.nonce === 'jeton-test')]; });
+    eq(r, [0, 5, true, true], 'aucune URL blob:, scripts intégrés (2 moteurs, garde, studio ×2) et styles portant le jeton de la page');
+    ok(await p.evaluate(() => { const w = document.querySelector('.dice-studio-frame').contentWindow; return !!(w.__STUDIO_THREE.WebGLRenderer && w.__STUDIO_CANNON.World && typeof w.studioRoll3D === 'function'); }), 'les deux moteurs et le studio démarrent');
+    eq(await p.evaluate(() => [studioWhy({}), studioWhy({ __studioErr: [], __studioCsp: ['script-src (blob)'] }), studioWhy({ __studioErr: [], __studioCsp: [], __STUDIO_THREE: {} })]), ['scripts du studio refusés par la page', 'moteur Three.js non chargé ; règle de sécurité : script-src (blob)', 'moteur physique non chargé'], 'diagnostic par étape');
+    ok(await p.evaluate(() => { try { studioLib('const a=1;', 'X'); return false; } catch (e) { return /inattendu/.test(e.message); } }), 'moteur embarqué inattendu : échec propre');
   });
 
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
