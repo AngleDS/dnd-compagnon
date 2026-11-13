@@ -2401,6 +2401,20 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(/Points de vie/.test(bad), 'import : tuile de la carte PV invalide refusée');
   });
 
+  await test('Recherche : toucher la ligne d’un jet (ou Entrée) ouvre le mini-menu des avantages', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.click('[data-act="tsearch"]'); await p.fill('#tq', 'discr');
+    await p.click('#tres .trow.first .tname b');
+    eq(await p.evaluate(() => [S.T.pop, [...document.querySelectorAll('.qmenu button')].map(b => b.dataset.m || b.dataset.act)]), ['search', ['a', 'n', 'd', 'tqdet']], 'compétence : Avantage, Normal, Désavantage, Détails');
+    await p.click('.qmenu [data-act="tqdet"]'); eq(await p.evaluate(() => [S.T.pop, S.T.sel]), ['card', 'skill:discretion'], '« Détails » ouvre la fenêtre');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { S.T.pop = 'search'; render(); });
+    await p.fill('#tq', 'init'); await p.press('#tq', 'Enter');
+    ok(await p.evaluate(() => /Initiative/.test(document.querySelector('.qmenu')?.getAttribute('aria-label') || '')), 'Entrée sur un jet : le mini-menu');
+    await p.keyboard.press('Escape'); await p.evaluate(() => { S.T.pop = 'search'; render(); });
+    await p.fill('#tq', 'second souffle'); await p.press('#tq', 'Enter');
+    eq(await p.evaluate(() => [S.T.pop, !!document.querySelector('.qmenu')]), ['card', false], 'Entrée sur une aptitude : la fenêtre, comme avant');
+  });
+
   await test('Fenêtres, lot 2 : fenêtre Détails avec le vrai nom, cadre d’infos, description repliée avant le pied, bouton principal en pied', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'magicien');
     await p.evaluate(() => { const ch = cur(); ch.level = 3; ch.spells = [{ prepared: true, ref: 'srd:projectile-magique' }]; render(); tSelect('spell:srd:projectile-magique'); });

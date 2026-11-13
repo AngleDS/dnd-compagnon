@@ -450,7 +450,7 @@ document.addEventListener("submit",e=>{
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
   if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
     if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
-  if(f.dataset.form==="tq"){ const r=searchItems(S.Titems||[],S.T.q); if(r[0]){ S.T.q=""; tSelect(r[0].key); } return; }
+  if(f.dataset.form==="tq"){ const r=searchItems(S.Titems||[],S.T.q); if(r[0]){ const row=document.querySelector('#tres .trow.first[data-act="tqroll"]'); if(row){ qMenuOpen(row); return; } S.T.q=""; tSelect(r[0].key); } return; } // Entrée sur un jet : le mini-menu, comme au toucher
   if(f.dataset.form==="comp"){ S.comp.q=document.getElementById("compQ").value; render(); }
   if(f.dataset.form==="spellq"){ S.pending.q=document.getElementById("spellQ").value; renderModal(); }
 });
