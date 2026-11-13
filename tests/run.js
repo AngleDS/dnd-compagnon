@@ -2914,6 +2914,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.locator('.tpop .fxfollowed').isVisible(), 'la fenêtre confirme le suivi');
   });
 
+  await test('Barre de PV : effets en cours affichés après les états, marqués ⏱, la rangée ouvre « États et effets »', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'clerc', bg: 'srd:acolyte', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); const ch = cur(); ch.conditions = []; ch.exhaustion = 0; delete ch.conc; render(); });
+    ok(!(await p.locator('.health-card .hpconds').count()), 'ni état ni effet : pas de rangée');
+    await p.evaluate(() => { fxAdd(cur(), { name: 'Potion de résistance', dur: '1 heure', src: '', note: '' }); render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.health-card .hpconds .hpcond')].map(x => [x.textContent, x.classList.contains('hpfx')])), [['⏱ Potion de résistance', true]], 'un effet seul suffit à afficher la rangée');
+    await p.evaluate(() => { const ch = cur(); ch.conditions = ['Empoisonné']; ch.conc = 'Bénédiction'; fxAdd(ch, { name: 'Bénédiction', dur: '1 minute', src: 'ton sort', conc: true }); render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.health-card .hpconds .hpcond')].map(x => x.textContent)), ['Empoisonné', '⏱ Potion de résistance', '⏱ Bénédiction'], 'états d’abord, puis effets');
+    ok((await p.getAttribute('.health-card .hpconds', 'aria-label')).startsWith('États et effets actifs : Empoisonné, Potion de résistance, Bénédiction'), 'nom accessible complet');
+    await p.evaluate(() => { cur().conc = ''; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.health-card .hpconds .hpcond')].map(x => x.textContent)), ['Empoisonné', '⏱ Potion de résistance'], 'fin de concentration : le sort suivi disparaît de la rangée');
+    await p.click('.health-card .hpconds'); eq(await p.getAttribute('.tpop', 'aria-label'), 'États et effets', 'la rangée ouvre « États et effets »');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));
