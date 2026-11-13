@@ -565,6 +565,16 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 .tcardpop .tdesc{margin-top:4px;border-top:1px solid var(--line);padding-top:2px}.tcardpop .tdesc>summary{min-height:44px}
 #t-action-state:empty{display:none}
 .tcardpop .pip{width:28px;height:28px}.tcardpop .pips{gap:8px}
+/* Réglages (chantier 20) */
+.rgbox{gap:0}.rgscroll{overflow-y:auto;min-height:0;overscroll-behavior:contain}.rg-sec{padding:14px 0;border-top:1px solid var(--line)}.rgscroll>.rg-sec:first-child{border-top:0}
+.rg-sec h3{margin:0 0 10px;font-size:var(--fs-sm);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.rg-lab{font-size:var(--fs-md);margin-bottom:8px}.rg-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}.rg-row .rg-lab{margin:0}
+.rg-help{font-size:var(--fs-sm);color:var(--muted);margin-top:6px}.rg-sel{width:100%;min-height:44px}.rgbox .adv button{min-height:44px}
+.rg-btns{display:grid;gap:8px;margin-top:6px}.rg-btns .btn{min-height:44px;justify-content:flex-start;text-align:left}
+.rg-sw{position:relative;width:60px;min-width:60px;height:44px;min-height:44px;padding:0;border:0;background:none;cursor:pointer}
+.rg-sw::before{content:"";position:absolute;left:4px;top:6px;width:52px;height:32px;border-radius:16px;border:1px solid var(--line);box-sizing:border-box;background:var(--bg,#111)}
+.rg-sw::after{content:"";position:absolute;top:10px;left:8px;width:24px;height:24px;border-radius:50%;background:var(--muted);transition:left .15s}
+.rg-sw.on::before{background:var(--brass);border-color:var(--brass)}.rg-sw.on::after{left:28px;background:var(--sheet)}
 /* Saisies de dés : champ (libellé au-dessus), puis Appliquer et Lancer alignés sur le bas du champ, même hauteur */
 .row.tin{gap:8px}.row.tin .btn{min-height:44px}.tinbonus{align-self:center;font-size:var(--fs-sm);color:var(--muted)}
 .tiphead{align-items:flex-start}.tiphead .tchw{display:grid;min-width:0}.tip .tcvals{margin-top:2px}.tip .tdesc{margin-top:0;border-top:1px solid var(--line)}.tip .tdesc>summary{min-height:44px}

@@ -11,6 +11,17 @@ function softRender(){
 }
 document.addEventListener("focusout",()=>{ if(renderQueued){ renderQueued=false; setTimeout(()=>{ if(!document.activeElement||!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) render(); else renderQueued=true; },0);} });
  
+/* Fenêtre « Réglages » (chantier 20, maquette A validée par Angle) : chaque choix s'applique tout de suite */
+function settingsModal(){
+  const atTable=S.view==="sheet"&&S.tab==="table"&&!!S.cur, vd=virtualDiceEnabled(), tp=themePref(), ps=persos(), main=mainId();
+  const sec=(t,x)=>`<section class="rg-sec"><h3>${t}</h3>${x}</section>`;
+  return `<div class="picker" data-act="setClose"><div class="box rgbox" role="dialog" aria-label="Réglages" data-act="noop" style="max-width:560px;grid-template-rows:auto 1fr">${winHead("Réglages","setClose")}<div class="rgscroll">
+    ${sec("Apparence",`<div class="rg-lab">Thème</div><div class="adv" role="group" aria-label="Thème" style="grid-template-columns:repeat(3,1fr)">${[["dark","Sombre"],["light","Clair"],["auto","Automatique"]].map(([k,l])=>`<button aria-pressed="${tp===k}" data-act="themeSet" data-v="${k}">${l}</button>`).join("")}</div><div class="rg-help">Automatique : sombre ou clair comme ton appareil (souvent sombre le soir).</div>`)}
+    ${sec("Dés",`<div class="rg-row"><span class="rg-lab">Dés virtuels</span><button class="rg-sw${vd?" on":""}" role="switch" aria-checked="${vd}" aria-label="Dés virtuels" data-act="virtualDice"></button></div><div class="rg-help">${vd?"Activés : l'appli peut lancer les dés à ta place.":"Désactivés : tu lances tes vrais dés et tu saisis les résultats."}</div>`)}
+    ${ps.length?sec("Personnage actif",`<select class="rg-sel" aria-label="Personnage actif" data-act-change="setMainSel">${main?"":`<option value="" selected>Aucun</option>`}${ps.map(p=>`<option value="${p._id}"${p._id===main?" selected":""}>${esc(p.name||"Sans nom")}</option>`).join("")}</select><div class="rg-help">Celui qui s'ouvre au démarrage, directement « À la table ».</div>`):""}
+    ${sec("Sauvegarde",`<div class="rg-row"><span class="rg-lab">Tes données</span><span class="muted" style="font-size:var(--fs-sm)">${S.mode==="cloud"?"en ligne, avec ton compte":"sur cet appareil (ce navigateur)"}</span></div><div class="rg-btns"><button class="btn" data-act="saveApp">Télécharger ma copie personnelle</button><label class="btn" for="importFileSet">Importer un personnage</label><input id="importFileSet" type="file" accept=".json,application/json" hidden></div><div class="rg-help">La copie personnelle contient tes personnages, portraits, notes et Mes contenus : ne la partage pas sans le vouloir.</div>`)}
+    ${sec("« À la table »",`<div class="rg-btns">${atTable?`<button class="btn" data-act="layoutEdit">Personnaliser l’interface</button>`:""}<button class="btn" data-act="helpReset">Réafficher les messages d’aide masqués</button></div>${S.helpReset?`<div class="rg-help" role="status">✓ Les messages d’aide réapparaîtront.</div>`:""}`)}
+  </div></div></div>`; }
 function mainId(){ const m=S.docs.prefs?.main; return m&&S.docs[m]&&S.docs[m].type==="perso"?m:null; }
 function setMain(id){ if(!S.docs.prefs) S.docs.prefs={type:"prefs"}; S.docs.prefs.main=id; touch("prefs"); }
 function renderNav(){
@@ -26,8 +37,7 @@ function renderNav(){
   const atTable=S.view==="sheet"&&S.tab==="table"&&!!S.cur, mi=(attrs,label,extra="")=>`<button class="hditem" role="menuitem" ${attrs}>${label}${extra}</button>`;
   document.getElementById("hmenu").innerHTML=`<button class="hmenu" data-act="menuToggle" aria-haspopup="menu" aria-expanded="${!!S.menuOpen}" ${S.view==="list"||(S.view==="sheet"&&!onMine)?'aria-current="page"':""}>Menu <span aria-hidden="true">▾</span></button>${S.menuOpen?`<div class="hdrop" role="menu" aria-label="Menu">
     ${mi('data-act="nav" data-v="list"',"Mes personnages")}
-    ${mi('data-act="theme"',curTheme()==="dark"?"Mode clair":"Mode sombre")}
-    ${mi(`data-act="virtualDice" role="menuitemcheckbox" aria-checked="${virtualDiceEnabled()}"`,"Dés virtuels",`<span class="hdstate">${virtualDiceEnabled()?"activés":"désactivés"}</span>`)}
+    ${mi('data-act="settingsOpen"',"Réglages")}
     ${atTable?`<div class="hdsep" role="separator"></div>${mi('data-act="layoutEdit"',"Personnaliser l’interface")}`:""}</div>`:""}`;
   document.getElementById("hchar").innerHTML="";
 }

@@ -166,6 +166,7 @@ function renderModal(){
   if(S.rv){ m.innerHTML=rvModal(); return; }
   if(S.catPick){ m.innerHTML=catPickModal(); return; }
   if(S.af){ m.innerHTML=afModal(); return; }
+  if(S.settings){ m.innerHTML=settingsModal(); return; }
   if(!S.pending){ m.innerHTML=""; return; }
   const ch=cur(); if(!ch){ S.pending=null; m.innerHTML=""; return; }
   const D=derive(ch);

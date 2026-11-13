@@ -17,8 +17,13 @@ function setVirtualDice(enabled){
 window.addEventListener("storage",e=>{ if(e.key===VIRTUAL_DICE_KEY||e.key===null){ applyDicePreference(); render(); renderDice(); } });
 applyDicePreference();
 
-/* thème : sombre par défaut, clair au choix (Menu) ; enregistré dans les préférences et dans ce navigateur */
-function curTheme(){ const p=S.docs&&S.docs.prefs; if(p&&(p.theme==="light"||p.theme==="dark")) return p.theme; try{ const t=localStorage.getItem("registre-theme"); if(t==="light"||t==="dark") return t; }catch(e){} return "dark"; }
+/* thème (chantier 20, décision d'Angle) : Sombre, Clair ou Automatique (suit l'appareil), Automatique par défaut ;
+   enregistré dans les préférences et dans ce navigateur. Un choix déjà enregistré (sombre ou clair) est gardé. */
+const THEMES=["dark","light","auto"];
+function themePref(){ const p=S.docs&&S.docs.prefs; if(p&&THEMES.includes(p.theme)) return p.theme; try{ const t=localStorage.getItem("registre-theme"); if(THEMES.includes(t)) return t; }catch(e){} return "auto"; }
+const deviceTheme=()=>{ try{ return matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"; }catch(e){ return "dark"; } };
+function curTheme(){ const t=themePref(); return t==="auto"?deviceTheme():t; }
+try{ matchMedia("(prefers-color-scheme: light)").addEventListener("change",()=>{ if(themePref()==="auto"){ applyTheme(); if(typeof render==="function"&&S.C) render(); } }); }catch(e){}
 function applyTheme(){ const t=curTheme(); if(document.documentElement.dataset.theme!==t) document.documentElement.dataset.theme=t; }
 function setTheme(t){ if(!S.docs.prefs) S.docs.prefs={type:"prefs"}; S.docs.prefs.theme=t; touch("prefs"); try{ localStorage.setItem("registre-theme",t); }catch(e){} applyTheme(); }
 applyTheme();

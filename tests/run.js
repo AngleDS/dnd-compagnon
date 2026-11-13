@@ -18,7 +18,7 @@ let BROWSER = null;
 async function test(name, fn) {
   if (ONLY.length && !ONLY.some(o => o && name.toLowerCase().includes(o))) { SKIPPED++; return; }
   BROWSER = BROWSER || await chromium.launch();
-  const ctx = await BROWSER.newContext({ viewport: { width: 1200, height: 900 } }); const p = await ctx.newPage(); p.setDefaultTimeout(8000);
+  const ctx = await BROWSER.newContext({ viewport: { width: 1200, height: 900 }, colorScheme: 'dark' }); /* appareil réglé en sombre : thème Automatique = sombre */ const p = await ctx.newPage(); p.setDefaultTimeout(8000);
   const errors = []; p.on('pageerror', e => errors.push(e.message));
   await p.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
   try { await fn(p, errors); if (errors.length) throw new Error('Erreur JS : ' + errors.join(' | ')); results.push([name, true]); console.log('✓', name); }
@@ -363,7 +363,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   const closeSizes = p => p.evaluate(() => [...document.querySelectorAll('[aria-label^="Fermer"]')].filter(e => e.getBoundingClientRect().width > 0).map(e => { const r = e.getBoundingClientRect(); return Math.round(r.width) + '×' + Math.round(r.height) + ' ' + getComputedStyle(e).fontSize; }));
 
   await test('Écran tactile : cibles de 44×44, croix de fermeture identiques, corbeilles', async p => {
-    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, colorScheme: 'dark' });
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
       await open(t);
@@ -395,17 +395,23 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq([...new Set(await closeSizes(p))], ['44×44 28px'], 'croix sur ordinateur (popup et bannière)');
   });
  
-  await test('Thème : sombre par défaut, bouton du Menu pour passer en clair et revenir', async p => {
+  await test('Thème : Automatique par défaut (suit l’appareil), Sombre et Clair dans les Réglages, choix déjà enregistré gardé', async p => {
     await open(p);
-    eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'thème par défaut');
+    eq(await p.evaluate(() => [themePref(), document.documentElement.dataset.theme]), ['auto', 'dark'], 'Automatique par défaut : appareil sombre, thème sombre');
     await p.evaluate(() => { S.view = 'list'; render(); });
-    ok(await p.evaluate(() => !document.querySelector('[data-act="theme"]') && !document.querySelector('.hchar')), 'mode clair rangé dans le Menu');
-    await menuClick(p, '[data-act="theme"]');
-    ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'le Menu se referme après un choix');
+    await menuClick(p, '[data-act="settingsOpen"]');
+    ok(await p.evaluate(() => !document.querySelector('.hdrop') && !!document.querySelector('#modal .rgbox')), 'le Menu se referme, la fenêtre Réglages s’ouvre');
+    eq(await p.evaluate(() => [...document.querySelectorAll('#modal [data-act="themeSet"]')].map(b => b.textContent + (b.getAttribute('aria-pressed') === 'true' ? '*' : ''))), ['Sombre', 'Clair', 'Automatique*'], 'trois choix, Automatique coché');
+    await p.click('#modal [data-act="themeSet"][data-v="light"]');
     eq(await p.evaluate(() => [document.documentElement.dataset.theme, S.docs.prefs.theme, localStorage.getItem('registre-theme')]), ['light', 'light', 'light'], 'mode clair');
     ok(await p.evaluate(() => { const m = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number); return m[0] + m[1] + m[2] > 600; }), 'fond clair');
-    await p.click('.hmenu'); ok(await p.evaluate(() => document.querySelector('.hdrop [data-act="theme"]').textContent === 'Mode sombre'), 'libellé du bouton');
-    await p.click('.hdrop [data-act="theme"]'); eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'retour au sombre');
+    await p.click('#modal [data-act="themeSet"][data-v="dark"]'); eq(await p.evaluate(() => document.documentElement.dataset.theme), 'dark', 'retour au sombre');
+    await p.click('#modal [data-act="themeSet"][data-v="auto"]');
+    await p.emulateMedia({ colorScheme: 'light' }); await p.waitForTimeout(100);
+    eq(await p.evaluate(() => [S.docs.prefs.theme, document.documentElement.dataset.theme]), ['auto', 'light'], 'Automatique : l’appareil passe en clair, l’appli aussi');
+    await p.evaluate(() => { localStorage.setItem('registre-theme', 'dark'); delete S.docs.prefs.theme; }); await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
+    eq(await p.evaluate(() => [themePref(), document.documentElement.dataset.theme]), ['dark', 'dark'], 'un choix Sombre déjà enregistré reste sombre, même sur un appareil clair');
+    await p.keyboard.press('Escape');
   });
  
   await test('À la table : tuile Repos (court ou long), PV max « aucun », alignement', async p => {
@@ -544,17 +550,17 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Dés : verrou par défaut, global entre personnages, persistant dans le navigateur', async p => {
     await diceTable(p);
-    await p.click('.hmenu'); eq(await p.getAttribute('.hdrop [data-act="virtualDice"]', 'aria-checked'), 'false', 'désactivés par défaut');
+    await menuClick(p, '[data-act="settingsOpen"]'); eq(await p.getAttribute('#modal [data-act="virtualDice"]', 'aria-checked'), 'false', 'désactivés par défaut (Réglages)');
     const first = await p.evaluate(() => S.cur);
-    await p.click('.hdrop [data-act="virtualDice"]');
+    await p.click('#modal [data-act="virtualDice"]'); eq(await p.getAttribute('#modal [data-act="virtualDice"]', 'aria-checked'), 'true', 'interrupteur à jour'); await p.keyboard.press('Escape');
     eq(await p.evaluate(() => [virtualDiceEnabled(), localStorage.getItem(VIRTUAL_DICE_KEY)]), [true, '1'], 'activation enregistrée');
     await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); });
-    await p.click('.hmenu'); eq(await p.getAttribute('.hdrop [data-act="virtualDice"]', 'aria-checked'), 'true', 'second personnage'); await p.keyboard.press('Escape');
+    await menuClick(p, '[data-act="settingsOpen"]'); eq(await p.getAttribute('#modal [data-act="virtualDice"]', 'aria-checked'), 'true', 'second personnage'); await p.keyboard.press('Escape');
     await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
     ok(await p.evaluate(() => virtualDiceEnabled()), 'activation après rechargement');
     await p.evaluate(id => { S.cur=id; S.view='sheet'; S.tab='table'; render(); }, first);
-    await menuClick(p, '[data-act="virtualDice"]');
+    await menuClick(p, '[data-act="settingsOpen"]'); await p.click('#modal [data-act="virtualDice"]');
     await p.reload(); await p.waitForFunction(() => S.C && S.CAT);
     eq(await p.evaluate(() => [virtualDiceEnabled(), persos().some(c => 'virtualDice' in c)]), [false, false], 'désactivation persistante et aucune préférence dans un personnage');
   });
@@ -787,7 +793,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
 
   await test('Ligne d’« À la table » : toucher le nom ouvre la carte, seul le bouton i ouvre la règle', async p => {
-    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, colorScheme: 'dark' });
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
       await diceTable(t);
@@ -864,7 +870,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
 
   await test('iPhone : onglets de la fiche lisibles et défilants, aucun bouton qui en recouvre un autre', async p => {
-    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, colorScheme: 'dark' });
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
       await open(t); await newWizardChar(t, { cls: 'paladin', bg: 'srd:soldat', sp: 'srd:humain' });
@@ -1049,7 +1055,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
 
   await test('Mode disposition au doigt (iPhone) : glisser un bloc vers le haut, sous le bandeau collé', async p => {
-    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, colorScheme: 'dark' });
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
       await diceTable(t);
@@ -1456,7 +1462,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   });
 
   await test('Au doigt : appui long pour glisser une tuile, le glisser rapide fait défiler', async p => {
-    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const ctx = await p.context().browser().newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, colorScheme: 'dark' });
     const t = await ctx.newPage(); const errs = []; t.on('pageerror', e => errs.push(e.message)); await t.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     try {
       await diceTable(t); await legacyRacc(t); await t.evaluate(() => { S.T.pop = 'tiles:raccourcis'; render(); });
@@ -1876,7 +1882,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const vis = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
     ok(await p.evaluate(() => !document.querySelector('.tlayoutbar') && !document.querySelector('.ttopbar') && !document.querySelector('.hdrop')), 'plus de bouton en bas ni de bandeau ; Menu fermé');
     await p.click('.hmenu');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.hdrop .hditem')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['nav:list', 'theme', 'virtualDice', 'layoutEdit'], 'Menu déroulant : personnages, mode clair, dés, Personnaliser l’interface');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.hdrop .hditem')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['nav:list', 'settingsOpen', 'layoutEdit'], 'Menu déroulant : personnages, Réglages, Personnaliser l’interface (dés et thème dans les Réglages)');
     ok(await p.evaluate(() => { const d = document.querySelector('.hdrop').getBoundingClientRect(); return d.left >= 0 && d.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; }), 'Menu dans l’écran');
     await p.mouse.click(220, 45); ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'clic ailleurs : Menu fermé');
     await menuClick(p, '[data-act="layoutEdit"]');
@@ -2360,7 +2366,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Ce tour : design Arsenal, titre et états accessibles en clair et sombre', async p => {
     await p.setViewportSize({width:390,height:844}); await diceTable(p);
     for(const light of [false,true]){
-      if(light) await menuClick(p, '[data-act="theme"]');
+      if(light) await p.evaluate(() => { setTheme('light'); render(); });
       const start=await p.evaluate(() => { const b=document.querySelector('.tblk[data-blk="tour"]');return [b.querySelector('.tbandt').textContent,[...b.querySelectorAll('.tturnbtn')].map(x=>[Math.round(x.getBoundingClientRect().height),!!x.querySelector('.tturn-icon svg'),x.getAttribute('aria-pressed')])]; });
       eq(start,['Ce tour',Array.from({length:5},()=>[76,true,'false'])],'titre, cinq tuiles et icônes');
       await p.click('.tturnbtn[data-v="move"]');
@@ -2475,6 +2481,28 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.af = { state: 'err', msg: 'Erreur test.', target: { mode: 'hb', id: 'x' } }; renderModal(); });
     eq(await look(), ['Remplissage impossible', 44, ['afClose'], false], 'erreur : « Saisie manuelle » en pied');
     await p.click('#modal .whead .wclose'); ok(await p.evaluate(() => !S.af), 'la croix ferme');
+  });
+
+  await test('Réglages : fenêtre au modèle des autres, personnage actif, sauvegarde, messages d’aide, Personnaliser', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    const a = await p.evaluate(() => S.cur); await newWizardChar(p, { cls: 'occultiste', bg: 'srd:sage', sp: 'srd:humain' }); const b = await p.evaluate(() => S.cur);
+    await p.evaluate(id => { S.cur = id; S.rv = null; renderModal(); S.view = 'sheet'; S.tab = 'table'; render(); }, a);
+    await menuClick(p, '[data-act="settingsOpen"]');
+    const r = await p.evaluate(() => { const bx = document.querySelector('#modal .rgbox'), x = bx.querySelector('.whead .wclose').getBoundingClientRect(), w = bx.getBoundingClientRect();
+      return [bx.querySelector('.whead h2').textContent, Math.round(x.width), [...bx.querySelectorAll('.rg-sec h3')].map(h => h.textContent), w.right <= innerWidth && w.left >= 0, [...bx.querySelectorAll('.rg-sec button,.rg-sec select,.rg-sec label.btn')].every(e => e.getBoundingClientRect().height >= 44)]; });
+    eq(r, ['Réglages', 44, ['Apparence', 'Dés', 'Personnage actif', 'Sauvegarde', '« À la table »'], true, true], 'titre, croix 44 px, cinq parties, dans l’écran, cibles de 44 px');
+    eq(await p.evaluate(() => /cet appareil/.test(document.querySelector('#modal .rgbox').textContent)), true, 'mode local : « sur cet appareil »');
+    await p.selectOption('#modal select[data-act-change="setMainSel"]', b);
+    eq(await p.evaluate(() => S.docs.prefs.main), b, 'personnage actif choisi dans la liste');
+    await p.evaluate(() => { localStorage.setItem('registre-banner-local', '1'); });
+    await p.click('#modal [data-act="helpReset"]');
+    eq(await p.evaluate(() => [localStorage.getItem('registre-banner-local'), /réapparaîtront/.test(document.querySelector('#modal .rgbox').textContent)]), [null, true], 'messages d’aide masqués remis');
+    await p.click('#modal [data-act="layoutEdit"]');
+    eq(await p.evaluate(() => [S.layoutEdit, S.settings, !!document.querySelector('#modal .rgbox')]), [true, false, false], 'Personnaliser l’interface : la fenêtre se ferme, le mode édition s’ouvre');
+    await p.evaluate(() => { S.layoutEdit = false; S.view = 'list'; render(); }); await menuClick(p, '[data-act="settingsOpen"]');
+    ok(await p.evaluate(() => !document.querySelector('#modal [data-act="layoutEdit"]') && !!document.querySelector('#modal [data-act="saveApp"]') && !!document.querySelector('#modal label[for="importFileSet"]')), 'hors « À la table » : pas de Personnaliser ; Télécharger et Importer présents');
+    ok(await p.evaluate(() => !!document.querySelector('.list-head [data-act="saveApp"]')), 'Télécharger reste aussi dans la liste des personnages');
+    await p.keyboard.press('Escape'); ok(await p.evaluate(() => !S.settings && !document.querySelector('#modal .rgbox')), 'Échap ferme');
   });
 
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {

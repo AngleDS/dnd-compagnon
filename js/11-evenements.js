@@ -21,7 +21,7 @@ document.addEventListener("click",e=>{
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;
   if(a!=="ask"&&S.confirm&&!["del","hbDel","rest"].includes(a)) S.confirm=null;
   switch(a){
-    case "layoutEdit": S.layoutEdit=true; render(); break;
+    case "layoutEdit": S.layoutEdit=true; if(S.settings){ S.settings=false; renderModal(); } render(); break;
     case "layoutDone": S.layoutEdit=false; S.undo=null; render(); break;
     // Supprimer en mode édition : tout de suite, sans confirmation ; « Annuler » rétablit la disposition d'avant pendant quelques secondes
     case "blkDelNow": if(ch){ const id=t.dataset.v; if(BLK_KEEP.includes(id)) break; const label=blkLabel(ch,id), snap=JSON.parse(JSON.stringify(ch.layout||{}));
@@ -95,7 +95,7 @@ document.addEventListener("click",e=>{
     case "blkRestore": if(ch){ setBlkHidden(ch,t.dataset.v,false); S.T.pop=null; render(); } break;
     case "blkMove": if(ch){ moveTableBlock(ch,t.dataset.v,+t.dataset.d); render(); } break;
     case "chargeRecoveryRoll": { const b=(ch.bag||[]).find(b=>b.id===t.dataset.id); if(b?.charges?.pendingRecovery) applyChargeRecovery(ch,b.id,rollExpr(b.charges.rec).total,true); render(); break; }
-    case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); break;
+    case "virtualDice": setVirtualDice(!virtualDiceEnabled()); render(); renderDice(); renderModal(); break;
     case "nav": if(t.dataset.v==="hb"||t.dataset.v==="comp"){ if(S.view==="sheet") S.navFrom="perso"; else if(S.view==="list") S.navFrom="menu"; }
       if(t.dataset.v==="main"||t.dataset.v==="table"){ // rester sur le perso affiché ; le perso principal seulement en venant d'ailleurs
         const here=S.cur&&S.docs[S.cur]&&S.docs[S.cur].type==="perso"; const m=here?S.cur:mainId(); if(m){ S.tab = t.dataset.v==="table" ? "table" : (S.cur===m&&S.tab!=="table"?S.tab:"jeu"); if(t.dataset.v==="main") S.unlockEdit=false; S.cur=m; S.view="sheet"; render(); window.scrollTo(0,0); } break; } S.view=t.dataset.v; S.cur=S.view==="list"?null:S.cur; render(); break;
@@ -206,7 +206,10 @@ document.addEventListener("click",e=>{
     case "hdvirt": { const D=derive(ch); const r=rnd(D.hd); hdSpend(ch,D,r,false); break; }
     case "bannerClose": { const k=t.dataset.k; if(k){ try{ localStorage.setItem("registre-banner-"+k,"1"); }catch(e){} } setBanner(""); break; }
     case "menuToggle": S.menuOpen=!S.menuOpen; render(); break;
-    case "theme": setTheme(curTheme()==="dark"?"light":"dark"); render(); break;
+    case "settingsOpen": S.menuOpen=false; S.settings=true; S.helpReset=false; render(); renderModal(); break;
+    case "setClose": S.settings=false; renderModal(); break;
+    case "themeSet": setTheme(t.dataset.v); render(); renderModal(); break;
+    case "helpReset": { try{ Object.keys(localStorage).filter(k=>k.startsWith("registre-banner-")).forEach(k=>localStorage.removeItem(k)); }catch(e){} S.helpReset=true; renderModal(); break; }
     case "pvTileSet": if(ch){ const v=t.dataset.v; ch.layout=Object.assign({},ch.layout); if(v==="__def") delete ch.layout.pvTile; else ch.layout.pvTile=String(v).slice(0,80); touch(S.cur); render(); } break;
     case "restOpen": S.T=S.T||{}; S.T.restKind=t.dataset.v||""; S.T.pop="rest"; render(); break;
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
@@ -363,7 +366,8 @@ document.addEventListener("change",e=>{
   if(t.id==="cc-dmg"&&S.T&&S.T.cc){ S.T.cc.dmg=Math.max(0,+t.value||0); render(); return; }
   if(t.dataset.arcsel){ const ch=cur(); if(ch){ ch.arcanum=ch.arcanum||{}; if(t.value) ch.arcanum[t.dataset.arcsel]=t.value; else delete ch.arcanum[t.dataset.arcsel]; touch(S.cur); render(); } return; }
   if(t.dataset.lu&&S.pending&&S.pending.type==="lvl"){ const P=S.pending,k=t.dataset.lu; if(t.dataset.i!==undefined){ P[k]=P[k]||[]; P[k][+t.dataset.i]=t.value; } else P[k]=t.value; renderModal(); return; }
-  if(t.id==="importFile"&&t.files&&t.files[0]){ const file=t.files[0]; if(file.size>20*1024*1024){ setBanner("Ce fichier dépasse 20 Mo et ne peut pas être importé."); t.value=""; return; } const fr=new FileReader(); fr.onload=()=>{ try{ const id=importPack(JSON.parse(fr.result)); S.cur=null; S.view="list"; render(); window.scrollTo(0,0); setBanner((S.docs[id].name||"Personnage")+" importé : il est dans ta liste de personnages."); }catch(err){ setBanner(err&&err.message==="version"?`Cet export utilise le format ${err.dataVersion}, plus récent que celui accepté par cette application. Mets l'application à jour avant de l'importer.`:err&&err.message==="import_invalid"?`Import refusé : ${err.detail}`:"Ce fichier JSON est illisible ou n'est pas un export du Registre."); } }; fr.onerror=()=>setBanner("Le fichier n'a pas pu être lu."); fr.readAsText(file); return; }
+  if((t.id==="importFile"||t.id==="importFileSet")&&t.files&&t.files[0]){ if(t.id==="importFileSet"){ S.settings=false; renderModal(); } const file=t.files[0]; if(file.size>20*1024*1024){ setBanner("Ce fichier dépasse 20 Mo et ne peut pas être importé."); t.value=""; return; } const fr=new FileReader(); fr.onload=()=>{ try{ const id=importPack(JSON.parse(fr.result)); S.cur=null; S.view="list"; render(); window.scrollTo(0,0); setBanner((S.docs[id].name||"Personnage")+" importé : il est dans ta liste de personnages."); }catch(err){ setBanner(err&&err.message==="version"?`Cet export utilise le format ${err.dataVersion}, plus récent que celui accepté par cette application. Mets l'application à jour avant de l'importer.`:err&&err.message==="import_invalid"?`Import refusé : ${err.detail}`:"Ce fichier JSON est illisible ou n'est pas un export du Registre."); } }; fr.onerror=()=>setBanner("Le fichier n'a pas pu être lu."); fr.readAsText(file); return; }
+  if(t.dataset.actChange==="setMainSel"){ if(t.value) setMain(t.value); else if(S.docs.prefs){ delete S.docs.prefs.main; touch("prefs"); } render(); renderModal(); return; }
   if(t.dataset.actChange==="hbFilter"){ S.hbFilter=t.value; render(); return; }
   if(t.dataset.actChange==="invsel"){ S.invSel=t.value; render(); return; }
   if(t.dataset.invfix!==undefined&&t.value){ const ch=cur(); const i=+t.dataset.invfix; if(ch.invocations&&ch.invocations[i]){ ch.invocations[i]=invId(ch.invocations[i])+"|"+t.value; touch(S.cur); render(); } return; }
