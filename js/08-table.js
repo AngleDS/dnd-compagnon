@@ -1444,7 +1444,7 @@ function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x
       <div class="muted" style="font-size:var(--fs-sm)">${sp.level&&!T.castRit?(T.castArc?"Arcanum mystique utilisé.":T.castFree?"Lancer gratuit utilisé.":"Emplacement dépensé."):"Aucun emplacement dépensé."}${sp.concentration?` Concentration : <b>${esc(sp.name)}</b>.`:""}</div>
       ${m.save?`<div class="tbig"><span class="num">DD ${D.cast.dc}</span><span class="muted">JS de ${esc(m.save)}</span></div>`:""}
       ${T.castTemp?`<div class="muted">PV temporaires : ${T.castTemp.v}${T.castTemp.b0>=T.castTemp.v?" (tu en avais déjà autant ou plus)":""}</div>`:""}
-      ${m.attack||ex?`<div class="row qchains">${m.attack?btn("hit","Toucher",sg(D.cast.atk)):""}${ex?btn("dmg",m.heal?"Soins":"Dégâts",ex):""}</div>`:""}</div>`); }
+      ${m.attack||ex?`<div class="row qchains">${m.attack?btn("hit","Toucher",sg(D.cast.atk)):""}${ex?btn("dmg",m.heal?"Soins":"Dégâts",ex):""}</div>`:""}${fxFollowHtml(ch,sp,i.ref)}</div>`); }
   const d3=T.roll3dPending?`<button class="btn small dice3dskip" data-act="dice3dSkip">Passer l’animation</button>`:"";
   if(q.r==="hit"||q.r==="d20") return wrap(esc(i.name)+(q.r==="hit"?" · Toucher":""),`<div class="qres">${d3}<div class="qmode label">${ML[q.mode]}</div>
     ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}

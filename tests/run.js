@@ -2840,7 +2840,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Défenses : poison du nain prérempli (espèce), ajout et retrait, immunités aux états, loupe', async p => {
     await open(p);
-    await newWizardChar(p, { cls: 'srd:guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
+    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); S.T.pop = 'def'; render(); });
     ok(await p.locator('.tpop[aria-label="Défenses"]').isVisible(), 'fenêtre Défenses');
     ok(/Poison\s*espèce/i.test(await p.innerText('.tpop .lusec >> nth=0')), 'résistance au poison venue de l’espèce');
@@ -2853,13 +2853,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.T.pop = null; S.T.defEdit = null; render(); tSelect('def'); });
     await p.click('.tpop [data-act="tpop"][data-v="def"]');
     ok(await p.locator('.tpop[aria-label="Défenses"]').isVisible(), 'loupe : carte Défenses puis fenêtre');
-    await newWizardChar(p, { cls: 'srd:guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
+    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
     eq(await p.evaluate(() => [defSummary(cur()), DMG_TYPES.length]), ['', 13], 'humain : aucune défense ; 13 types de dégâts');
   });
 
   await test('Dégâts typés : résistance montrée et appliquée, immunité, vulnérabilité, lien vers les défenses', async p => {
     await open(p);
-    await newWizardChar(p, { cls: 'srd:guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
+    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); const ch = cur(); ch.hp.cur = 20; delete ch.conc; defToggle(ch, 'imm', 'Feu'); defToggle(ch, 'vul', 'Froid'); render(); });
     const hit = async (n, type) => { await p.click('[data-act="hpask"][data-v="dmg"]'); await p.fill('#hp-amt', String(n)); if (type) await p.selectOption('#hp-type', type); };
     await hit(14, 'Poison');
@@ -2877,7 +2877,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('États et effets : effets actifs depuis un sort ou à la main, Terminé, lien avec la concentration, défenses', async p => {
     await open(p);
-    await newWizardChar(p, { cls: 'srd:clerc', bg: 'srd:acolyte', sp: 'srd:humain' });
+    await newWizardChar(p, { cls: 'clerc', bg: 'srd:acolyte', sp: 'srd:humain' });
     await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); const ch = cur(); delete ch.conc; ch.spells = [{ ref: 'srd:benediction', prepared: true }, { ref: 'srd:soins', prepared: true }]; S.T.pop = 'cond'; render(); });
     eq(await p.getAttribute('.tpop', 'aria-label'), 'États et effets', 'fenêtre renommée');
     ok((await p.innerText('.tpop .fxsec')).includes('Aucun effet en cours.'), 'aucun effet au départ');
@@ -2897,6 +2897,21 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop .fxrow:has-text("Bénédiction") [data-act="fxDone"]');
     eq(await p.evaluate(() => [cur().conc, fxList(cur()).map(e => e.name)]), ['', ['Potion de résistance']], '« Terminé » sur le sort suivi met fin à la concentration');
     await p.click('.tpop .fxdef'); ok(await p.locator('.tpop[aria-label="Défenses"]').isVisible(), 'ligne Défenses : ouvre la fenêtre');
+  });
+
+  await test('Suivre l’effet : proposé après un sort à durée, un toucher l’ajoute, rien pour un sort instantané', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'clerc', bg: 'srd:acolyte', sp: 'srd:humain' });
+    await p.evaluate(() => { S.rv = null; renderModal(); S.tab = 'table'; render(); const ch = cur(); delete ch.conc; ch.slotsUsed = {}; ch.spells = [{ ref: 'srd:benediction', prepared: true }, { ref: 'srd:soins', prepared: true }]; render(); });
+    const cast = name => p.evaluate(name => { const it = S.Titems.find(i => i.kind === 'spell' && i.name === name); quickCast(it.key, 'slot:1'); }, name);
+    await cast('Soins');
+    ok(await p.locator('.tpop').isVisible() && !(await p.locator('.tpop .fxfollow').count()), 'sort instantané : rien à suivre');
+    await cast('Bénédiction');
+    eq(await p.innerText('.tpop .fxfollow'), '⏱ Suivre l’effet (1 minute)', 'bouton proposé avec la durée');
+    eq(await p.evaluate(() => fxList(cur()).length), 0, 'rien n’est ajouté tout seul');
+    await p.click('.tpop .fxfollow');
+    eq(await p.evaluate(() => [cur().conc, fxList(cur()).map(e => [e.name, e.dur, e.conc])]), ['Bénédiction', [['Bénédiction', '1 minute', true]]], 'un toucher : effet suivi, lié à la concentration');
+    ok(await p.locator('.tpop .fxfollowed').isVisible(), 'la fenêtre confirme le suivi');
   });
 
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {

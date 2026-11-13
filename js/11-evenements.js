@@ -104,6 +104,7 @@ document.addEventListener("click",e=>{
     // Défenses (chantier 5)
     case "defEdit": S.T.defEdit=S.T.defEdit===t.dataset.c?null:t.dataset.c; render(); break;
     case "defTog": defToggle(ch,t.dataset.c,t.dataset.v); touch(S.cur); render(); break;
+    case "fxFollow": { const sp=spellOf(t.dataset.ref); if(sp&&spellDur(sp)){ fxAdd(ch,{name:sp.name,dur:spellDur(sp),src:"ton sort",conc:!!sp.concentration}); touch(S.cur); render(); } break; }
     case "fxDone": fxDone(ch,t.dataset.id); touch(S.cur); render(); break;
     case "fxDur": S.T.fxDur=S.T.fxDur===t.dataset.v?null:t.dataset.v; document.querySelectorAll('[data-act="fxDur"]').forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===S.T.fxDur))); break; // sans nouveau rendu : le nom saisi reste
     case "defOpen": S.pending=null; renderModal(); if(!(S.view==="sheet"&&S.tab==="table")){ S.view="sheet"; S.tab="table"; } render(); S.T.pop="def"; S.T.defEdit=null; render(); break;

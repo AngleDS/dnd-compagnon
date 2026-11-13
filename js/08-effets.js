@@ -67,3 +67,7 @@ function fxSubmit(){ const ch=cur(); if(!ch) return; const v=id=>(document.getEl
   else if(name) fxAdd(ch,{name,dur:S.T.fxDur||"",src:"",note});
   else { setBanner("Choisis un de tes sorts ou donne un nom à l’effet."); return; }
   S.T.fxDur=null; S.T.pop="cond"; touch(S.cur); render(); }
+// Après un sort à durée, la fenêtre « Lancé » propose de le suivre (un toucher) ; rien n'est ajouté tout seul.
+function fxFollowHtml(ch,sp,ref){ const dur=spellDur(sp); if(!dur) return "";
+  if(fxList(ch).some(e=>e.name===sp.name)) return `<div class="muted fxfollowed" style="font-size:var(--fs-sm);margin-top:12px">✓ Suivi dans « États et effets ».</div>`;
+  return `<div class="row" style="margin-top:12px"><button class="btn fxfollow" data-act="fxFollow" data-ref="${esc(ref)}">⏱ Suivre l’effet (${esc(dur.toLowerCase())})</button></div><div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Il apparaîtra dans « États et effets »${sp.concentration?" et s’arrêtera avec ta concentration":" jusqu’à ce que tu le termines"}.</div>`; }
