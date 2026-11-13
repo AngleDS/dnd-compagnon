@@ -1376,6 +1376,7 @@ function castOpts(ch,D,i){ const sp=i.sp, out=[], al=arcLevel(D,i.ref), fr=(D.re
   else (D.cast.slots||[]).forEach((n,k)=>{ const l=k+1; if(l<sp.level||!n) return; const left=Math.max(0,n-(+ch.slotsUsed?.[l]||0)); out.push(["slot:"+l,`Niv. ${l} (${pl(left)})`,left<=0]); });
   return out; }
 function qMenuOpen(btn){ qMenuClose(); const k=btn.dataset.k, r=btn.dataset.r, from=btn.dataset.from||"", i=(S.Titems||[]).find(x=>x.key===k), ch=cur(); if(!i||!ch) return;
+  if(r!=="cast"&&virtualDiceEnabled()&&diceDisplayMode()==="3d"){ try{ studioWarm(); }catch(_){} } // jets 3D : le moteur démarre pendant que tu choisis
   if(r==="cast"&&i.sp&&i.sp.level===0){ quickCast(k,"slot:0"); return; }
   // Tests de caractéristique, sauvegardes, Initiative, Concentration (r = "d20", demande d'Angle) : même mini-menu que Toucher ; « Détails » ouvre la fiche
   const adv=r==="hit"?condAdvice(ch,i.kind==="atk"?"atk":"spellatk",i.ab):r==="d20"?condAdvice(ch,i.kind,i.ab):{mode:"n"}, fail=r==="d20"&&adv.mode==="f", forced=adv.mode==="a"||adv.mode==="d"?adv.mode:null;
@@ -1449,10 +1450,11 @@ function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x
       ${m.save?`<div class="tbig"><span class="num">DD ${D.cast.dc}</span><span class="muted">JS de ${esc(m.save)}</span></div>`:""}
       ${T.castTemp?`<div class="muted">PV temporaires : ${T.castTemp.v}${T.castTemp.b0>=T.castTemp.v?" (tu en avais déjà autant ou plus)":""}</div>`:""}
       ${m.attack||ex?`<div class="row qchains">${m.attack?btn("hit","Toucher",sg(D.cast.atk)):""}${ex?btn("dmg",m.heal?"Soins":"Dégâts",ex):""}</div>`:""}</div>`); }
-  if(q.r==="hit"||q.r==="d20") return wrap(esc(i.name)+(q.r==="hit"?" · Toucher":""),`<div class="qres"><div class="qmode label">${ML[q.mode]}</div>
+  const d3=T.roll3dPending?`${studioEngineMode()==="tray"?`<div class="game-dice-slot" aria-hidden="true"></div>`:""}<button class="btn small dice3dskip" data-act="dice3dSkip">Passer l’animation</button>`:"";
+  if(q.r==="hit"||q.r==="d20") return wrap(esc(i.name)+(q.r==="hit"?" · Toucher":""),`<div class="qres">${d3}<div class="qmode label">${ML[q.mode]}</div>
     ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
     <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div>${q.r==="hit"?hitChain(ch,D,i,q):""}</div>`);
-  return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres"><div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un ${beamWord(i.m)} sur ${q.beams}`:""}</div>
+  return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres">${d3}<div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un ${beamWord(i.m)} sur ${q.beams}`:""}</div>
     ${phys?(()=>{ const rg=diceRange(q.dice); return `<div class="row tin"><label class="field"><span>Total de tes ${esc(q.dice)}${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`; })():""}
     ${!phys&&T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}
     <div class="ttotal qtot" id="t-dtot" data-flat="${q.flat}">${damageTotalHtml(T.dmg,q.flat)}</div></div>`); }

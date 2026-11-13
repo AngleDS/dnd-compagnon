@@ -2628,7 +2628,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Dés 3D : jet rapide avec avantage utilise les faces du moteur', async p => {
     await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); S.T.pop='eco:action'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="a"]');
-    ok(await p.locator('.game-dice-frame').isVisible(), 'animation dans la fenêtre de jet existante');
+    ok(await p.locator('.tpop .game-dice-slot').isVisible(), 'place réservée dans la fenêtre de jet existante');
+    await p.locator('.game-dice-frame.engine.on').waitFor({timeout:30000});
     await p.frameLocator('.game-dice-frame').locator('.stage canvas').waitFor({timeout:30000});
     eq(await p.frameLocator('.game-dice-frame').locator('.preview canvas').count(),0,'pas de rendu des aperçus cachés pendant le jet');
     eq(await p.evaluate(() => (cur().rollLog||[]).length),0,'pas de résultat avant stabilisation');
@@ -2650,6 +2651,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.frameLocator('.game-dice-frame').locator('.stage').evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0)','surface transparente au-dessus de la page');
     await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1, null, {timeout:35000});
     eq(await p.evaluate(() => [S.T.qr.k,cur().rollLog[0].label]),['init','Initiative'],'résultat affiché dans la fenêtre Initiative');
+  });
+
+  await test('Dés 3D : moteur gardé prêt d’un jet à l’autre, préparé à l’ouverture du menu ; « Passer l’animation »', async p => {
+    await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('3d'); S.T.pop='eco:action'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click();
+    ok(await p.evaluate(() => !!studioEngine && document.querySelectorAll('iframe.game-dice-frame').length === 1), 'le moteur démarre dès l’ouverture du menu de jet');
+    await p.click('.qmenu [data-m="n"]');
+    await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1, null, {timeout:35000});
+    await p.evaluate(() => { window.__e1 = studioEngine; });
+    await p.locator('.qhitnext .qchain[data-m="n"]').click();
+    await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.dmg !== '', null, {timeout:35000});
+    eq(await p.evaluate(() => [studioEngine === window.__e1, document.querySelectorAll('iframe.game-dice-frame').length, studioTimes[0][0]]), [true, 1, 0], 'second jet : même moteur, aucun temps de démarrage');
+    await p.evaluate(() => { S.T.pop='eco:action'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    await p.locator('.tpop .dice3dskip').click();
+    await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1, null, {timeout:8000});
+    ok(await p.evaluate(() => +S.T.d1 >= 1 && +S.T.d1 <= 20 && !document.querySelector('.tpop .dice3dskip')), '« Passer l’animation » : résultat tout de suite, face du moteur');
+    await p.evaluate(() => { setDiceDisplayMode('direct'); studioWarm(); });
+    eq(await p.evaluate(() => [studioEngine, document.querySelectorAll('iframe.game-dice-frame').length]), [null, 0], 'jets 3D coupés : le moteur est libéré');
   });
 
   await test('Dés 3D : fermer pendant le lancer ne dépense pas l’action', async p => {
