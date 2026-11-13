@@ -1052,7 +1052,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const th = tp.pop().slice(2);
     ok(tp.length >= 8 && tp.every(x => x === tp[0]) && tp[0].endsWith('x' + th), 'tuiles de Raccourcis et de Notes de même taille, hauteur d’une rangée de tuiles : ' + tp.join(' '));
     await p.evaluate(() => { cur().layout = S.keepLayout; render(); });
-    await p.evaluate(() => { const d = document.createElement('div'); d.style.height = '150px'; document.querySelector('.tblk[data-blk="notes"] .tblkc').appendChild(d); }); await p.waitForTimeout(150);
+    await p.evaluate(() => { const d = document.createElement('div'); d.style.height = '150px'; document.querySelector('.tblk[data-blk="notes"] .tblkc').appendChild(d); });
+    // attendre le nouveau placement plutôt qu'un délai fixe (trop court quand plusieurs tests tournent en même temps)
+    await p.waitForFunction(() => { const q = k => document.querySelector('.tblocks > .tblk[data-blk="' + k + '"]'); return q('pv').offsetTop - (q('notes').offsetTop + q('notes').offsetHeight) === 16; }, null, { timeout: 3000 }).catch(() => {});
     G = await g(); eq(G.pv.y - (G.notes.y + G.notes.h), 16, 'un bloc qui grandit sans nouveau rendu repousse celui du dessous (pas de chevauchement)');
     await menuClick(p, '[data-act="layoutEdit"]');
     const tg = () => p.evaluate(() => ['layoutMag', 'layoutGrav'].map(a => document.querySelector(`[data-act="${a}"]`).getAttribute('aria-pressed')));
