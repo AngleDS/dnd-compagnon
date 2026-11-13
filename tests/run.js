@@ -2564,6 +2564,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop .tcbody button.pip[data-i="2"]'); eq(await p.evaluate(() => [cur().resUsed['cls:second-souffle'], cur().turn.bonus]), [1, true], 'Détails : la pastille dépensée marque l’action bonus');
   });
 
+  await test('Studio de dés : chaque morceau remplacé existe une seule fois dans studio.html ; pendant un lancer 3D, la suite du toucher est grisée', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    eq(await p.evaluate(() => { const h = studioDecode(STUDIO_ASSETS[0]); return [...STUDIO_URLS, ...STUDIO_GAME_PATCHES.map(x => x[0]), ...STUDIO_SCREEN_PATCHES.map(x => x[0])].filter(a => h.split(a).length !== 2).map(a => a.slice(0, 50)); }), [], 'aucun morceau manquant ou en double');
+    ok(await p.evaluate(() => { try { studioPatch('abc', [['x', 'y']]); return false; } catch (e) { return /introuvable/.test(e.message); } }), 'un morceau absent fait échouer le lancer proprement');
+    await p.evaluate(() => { S.T.pop = 'eco:action'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    await p.evaluate(() => { S.T.roll3dPending = true; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .qhitnext button')].map(b => b.disabled)), [true, true, true], 'dés qui roulent : Dégâts, Critique et Raté grisés');
+    await p.evaluate(() => { S.T.roll3dPending = false; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .qhitnext button')].map(b => b.disabled)), [false, false, false], 'dés arrêtés : boutons actifs');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');

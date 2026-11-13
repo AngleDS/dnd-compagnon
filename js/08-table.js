@@ -1414,7 +1414,7 @@ function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x
       if(r==="hit"||r==="d20"){if(!ensureTableRollUse()){render();return}T.d1=String(values[0]);T.d2=T.mode!=="n"?String(values[1]):"";render();if(logD20(false))tableRollCommitted("d20")}
       else {let sum=fixed;const bd=[];for(let j=0;j<values.length;j++){let v=values[j];if(qr.re1&&v===1){const extra=await studioGameRoll([specs[j]]);if(S.cur!==charId||T.pop!=="qroll"||T.qr!==qr)return;bd.push('1→'+extra[0]);v=extra[0]}else bd.push(String(v));sum+=parts[j]*v}if(!ensureTableRollUse()){render();return}T.dmg=String(sum);T.dmgBd=(qr.crit?"Critique · ":"")+qr.dice+" ["+bd.join(", ")+"]";render();if(logDmg(false))tableRollCommitted("dmg")}
       render();
-    }catch(_){if(S.cur===charId&&S.T===T&&T.pop==="qroll"&&T.qr===qr){T.roll3dPending=false;render();setBanner("Le lancer 3D n’a pas abouti. Réessaie ou désactive les dés 3D dans Réglages.")}}finally{if(S.T===T)T.roll3dPending=false}})();return;
+    }catch(_){if(S.cur===charId&&S.T===T&&T.pop==="qroll"&&T.qr===qr){T.roll3dPending=false;render();setBanner("Le lancer 3D n’a pas abouti. Réessaie ou désactive les dés 3D dans Réglages.")}}finally{if(S.T===T){const was=T.roll3dPending;T.roll3dPending=false;if(was&&T.pop==="qroll"&&T.qr===qr)render();}}})();return;
   }
   if(virtualDiceEnabled()){ if(!ensureTableRollUse()){ render(); return; }
     if(r==="hit"||r==="d20"){ T.d1=String(rnd(20)); T.d2=T.mode!=="n"?String(rnd(20)):""; render(); if(logD20(false)) tableRollCommitted("d20"); }
@@ -1433,8 +1433,9 @@ function nat20(){ const T=S.T, a=parseInt(T.d1), b=parseInt(T.d2); if(!validDie(
 function hitChain(ch,D,i,q){ const keep=q.from==="cast"&&S.T.castDone===q.k;
   const expr=String(i.kind==="atk"?i.dmg:(keep&&i.m&&i.sp?diceAt(i.m,i.sp,S.T.castRit?i.sp.level:S.T.castLvl,D):i.dice)||""); if(!expr) return "";
   const mm=expr.match(/^(.*?)([+-]\d+)?$/), dice=mm[1], flat=mm[2]||"", crit=nat20();
-  const b=(m,l,v)=>`<button class="btn qchain${m==="c"?" qcrit"+(crit?" on":""):""}" data-act="tqgo" data-k="${esc(q.k)}" data-r="dmg" data-m="${m}" data-from="${esc(q.from||"")}"><span class="tkl">${l}</span> <b class="num">${esc(v)}</b></button>`;
-  return `<div class="row qchains qhitnext">${b("n","Dégâts",expr)}${b("c","Critique",doubleDice(dice)+flat)}<button class="btn qchain qmiss" data-act="tmiss" data-k="${esc(q.k)}">Raté</button></div>`; }
+  const wait=!!S.T.roll3dPending, dis=wait?' disabled title="Attends que les dés s’arrêtent"':""; // dés 3D en train de rouler : la suite attend le résultat
+  const b=(m,l,v)=>`<button class="btn qchain${m==="c"?" qcrit"+(crit?" on":""):""}"${dis} data-act="tqgo" data-k="${esc(q.k)}" data-r="dmg" data-m="${m}" data-from="${esc(q.from||"")}"><span class="tkl">${l}</span> <b class="num">${esc(v)}</b></button>`;
+  return `<div class="row qchains qhitnext">${b("n","Dégâts",expr)}${b("c","Critique",doubleDice(dice)+flat)}<button class="btn qchain qmiss"${dis} data-act="tmiss" data-k="${esc(q.k)}">Raté</button></div>`; }
 // Les boutons de la suite gardent le focus dans la case du d20 (pas de nouvel affichage entre l'appui et le clic) ; le jet saisi est enregistré au clic.
 function hitCommit(){ const T=S.T; if(virtualDiceEnabled()||T.pop!=="qroll"||!T.qr||T.qr.r!=="hit") return; if(!validDie(T.d1,20)||(T.mode!=="n"&&!validDie(T.d2,20))) return; if(ensureTableRollUse()&&logD20(true)) tableRollCommitted("d20"); }
 ["pointerdown","mousedown"].forEach(ev=>document.addEventListener(ev,e=>{ if(e.target.closest&&e.target.closest(".qhitnext button")) e.preventDefault(); },true));
