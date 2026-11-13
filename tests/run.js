@@ -2522,6 +2522,17 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label === S.Titems.find(i => i.kind === 'atk').name + ' — raté', cur().rollLog[0].total]), ['eco:action', true, 'raté'], 'Raté : noté dans l’historique, retour à la liste');
   });
 
+  await test('Attaque d’opportunité : armes de corps à corps en tête de la fenêtre Réaction, l’attaque consomme la réaction', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { cur().turn = {}; S.T.pop = 'eco:reaction'; render(); });
+    const g = await p.evaluate(() => { const grp = document.querySelector('.tpop .topp'); return [grp.querySelector('.label').textContent, [...grp.querySelectorAll('.trow')].map(r => r.querySelector('.tname b').textContent), [...grp.querySelectorAll('.tkb[data-r="hit"]')].every(b => b.dataset.from === 'opp')]; });
+    eq([g[0], g[1].includes('Arc court'), g[1].length > 0, g[2]], ['Attaque d’opportunité · consomme ta réaction', false, true, true], 'groupe en tête, sans arme à distance, Toucher marqué « opportunité »');
+    await p.locator('.tpop .topp .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]'); await p.fill('#t-d1', '9'); await p.click('.qhitnext .qmiss');
+    eq(await p.evaluate(() => [!!cur().turn.reaction, !!cur().turn.action]), [true, false], 'la réaction est consommée, pas l’action');
+    await p.evaluate(() => { S.T.pop = 'eco:action'; render(); }); await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]'); await p.fill('#t-d1', '9'); await p.click('.qhitnext .qmiss');
+    eq(await p.evaluate(() => !!cur().turn.action), true, 'depuis Actions : l’action, comme avant');
+  });
+
   await test('Imposition des mains : la réserve de PV dans la fenêtre de l’aptitude', async p => {
     await diceTable(p, 'paladin');
     eq(await p.evaluate(() => S.Titems.filter(i => /imposition des mains/i.test(i.name)).map(i => i.key + ':' + (i.res && i.res.id))), ['feat:paladin/imposition des mains:cls:imposition-des-mains'], 'une seule entrée, reliée à sa réserve');

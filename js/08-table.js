@@ -1166,10 +1166,10 @@ function tResults(){
   if(!r.length) return `<div class="muted" style="padding:6px 2px">Rien trouvé pour « ${esc(T.q)} ».</div>`;
   return `<div class="tlist">${r.map((i,n)=>tRow(i,n===0)).join("")}</div>`;
 }
-function tRow(i,first,inEco){
+function tRow(i,first,inEco,from){
   const kv=(l,v)=>`<span class="tk"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
   // Jet direct (Toucher, Dégâts, Soins) : la valeur est un bouton ; le reste de la ligne ouvre la fiche
-  const kb=(l,v,r)=>`<span class="tk tkb" role="button" tabindex="0" data-act="tqroll" data-k="${esc(i.key)}" data-r="${r}" aria-label="${l} : lancer (${esc(i.name)})" title="${l} : lancer"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
+  const kb=(l,v,r)=>`<span class="tk tkb" role="button" tabindex="0" data-act="tqroll" data-k="${esc(i.key)}" data-r="${r}"${from?` data-from="${from}"`:""} aria-label="${l} : lancer (${esc(i.name)})" title="${l} : lancer"><span class="tkl">${l}</span><b class="num">${esc(v)}</b></span>`;
   let right="";
   if(i.kind==="atk") right=kb("Toucher",sg(i.mod),"hit")+kb("Dégâts",i.dmg,"dmg");
   else if(i.kind==="spell"){
@@ -1203,6 +1203,9 @@ function tEco(ch,D){
     h=grp("Sorts",own.filter(i=>i.kind==="spell"))+grp("Aptitudes",own.filter(i=>i.kind!=="spell"&&i.kind!=="bagitem"))+grp("Objets",own.filter(i=>i.kind==="bagitem"));
   } else h=own.length?`<div class="tlist">${own.map(i=>tRow(i,false,true)).join("")}</div>`:"";
   if(!own.length) h=`<div class="muted" style="padding:6px 2px">Rien de propre à ton personnage.</div>`;
+  // Attaque d'opportunité (chantier 2, décision d'Angle) : tes armes de corps à corps en tête ; l'attaque lancée d'ici consomme la réaction
+  if(T.eco==="reaction"){ const melee=S.Titems.filter(i=>i.kind==="atk"&&!(i.wref&&i.wref.startsWith("srd:")&&(S.idx.weapons[i.wref.slice(4)]||{}).kind==="dist")).sort((x,y)=>(y.held===true)-(x.held===true));
+    if(melee.length) h=`<div class="tgrp topp"><div class="label">Attaque d’opportunité · consomme ta réaction</div><div class="tlist">${melee.map(i=>tRow(i,false,true,"opp")).join("")}</div></div>`+(own.length?h:""); }
   if(basic.length) h+=`<details class="tskills" style="margin-top:8px"><summary class="label">Autres actions${T.eco==="action"?"":" communes"} (${basic.length})</summary><div class="tlist">${basic.map(i=>tRow(i,false,true)).join("")}</div></details>`;
   return h;
 }
@@ -1541,7 +1544,7 @@ function tableRollCommitted(kind){
   const i=tableSelected();
   // Weapon damage never changes turn tracking, even after an explicit undo.
   if(i?.kind==="atk"&&kind!=="d20") return;
-  if(i?.kind==="atk"){ consumeTableCost(); ammoSpend(cur(),i); }
+  if(i?.kind==="atk"){ consumeTableCost(S.T.qr&&S.T.qr.from==="opp"?"reaction":undefined); ammoSpend(cur(),i); }
 }
 /* Munitions (lot T4, demande d'Angle) : une arme à munitions est reliée au consommable du même type (Flèches, Carreaux, Billes, Balles).
    Chaque jet d'attaque en retire une ; « Fin du combat » rend la moitié des munitions tirées depuis (arrondi à l'inférieur). */
