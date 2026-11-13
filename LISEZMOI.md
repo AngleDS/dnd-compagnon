@@ -11,6 +11,8 @@ L'application distribuée est un fichier HTML autonome. Elle est reconstruite de
 - `data/srd-data.json` : catalogue SRD embarqué.
 - `data/hb-cat.json` : catalogue hors SRD embarqué.
 - `build.py` : validation des sources et construction.
+- `studio/studio.html` : interface et simulation du studio de dés.
+- `vendor/` : moteurs 3D et physique et leurs licences, embarqués dans le HTML construit.
 - `tests/run.js` : tests Playwright sans données personnelles réelles.
 - `outils/` : sources et générateur du catalogue hors SRD.
 
@@ -31,6 +33,7 @@ La commande produit :
 - `dist/main.js` : JavaScript intermédiaire utilisé pour le contrôle syntaxique.
 
 Les deux fichiers HTML contiennent systématiquement les catalogues SRD et hors SRD. Ils sont vierges de tout personnage.
+Le studio de dés et ses moteurs sont eux aussi intégrés au fichier : aucune connexion n'est nécessaire pour les charger. Ses préférences restent dans le navigateur sous `registre-dice-studio-v1`, séparément des fiches de personnage. À ce stade, les jets de l'application ne sont pas reliés à l'animation du studio.
 
 ## Tester
 

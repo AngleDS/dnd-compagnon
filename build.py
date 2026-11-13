@@ -17,7 +17,7 @@ Usage :
   python3 build.py [--srd fichier.json] [--catalogue fichier.json] [--out dist]
 Produit dist/index.html (à publier), dist/dnd-compagnon.html (fichier autonome), dist/main.js (pour node --check).
 """
-import argparse, glob, json, os, subprocess, sys, tempfile
+import argparse, base64, glob, json, os, subprocess, sys, tempfile
  
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(HERE, 'data')
@@ -59,7 +59,12 @@ def main():
     mods = sorted(glob.glob(os.path.join(a.src, 'js', '*.js')))
     if not mods:
         sys.exit('Aucun module dans js/.')
-    js = ''.join(open(m, encoding='utf8').read() for m in mods)
+    studio_paths = ('studio/studio.html', 'vendor/three-0.180.0.mjs', 'vendor/cannon-es-0.20.0.mjs', 'vendor/license-three.txt', 'vendor/license-cannon-es.txt')
+    try:
+        studio_assets = [base64.b64encode(open(os.path.join(a.src, p), 'rb').read()).decode('ascii') for p in studio_paths]
+    except OSError as exc:
+        sys.exit(f'Sources du studio de dés manquantes : {exc}')
+    js = 'const STUDIO_ASSETS=' + json.dumps(studio_assets) + ';\n' + ''.join(open(m, encoding='utf8').read() for m in mods)
     if '</script' in js.lower():
         sys.exit('Un module contient « </script » : la page serait coupée.')
     srd = json_data(a.srd, 'catalogue SRD', lambda d: isinstance(d, dict) and len(d.get('spells', [])) > 300 and len(d.get('classes', [])) >= 12)

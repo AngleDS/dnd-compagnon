@@ -38,6 +38,7 @@ function renderNav(){
   document.getElementById("hmenu").innerHTML=`<button class="hmenu" data-act="menuToggle" aria-haspopup="menu" aria-expanded="${!!S.menuOpen}" ${S.view==="list"||(S.view==="sheet"&&!onMine)?'aria-current="page"':""}>Menu <span aria-hidden="true">▾</span></button>${S.menuOpen?`<div class="hdrop" role="menu" aria-label="Menu">
     ${mi('data-act="nav" data-v="list"',"Mes personnages")}
     ${mi('data-act="settingsOpen"',"Réglages")}
+    ${mi('data-act="studioOpen"',"Studio de dés")}
     ${atTable?`<div class="hdsep" role="separator"></div>${mi('data-act="layoutEdit"',"Personnaliser l’interface")}`:""}</div>`:""}`;
   document.getElementById("hchar").innerHTML="";
 }

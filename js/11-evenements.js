@@ -213,6 +213,8 @@ document.addEventListener("click",e=>{
     case "bannerClose": { const k=t.dataset.k; if(k){ try{ localStorage.setItem("registre-banner-"+k,"1"); }catch(e){} } setBanner(""); break; }
     case "menuToggle": S.menuOpen=!S.menuOpen; render(); break;
     case "settingsOpen": S.menuOpen=false; S.settings=true; S.helpReset=false; render(); renderModal(); break;
+    case "studioOpen": S.menuOpen=false; render(); studioOpen(); break;
+    case "studioClose": studioClose(); break;
     case "setClose": S.settings=false; renderModal(); break;
     case "themeSet": setTheme(t.dataset.v); render(); renderModal(); break;
     case "helpReset": { try{ Object.keys(localStorage).filter(k=>k.startsWith("registre-banner-")).forEach(k=>localStorage.removeItem(k)); }catch(e){} S.helpReset=true; renderModal(); break; }

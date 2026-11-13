@@ -509,3 +509,7 @@ Décisions d'Angle (10 nov. 2026). Chantier prévu plus tard ; rien n'est codé.
 - **Les modifications restent dans « Construction »** (inchangé).
 - Conséquence pour le lot 2 : l'en-tête d'« À la table » n'a pas à reprendre la fiche ; il est pensé uniquement pour jouer.
 
+# Studio de dés — intégration du studio seul
+
+Le studio validé est accessible depuis le Menu. Sa source est `studio/studio.html` ; Three.js 0.180.0 et cannon-es 0.20.0 et leurs licences sont dans `vendor/` et intégrés au fichier construit par `build.py`. Les réglages sont propres au navigateur (`registre-dice-studio-v1`) et incluent l'apparence individuelle des deux dés, le plateau, son mode d'affichage, la lumière, les ombres, le son et le volume. Le lancer d'essai est disponible uniquement lorsque les dés virtuels sont activés. Les jets de l'application, notamment les jets rapides, ne sont pas encore reliés au moteur 3D : c'est une étape ultérieure. Les jets rapides doivent rester immédiats et fluides, sans fenêtre supplémentaire.
+

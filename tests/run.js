@@ -1882,7 +1882,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const vis = () => p.evaluate(() => [...document.querySelectorAll('.tblocks > .tblk')].map(b => b.dataset.blk));
     ok(await p.evaluate(() => !document.querySelector('.tlayoutbar') && !document.querySelector('.ttopbar') && !document.querySelector('.hdrop')), 'plus de bouton en bas ni de bandeau ; Menu fermé');
     await p.click('.hmenu');
-    eq(await p.evaluate(() => [...document.querySelectorAll('.hdrop .hditem')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['nav:list', 'settingsOpen', 'layoutEdit'], 'Menu déroulant : personnages, Réglages, Personnaliser l’interface (dés et thème dans les Réglages)');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.hdrop .hditem')].map(b => b.dataset.act + (b.dataset.v ? ':' + b.dataset.v : ''))), ['nav:list', 'settingsOpen', 'studioOpen', 'layoutEdit'], 'Menu déroulant : personnages, Réglages, Studio de dés, Personnaliser l’interface');
     ok(await p.evaluate(() => { const d = document.querySelector('.hdrop').getBoundingClientRect(); return d.left >= 0 && d.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; }), 'Menu dans l’écran');
     await p.mouse.click(220, 45); ok(await p.evaluate(() => !document.querySelector('.hdrop')), 'clic ailleurs : Menu fermé');
     await menuClick(p, '[data-act="layoutEdit"]');
@@ -2598,6 +2598,35 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop [data-act="ccclose"]'); ok(await p.evaluate(() => S.T.pop === null), 'la croix referme le jet de concentration');
     await p.setViewportSize({ width: 1200, height: 900 }); await p.evaluate(() => { S.T.pop = 'saves'; render(); });
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); return r.bottom < innerHeight - 20 && r.width < 700; }), 'ordinateur : fenêtre centrée, pas collée en bas');
+  });
+
+  await test('Studio de dés : autonome, préférences conservées et verrou des dés respecté', async p => {
+    await p.route(/^https?:/, r => r.abort());
+    await open(p, { noClaude: true });
+    await p.click('[data-act="menuToggle"]'); await p.click('[data-act="studioOpen"]');
+    const f = p.frameLocator('.dice-studio-frame');
+    await f.locator('#die-preview canvas').waitFor({ timeout: 30000 });
+    ok(await f.locator('#launch-dice').isDisabled(), 'lancer interdit lorsque les dés virtuels sont verrouillés');
+    await f.locator('[data-view="ambiance"]').click();
+    await f.locator('#studio-tray-mode').selectOption('screen');
+    await f.locator('#studio-volume').fill('35');
+    await f.locator('[data-view="dice"]').click();
+    await f.locator('[data-color-target="studio-numbers"][aria-label="Cuivre ancien"]').click();
+    await f.locator('#studio-texture').selectOption('speckled');
+    await p.click('.dice-studio-box .wclose');
+    await p.evaluate(() => setVirtualDice(true));
+    await p.click('[data-act="menuToggle"]'); await p.click('[data-act="studioOpen"]');
+    await f.locator('#die-preview canvas').waitFor({ timeout: 30000 });
+    eq(await f.locator('#studio-numbers').inputValue(), '#c17852', 'couleur conservée');
+    eq(await f.locator('#studio-texture').inputValue(), 'speckled', 'texture conservée');
+    eq(await f.locator('#studio-tray-mode').inputValue(), 'screen', 'mode de plateau conservé');
+    eq(await f.locator('#studio-volume').inputValue(), '35', 'volume conservé');
+    ok(await f.locator('#launch-dice').isEnabled(), 'lancer disponible quand les dés virtuels sont activés');
+    await p.setViewportSize({ width: 390, height: 844 });
+    ok(await f.locator('#physics-dice-demo').evaluate(el => el.scrollWidth <= el.clientWidth), 'studio sans débordement horizontal sur téléphone');
+    await f.locator('[data-view="ambiance"]').click(); await f.locator('#launch-dice').click();
+    await f.locator('#physics-dice-demo').waitFor({ state: 'visible' });
+    ok(await f.locator('#physics-dice-demo').getAttribute('data-last-power'), 'le lancer est déclenché');
   });
 
   if (BROWSER) await BROWSER.close();

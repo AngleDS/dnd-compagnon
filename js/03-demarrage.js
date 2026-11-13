@@ -2,7 +2,7 @@
 
 /* Global browser preference; deliberately independent of character/import data. */
 const VIRTUAL_DICE_KEY="registre-virtual-dice";
-const VIRTUAL_ACTIONS=new Set(["wroll", "r20", "dmg", "death", "spendhd", "pool", "ccroll", "hdvirt", "tvroll", "tvdmg", "cast", "sdmg", "smiteRoll", "chargeRecoveryRoll"]);
+const VIRTUAL_ACTIONS=new Set(["wroll", "r20", "dmg", "death", "spendhd", "pool", "ccroll", "hdvirt", "tvroll", "tvdmg", "cast", "sdmg", "smiteRoll", "chargeRecoveryRoll", "studioRoll"]);
 let virtualDiceFallback=null;
 function virtualDiceEnabled(){
   if(virtualDiceFallback!==null) return virtualDiceFallback;
