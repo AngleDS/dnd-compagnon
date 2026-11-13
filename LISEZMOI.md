@@ -35,6 +35,7 @@ La commande produit :
 Les deux fichiers HTML contiennent systématiquement les catalogues SRD et hors SRD. Ils sont vierges de tout personnage.
 Le studio de dés et ses moteurs sont eux aussi intégrés au fichier : aucune connexion n'est nécessaire pour les charger. Ses préférences restent dans le navigateur sous `registre-dice-studio-v1`, séparément des fiches de personnage. À ce stade, les jets de l'application ne sont pas reliés à l'animation du studio.
 Dans Réglages, l’interrupteur « Dés 3D » est grisé tant que « Jets virtuels » est désactivé. Le choix est conservé sous `registre-virtual-dice-display`. Le résultat reste immédiat jusqu'à l'intégration des jets 3D.
+Pour préparer cette intégration, `rollExpr` renvoie aussi le détail ordonné des dés tirés, y compris les dés relancés et le signe de chaque terme. Un jet de d20 normal ne tire qu'un dé.
 
 ## Tester
 

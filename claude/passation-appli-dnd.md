@@ -521,3 +521,7 @@ Le cadre du studio utilise une règle de grille plus spécifique que la fenêtre
 
 Le studio n'a plus de titre ni de cadre internes : il utilise la fenêtre de l'application. Dans Réglages, « Jets virtuels » et « Dés 3D » utilisent les mêmes interrupteurs ; le second est visible mais grisé et inactif si les jets virtuels sont désactivés. Le choix 3D reste conservé à la réactivation. Les jets 3D ne sont pas encore reliés aux jets de jeu.
 
+# Préparation des jets 3D — détail des tirages
+
+`rollExpr` expose maintenant, en plus du total et du texte existants, un tableau `dice` avec `faces`, `value`, `sign` et `discarded`, dans l'ordre des tirages. Une relance d'un 1 conserve le dé écarté et le nouveau dé. `rollD20` ne tire plus inutilement un second d20 en mode normal. L'animation 3D des jets de jeu n'est pas encore raccordée : ne pas présenter cette préparation comme le point 2 terminé.
+

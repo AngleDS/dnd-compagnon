@@ -2601,6 +2601,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => { const r = document.querySelector('.tpop').getBoundingClientRect(); return r.bottom < innerHeight - 20 && r.width < 700; }), 'ordinateur : fenêtre centrée, pas collée en bas');
   });
 
+  await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
+    await open(p, { noClaude: true });
+    await p.evaluate(() => setVirtualDice(true));
+    const r = await p.evaluate(() => { const old=rnd, values=[1,4,6,2]; try { rnd=()=>values.shift(); return rollExpr('2d6-1d4+3', true); } finally { rnd=old; } });
+    eq(r.total, 11, 'total avec une relance et un dé soustrait');
+    eq(r.dice, [{faces:6,value:1,sign:1,discarded:true},{faces:6,value:4,sign:1,discarded:false},{faces:6,value:6,sign:1,discarded:false},{faces:4,value:2,sign:-1,discarded:false}], 'chaque face, signe et dé relancé sont conservés dans l’ordre');
+    const n = await p.evaluate(() => { const old=rnd; let calls=0; try { rnd=()=>{ calls++; return 10; }; rollD20('Test', 0, {mode:'n'}); return calls; } finally { rnd=old; } });
+    eq(n, 1, 'un jet normal ne tire qu’un seul d20');
+    await p.evaluate(() => setVirtualDice(false));
+    ok(await p.evaluate(() => { try { rollExpr('1d6'); return false; } catch (_) { return true; } }), 'le verrou interdit toujours le tirage');
+  });
+
   await test('Dés : choix du résultat direct ou de la 3D conservé dans les réglages', async p => {
     await open(p, { noClaude: true });
     await menuClick(p, '[data-act="settingsOpen"]');

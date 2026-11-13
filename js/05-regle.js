@@ -342,13 +342,13 @@ function rnd(f){ if(!virtualDiceEnabled()) throw new Error("Dés virtuels désac
 function rollExpr(expr,re1){
   if(!virtualDiceEnabled()) throw new Error("Dés virtuels désactivés");
   const parts=String(expr).replace(/\s+/g,"").replace(/-/g,"+-").split("+").filter(Boolean);
-  let total=0; const bd=[];
+  let total=0; const bd=[], dice=[];
   for(const p of parts){
     const m=p.match(/^(-?)(\d*)d(\d+)$/i);
-    if(m){ const n=+(m[2]||1), f=+m[3], sgn=m[1]?-1:1; const rs=[]; let tot1=0; for(let i=0;i<Math.min(n,100);i++){ let v=rnd(f); if(re1&&v===1){ const w=rnd(f); rs.push("1→"+w); v=w; } else rs.push(v); tot1+=v; } total+=sgn*tot1; bd.push(`${m[1]}${n}d${f} [${rs.join(", ")}]`); }
+    if(m){ const n=+(m[2]||1), f=+m[3], sgn=m[1]?-1:1; const rs=[]; let tot1=0; for(let i=0;i<Math.min(n,100);i++){ let v=rnd(f); if(re1&&v===1){ dice.push({faces:f,value:v,sign:sgn,discarded:true}); const w=rnd(f); rs.push("1→"+w); v=w; } else rs.push(v); dice.push({faces:f,value:v,sign:sgn,discarded:false}); tot1+=v; } total+=sgn*tot1; bd.push(`${m[1]}${n}d${f} [${rs.join(", ")}]`); }
     else if(/^-?\d+$/.test(p)){ total+=+p; bd.push(p); }
   }
-  return {total, bd:bd.join(" + ").replace(/\+ -/g,"− ")};
+  return {total, bd:bd.join(" + ").replace(/\+ -/g,"− "), dice};
 }
 function doubleDice(expr){ return String(expr).replace(/(\d*)d(\d+)/g,(m,n,f)=>(2*(+n||1))+"d"+f); }
 function addLog(e){ const en=Object.assign({t:Date.now()},e); S.log.unshift(en); S.log=S.log.slice(0,60);
@@ -359,7 +359,7 @@ function rollD20(label, m, opts={}){
   const D=S.cur?derive(cur()):null;
   const exh=D?D.exh*2:0;
   const mode=opts.mode||S.adv;
-  const a=rnd(20), b=rnd(20);
+  const a=rnd(20), b=mode==="n"?null:rnd(20);
   let used=a, other=null;
   if(mode==="a"){ used=Math.max(a,b); other=Math.min(a,b); }
   if(mode==="d"){ used=Math.min(a,b); other=Math.max(a,b); }
