@@ -48,7 +48,7 @@ function wEqItems(W){ const c=wCls(W), out=[]; let gold=0; const add=(txt,key)=>
 function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill].filter(Boolean)) skills[s]=1;
   const feats=[...new Set([wBgFeat(W), wIsHuman(W)?W.hFeat:"", wStyle1(W)?W.style:""].filter(Boolean))];
   const bgS=srd("backgrounds",W.bg);
-  return {type:"perso",name:W.name||"Nouveau personnage",player:W.player||"",level:1,classId:W.cls,species:W.sp,background:W.bg,abilities:wAbilities(W),skills,
+  return {type:"perso",name:W.name||"Nouveau personnage",player:W.player||"",level:1,classId:W.cls,species:W.sp,lineage:W.lin&&LINEAGES[String(W.sp||"").replace(/^srd:/,"")]?{id:W.lin,ab:W.linAb||"cha"}:undefined,background:W.bg,abilities:wAbilities(W),skills,
     hp:{cur:1,temp:0},attacks:[],spells:[...W.can,...W.spl].filter(Boolean).map(r=>({ref:r,prepared:true})),feats,features:[],invocations:W.inv.map((id,i)=>id?id+(W.invc[i]?"|"+W.invc[i]:""):"").filter(Boolean),
     conditions:[],gold:{po:0},tools:[bgS?bgS.tools:(hb(W.bg)||{}).tools,c&&c.tools].filter(Boolean).join(" ; "),alignment:wAlign(W),notes:W.notes||"",hpMode:"auto",bag:[],updatedAt:Date.now(),
     ...(()=>{ const its=wEqItems(W).items.map(it=>eqInfo({name:it.name})); const a=its.find(e=>e.type==="armor"), sh=its.find(e=>e.type==="shield"); return {armor:a?"srd:"+a.a.id:"none",shield:!!(sh&&c&&(c.armor||[]).includes("bouclier"))}; })()}; }
@@ -63,6 +63,11 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
   return ""; }
 function wInvN(W){ const c=wCls(W); if(!c||c.id!=="occultiste") return 0; const col=c.columns.find(x=>x.label.startsWith("Manifestations")); return col?+col.values[0]||0:0; }
 function wCards(list,cur,key){ return `<div class="wcards">${list.map(([v,t,sub])=>`<button class="wcard" aria-pressed="${v===cur}" data-act="wpick" data-k="${key}" data-v="${esc(v)}"><b>${esc(t)}</b>${sub?`<span class="muted">${esc(sub)}</span>`:""}</button>`).join("")}</div>`; }
+// Lignage ou ascendance de l'espèce (chantier 13) : choisi ici, modifiable ensuite dans l'onglet Personnage
+function wLineage(W,s){ const def=LINEAGES[s.id]; if(!def) return ""; const o=def.opts[W.lin];
+  return `<label class="field" style="margin-top:12px"><span>${esc(def.label)}</span>${wSel("lin",Object.entries(def.opts).map(([v,x])=>[v,x.name]),W.lin)}</label>`
+    +(def.ability?`<label class="field"><span>Caractéristique d'incantation</span>${wSel("linAb",LINEAGE_AB,W.linAb||"cha")}</label>`:"")
+    +(o?`<div class="muted" style="font-size:var(--fs-sm)">${esc(lineageSummary(def,o))}.</div>`:""); }
 function wSel(key,opts,cur,ph){ return `<select data-w="${key}"><option value="">${esc(ph||"— Choisir —")}</option>${opts.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`).join("")}</select>`; }
 function viewWizard(){
   const W=S.W, steps=wSteps(W); W.step=Math.min(W.step,steps.length-1); const st=steps[W.step], c=wCls(W);
@@ -88,7 +93,7 @@ function viewWizard(){
     const s=srd("species",W.sp);
     if(s) h+=`<div class="panel stack" style="margin-top:12px">${s.traits.map(t=>`<details class="feat"><summary><span class="nm">${esc(t.name)}</span></summary><div class="prose">${prose(t.text)}</div></details>`).join("")}
       ${wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(),W.hFeat)}</label>${wNhBtn(W,"don","hFeat","Nouveau don hors SRD")}`:""}
-      ${/Choisissez/i.test(s.traits.map(t=>t.text).join(" "))&&!wIsHuman(W)?`<div class="muted" style="font-size:var(--fs-sm)">Certains traits demandent un choix (lignage, ascendance…) : note-le dans la fiche après la création.</div>`:""}</div>`;
+      ${wLineage(W,s)}${/Choisissez/i.test(s.traits.map(t=>t.text).join(" "))&&!wIsHuman(W)&&!LINEAGES[s.id]?`<div class="muted" style="font-size:var(--fs-sm)">Certains traits demandent un choix (lignage, ascendance…) : note-le dans la fiche après la création.</div>`:""}</div>`;
   }
   if(st==="Caractéristiques"){
     const b=wBase(W), x=wBonus(W), fin=wAbilities(W);
@@ -227,6 +232,10 @@ function validateImportPack(pack){
   if(ch.layout!==undefined&&(!plainObject(ch.layout)||(ch.layout.order!==undefined&&(!Array.isArray(ch.layout.order)||ch.layout.order.length>50||ch.layout.order.some(x=>typeof x!=="string"))))) importFail("La disposition d'« À la table » est invalide.");
   if(ch.layout?.tiles!==undefined&&(!plainObject(ch.layout.tiles)||Object.values(ch.layout.tiles).some(v=>!Array.isArray(v)||v.length>16||v.some(x=>typeof x!=="string")))) importFail("Les tuiles d'« À la table » sont invalides.");
   if(ch.companion!==undefined&&(!plainObject(ch.companion)||(ch.companion.name!==undefined&&(typeof ch.companion.name!=="string"||ch.companion.name.length>60))||(ch.companion.ac!==undefined&&!Number.isFinite(ch.companion.ac))||(ch.companion.hp!==undefined&&(!plainObject(ch.companion.hp)||!Number.isFinite(ch.companion.hp.cur)||!Number.isFinite(ch.companion.hp.max))))) importFail("Le compagnon est invalide.");
+  // Lignage (chantier 13), défenses et effets en cours (chantier 5)
+  if(ch.lineage!==undefined&&(!plainObject(ch.lineage)||typeof ch.lineage.id!=="string"||ch.lineage.id.length>30||(ch.lineage.ab!==undefined&&!["int","sag","cha"].includes(ch.lineage.ab)))) importFail("Le lignage ou l'ascendance est invalide.");
+  if(ch.defenses!==undefined&&(!plainObject(ch.defenses)||Object.entries(ch.defenses).some(([k,v])=>!["res","imm","vul","cond","off"].includes(k)||!Array.isArray(v)||v.length>40||v.some(x=>typeof x!=="string"||x.length>40)))) importFail("Les défenses sont invalides.");
+  if(ch.effects!==undefined&&(!Array.isArray(ch.effects)||ch.effects.length>50||ch.effects.some(e=>!plainObject(e)||typeof e.name!=="string"||!e.name||e.name.length>80||["dur","src","note","id"].some(k=>e[k]!==undefined&&typeof e[k]!=="string")))) importFail("Les effets en cours sont invalides.");
   if(ch.speeds!==undefined&&(!plainObject(ch.speeds)||Object.entries(ch.speeds).some(([k,v])=>!["escalade","nage","vol","fouissement"].includes(k)||typeof v!=="number"||!(v>=0&&v<=60)))) importFail("Les autres déplacements (escalade, nage…) sont invalides.");
   if(ch.layout?.width!==undefined&&(!plainObject(ch.layout.width)||Object.keys(ch.layout.width).length>40||Object.values(ch.layout.width).some(v=>![1,2,3,4].includes(v)))) importFail("Les largeurs des blocs d'« À la table » sont invalides.");
   if(ch.layout?.titles!==undefined&&(!plainObject(ch.layout.titles)||Object.keys(ch.layout.titles).length>40||Object.values(ch.layout.titles).some(v=>typeof v!=="string"||v.length>60))) importFail("Les titres des blocs d'« À la table » sont invalides.");

@@ -118,7 +118,7 @@ document.addEventListener("click",e=>{
     case "wizard": S.W=wNew(); S.view="wizard"; window.scrollTo(0,0); render(); break;
     case "wcancel": { const made=(S.W&&S.W.catMade)||[]; S.W=null; for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); break; }
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
-    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; if(k==="cls"&&W.cls!==v){ W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; }
+    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; if(k==="cls"&&W.cls!==v){ W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; }
       W[k]=v; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } render(); break; }
@@ -429,6 +429,7 @@ document.addEventListener("change",e=>{
   if(/^gold\./.test(t.dataset.bind)){ v=Math.max(0,Math.min(1e9,Math.floor(+v||0))); t.value=v; }
   setPath(ch,t.dataset.bind,v);
   if(t.dataset.bind==="classId") ch.subclass="";
+  if(t.dataset.bind==="species") delete ch.lineage; // nouvelle espèce : lignage à rechoisir (chantier 13)
   touch(S.cur); if(t.tagName==="SELECT"||t.type==="checkbox") render(); else softRender();
 });
 document.addEventListener("toggle",e=>{ const d=e.target; if(d&&d.dataset&&S.T){ if(d.dataset.actToggle==="skills") S.T.skillsOpen=d.open; if(d.dataset.actToggle==="saves") S.T.savesOpen=d.open; if(d.dataset.actToggle==="card") S.T.cardOpen=d.open; if(d.dataset.actToggle==="notes") S.T.notesOpen=d.open; if(d.dataset.actToggle==="cond") S.T.condOpen=d.open; if(d.dataset.actToggle==="inv") S.T.invOpen=d.open; } },true);

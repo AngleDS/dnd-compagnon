@@ -2943,6 +2943,42 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => S.T.pop), null, 'Toucher puis Dégâts : retour direct à « À la table »');
   });
 
+  await test('Lignages : elfe, gnome, tieffelin, drakéide et goliath (sorts, lancers gratuits, vision, vitesse, résistances, souffle), fiche, assistant, import', async p => {
+    await open(p);
+    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:elfe' });
+    const calc = (lin, L) => p.evaluate(([lin, L]) => { const ch = cur(); ch.lineage = lin; ch.level = L; const D = derive(ch);
+      return { always: Object.keys(D.always).sort(), free: D.res.filter(r => r.freeSpell).map(r => [r.id, r.max]), ab: D.cast && D.cast.ability, speed: D.speed, noir: (chSenses(ch, D).find(x => x.k === 'noir') || {}).m }; }, [lin, L]);
+    let r = await calc({ id: 'drow', ab: 'sag' }, 5);
+    eq(r.always, ['srd:lueurs-feeriques', 'srd:lumieres-dansantes', 'srd:tenebres'], 'drow niv. 5 : sort mineur et sorts de niveau 3 et 5 toujours préparés');
+    eq([r.free, r.ab, r.noir], [[['free:srd:lueurs-feeriques', 1], ['free:srd:tenebres', 1]], 'sag', 36], 'un lancer gratuit par repos long, Sagesse (guerrier sans sorts), vision 36 m');
+    r = await calc({ id: 'drow', ab: 'int' }, 2); eq([r.always, r.free], [['srd:lumieres-dansantes'], []], 'niv. 2 : seulement le sort mineur');
+    const base = (await calc(undefined, 1)).speed; r = await calc({ id: 'sylvestre' }, 1); eq(r.speed, base + 1.5, 'elfe sylvestre : +1,5 m');
+    await p.evaluate(() => { cur().species = 'srd:gnome'; }); r = await calc({ id: 'forets', ab: 'int' }, 1);
+    eq([r.always, r.free], [['srd:communication-avec-les-animaux', 'srd:illusion-mineure'], [['free:srd:communication-avec-les-animaux', 2]]], 'gnome des forêts : bonus de maîtrise fois sans emplacement');
+    await p.evaluate(() => { cur().species = 'srd:tieffelin'; }); r = await calc({ id: 'infernal', ab: 'cha' }, 3);
+    eq(r.always, ['srd:represailles-infernales', 'srd:thaumaturgie', 'srd:trait-de-feu'], 'tieffelin infernal : thaumaturgie, trait de feu, représailles infernales');
+    eq(await p.evaluate(() => defenses(cur()).res.map(x => x.v + '·' + x.src)), ['Feu·espèce'], 'résistance au feu de l’héritage, marquée espèce');
+    await p.evaluate(() => { const ch = cur(); ch.species = 'srd:drakeide'; ch.lineage = { id: 'rouge' }; ch.level = 1; S.rv = null; renderModal(); S.tab = 'table'; render(); });
+    eq(await p.evaluate(() => [defSummary(cur()), dmgTyped(cur(), 10, 'Feu').n]), ['feu', 5], 'drakéide rouge : résistance, dégâts de feu divisés par 2');
+    await p.evaluate(() => { S.T.pop = 'info:souffle'; render(); }); ok(/1d10 de feu/.test(await p.innerText('.tpop')), 'Souffle : dégâts de feu indiqués');
+    await p.evaluate(() => { const ch = cur(); ch.species = 'srd:goliath'; ch.lineage = { id: 'feu' }; });
+    eq(await p.evaluate(() => derive(cur()).res.find(r => r.id === 'esp:ascendance gigante')?.name), 'Ascendance gigante · Brûlure ignée', 'goliath : bénéfice choisi dans les ressources');
+    // fiche : sélecteur du lignage, remis à zéro quand l'espèce change
+    await p.evaluate(() => { const ch = cur(); ch.species = 'srd:elfe'; ch.lineage = { id: 'haut-elfe', ab: 'int' }; S.tab = 'build'; S.unlockEdit = true; render(); });
+    ok(await p.evaluate(() => document.querySelector('#b-lineage').value === 'haut-elfe' && document.querySelector('#b-lineage-ab').value === 'int' && /Détection de la magie/.test(document.querySelector('.lineage-sum').textContent)), 'onglet Personnage : lignage, caractéristique et résumé');
+    await p.selectOption('#b-lineage', 'drow'); eq(await p.evaluate(() => cur().lineage), { id: 'drow', ab: 'int' }, 'changement enregistré');
+    await p.selectOption('#b-species', 'srd:nain'); eq(await p.evaluate(() => [cur().lineage, !!document.querySelector('#b-lineage')]), [undefined, false], 'nouvelle espèce : lignage effacé, sélecteur absent (nain)');
+    // assistant : choix à la création
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { cls: 'guerrier', sp: 'srd:tieffelin', lin: 'chtonien', linAb: 'int' }); S.view = 'wizard'; render(); });
+    eq(await p.evaluate(() => wDoc(S.W).lineage), { id: 'chtonien', ab: 'int' }, 'assistant : héritage gardé dans la fiche créée');
+    // import : lignage invalide refusé
+    const imp = await p.evaluate(() => { const perso = { type: 'perso', name: 'X', level: 1, abilities: { for: 8, dex: 8, con: 8, int: 8, sag: 8, cha: 8 } }, out = [];
+      for (const lineage of [{ id: 'drow', ab: 'int' }, { id: 'drow', ab: 'for' }, 'drow']) { try { importPack({ registre: 1, perso: Object.assign({}, perso, { lineage }) }); out.push('ok'); } catch (e) { out.push(e.message); } }
+      try { importPack({ registre: 1, perso: Object.assign({}, perso, { effects: [{ name: '' }] }) }); out.push('ok'); } catch (e) { out.push(e.message); }
+      return out; });
+    eq(imp, ['ok', 'import_invalid', 'import_invalid', 'import_invalid'], 'import : lignage valide accepté, invalide refusé ; effet sans nom refusé');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));

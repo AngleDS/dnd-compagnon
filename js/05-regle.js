@@ -225,6 +225,7 @@ function derive(ch){
   const armCat=arm.startsWith("srd:")?S.idx.armors[arm.slice(4)]?.category:null;
   if(cls&&!cls.hb&&cls.id==="moine"&&!armCat&&!ch.shield){ const v=parseFloat(String(colVal(cls,"Déplacement sans armure",L)||"").replace(",",".").replace(/[^\d.]/g,"")); if(v) spParts.push(["Déplacement sans armure",v]); }
   if(cls&&!cls.hb&&cls.id==="barbare"&&L>=5&&armCat!=="lourde") spParts.push(["Déplacement rapide",3]);
+  { const lo=lineageOf(ch); if(lo&&lo.opt.speed) spParts.push([lo.opt.name,lo.opt.speed]); } // Elfe sylvestre (chantier 13)
   if(+ch.speedBonus) spParts.push(["Bonus divers (Feuille)",+ch.speedBonus]);
   if(arm.startsWith("srd:")){ const a=S.idx.armors[arm.slice(4)]; if(a&&a.strength&&(+ch.abilities?.for||10)<a.strength) spParts.push([a.name+" sans la Force requise",-3]); }
   D.speed=Math.max(0,spParts.reduce((t,x)=>t+x[1],0)); D.speedParts=spParts;
@@ -239,8 +240,9 @@ function derive(ch){
   // casting
   const cast=cls&&cls.casting;
   D.cast=null;
-  if(cast||effs.some(e=>e.t==="sorts")){
-    const ab=cast?cast.ability:"cha";
+  const linSp=lineageSpells(ch,L); // sorts du lignage (chantier 13)
+  if(cast||effs.some(e=>e.t==="sorts")||linSp.length){
+    const ab=cast?cast.ability:(lineageOf(ch)?.ab||"cha");
     D.cast={ability:ab, dc:8+pb+mods[ab]+bonus("dd"), atk:pb+mods[ab]+bonus("attaque_sort"), type:cast?cast.type:null};
     if(cast){
       D.cast.cantrips=cast.cantrips[L-1]; D.cast.prepared=cast.prepared[L-1];
@@ -255,6 +257,7 @@ function derive(ch){
     if(sc){ for(const f of sc.features) for(const g of (f.grantedSpells||[])) if(g.level<=L) for(const n of g.spells){ const s=findSpellByName(n); if(s) D.always[s.ref]=sc.name; } }
   }
   for(const e of effs) if(e.t==="sorts"){ for(const n of String(e.noms||"").split(",")){ const s=findSpellByName(n); if(s) D.always[s.ref]=e._src; } }
+  for(const s of linSp) if(!D.always[s.ref]) D.always[s.ref]=s.src;
   // invocations auto
   D.inv=new Set(inv.map(invId)); D.invPick=inv.map(x=>({id:invId(x),c:invCh(x)}));
   // arcanum mystique
@@ -281,7 +284,9 @@ function derive(ch){
   // Ressources d'espèce et de dons (lot T4) : traits du SRD 5.2.1 à usages limités ; [nom, max, recharge, niveau minimal]
   const spId=String(ch.species||"").startsWith("srd:")?ch.species.slice(4):"", spName=(S.idx.species[spId]||{}).name||"";
   for(const [n,mx,rc,lv] of ({drakeide:[["Souffle",pb,"long",1],["Vol draconique",1,"long",5]],nain:[["Connaissance de la pierre",pb,"long",1]],goliath:[["Ascendance gigante",pb,"long",1],["Forme de géant",1,"long",5]],orc:[["Poussée d’adrénaline",pb,"court",1],["Acharnement",1,"long",1]]}[spId]||[]))
-    if(L>=lv) D.res.push({id:"esp:"+norm(n),name:n,max:mx,recharge:rc,origin:spName});
+    if(L>=lv){ const lo=n==="Ascendance gigante"&&lineageOf(ch); D.res.push({id:"esp:"+norm(n),name:lo?n+" · "+lo.opt.name:n,max:mx,recharge:rc,origin:spName,note:lo?lo.opt.note:undefined}); }
+  // Lignage (chantier 13) : sorts de niveau 3 et 5 une fois par repos long sans emplacement ; Gnome des forêts : bonus de maîtrise fois
+  for(const s of linSp) if(s.free&&!D.res.some(r=>r.id==="free:"+s.ref)){ const sp=spellOf(s.ref); if(sp) D.res.push({id:"free:"+s.ref,name:sp.name+" sans emplacement",max:s.free==="pb"?pb:1,recharge:"long",origin:s.src,freeSpell:s.ref}); }
   for(const s of sources) if(s.kind==="don"){ const f={"srd:initie-a-la-magie":["Initié à la magie (sort de niveau 1)",1,"long"],"srd:faveur-du-destin":["Faveur du destin",1,"court"]}[s.ref];
     if(f&&!D.res.some(r=>r.id==="don:"+norm(f[0]))) D.res.push({id:"don:"+norm(f[0]),name:f[0],max:f[1],recharge:f[2],origin:s.name}); }
   if(cls&&cls.id==="occultiste"&&L>=9) D.res.push({id:"cls:communication-protecteur",name:"Communication avec le protecteur",max:1,recharge:"long",origin:cls.name});

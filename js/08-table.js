@@ -540,7 +540,7 @@ function repTileMap(ch,D,size){
     malice:()=>want("malice")?t(8+D.pb+D.mods.dex,"DD Frappe malicieuse","8 + ton modificateur de Dextérité + ta maîtrise"):"",
     crit:()=>want("crit")?t(D.L>=15?"18-20":"19-20","Critique","Résultats du d20 qui donnent un coup critique"):"",
     aura:()=>want("aura")?t(sg(Math.max(1,D.mods.cha)),"Aura de protection",`Bonus aux jets de sauvegarde pour toi et tes alliés à ${D.L>=18?9:3} m`):"",
-    souffle:()=>want("souffle")?t(8+D.pb+D.mods.con,"DD du souffle",`Souffle : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10, sauvegarde de Dextérité`):"",
+    souffle:()=>want("souffle")?t(8+D.pb+D.mods.con,"DD du souffle",`Souffle : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10${lineageOf(ch)?.opt.breath?" de "+lineageOf(ch).opt.breath.toLowerCase():""}, sauvegarde de Dextérité`):"",
     comp:()=>{ const c=ch.companion; return `<button class="rtile" data-act="tpop" data-v="comp" title="Compagnon : PV et CA"><b class="num">${c?`${+c.hp?.cur||0}/${+c.hp?.max||0}`:"—"}</b><span class="label">${c&&c.name?esc(c.name):"Compagnon"}</span></button>`; },
     or:()=>t(orTotal(ch)+" po","Or","Valeur totale de ta bourse, en pièces d'or"),
     // Lot T5 (12 nov. 2026) : tuiles calculées depuis la fiche, sans saisie
@@ -733,6 +733,7 @@ function chSenses(ch,D){ const best={}, look=(txt,src)=>{ for(const k in SENSE_R
   if(D.cls){ for(const f of D.cls.features) if(f.level<=D.L&&/Vision|vibrations/i.test(f.text||"")) look(f.text,D.cls.name+" · "+f.name);
     const sc=ch.subclass&&ch.subclass.startsWith("srd:")&&D.cls.subclasses?.find(s=>"srd:"+s.id===ch.subclass); if(sc) for(const f of sc.features) if(f.level<=D.L&&/Vision|vibrations/i.test(f.text||"")) look(f.text,sc.name+" · "+f.name); }
   for(const s of D.sources||[]) look(s.text,(s.origin?s.origin+" · ":"")+s.name);
+  { const lo=lineageOf(ch); if(lo&&lo.opt.vision) look("Vision dans le noir "+lo.opt.vision+" m",lo.def.label+" · "+lo.opt.name); } // Drow : 36 m (chantier 13)
   return ["noir","aveugle","vibr","lucide"].filter(k=>best[k]).map(k=>best[k]); }
 /* Bottes d'arme : nombre de types d'arme (colonne de la classe, sinon 2 dès qu'elle a l'aptitude). */
 function bottesN(D){ const cls=D.cls; if(!cls||!cls.features.some(f=>f.level<=D.L&&/^Bottes d.arme$/.test(f.name))) return 0; const v=colVal(cls,"Bottes d’arme",D.L); return +v||2; }
@@ -789,7 +790,7 @@ function infoData(ch,D,id){
       return {title:"Charge",v:chCarry(ch,D)+" kg",desc:"Le poids que tu peux porter sans être gêné. Tu peux pousser, tirer ou soulever le double ; si tu dépasses ta charge en le faisant, ta Vitesse tombe à 1,50 m.",rows:[["Force × 7,5 kg"+(m!==1?" × "+mFmt(m)+" (taille)":""),chCarry(ch,D)+" kg"],["Pousser, tirer, soulever",mFmt(f*15*m)+" kg"]],noTotal:true,note:"L'appli ne connaît pas le poids de tout ton équipement : vérifie avec le MJ si tu portes beaucoup."}; },
     harmo:()=>{ const att=(ch.attuned||[]).map(id=>(ch.bag||[]).find(b=>b.id===id)).filter(Boolean);
       return {title:"Harmonisation",v:`${att.length}/3`,desc:"Certains objets magiques ne fonctionnent que si tu crées un lien avec eux pendant un repos court. Tu ne peux être lié qu'à 3 objets à la fois.",rows:att.length?att.map(b=>[b.name,"lié"]):[["Aucun objet harmonisé","—"]],noTotal:true,note:"Tu gères l'harmonisation depuis la fenêtre Équipement."}; },
-    souffle:()=>({title:"DD du souffle",v:8+D.pb+D.mods.con,desc:"Ton Souffle remplace une de tes attaques : chaque créature dans la zone fait une sauvegarde de Dextérité contre ce DD.",rows:dcRows("con"),note:`Dégâts : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10, la moitié en cas de réussite.`})
+    souffle:()=>({title:"DD du souffle",v:8+D.pb+D.mods.con,desc:"Ton Souffle remplace une de tes attaques : chaque créature dans la zone fait une sauvegarde de Dextérité contre ce DD.",rows:dcRows("con"),note:`Dégâts : ${D.L>=17?4:D.L>=11?3:D.L>=5?2:1}d10${lineageOf(ch)?.opt.breath?" de "+lineageOf(ch).opt.breath.toLowerCase():""}, la moitié en cas de réussite.`})
   };
   return I[id]?I[id]():null;
 }

@@ -416,6 +416,7 @@ function tabBuild(ch,D){
       <label class="field"><span>Niveau</span><input id="b-level" type="number" min="1" max="20" data-bind="level" data-num value="${esc(ch.level||1)}"></label>
       <label class="field"><span>Sous-classe ${cls?`(niveau ${cls.subclassLevel})`:""}</span>${sel("b-sub","subclass",subOpts,ch.subclass)}</label>
       <label class="field"><span>Espèce</span>${sel("b-species","species",spOpts,ch.species)}</label>
+      ${lineageFields(ch)}
       <label class="field"><span>Historique</span>${sel("b-bg","background",bgOpts,ch.background)}</label>
     </div>
     ${cls?`<div class="muted" style="font-size:var(--fs-sm)">${esc(cls.name)} : dé de vie d${cls.hitDie}, sauvegardes ${cls.saves.map(a=>ABN[a]).join(" et ")}, ${cls.skillChoices.count} compétences parmi ${cls.skillChoices.from.length===18?"toutes":cls.skillChoices.from.map(id=>S.C.skills.find(s=>s.id===id).name).join(", ")}. Armes : ${esc(cls.weapons)}.</div>`:""}
