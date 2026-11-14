@@ -606,4 +606,4 @@ body.dice3d-busy [data-virtual]{opacity:.5;pointer-events:none}
 .hpbox .hpdef{justify-self:start}
 .dice-studio-box .studio-error{margin:8px 12px;padding:10px 12px;border:1px solid var(--blood);border-radius:var(--r);font-size:var(--fs-sm)}
 .game-dice-overlay{position:fixed;inset:0;width:100vw!important;height:100dvh!important;z-index:1000;pointer-events:none;background:transparent}
-body.game-dice-screen .tpopback{background:transparent;backdrop-filter:none}
+/* Les dés roulent au-dessus du même fond flouté que le résultat (demande d'Angle, 14 nov. 2026) */

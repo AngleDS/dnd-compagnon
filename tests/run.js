@@ -2663,7 +2663,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.T.qr.k,S.T.d1]),['init',''],'initiative ouverte sans résultat avant stabilisation');
     await p.locator('.game-dice-overlay').waitFor({timeout:30000});
     ok(await p.locator('.game-dice-overlay').isVisible(),'les dés sont dessinés sur la page actuelle');
-    eq(await p.evaluate(() => getComputedStyle(document.querySelector('.tpopback')).backdropFilter),'none','page non floutée pendant le lancer sans plateau');
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector('.tpopback')).backdropFilter !== 'none'),'pendant le lancer, même fond flouté que le résultat');
     eq(await p.frameLocator('.game-dice-frame').locator('#physics-dice-demo').getAttribute('data-external-power'),'1.9','lancer plus énergique sans plateau');
     eq(await p.frameLocator('.game-dice-frame').locator('.stage').evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0)','surface transparente au-dessus de la page');
     await p.waitForFunction(() => S.T && !S.T.roll3dPending && S.T.d1, null, {timeout:35000});
