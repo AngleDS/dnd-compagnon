@@ -20,8 +20,7 @@ document.addEventListener("click",e=>{
   if(dice3dBusy&&VIRTUAL_ACTIONS.has(a)) return; // des dés 3D roulent déjà
   if(VIRTUAL_ACTIONS.has(a)&&!virtualDiceEnabled()){ e.preventDefault(); return; }
   if(a==="closeModal"){ if(e.target===t||t.tagName==="BUTTON"){ S.pending=null; renderModal(); render(); } return; }
-  if(a==="wclose"){ if(S.W&&(e.target===t||t.tagName==="BUTTON")){ S.W.open=null; render(); } return; }
-  if(a==="newCancel"){ if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } return; }
+
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;
   if(a!=="ask"&&S.confirm&&!["del","hbDel","rest"].includes(a)) S.confirm=null;
   switch(a){
@@ -118,6 +117,8 @@ document.addEventListener("click",e=>{
     case "setMain": setMain(t.dataset.id); render(); break;
     case "openTable": S.unlockEdit=false; S.cur=t.dataset.id; S.view="sheet"; S.tab="table"; if(!mainId()) setMain(t.dataset.id); render(); window.scrollTo(0,0); break;
     case "new": S.newName={}; renderModal(); break;
+    case "newCancel": if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } break; // clic à côté de la fenêtre ou sur sa croix, pas dedans
+    case "wclose": if(S.W&&(e.target===t||t.tagName==="BUTTON")){ S.W.open=null; render(); } break;
     case "wizard": if(!S.W) S.W=wNew(); S.W.open=null; S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
     case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;

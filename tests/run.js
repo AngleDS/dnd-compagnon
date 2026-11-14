@@ -175,7 +175,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="new"]'); await p.waitForFunction(() => !!document.getElementById('nn-name'));
     await p.click('#modal button[type="submit"]');
     eq(await p.evaluate(() => [document.getElementById('nn-err').textContent, Object.values(S.docs).filter(d => d.type === 'perso').length]), ['Donne un nom à ton personnage.', 0], 'refus sans nom');
-    await p.fill('#nn-name', '  Vide  '); await p.click('#modal button[type="submit"]');
+    await p.keyboard.press('Escape'); ok(await p.evaluate(() => !S.newName && !document.getElementById('nn-name')), 'Échap ferme la fenêtre du nom');
+    await p.click('[data-act="new"]'); await p.fill('#nn-name', '  Vide  '); await p.click('#modal button[type="submit"]');
     eq(await p.evaluate(() => [cur().name, S.tab, !!document.getElementById('nn-name')]), ['Vide', 'build', false], 'fiche vide nommée');
     // Assistant : tableau standard
     await p.evaluate(() => { const W = S.W = wNew(); W.cls = 'guerrier'; W.bg = 'srd:soldat'; W.sp = 'srd:nain'; const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1];
@@ -258,6 +259,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => document.querySelector('.wline[data-v="Classe"] .val').textContent), 'Magicien', 'valeur de la ligne');
     ok(await p.evaluate(() => /PV/.test(document.querySelector('.wprev').textContent)), 'aperçu chiffré dès la classe');
     await p.click('.wline[data-v="Détails"]'); await p.mouse.click(4, 300); ok(await p.evaluate(() => !S.W.open), 'clic à côté : fenêtre fermée');
+    await p.click('.wline[data-v="Détails"]'); await p.keyboard.press('Escape'); ok(await p.evaluate(() => !S.W.open && S.view === 'wizard'), 'Échap : fenêtre fermée, création gardée');
     // Largeur iPhone : rien ne dépasse, lignes assez hautes pour le doigt, fenêtre dans l'écran, la liste garde sa position
     await p.setViewportSize({ width: 390, height: 844 });
     eq(await p.evaluate(() => [document.documentElement.scrollWidth <= 390, [...document.querySelectorAll('.wline')].every(b => b.getBoundingClientRect().height >= 44 && b.getBoundingClientRect().right <= 390)]), [true, true], 'page à 390 px');
@@ -864,7 +866,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       return [count>0,shown>0];
     });
     eq(r,[true,true],'cartes');
-    await p.evaluate(() => { setVirtualDice(false); S.view='wizard'; S.W=wNew(); S.W.cls='guerrier'; S.W.step=3; S.W.method='dice'; render(); });
+    await p.evaluate(() => { setVirtualDice(false); S.view='wizard'; S.W=wNew(); S.W.cls='guerrier'; S.W.open='Caractéristiques'; S.W.method='dice'; render(); });
     // All random-producing controls, including wizard and legacy sheet, carry the marker.
     const unmarked=await p.evaluate(() => [...document.querySelectorAll('[data-act]')].filter(b=>VIRTUAL_ACTIONS.has(b.dataset.act)&&!b.hasAttribute('data-virtual')).map(b=>b.dataset.act));
     eq(unmarked,[],'contrôles protégés');
@@ -3007,7 +3009,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.fill('#freeExpr', '2d6+4'); await p.click('[data-form="free"] [name="virtual"]'); eq(await last(), '6,6', 'formule libre : deux d6');
     await release(); eq(await p.evaluate(() => S.log[0].total), 8, 'formule libre : faces du moteur + bonus');
     // création : 6 jets de 4d6
-    await p.evaluate(() => { S.view = 'wizard'; S.W = wNew(); S.W.cls = 'guerrier'; S.W.step = 3; S.W.method = 'dice'; render(); });
+    await p.evaluate(() => { S.view = 'wizard'; S.W = wNew(); S.W.cls = 'guerrier'; S.W.open = 'Caractéristiques'; S.W.method = 'dice'; render(); });
     await p.click('[data-act="wroll"]'); eq([await last(), await p.evaluate(() => S.W.rolled)], [Array(24).fill(6).join(','), false], 'création : 24 d6, rien avant l’arrêt');
     await release(); eq(await p.evaluate(() => S.W.dice), [6, 6, 6, 6, 6, 6], 'création : faces du moteur (3 meilleurs de 4)');
     // relance des 1 (Guérisseur) : la relance roule aussi en 3D
