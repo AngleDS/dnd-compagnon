@@ -370,6 +370,8 @@ Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d
 - 17. Assistant de création (refonte, choix des traits d'espèce) — Claude (**Fable**). Après 13 et 14.
 - 16. Vérification des classes une à une (Garrant, Baudoin, Mara, Yarjerit ; `claude/plan-tests-classes.md`) — Claude (Opus). Après 13, 14, 17.
 - 15. Multiclasse — Claude (**Fable**). Le moins prioritaire, après 16.
+- 34. **Hors SRD : lignages et bottes** (demande d'Angle, 14 nov. 2026 ; pas urgent, même rang que 15) — Claude (Opus). Les choix de lignage ne marchent que pour les espèces du SRD : une espèce du catalogue hors SRD (Aasimar, Ravenloft, Lorwyn, Eberron ; 17 dans `data/hb-cat.json`) qui demande un choix n'a pas de sélecteur. Vérifier d'abord, dans les sources, lesquelles en demandent vraiment un (pistes : Shifter, elfe de Lorwyn-Shadowmoor) ; puis permettre à une espèce du catalogue ou maison de porter ses lignages (mécanique, résumé avec ses propres mots, lien), et à une arme maison de porter sa botte (seules les armes du SRD en ont aujourd'hui).
+- 35. **Menu de création d'objets, sorts, etc.** (signalé par Angle, 14 nov. 2026 ; pour plus tard) — Claude (Opus). Impossible, par exemple, de créer une armure : revoir tout ce menu (types proposés, champs selon le type, enregistrement) ; d'abord un inventaire de ce qu'on peut créer aujourd'hui et de ce qui bloque, à valider avec Angle avant de coder.
 
 **Phase 4 — la fiche**
 - 18. Onglet « Feuille » : toute la fiche en lecture seule, valeurs en temps réel (section 16) — Claude (Opus). Mieux après 13.
