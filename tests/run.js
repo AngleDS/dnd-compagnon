@@ -246,6 +246,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const foot = () => p.evaluate(() => { const b = document.querySelector('[data-act="wcreate"]'); return [document.querySelector('#wfoot .wleft').textContent, b.disabled, b.textContent]; });
     eq((await lines()).map(l => l[0]), ['Classe', 'Historique', 'Espèce', 'Caractéristiques', 'Compétences', 'Langues', 'Équipement', 'Détails'], 'lignes de la page');
     eq((await lines()).filter(l => l[1]).map(l => l[0]), ['Compétences', 'Équipement'], 'lignes en attente de la classe');
+    eq(await p.evaluate(() => [document.querySelectorAll('.wline .warntxt').length, [...document.querySelectorAll('.wline:not(:disabled) small')].map(s => s.textContent)]), [0, ['À choisir', 'À choisir', 'À choisir', 'À choisir', 'À choisir']], 'au départ : aucun rouge, « À choisir » partout');
     eq(await foot(), ['Reste à faire (8) nom, classe, historique, espèce, caractéristiques, compétences, langues, équipement', true, 'Donne un nom à ton personnage.'], 'compteur et bouton d’état au départ');
     // Une ligne ouvre sa fenêtre ; un clic dans la fenêtre ne la ferme pas, un clic à côté oui
     await p.click('.wline[data-v="Classe"]');
@@ -258,6 +259,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const l2 = await lines(); eq([l2.map(l => l[0]).includes('Sorts'), l2.find(l => l[0] === 'Classe')[2], l2.filter(l => l[1]).length], [true, '✓', 0], 'ligne Sorts apparue, classe cochée, plus rien en attente');
     eq(await p.evaluate(() => document.querySelector('.wline[data-v="Classe"] .val').textContent), 'Magicien', 'valeur de la ligne');
     ok(await p.evaluate(() => /PV/.test(document.querySelector('.wprev').textContent)), 'aperçu chiffré dès la classe');
+    await p.click('.wline[data-v="Historique"]'); await p.click('#modal .wfoot [data-act="wclose"]');
+    eq(await p.evaluate(() => [...document.querySelectorAll('.wline .warntxt')].map(s => s.closest('.wline').dataset.v + ' : ' + s.textContent)), ['Historique : Choisis un historique.'], 'ligne ouverte puis laissée vide : elle seule passe en rouge');
     await p.click('.wline[data-v="Détails"]'); await p.mouse.click(4, 300); ok(await p.evaluate(() => !S.W.open), 'clic à côté : fenêtre fermée');
     await p.click('.wline[data-v="Détails"]'); await p.keyboard.press('Escape'); ok(await p.evaluate(() => !S.W.open && S.view === 'wizard'), 'Échap : fenêtre fermée, création gardée');
     // Largeur iPhone : rien ne dépasse, lignes assez hautes pour le doigt, fenêtre dans l'écran, la liste garde sa position
@@ -380,7 +383,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Création : langues (commun acquis, deux au choix, argot des voleurs et druidique)', async p => {
     await open(p);
     await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Langues test', cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; render(); });
-    eq(await p.evaluate(() => [wNeeds(S.W).map(n => n.msg), document.querySelector('.wline[data-v="Langues"] .val').textContent]), [['Choisis 2 langues.'], 'CommunChoisis 2 langues.'], 'seules les langues manquent');
+    eq(await p.evaluate(() => [wNeeds(S.W).map(n => n.msg), document.querySelector('.wline[data-v="Langues"] .val').textContent]), [['Choisis 2 langues.'], 'CommunÀ choisir'], 'seules les langues manquent, sans rouge tant que la ligne n’a pas été ouverte');
     await p.click('.wline[data-v="Langues"]');
     eq(await p.evaluate(() => [document.querySelectorAll('#modal .wlangs .chip').length, /Tu parles déjà : Commun\./.test(document.querySelector('#modal .wbody').textContent)]), [9, true], 'neuf langues standard, commun acquis');
     for (const l of ['Elfique', 'Nain', 'Orc']) await p.click('#modal .wlangs .chip[data-v="' + l + '"]');

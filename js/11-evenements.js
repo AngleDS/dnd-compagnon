@@ -120,7 +120,7 @@ document.addEventListener("click",e=>{
     case "newCancel": if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } break; // clic à côté de la fenêtre ou sur sa croix, pas dedans
     case "wclose": if(S.W&&(e.target===t||t.tagName==="BUTTON")){ S.W.open=null; render(); } break;
     case "wizard": if(!S.W) S.W=wNew(); S.W.open=null; S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
-    case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; render(); break;
+    case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; (S.W.seen=S.W.seen||{})[t.dataset.v]=true; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;
     case "wsrc": (S.W.src=S.W.src||{})[t.dataset.k]=t.dataset.v; render(); break;
     case "wcancel": { const made=(S.W&&S.W.catMade)||[]; S.W=null; for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); break; }
