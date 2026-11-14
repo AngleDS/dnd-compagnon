@@ -293,6 +293,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await msg(), 'Lignage elfique : fais ton choix.', 'le lignage est obligatoire');
     ok(await p.evaluate(() => { const c = document.querySelector('#modal .wchoices'), d = document.querySelector('#modal details'); return c && (c.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING) > 0 && !/note-le dans la fiche/.test(document.getElementById('modal').innerText); }), 'les choix passent avant la lecture des traits');
     await p.selectOption('#modal select[data-w="lin"]', 'drow');
+    eq(await p.evaluate(() => [(document.querySelector('#modal .wprop') || {}).textContent, document.querySelector('#modal select[data-w="linAb"]').value]), ['(Charisme proposé, modifiable)', 'cha'], 'caractéristique d’incantation : valeur proposée, signalée comme telle');
+    await p.selectOption('#modal select[data-w="linAb"]', 'sag'); ok(await p.evaluate(() => !document.querySelector('#modal .wprop') && S.W.linAb === 'sag'), 'une fois choisie, la mention disparaît');
     eq([await msg(), await opts('spSkill')], ['Sens aiguisés : choisis ta compétence.', ['intuition', 'perception', 'survie']], 'Sens aiguisés à choisir');
     await p.selectOption('#modal select[data-w="spSkill"]', 'perception');
     eq([await msg(), await p.evaluate(() => S.W.skills)], ['', ['survie']], 'choix complet ; la compétence d’espèce sort des compétences de classe');
@@ -440,7 +442,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.W.chg = 'bg'; render(); }); await p.click('#modal [data-act="wpick"][data-v="srd:acolyte"]'); await p.evaluate(() => { S.W.open = 'Espèce'; render(); });
     ok(/Initié à la magie vient déjà de ton historique.*deux fois.*ajoute-le à la main/.test(await p.evaluate(() => document.querySelector('#modal .wdup').textContent)), 'don répétable : limite expliquée');
     await p.evaluate(() => { const W = S.W; W.bg = 'srd:soldat'; W.asi2 = 'for'; W.asi1 = 'con'; W.hFeat = 'srd:vigilant'; W.skills = []; W.extraSkill = ''; Object.assign(W, wSugDraft(W, 'Compétences')); W.open = null; render(); });
-    eq(await p.evaluate(() => wNeeds(S.W).map(n => n.msg)), [], 'création complète'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => wNeeds(S.W).map(n => n.msg)), [], 'création complète');
+    eq(await p.evaluate(() => ['Historique', 'Espèce'].map(l => document.querySelector('.wline[data-v="' + l + '"] .val').textContent)), ['Soldat · +2 FOR, +1 CON · don : Sauvagerie martiale', 'Humain · don : Vigilant'], 'les dons se lisent sur les lignes, sans écran de relecture');
+    await p.click('[data-act="wcreate"]');
     eq(await p.evaluate(() => { const f = cur().feats; return [f.includes('srd:sauvagerie-martiale'), f.includes('srd:vigilant'), new Set(f).size === f.length]; }), [true, true, true], 'les deux dons sont sur la fiche');
   });
 

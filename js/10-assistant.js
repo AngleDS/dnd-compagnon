@@ -119,7 +119,7 @@ function wCards(list,cur,key){ return `<div class="wcards">${list.map(([v,t,sub]
 // Lignage ou ascendance de l'espèce (chantier 13) : choisi ici, modifiable ensuite dans l'onglet Personnage
 function wLineage(W,s){ const def=LINEAGES[s.id]; if(!def) return ""; const o=def.opts[W.lin];
   return `<label class="field"><span>${esc(def.label)}</span>${wSel("lin",Object.entries(def.opts).map(([v,x])=>[v,x.name]),W.lin)}</label>`
-    +(def.ability?`<label class="field"><span>Caractéristique d'incantation</span>${wSel("linAb",LINEAGE_AB,W.linAb||"cha")}</label>`:"")
+    +(def.ability?`<label class="field"><span>Caractéristique d'incantation${W.linAb?"":` <small class="muted wprop">(Charisme proposé, modifiable)</small>`}</span>${wSel("linAb",LINEAGE_AB,W.linAb||"cha")}</label>`:"")
     +(o?`<div class="muted" style="font-size:var(--fs-sm)">${esc(lineageSummary(def,o))}.</div>`:""); }
 function wSel(key,opts,cur,ph){ return `<select data-w="${key}"><option value="">${esc(ph||"— Choisir —")}</option>${opts.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`).join("")}</select>`; }
 /* Page de création (mode direct, chantier 17) : une ligne par sujet, chaque ligne ouvre ses choix dans une fenêtre.
@@ -238,8 +238,8 @@ function wLines(W){ return [...wSteps(W).filter(s=>s!=="Identité"),"Détails"];
 function wLineMsg(W,st){ const i=wSteps(W).indexOf(st); return i<0?"":wCheck(W,i); }
 function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)||{}).name||id, pl=(n,w)=>n+" "+w+(n>1?"s":"");
   if(st==="Classe"){ const o=wOrder(W); return c?c.name+(o?" · "+o.name:""):""; }
-  if(st==="Historique"){ const b=wBg(W); if(!b) return ""; const x=wBonus(W), bon=AB.filter(a=>x[a]).map(a=>"+"+x[a]+" "+ABS[a]).join(", "); return b.name+(bon?" · "+bon:""); }
-  if(st==="Espèce"){ const s=srd("species",W.sp)||hb(W.sp); if(!s) return ""; const def=LINEAGES[String(W.sp||"").replace(/^srd:/,"")], o=def&&def.opts[W.lin]; return s.name+(o?" · "+o.name:""); }
+  if(st==="Historique"){ const b=wBg(W); if(!b) return ""; const x=wBonus(W), bon=AB.filter(a=>x[a]).map(a=>"+"+x[a]+" "+ABS[a]).join(", "), sb=srd("backgrounds",W.bg), ft=sb?sb.feat:(hb(W.feat)||S.C.feats.find(f=>"srd:"+f.id===W.feat)||{}).name||b.feat||""; return b.name+(bon?" · "+bon:"")+(ft?" · don : "+ft:""); }
+  if(st==="Espèce"){ const s=srd("species",W.sp)||hb(W.sp); if(!s) return ""; const def=LINEAGES[String(W.sp||"").replace(/^srd:/,"")], o=def&&def.opts[W.lin], hf=wIsHuman(W)&&W.hFeat&&W.hFeat!==wBgFeat(W)?(S.C.feats.find(f=>"srd:"+f.id===W.hFeat)||hb(W.hFeat)||{}).name:""; return s.name+(o?" · "+o.name:"")+(hf?" · don : "+hf:""); }
   if(st==="Caractéristiques"){ const b=wBase(W), f=wAbilities(W); return AB.some(a=>b[a]==null)?({std:"Tableau standard",pts:"Achat de points",dice:"Dés (4d6)"})[W.method]:AB.map(a=>ABS[a]+" "+f[a]).join(" · "); }
   if(st==="Compétences"){ if(!c) return ""; const l=[...W.skills,W.extraSkill].filter(Boolean); return l.length?l.map(nm).join(", "):"0 / "+c.skillChoices.count; }
   if(st==="Sorts"){ const n=[...W.can,...W.spl].filter(Boolean).length; return n?pl(n,"sort")+" choisi"+(n>1?"s":""):""; }
