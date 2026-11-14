@@ -47,6 +47,9 @@ function wSources(kind){ const tag=h=>catShort(h.label)||"Personnalisée";
   return {base:S.C.species.map(x=>["srd:"+x.id,x.name,x.traits.map(t=>t.name).join(", ")]),other:hbs("espece").filter(h=>!h.pending).map(x=>["hb:"+x._id,x.name,tag(x)])}; }
 // Liste de choix avec ses deux onglets ; « Autres contenus » n'existe que s'il y a quelque chose de complet à y montrer
 function wPick(W,kind,key){ const s=wSources(kind), tab=s.other.length&&(W.src||{})[kind]==="other"?"other":"base";
+  // Une fois le choix fait, la liste se replie : ses détails et ses sous-choix sont juste dessous, pas sous le pli
+  const got=W[key]&&W.chg!==key?[...s.base,...s.other].find(x=>x[0]===W[key]):null;
+  if(got) return `<div class="wchosen"><span><b>${esc(got[1])}</b>${got[2]?`<span class="muted">${esc(got[2])}</span>`:""}</span><button class="btn small" data-act="wchg" data-k="${key}">Changer</button></div>`;
   return (s.other.length?`<div class="adv wsrc" role="group" style="grid-template-columns:1fr 1fr"><button aria-pressed="${tab==="base"}" data-act="wsrc" data-k="${kind}" data-v="base">Règles de base</button><button aria-pressed="${tab==="other"}" data-act="wsrc" data-k="${kind}" data-v="other">Autres contenus (${s.other.length})</button></div>`:"")
     +wCards(s[tab],W[key],key)
     +`<div class="muted wmore" style="font-size:var(--fs-sm);margin-top:8px">Tu ne trouves pas ? Ce qui sort des règles de base se prépare dans <button class="btn small ghost" data-act="nav" data-v="hb">Mes contenus</button> Ta création en cours t'attendra.</div>`; }
@@ -71,6 +74,7 @@ function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,
     conditions:[],gold:{po:0},tools:[bgS?bgS.tools:(hb(W.bg)||{}).tools,c&&c.tools].filter(Boolean).join(" ; "),alignment:wAlign(W),notes:W.notes||"",hpMode:"auto",bag:[],updatedAt:Date.now(),
     ...(()=>{ const its=wEqItems(W).items.map(it=>eqInfo({name:it.name})); const a=its.find(e=>e.type==="armor"), sh=its.find(e=>e.type==="shield"); return {armor:a?"srd:"+a.a.id:"none",shield:!!(sh&&c&&(c.armor||[]).includes("bouclier"))}; })()}; }
 function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
+  if(!c&&(st==="Compétences"||st==="Sorts"||st==="Équipement")) return "Choisis d'abord une classe.";
   if(st==="Classe") return c?"":"Choisis une classe.";
   if(st==="Historique"){ if(!W.bg) return "Choisis un historique."; if(W.asiMode==="21"&&(!W.asi2||!W.asi1||W.asi1===W.asi2)) return "Choisis +2 et +1 sur deux caractéristiques différentes."; if(W.asiMode==="111"&&wBgAbs(W).length!==3&&new Set(W.asiT.filter(Boolean)).size<3) return "Choisis trois caractéristiques différentes."; if(!srd("backgrounds",W.bg)&&!W.feat) return "Choisis le don d'origine de cet historique."; return ""; }
   if(st==="Espèce"){ if(!W.sp) return "Choisis une espèce."; if(wIsHuman(W)&&!W.hFeat) return "Humain : choisis ton don d'origine (Polyvalent)."; return ""; }
@@ -81,9 +85,9 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
   if(st==="Identité") return String(W.name||"").trim()?"":"Donne un nom à ton personnage.";
   return ""; }
 // Tout ce qui manque encore avant de pouvoir créer : [{step, name, msg}] (une entrée par étape incomplète)
-function wNeeds(W){ return wSteps(W).map((name,step)=>({step,name,msg:wCheck(W,step)})).filter(x=>x.msg); }
+function wNeeds(W){ return wSteps(W).map((name,step)=>({step,name,msg:wCheck(W,step)})).filter(x=>x.msg).sort((a,b)=>(b.name==="Identité")-(a.name==="Identité")); }
 // Pendant la saisie du nom (pas de nouveau rendu) : le bouton Créer et le message suivent
-function wNavSync(){ const W=S.W; if(!W) return; const b=document.querySelector('[data-act="wcreate"]'); if(b) b.disabled=!!wNeeds(W).length; const e=document.querySelector(".wnav .warntxt"); if(e) e.textContent=wCheck(W,W.step); }
+function wNavSync(){ const W=S.W, f=document.getElementById("wfoot"); if(W&&f) f.outerHTML=wFoot(W); }
 function wInvN(W){ const c=wCls(W); if(!c||c.id!=="occultiste") return 0; const col=c.columns.find(x=>x.label.startsWith("Manifestations")); return col?+col.values[0]||0:0; }
 function wCards(list,cur,key){ return `<div class="wcards">${list.map(([v,t,sub])=>`<button class="wcard" aria-pressed="${v===cur}" data-act="wpick" data-k="${key}" data-v="${esc(v)}"><b>${esc(t)}</b>${sub?`<span class="muted">${esc(sub)}</span>`:""}</button>`).join("")}</div>`; }
 // Lignage ou ascendance de l'espèce (chantier 13) : choisi ici, modifiable ensuite dans l'onglet Personnage
@@ -92,8 +96,10 @@ function wLineage(W,s){ const def=LINEAGES[s.id]; if(!def) return ""; const o=de
     +(def.ability?`<label class="field"><span>Caractéristique d'incantation</span>${wSel("linAb",LINEAGE_AB,W.linAb||"cha")}</label>`:"")
     +(o?`<div class="muted" style="font-size:var(--fs-sm)">${esc(lineageSummary(def,o))}.</div>`:""); }
 function wSel(key,opts,cur,ph){ return `<select data-w="${key}"><option value="">${esc(ph||"— Choisir —")}</option>${opts.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`).join("")}</select>`; }
-function viewWizard(){
-  const W=S.W, steps=wSteps(W); W.step=Math.min(W.step,steps.length-1); const st=steps[W.step], c=wCls(W);
+/* Page de création (mode direct, chantier 17) : une ligne par sujet, chaque ligne ouvre ses choix dans une fenêtre.
+   wStepBody : contenu d'une fenêtre ; wLines / wLineVal / wLineMsg : les lignes ; wFoot : compteur et bouton d'état ; wPreview : la fiche chiffrée. */
+function wStepBody(W,st){ const c=wCls(W);
+  if(!c&&(st==="Compétences"||st==="Sorts"||st==="Équipement")) return `<p class="muted">Choisis d'abord une classe.</p>`;
   let h="";
   if(st==="Classe"){
     h+=`<p class="muted">La classe définit ton rôle : dé de vie, maîtrises, sorts et aptitudes.</p>`+wPick(W,"classe","cls");
@@ -152,23 +158,45 @@ function viewWizard(){
         <div class="muted" style="font-size:var(--fs-sm)">${cur.gold} po</div></div>`; };
     h+=`<p class="muted">Suggestion des règles : prends l'un des lots ou l'or à la place. Décoche ce que tu ne veux pas, tout reste modifiable dans l'inventaire.</p>`+block("Classe · "+c.name,c.equipment,"eqC")+(bgS?block("Historique · "+bgS.name,bgS.equipment,"eqB"):`<div class="panel muted">Historique hors SRD : ajoute son équipement dans l'inventaire après la création.</div>`);
   }
-  if(st==="Identité"){
-    h+=`<div class="grid2"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label>
-      <div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:var(--fs-sm)">${esc(wAlign(W))}</span>`:""}</div><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
-      <label class="field"><span>Notes (apparence, personnalité, histoire)</span><textarea data-w="notes" style="min-height:120px">${esc(W.notes)}</textarea></label>
-      ${+W.level>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${+W.level}.</div>`:""}`;
+  if(st==="Détails"){
+    h+=`<div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:var(--fs-sm)">${esc(wAlign(W))}</span>`:""}</div>
+      <label class="field"><span>Notes (apparence, personnalité, histoire)</span><textarea data-w="notes" style="min-height:120px">${esc(W.notes)}</textarea></label>`;
   }
-  const err=wCheck(W,W.step); let pv="";
+  return h; }
+function wPreview(W){ const c=wCls(W); let pv="";
   if(c){ try{ const d=wDoc(W), D=derive(d); pv=`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:var(--fs-sm)">${esc([(srd("species",W.sp)||hb(W.sp)||{}).name,c.name+" 1",(wBg(W)||{}).name].filter(Boolean).join(" · "))}</div>
     <div class="wstats"><span><small class="label">PV</small><b class="num">${D.hpMax}</b></span><span><small class="label">CA</small><b class="num">${D.ac}</b></span><span><small class="label">Init.</small><b class="num">${sg(D.init)}</b></span><span><small class="label">Perc. passive</small><b class="num">${D.passive}</b></span></div>
     <div class="wabmini">${AB.map(a=>`<span><small>${ABS[a]}</small><b class="num">${D.abEff[a]}</b><small class="num">${sg(D.mods[a])}</small></span>`).join("")}</div>
-    <div class="muted" style="font-size:var(--fs-sm)">Sauvegardes : ${AB.filter(a=>D.saves[a].prof).map(a=>ABN[a]).join(", ")}</div></div>`; }catch(e){ pv=""; } }
-  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Étape ${W.step+1} sur ${steps.length} · ${esc(st)}</div></div><button class="btn ghost" data-act="wcancel">Annuler</button></div>
-    <div class="wsteps">${steps.map((s,i)=>`<button class="wstep${i===W.step?" on":""}${i<W.step?" done":""}" data-act="wgo" data-v="${i}" ${i>W.step&&steps.slice(0,i).some((_,j)=>wCheck(W,j))?"disabled":""}>${i+1}. ${esc(s)}</button>`).join("")}</div>
-    <div class="wz"><section class="stack" style="min-width:0">${h}
-      <div class="row wnav">${W.step?`<button class="btn" data-act="wgo" data-v="${W.step-1}">← Précédent</button>`:""}<span class="muted warntxt" style="font-size:var(--fs-sm);flex:1;text-align:right">${esc(err)}</span>
-      ${W.step<steps.length-1?`<button class="btn primary" data-act="wgo" data-v="${W.step+1}" ${err?"disabled":""}>Suivant →</button>`:`<button class="btn primary" data-act="wcreate" ${steps.some((_,j)=>wCheck(W,j))?"disabled":""}>Créer le personnage</button>`}</div></section>${pv}</div>`;
-}
+    <div class="muted wsaves" style="font-size:var(--fs-sm)">Sauvegardes : ${AB.filter(a=>D.saves[a].prof).map(a=>ABN[a]).join(", ")}</div></div>`; }catch(e){ pv=""; } }
+  return pv||`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:var(--fs-sm)">La fiche se calcule dès que la classe est choisie.</div></div>`; }
+function wLines(W){ return [...wSteps(W).filter(s=>s!=="Identité"),"Détails"]; }
+function wLineMsg(W,st){ const i=wSteps(W).indexOf(st); return i<0?"":wCheck(W,i); }
+function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)||{}).name||id, pl=(n,w)=>n+" "+w+(n>1?"s":"");
+  if(st==="Classe") return c?c.name:"";
+  if(st==="Historique"){ const b=wBg(W); if(!b) return ""; const x=wBonus(W), bon=AB.filter(a=>x[a]).map(a=>"+"+x[a]+" "+ABS[a]).join(", "); return b.name+(bon?" · "+bon:""); }
+  if(st==="Espèce"){ const s=srd("species",W.sp)||hb(W.sp); if(!s) return ""; const def=LINEAGES[String(W.sp||"").replace(/^srd:/,"")], o=def&&def.opts[W.lin]; return s.name+(o?" · "+o.name:""); }
+  if(st==="Caractéristiques"){ const b=wBase(W), f=wAbilities(W); return AB.some(a=>b[a]==null)?({std:"Tableau standard",pts:"Achat de points",dice:"Dés (4d6)"})[W.method]:AB.map(a=>ABS[a]+" "+f[a]).join(" · "); }
+  if(st==="Compétences"){ if(!c) return ""; const l=[...W.skills,W.extraSkill].filter(Boolean); return l.length?l.map(nm).join(", "):"0 / "+c.skillChoices.count; }
+  if(st==="Sorts"){ const n=[...W.can,...W.spl].filter(Boolean).length; return n?pl(n,"sort")+" choisi"+(n>1?"s":""):""; }
+  if(st==="Équipement"){ if(!c) return ""; const e=wEqItems(W); return pl(e.items.length,"objet")+" · "+e.gold+" po"; }
+  if(st==="Détails") return [wAlign(W),String(W.notes||"").trim()?"notes":""].filter(Boolean).join(" · ")||"Alignement, notes (facultatif)";
+  return ""; }
+// Compteur de ce qui reste à faire et bouton d'état : tant qu'il manque quelque chose, le bouton est grisé et le nomme
+function wFoot(W){ const n=wNeeds(W), names=n.map(x=>x.name==="Identité"?"nom":x.name.toLowerCase());
+  return `<div class="wfootbar" id="wfoot"><div class="wleft" role="status">${n.length?`<b>Reste à faire (${n.length})</b> <span class="muted">${esc(names.join(", "))}</span>`:`<span class="muted">Tout est choisi.</span>`}</div><button class="btn primary" data-act="wcreate" ${n.length?"disabled":""}>${esc(n.length?n[0].msg:"Créer le personnage")}</button></div>`; }
+function viewWizard(){ const W=S.W, c=wCls(W), lv=+W.level||1;
+  const rows=wLines(W).map(st=>{ const msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement");
+    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(st)}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?`<small class="${lock?"muted":"warntxt"}">${esc(msg)}</small>`:""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }).join("");
+  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux.</div></div><button class="btn ghost" data-act="wcancel">Annuler</button></div>
+    <div class="wz"><section class="stack" style="min-width:0">
+      <div class="wid"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
+      ${lv>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${lv}.</div>`:""}
+      <div class="wlines">${rows}</div>${wFoot(W)}</section>${wPreview(W)}</div>`; }
+// Fenêtre d'une ligne : ses choix, ce qui manque encore, et un bouton pour revenir à la page
+function wModal(){ const W=S.W, st=W.open, msg=wLineMsg(W,st);
+  return `<div class="picker" data-act="wclose"><div class="box wbox" role="dialog" aria-label="${esc(st)}" style="grid-template-rows:auto minmax(0,1fr) auto;max-width:760px">
+    ${winHead(esc(st),"wclose")}<div class="stack wbody">${wStepBody(W,st)}</div>
+    ${winFoot(`<span class="warntxt wmsg" role="status" style="font-size:var(--fs-sm);flex:1;align-self:center">${esc(msg)}</span><button class="btn primary" data-act="wclose">${msg?"Fermer":"Valider"}</button>`)}</div></div>`; }
 function wCreate(){
   const W=S.W, c=wCls(W); const id="perso_"+uid(); const d=wDoc(W); S.docs[id]=d; d.armor="none"; d.shield=false;
   const eq=wEqItems(W); for(const it of eq.items) d.bag.push({id:uid(),name:it.name,qty:it.qty,note:""}); d.gold={po:eq.gold};

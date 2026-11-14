@@ -121,7 +121,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
  
   await test('Assistant : choix du catalogue, relecture et validation', async p => {
     await open(p);
-    await p.evaluate(() => { S.W = wNew(); S.W.cls = 'guerrier'; S.view = 'wizard'; S.W.step = 1; render(); });
+    await p.evaluate(() => { S.W = wNew(); S.W.cls = 'guerrier'; S.view = 'wizard'; S.W.open = 'Historique'; render(); });
     await p.click('[data-act="wsrc"][data-k="historique"][data-v="other"]'); await p.click('[data-act="wpick"][data-k="bg"][data-v="cat:bg-artisan"]');
     const w = await p.evaluate(() => ({ feat: (hb(S.W.feat) || {}).name, bgSk: wBgSkills(S.W) }));
     eq(w, { feat: 'Façonneur', bgSk: ['investigation', 'persuasion'] }, 'don et compétences de l’historique');
@@ -136,10 +136,10 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
  
   await test('Assistant : les choix abandonnés sont supprimés', async p => {
     await open(p);
-    await p.evaluate(() => { S.W = wNew(); S.W.cls = 'guerrier'; S.view = 'wizard'; S.W.step = 1; render(); });
+    await p.evaluate(() => { S.W = wNew(); S.W.cls = 'guerrier'; S.view = 'wizard'; S.W.open = 'Historique'; render(); });
     await p.click('[data-act="wsrc"][data-k="historique"][data-v="other"]'); await p.click('[data-act="wpick"][data-k="bg"][data-v="cat:bg-ermite"]');
     ok(await p.evaluate(() => hbs().length === 2), 'fiches créées au choix');
-    await p.click('[data-act="wcancel"]');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('[data-act="wcancel"]');
     eq(await p.evaluate(() => hbs().length), 0, 'fiches restantes après annulation');
   });
  
@@ -179,7 +179,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().name, S.tab, !!document.getElementById('nn-name')]), ['Vide', 'build', false], 'fiche vide nommée');
     // Assistant : tableau standard
     await p.evaluate(() => { const W = S.W = wNew(); W.cls = 'guerrier'; W.bg = 'srd:soldat'; W.sp = 'srd:nain'; const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1];
-      W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.step = 3; render(); });
+      W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Caractéristiques'; render(); });
     const opts = k => p.evaluate(k => [...document.querySelectorAll('select[data-w="' + k + '"] option')].map(o => o.value).filter(Boolean), k);
     await p.selectOption('select[data-w="std.for"]', '15');
     eq(await opts('std.dex'), ['14', '13', '12', '10', '8'], '15 déjà pris : plus proposé ailleurs');
@@ -190,13 +190,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { const W = S.W; W.method = 'dice'; W.dice = ['15', '15', '13', '12', '10', '8']; W.diceAs = {}; render(); });
     await p.selectOption('select[data-w="diceAs.for"]', '0');
     eq(await opts('diceAs.dex'), ['1', '2', '3', '4', '5'], 'jet déjà attribué retiré, son jumeau reste');
-    // Nom obligatoire à la dernière étape
-    await p.evaluate(() => { const W = S.W; W.method = 'std'; W.std = { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }; W.step = wSteps(W).length - 1; render(); });
-    eq(await p.evaluate(() => [wNeeds(S.W).map(n => n.msg), document.querySelector('[data-act="wcreate"]').disabled]), [['Donne un nom à ton personnage.'], true], 'création bloquée sans nom');
+    // Nom obligatoire : le bouton est grisé et dit ce qui manque
+    await p.evaluate(() => { const W = S.W; W.method = 'std'; W.std = { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }; W.open = null; render(); });
+    eq(await p.evaluate(() => { const b = document.querySelector('[data-act="wcreate"]'); return [wNeeds(S.W).map(n => n.msg), b.disabled, b.textContent]; }), [['Donne un nom à ton personnage.'], true, 'Donne un nom à ton personnage.'], 'création bloquée sans nom');
     await p.evaluate(() => { document.querySelector('[data-act="wcreate"]').disabled = false; }); await p.click('[data-act="wcreate"]');
     eq(await p.evaluate(() => S.view), 'wizard', 'un clic forcé ne crée rien non plus');
     await p.fill('input[data-w="name"]', 'Mirela');
-    ok(await p.evaluate(() => !document.querySelector('[data-act="wcreate"]').disabled && !document.querySelector('.wnav .warntxt').textContent), 'bouton libéré pendant la saisie');
+    eq(await p.evaluate(() => { const b = document.querySelector('[data-act="wcreate"]'); return [b.disabled, b.textContent, document.activeElement.dataset.w]; }), [false, 'Créer le personnage', 'name'], 'bouton libéré pendant la saisie, sans perdre le curseur');
     await p.click('[data-act="wcreate"]');
     eq(await p.evaluate(() => [S.view, cur().name]), ['sheet', 'Mirela'], 'personnage créé avec son nom');
   });
@@ -204,9 +204,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Création : règles de base d’abord, « Autres contenus » seulement pour le complet, rien à créer dans l’assistant', async p => {
     await open(p);
     const vals = () => p.evaluate(() => [...document.querySelectorAll('.wcard')].map(b => b.dataset.v));
-    const txt = () => p.evaluate(() => document.getElementById('app').innerText);
+    const txt = () => p.evaluate(() => document.getElementById('app').innerText + document.getElementById('modal').innerText);
     // Classe : sans contenu complet, pas d'onglet ; ni catalogue « à remplir », ni création de classe, ni le mot SRD
-    await p.evaluate(() => { S.W = wNew(); S.view = 'wizard'; render(); });
+    await p.evaluate(() => { S.W = wNew(); S.view = 'wizard'; S.W.open = 'Classe'; render(); });
     eq(await p.evaluate(() => document.querySelectorAll('.wsrc').length), 0, 'aucun onglet sans contenu complet');
     eq((await vals()).length, await p.evaluate(() => S.C.classes.length), 'seulement les classes des règles de base');
     ok(!/SRD|à remplir|Nouvelle classe/.test(await txt()), 'ni « SRD », ni « à remplir », ni création de classe');
@@ -218,23 +218,66 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(!(await vals()).includes('hb:hb_tc'), 'la classe perso n’est pas mêlée aux règles de base');
     await p.click('[data-act="wsrc"][data-v="other"]'); eq(await vals(), ['hb:hb_tc'], 'onglet Autres contenus');
     // Historique : les 12 du Manuel des joueurs, pas le reste du catalogue ; le don vient avec l'historique
-    await p.evaluate(() => { S.W.cls = 'guerrier'; S.W.step = 1; render(); });
+    await p.evaluate(() => { S.W.cls = 'guerrier'; S.W.open = 'Historique'; render(); });
     eq(await vals(), await p.evaluate(() => S.C.backgrounds.map(b => 'srd:' + b.id)), 'historiques des règles de base');
     await p.click('[data-act="wsrc"][data-v="other"]');
     const bgs = await vals(); eq([bgs.length, bgs.every(v => v.startsWith('cat:bg-')), bgs.includes('cat:bg-artisan'), bgs.some(v => /house|harper/.test(v))], [12, true, true, false], '12 historiques complets, aucun à remplir');
     await p.click('[data-act="wpick"][data-v="cat:bg-garde"]');
     ok(/Don d'origine : Vigilant/.test(await txt()) && await p.evaluate(() => !document.querySelector('select[data-w="feat"]') && S.W.feat === 'srd:vigilant'), 'don fixé par l’historique, pas de liste');
-    ok((await vals()).some(v => v.startsWith('hb:')) && (await vals()).length === 12, 'l’historique choisi reste dans la liste');
+    eq(await p.evaluate(() => [document.querySelectorAll('#modal .wcard').length, document.querySelector('#modal .wchosen b').textContent]), [0, 'Garde'], 'choix fait : la liste se replie sur lui');
+    await p.click('[data-act="wchg"]'); ok((await vals()).some(v => v.startsWith('hb:')) && (await vals()).length === 12, '« Changer » rouvre la liste, l’historique choisi y reste');
     // Espèce : pas d'onglet (aucune espèce complète), 17 espèces du catalogue absentes ; Humain : dons d'origine sans « à remplir »
-    await p.evaluate(() => { S.W.asi2 = wBgAbs(S.W)[0]; S.W.asi1 = wBgAbs(S.W)[1]; S.W.step = 2; render(); });
+    await p.evaluate(() => { S.W.asi2 = wBgAbs(S.W)[0]; S.W.asi1 = wBgAbs(S.W)[1]; S.W.open = 'Espèce'; render(); });
     eq([(await vals()).length, await p.evaluate(() => document.querySelectorAll('.wsrc').length)], [await p.evaluate(() => S.C.species.length), 0], 'espèces des règles de base seulement');
     await p.click('[data-act="wpick"][data-v="srd:humain"]');
     ok(await p.evaluate(() => [...document.querySelectorAll('select[data-w="hFeat"] option')].every(o => !/à remplir|hors SRD/.test(o.textContent) && !o.value.startsWith('cat:'))), 'dons d’origine : rien du catalogue');
     // Partir voir « Mes contenus » ne perd pas la création en cours
-    await p.click('.wmore [data-act="nav"]'); eq(await p.evaluate(() => [S.view, !!S.W]), ['hb', true], 'Mes contenus ouvert, création gardée');
+    await p.click('[data-act="wchg"]'); await p.click('.wmore [data-act="nav"]'); eq(await p.evaluate(() => [S.view, !!S.W]), ['hb', true], 'Mes contenus ouvert, création gardée');
     await p.evaluate(() => { S.view = 'list'; S.cur = null; render(); });
     eq(await p.evaluate(() => document.querySelector('[data-act="wizard"]').textContent), 'Reprendre la création', 'bouton de reprise');
-    await p.click('[data-act="wizard"]'); eq(await p.evaluate(() => [S.view, S.W.sp, S.W.cls]), ['wizard', 'srd:humain', 'guerrier'], 'création reprise telle quelle');
+    await p.click('[data-act="wizard"]'); eq(await p.evaluate(() => [S.view, S.W.sp, S.W.cls, S.W.open, document.getElementById('modal').innerHTML]), ['wizard', 'srd:humain', 'guerrier', null, ''], 'création reprise telle quelle, fenêtre refermée');
+  });
+
+  await test('Création : page unique, une ligne par sujet, fenêtres, compteur et bouton d’état, largeur iPhone', async p => {
+    await open(p);
+    await p.evaluate(() => { S.view = 'list'; render(); }); await p.click('[data-act="wizard"]');
+    const lines = () => p.evaluate(() => [...document.querySelectorAll('.wline')].map(b => [b.dataset.v, b.disabled, b.querySelector('.st').textContent, (b.querySelector('small') || {}).textContent || '']));
+    const foot = () => p.evaluate(() => { const b = document.querySelector('[data-act="wcreate"]'); return [document.querySelector('#wfoot .wleft').textContent, b.disabled, b.textContent]; });
+    eq((await lines()).map(l => l[0]), ['Classe', 'Historique', 'Espèce', 'Caractéristiques', 'Compétences', 'Équipement', 'Détails'], 'lignes de la page');
+    eq((await lines()).filter(l => l[1]).map(l => l[0]), ['Compétences', 'Équipement'], 'lignes en attente de la classe');
+    eq(await foot(), ['Reste à faire (7) nom, classe, historique, espèce, caractéristiques, compétences, équipement', true, 'Donne un nom à ton personnage.'], 'compteur et bouton d’état au départ');
+    // Une ligne ouvre sa fenêtre ; un clic dans la fenêtre ne la ferme pas, un clic à côté oui
+    await p.click('.wline[data-v="Classe"]');
+    eq(await p.evaluate(() => [document.querySelector('#modal [role="dialog"]').getAttribute('aria-label'), document.querySelector('#modal .wmsg').textContent, document.querySelector('#modal .wfoot .btn').textContent]), ['Classe', 'Choisis une classe.', 'Fermer'], 'fenêtre Classe');
+    await p.click('#modal .wbody p'); ok(await p.evaluate(() => S.W.open === 'Classe'), 'clic dans la fenêtre : elle reste');
+    await p.click('#modal [data-act="wpick"][data-v="magicien"]');
+    eq(await p.evaluate(() => [S.W.open, document.querySelector('#modal .wmsg').textContent, document.querySelector('#modal .wfoot .btn').textContent]), ['Classe', '', 'Valider'], 'choix fait : la fenêtre reste ouverte et propose de valider');
+    await p.click('#modal .wfoot [data-act="wclose"]');
+    eq(await p.evaluate(() => [S.W.open, document.getElementById('modal').innerHTML]), [null, ''], 'fenêtre refermée');
+    const l2 = await lines(); eq([l2.map(l => l[0]).includes('Sorts'), l2.find(l => l[0] === 'Classe')[2], l2.filter(l => l[1]).length], [true, '✓', 0], 'ligne Sorts apparue, classe cochée, plus rien en attente');
+    eq(await p.evaluate(() => document.querySelector('.wline[data-v="Classe"] .val').textContent), 'Magicien', 'valeur de la ligne');
+    ok(await p.evaluate(() => /PV/.test(document.querySelector('.wprev').textContent)), 'aperçu chiffré dès la classe');
+    await p.click('.wline[data-v="Détails"]'); await p.mouse.click(4, 300); ok(await p.evaluate(() => !S.W.open), 'clic à côté : fenêtre fermée');
+    // Largeur iPhone : rien ne dépasse, lignes assez hautes pour le doigt, fenêtre dans l'écran, la liste garde sa position
+    await p.setViewportSize({ width: 390, height: 844 });
+    eq(await p.evaluate(() => [document.documentElement.scrollWidth <= 390, [...document.querySelectorAll('.wline')].every(b => b.getBoundingClientRect().height >= 44 && b.getBoundingClientRect().right <= 390)]), [true, true], 'page à 390 px');
+    await p.click('.wline[data-v="Sorts"]');
+    eq(await p.evaluate(() => { const r = document.querySelector('#modal .box').getBoundingClientRect(); return [r.left >= 0, r.right <= 390, r.bottom <= 844, document.documentElement.scrollWidth <= 390]; }), [true, true, true, true], 'fenêtre à 390 px');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('.wline[data-v="Historique"]'); await p.click('#modal [data-act="wsrc"][data-v="other"]');
+    await p.click('#modal [data-act="wpick"][data-v="cat:bg-noble"]');
+    eq(await p.evaluate(() => [document.querySelectorAll('#modal .wcard').length, document.querySelector('#modal .wchosen b').textContent, !!document.querySelector('#modal select[data-w="asi2"]')]), [0, 'Noble', true], 'la liste se replie, les choix de l’historique sont sous les yeux');
+    await p.setViewportSize({ width: 1280, height: 900 });
+    // Tout remplir : le compteur descend, le bouton nomme ce qui manque, puis crée
+    await p.evaluate(() => { const W = S.W; W.open = null; W.bg = 'srd:sage'; W.feat = ''; const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1]; W.sp = 'srd:nain'; W.std = { for: 8, dex: 14, con: 13, int: 15, sag: 12, cha: 10 };
+      W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, wCls(W).skillChoices.count); const cast = wCast(W), D = { cls: wCls(W) };
+      W.can = classSpells(D, 0).slice(0, cast.cantrips[0]).map(x => x.ref); render(); });
+    eq(await foot(), ['Reste à faire (2) nom, sorts', true, 'Donne un nom à ton personnage.'], 'compteur après les choix');
+    await p.fill('input[data-w="name"]', 'Mirela');
+    const f3 = await foot(); eq([f3[0], f3[1], /^Choisis \d+ sorts de niveau 1\.$/.test(f3[2])], ['Reste à faire (1) sorts', true, true], 'le bouton nomme le choix suivant');
+    await p.evaluate(() => { const W = S.W, cast = wCast(W); W.spl = classSpells({ cls: wCls(W) }, null, 1).slice(0, cast.prepared[0]).map(x => x.ref); render(); });
+    eq(await foot(), ['Tout est choisi.', false, 'Créer le personnage'], 'tout est choisi');
+    await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => [S.view, cur().name, cur().classId, cur().background, !!S.W]), ['sheet', 'Mirela', 'magicien', 'srd:sage', false], 'personnage créé');
   });
 
   for (const [label, o, want, noteRe] of [

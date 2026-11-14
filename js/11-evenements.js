@@ -20,6 +20,7 @@ document.addEventListener("click",e=>{
   if(dice3dBusy&&VIRTUAL_ACTIONS.has(a)) return; // des dés 3D roulent déjà
   if(VIRTUAL_ACTIONS.has(a)&&!virtualDiceEnabled()){ e.preventDefault(); return; }
   if(a==="closeModal"){ if(e.target===t||t.tagName==="BUTTON"){ S.pending=null; renderModal(); render(); } return; }
+  if(a==="wclose"){ if(S.W&&(e.target===t||t.tagName==="BUTTON")){ S.W.open=null; render(); } return; }
   if(a==="newCancel"){ if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } return; }
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;
   if(a!=="ask"&&S.confirm&&!["del","hbDel","rest"].includes(a)) S.confirm=null;
@@ -117,11 +118,13 @@ document.addEventListener("click",e=>{
     case "setMain": setMain(t.dataset.id); render(); break;
     case "openTable": S.unlockEdit=false; S.cur=t.dataset.id; S.view="sheet"; S.tab="table"; if(!mainId()) setMain(t.dataset.id); render(); window.scrollTo(0,0); break;
     case "new": S.newName={}; renderModal(); break;
-    case "wizard": if(!S.W) S.W=wNew(); S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
+    case "wizard": if(!S.W) S.W=wNew(); S.W.open=null; S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
+    case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; render(); break;
+    case "wchg": S.W.chg=t.dataset.k; render(); break;
     case "wsrc": (S.W.src=S.W.src||{})[t.dataset.k]=t.dataset.v; render(); break;
     case "wcancel": { const made=(S.W&&S.W.catMade)||[]; S.W=null; for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); break; }
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
-    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; if(k==="cls"&&W.cls!==v){ W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
+    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; }
       W[k]=v; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } render(); break; }
