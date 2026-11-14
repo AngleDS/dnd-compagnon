@@ -171,6 +171,7 @@ function renderModal(){
   if(S.catPick){ m.innerHTML=catPickModal(); return; }
   if(S.af){ m.innerHTML=afModal(); return; }
   if(S.settings){ m.innerHTML=settingsModal(); return; }
+  if(S.newName){ m.innerHTML=newNameModal(); setTimeout(()=>{ const i=document.getElementById("nn-name"); if(i) i.focus(); },0); return; }
   if(!S.pending){ m.innerHTML=""; return; }
   const ch=cur(); if(!ch){ S.pending=null; m.innerHTML=""; return; }
   const D=derive(ch);

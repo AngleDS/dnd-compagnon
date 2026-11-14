@@ -60,7 +60,12 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
     if(W.method==="pts"&&AB.reduce((t,a)=>t+PT_COST[+W.pts[a]],0)>27) return "Tu dépasses les 27 points."; return ""; }
   if(st==="Compétences"){ const n=c.skillChoices.count; if(W.skills.length!==n) return `Choisis ${n} compétences de classe.`; if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")&&!W.extraSkill) return "Humain : choisis ta compétence en plus (Compétent)."; if(wStyle1(W)&&!W.style) return "Choisis ton style de combat."; return ""; }
   if(st==="Sorts"){ const cast=wCast(W); const nc=cast?(cast.cantrips||[])[0]||0:0, np=cast?(cast.prepared||[])[0]||0:0; if(W.can.filter(Boolean).length<nc) return `Choisis ${nc} sorts mineurs.`; if(W.spl.filter(Boolean).length<np) return `Choisis ${np} sorts de niveau 1.`; if(c.id==="occultiste"&&W.inv.filter(Boolean).length<wInvN(W)) return "Choisis ta manifestation occulte."; if(W.inv.some((id,i)=>id&&INV_CHOICE[id]&&!W.invc[i])) return "Choisis la cible de ta manifestation."; return ""; }
+  if(st==="Identité") return String(W.name||"").trim()?"":"Donne un nom à ton personnage.";
   return ""; }
+// Tout ce qui manque encore avant de pouvoir créer : [{step, name, msg}] (une entrée par étape incomplète)
+function wNeeds(W){ return wSteps(W).map((name,step)=>({step,name,msg:wCheck(W,step)})).filter(x=>x.msg); }
+// Pendant la saisie du nom (pas de nouveau rendu) : le bouton Créer et le message suivent
+function wNavSync(){ const W=S.W; if(!W) return; const b=document.querySelector('[data-act="wcreate"]'); if(b) b.disabled=!!wNeeds(W).length; const e=document.querySelector(".wnav .warntxt"); if(e) e.textContent=wCheck(W,W.step); }
 function wInvN(W){ const c=wCls(W); if(!c||c.id!=="occultiste") return 0; const col=c.columns.find(x=>x.label.startsWith("Manifestations")); return col?+col.values[0]||0:0; }
 function wCards(list,cur,key){ return `<div class="wcards">${list.map(([v,t,sub])=>`<button class="wcard" aria-pressed="${v===cur}" data-act="wpick" data-k="${key}" data-v="${esc(v)}"><b>${esc(t)}</b>${sub?`<span class="muted">${esc(sub)}</span>`:""}</button>`).join("")}</div>`; }
 // Lignage ou ascendance de l'espèce (chantier 13) : choisi ici, modifiable ensuite dans l'onglet Personnage
@@ -108,9 +113,9 @@ function viewWizard(){
         h+=`<div class="wpts"><span class="label">Équivalent en achat de points</span><b class="num">${eq} / 27</b><span class="${eq>27?"warntxt":"muted"}">${filled.length<6?"("+filled.length+"/6 jets) ":""}${eq>27?"au-delà des 27 points : tirage plus fort que la normale":eq<27?"en dessous des 27 points":"pile dans la norme"}</span></div>`; } }
     const cp=c?c.primary:[];
     h+=`<div class="wabil">${AB.map(a=>{ let inp="";
-      if(W.method==="std") inp=wSel("std."+a,STD_ARRAY.map(v=>[v,String(v)]),W.std[a]||"","—");
+      if(W.method==="std") inp=wSel("std."+a,STD_ARRAY.filter(v=>!AB.some(z=>z!==a&&+W.std[z]===v)).map(v=>[v,String(v)]),W.std[a]||"","—");
       if(W.method==="pts") inp=`<span class="row" style="gap:4px"><button class="btn small" data-act="wpt" data-a="${a}" data-v="-1" ${+W.pts[a]<=8?"disabled":""}>−</button><b class="num" style="min-width:22px;text-align:center">${W.pts[a]}</b><button class="btn small" data-act="wpt" data-a="${a}" data-v="1" ${+W.pts[a]>=15?"disabled":""}>+</button></span>`;
-      if(W.method==="dice") inp=wSel("diceAs."+a,W.dice.map((v,i)=>[i,v===""?"—":String(v)]).filter(([i,v])=>v!=="—"),W.diceAs[a]??"","—");
+      if(W.method==="dice") inp=wSel("diceAs."+a,W.dice.map((v,i)=>[i,v===""?"—":String(v)]).filter(([i,v])=>v!=="—"&&!AB.some(z=>z!==a&&String(W.diceAs[z]??"")===String(i))),W.diceAs[a]??"","—");
       return `<div class="wab${cp.includes(a)?" prim":""}"><span class="nm">${ABN[a]}${cp.includes(a)?` <small class="muted">principale</small>`:""}</span>${inp}<span class="muted num">${x[a]?sg(x[a])+" historique":""}</span><b class="num">${b[a]==null?"—":fin[a]} <small class="muted">${b[a]==null?"":sg(Math.floor((fin[a]-10)/2))}</small></b></div>`; }).join("")}</div>`;
   }
   if(st==="Compétences"){ const have=new Set(wBgSkills(W)); const n=c.skillChoices.count;
@@ -132,7 +137,7 @@ function viewWizard(){
     h+=`<p class="muted">Suggestion des règles : prends l'un des lots ou l'or à la place. Décoche ce que tu ne veux pas, tout reste modifiable dans l'inventaire.</p>`+block("Classe · "+c.name,c.equipment,"eqC")+(bgS?block("Historique · "+bgS.name,bgS.equipment,"eqB"):`<div class="panel muted">Historique hors SRD : ajoute son équipement dans l'inventaire après la création.</div>`);
   }
   if(st==="Identité"){
-    h+=`<div class="grid2"><label class="field"><span>Nom</span><input type="text" data-w="name" value="${esc(W.name)}"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label>
+    h+=`<div class="grid2"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label>
       <div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:var(--fs-sm)">${esc(wAlign(W))}</span>`:""}</div><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
       <label class="field"><span>Notes (apparence, personnalité, histoire)</span><textarea data-w="notes" style="min-height:120px">${esc(W.notes)}</textarea></label>
       ${+W.level>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${+W.level}.</div>`:""}`;
@@ -160,9 +165,15 @@ function wCreate(){
   if(lv>1){ S.lvlTarget={id,to:lv}; S.pending={type:"lvl",hp:"avg"}; }
   render(); if(lv<=1) rvStart(id);
 }
-function newChar(){
+function newNameModal(){ return `<div class="picker" data-act="newCancel"><div class="box" role="dialog" aria-label="Fiche vide" style="grid-template-rows:auto auto auto;max-width:420px">
+    ${winHead("Fiche vide","newCancel")}
+    <form class="stack" id="nnform" data-form="newname" novalidate><label class="field"><span>Nom du personnage</span><input id="nn-name" type="text" maxlength="80" style="width:100%" autocomplete="off"></label>
+      <div id="nn-err" class="warntxt" role="alert" style="font-size:var(--fs-sm)"></div><div class="muted" style="font-size:var(--fs-sm)">La fiche est créée vide : tu la remplis à la main dans l'onglet de construction.</div></form>
+    ${winFoot(`<button class="btn primary" type="submit" form="nnform">Créer la fiche</button>`)}</div></div>`; }
+function newChar(name){
+  name=String(name||"").trim(); if(!name) return;
   const id="perso_"+uid();
-  S.docs[id]={type:"perso",name:"Nouveau personnage",level:1,classId:"",abilities:{for:10,dex:10,con:10,int:10,sag:10,cha:10},skills:{},hp:{cur:8,temp:0},attacks:[],spells:[],feats:[],features:[],invocations:[],conditions:[],gold:{po:0},updatedAt:Date.now()};
+  S.docs[id]={type:"perso",name,level:1,classId:"",abilities:{for:10,dex:10,con:10,int:10,sag:10,cha:10},skills:{},hp:{cur:8,temp:0},attacks:[],spells:[],feats:[],features:[],invocations:[],conditions:[],gold:{po:0},updatedAt:Date.now()};
   touch(id); S.cur=id; S.view="sheet"; S.tab="build"; S.unlockEdit=true; render();
 }
 function applyRest(kind){

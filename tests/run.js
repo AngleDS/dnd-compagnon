@@ -168,6 +168,39 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().level, !!S.pending, !!S.lvlTarget]), [1, false, false], 'niveau, popup, enchaînement');
   });
  
+  await test('Création : nom obligatoire, tableau standard et dés sans doublon, fiche vide nommée', async p => {
+    await open(p);
+    // Fiche vide : le nom est demandé, rien n'est créé sans lui
+    await p.evaluate(() => { S.view = 'list'; render(); });
+    await p.click('[data-act="new"]'); await p.waitForFunction(() => !!document.getElementById('nn-name'));
+    await p.click('#modal button[type="submit"]');
+    eq(await p.evaluate(() => [document.getElementById('nn-err').textContent, Object.values(S.docs).filter(d => d.type === 'perso').length]), ['Donne un nom à ton personnage.', 0], 'refus sans nom');
+    await p.fill('#nn-name', '  Vide  '); await p.click('#modal button[type="submit"]');
+    eq(await p.evaluate(() => [cur().name, S.tab, !!document.getElementById('nn-name')]), ['Vide', 'build', false], 'fiche vide nommée');
+    // Assistant : tableau standard
+    await p.evaluate(() => { const W = S.W = wNew(); W.cls = 'guerrier'; W.bg = 'srd:soldat'; W.sp = 'srd:nain'; const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1];
+      W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.step = 3; render(); });
+    const opts = k => p.evaluate(k => [...document.querySelectorAll('select[data-w="' + k + '"] option')].map(o => o.value).filter(Boolean), k);
+    await p.selectOption('select[data-w="std.for"]', '15');
+    eq(await opts('std.dex'), ['14', '13', '12', '10', '8'], '15 déjà pris : plus proposé ailleurs');
+    eq(await opts('std.for'), ['15', '14', '13', '12', '10', '8'], 'la ligne qui a le 15 le garde');
+    await p.selectOption('select[data-w="std.dex"]', '14');
+    eq(await opts('std.con'), ['13', '12', '10', '8'], 'deux valeurs prises');
+    // Dés : un résultat attribué n'est plus proposé ailleurs, même si deux jets ont la même valeur
+    await p.evaluate(() => { const W = S.W; W.method = 'dice'; W.dice = ['15', '15', '13', '12', '10', '8']; W.diceAs = {}; render(); });
+    await p.selectOption('select[data-w="diceAs.for"]', '0');
+    eq(await opts('diceAs.dex'), ['1', '2', '3', '4', '5'], 'jet déjà attribué retiré, son jumeau reste');
+    // Nom obligatoire à la dernière étape
+    await p.evaluate(() => { const W = S.W; W.method = 'std'; W.std = { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }; W.step = wSteps(W).length - 1; render(); });
+    eq(await p.evaluate(() => [wNeeds(S.W).map(n => n.msg), document.querySelector('[data-act="wcreate"]').disabled]), [['Donne un nom à ton personnage.'], true], 'création bloquée sans nom');
+    await p.evaluate(() => { document.querySelector('[data-act="wcreate"]').disabled = false; }); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => S.view), 'wizard', 'un clic forcé ne crée rien non plus');
+    await p.fill('input[data-w="name"]', 'Mirela');
+    ok(await p.evaluate(() => !document.querySelector('[data-act="wcreate"]').disabled && !document.querySelector('.wnav .warntxt').textContent), 'bouton libéré pendant la saisie');
+    await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => [S.view, cur().name]), ['sheet', 'Mirela'], 'personnage créé avec son nom');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],

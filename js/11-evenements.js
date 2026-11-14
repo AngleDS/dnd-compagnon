@@ -20,6 +20,7 @@ document.addEventListener("click",e=>{
   if(dice3dBusy&&VIRTUAL_ACTIONS.has(a)) return; // des dés 3D roulent déjà
   if(VIRTUAL_ACTIONS.has(a)&&!virtualDiceEnabled()){ e.preventDefault(); return; }
   if(a==="closeModal"){ if(e.target===t||t.tagName==="BUTTON"){ S.pending=null; renderModal(); render(); } return; }
+  if(a==="newCancel"){ if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } return; }
   if(a!=="bagdel"&&a!=="bagrm") S.bagDel=null;
   if(a!=="ask"&&S.confirm&&!["del","hbDel","rest"].includes(a)) S.confirm=null;
   switch(a){
@@ -115,7 +116,7 @@ document.addEventListener("click",e=>{
     case "open": S.unlockEdit=false; S.cur=t.dataset.id; S.view="sheet"; S.tab="jeu"; if(!mainId()) setMain(t.dataset.id); render(); window.scrollTo(0,0); break;
     case "setMain": setMain(t.dataset.id); render(); break;
     case "openTable": S.unlockEdit=false; S.cur=t.dataset.id; S.view="sheet"; S.tab="table"; if(!mainId()) setMain(t.dataset.id); render(); window.scrollTo(0,0); break;
-    case "new": newChar(); break;
+    case "new": S.newName={}; renderModal(); break;
     case "wizard": S.W=wNew(); S.view="wizard"; window.scrollTo(0,0); render(); break;
     case "wcancel": { const made=(S.W&&S.W.catMade)||[]; S.W=null; for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); break; }
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
@@ -128,7 +129,7 @@ document.addEventListener("click",e=>{
       addLog({label:"Création · 6 jets de 4d6",total:"✓",bd:W.rollBd,kind:"info",quiet:true}); render(); }); break; }
     case "wskill": { const W=S.W, v=t.dataset.v, n=wCls(W).skillChoices.count; if(W.skills.includes(v)) W.skills=W.skills.filter(x=>x!==v); else if(W.skills.length<n) W.skills.push(v); if(W.extraSkill===v) W.extraSkill=""; render(); break; }
     case "weq": { S.W.eqOff[t.dataset.v]=!t.checked; render(); break; }
-    case "wcreate": wCreate(); break;
+    case "wcreate": if(wNeeds(S.W).length) break; wCreate(); break;
     case "afRun": afRun(t.dataset.mode==="hb"?{mode:"hb",id:t.dataset.id}:{mode:"nh"}); break;
     case "afClose": S.af=null; renderModal(); break;
     case "afApply": afApply(); break;
@@ -440,7 +441,7 @@ document.addEventListener("input",e=>{
   if(e.target&&(e.target.id==="catq")&&S.catPick){ S.catPick.q=e.target.value; const l=document.getElementById("catlist"); if(l) l.innerHTML=catPickList(); return; }
   const t=e.target;
   if(virtualDiceEnabled()&&t.matches(DICE_INPUTS)) return;
-  if(t.dataset&&t.dataset.w&&S.W&&t.tagName!=="SELECT"&&!t.dataset.w.startsWith("dice.")&&t.dataset.w!=="level"){ setPath(S.W,t.dataset.w,t.value); if(t.dataset.w==="name"){ const b=document.querySelector(".wprev b"); if(b) b.textContent=t.value||"Nouveau personnage"; } return; }
+  if(t.dataset&&t.dataset.w&&S.W&&t.tagName!=="SELECT"&&!t.dataset.w.startsWith("dice.")&&t.dataset.w!=="level"){ setPath(S.W,t.dataset.w,t.value); if(t.dataset.w==="name"){ const b=document.querySelector(".wprev b"); if(b) b.textContent=t.value||"Nouveau personnage"; wNavSync(); } return; }
   if(t.dataset&&t.dataset.bind&&t.type==="number"&&!t.dataset.hb&&!t.dataset.bag&&!t.dataset.att&&!t.dataset.cnt&&t.value!==""&&t.id){
     const ch=cur(); if(ch){ let nv=+t.value; if(/^abilities\./.test(t.dataset.bind)){ nv=Math.max(1,Math.min(30,Math.round(nv)||1)); if(String(nv)!==t.value&&t.value.length>=2) t.value=nv; } setPath(ch,t.dataset.bind,nv); touch(S.cur); clearTimeout(numTimer); const id=t.id;
       numTimer=setTimeout(()=>{ const a=document.activeElement; const still=a&&a.id===id; render(); if(still){ const n=document.getElementById(id); if(n){ try{ n.focus({preventScroll:true}); }catch(e){} } } },450); }
@@ -479,6 +480,7 @@ document.addEventListener("submit",e=>{
     const value=f.elements.total.value; if(!validDiceTotal(value)) return;
     applyChargeRecovery(cur(),f.dataset.id,+value); render(); return;
   }
+  if(f.dataset.form==="newname"){ const n=(document.getElementById("nn-name").value||"").trim(); if(!n){ const er=document.getElementById("nn-err"); if(er) er.textContent="Donne un nom à ton personnage."; return; } S.newName=null; newChar(n); renderModal(); return; }
   if(f.dataset.form==="hpamt"){ const raw=(document.getElementById("hp-amt").value||"").trim(); if(!/^\d+$/.test(raw)||+raw<=0){ const er=document.getElementById("hp-amt-err"); if(er) er.textContent="Saisis un nombre entier supérieur à 0."; return; } hpApply(+raw); return; }
   if(f.dataset.form==="cc"){ const c=S.T.cc; if(!c||c.res) return; const a1=parseInt(document.getElementById("cc-d1").value), b1=c.mode==="n"?0:parseInt(document.getElementById("cc-d2")?.value); if(!(a1>=1&&a1<=20)) return; if(c.mode!=="n"&&!(b1>=1&&b1<=20)) return; ccResolve(a1,b1,false); return; }
   if(f.dataset.form==="hdroll"){ const ch=cur(), D=derive(ch); const r=parseInt(document.getElementById("t-hd").value); if(!(r>=1&&r<=D.hd)) return; hdSpend(ch,D,r,true); setTimeout(()=>{ const i=document.getElementById("t-hd"); if(i) i.focus(); },0); return; }

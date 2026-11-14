@@ -308,7 +308,13 @@ Après comparaison avec Le Compagnon (le-compagnon-dnd.fr : fiche 5E française 
 - Création possible sans nom (« Nouveau personnage »).
 - Tableau standard : la même valeur peut être choisie deux fois avant le blocage.
 
-Refonte envisagée : nom et choix mécaniques obligatoires ; contenus complets d'abord ; séparation SRD / hors SRD complet / personnel ou incomplet ; fiches « à remplir » hors du parcours normal ; choix d'espèce intégrés ; parcours plus simple ; aperçu dynamique et création à haut niveau conservés.
+**Refonte décidée avec Angle le 14 nov. 2026 (chantier 17, en cours).** Créateurs étudiés : D&D Beyond (classique et Quickbuilder), Roll20, Pathbuilder, DD2024.fr (parcouru en vrai). Décisions :
+- **Deux modes sur un socle commun** (même état `S.W`, mêmes popups, même liste de choix restants `wNeeds`) : **direct** = une page unique, une ligne par sujet, une popup par ligne, n'importe quel niveau ; **guidé** = trois écrans (Qui es-tu ? / D'où viens-tu ? / Finitions), tout prérempli, niveau 1. On passe de l'un à l'autre sans rien perdre.
+- **Créer un personnage n'est pas créer du contenu** : l'assistant ne propose que le SRD et les contenus hors SRD **complets**. Plus de « Nouvelle classe hors SRD » ni de fiche du catalogue « à remplir » dans le parcours ; un lien discret « Tu ne trouves pas ? » mène à « Mes contenus ». Les 12 historiques du Manuel des joueurs (caractéristiques, compétences, outil et don connus) comptent comme complets.
+- **Deux onglets dans chaque popup de choix** : « Règles de base » (ouvert par défaut) et « Autres contenus » (libellé choisi par Angle ; absent s'il n'y a rien de complet). Le mot « SRD » n'apparaît pas dans l'assistant. Le mode guidé a aussi l'onglet : la table d'Angle est débutante et joue du hors SRD.
+- Nom obligatoire (assistant et « Fiche vide ») ; bouton qui nomme ce qui manque ; compteur de choix restants ; chaque choix là où il naît (espèce : lignage, taille, Sens aiguisés ; classe : style, expertise, bottes, ordre divin ou primitif) ; **langues ajoutées** (Commun + 2, champ `languages` existant) ; bouton « Suggestion » par ligne (appliqué d'office en mode guidé) ; **pas de multiclassage** pour le moment.
+- Lots : **A** socle et page unique au niveau 1 ; **B** mode guidé et cartes d'explication (12 classes, 9 espèces, textes à écrire) ; **C** niveau de départ sur la page (à la place de la file de fenêtres) et brouillon enregistré à part des fiches.
+- **Nouveau chantier à planifier ensuite : refonte de « Mes contenus »** (demande d'Angle : trop complexe, pas abouti). L'assistant refait donnera le cahier des charges de ce qu'est un contenu « complet ».
 
 ## 13. Questions ouvertes
 
