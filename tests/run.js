@@ -392,6 +392,32 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => cur().languages), 'Commun, Nain, Orc', 'langues écrites dans le champ de la fiche');
   });
 
+  await test('Création : suggestions (remplissent le vide, gardent les choix faits, disparaissent ensuite)', async p => {
+    await open(p);
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { cls: 'magicien', bg: 'srd:sage', sp: 'srd:nain' }); S.view = 'wizard'; render(); });
+    const sug = async st => { await p.click('.wline[data-v="' + st + '"]'); const had = await p.evaluate(() => !!document.querySelector('#modal [data-act="wsug"]')); if (had) await p.click('#modal [data-act="wsug"]');
+      const r = await p.evaluate(() => [!!document.querySelector('#modal [data-act="wsug"]'), document.querySelector('#modal .wmsg').textContent]); await p.click('#modal .wfoot [data-act="wclose"]'); return [had, ...r]; };
+    // Caractéristiques : un choix déjà fait est gardé, le reste suit la classe
+    await p.evaluate(() => { S.W.std = { cha: '15' }; render(); });
+    eq(await sug('Caractéristiques'), [true, false, ''], 'suggestion appliquée, bouton retiré, plus rien à choisir');
+    eq(await p.evaluate(() => S.W.std), { cha: '15', int: '14', con: '13', sag: '12', dex: '10', for: '8' }, 'le 15 choisi reste, l’Intelligence du magicien passe en premier');
+    eq(await sug('Historique'), [true, false, ''], 'bonus d’historique');
+    eq(await p.evaluate(() => { const W = S.W, abs = wBgAbs(W); return [abs.includes(W.asi2), abs.includes(W.asi1), W.asi2 !== W.asi1, W.asi2 === (abs.includes('int') ? 'int' : W.asi2)]; }), [true, true, true, true], '+2 et +1 sur des caractéristiques de l’historique, la principale d’abord');
+    // Sorts : un sort déjà choisi garde sa place
+    await p.evaluate(() => { S.W.can = ['', 'srd:reparation']; render(); });
+    eq(await sug('Sorts'), [true, false, ''], 'sorts');
+    eq(await p.evaluate(() => [S.W.can, S.W.spl.length === wCast(S.W).prepared[0], S.W.spl.slice(0, 2), new Set([...S.W.can, ...S.W.spl]).size === S.W.can.length + S.W.spl.length]), [['srd:trait-de-feu', 'srd:reparation', 'srd:main-du-mage'], true, ['srd:bouclier', 'srd:projectile-magique'], true], 'sort choisi gardé, pas de doublon');
+    eq(await sug('Compétences'), [true, false, ''], 'compétences');
+    eq(await p.evaluate(() => { const W = S.W; return [W.skills.length, W.skills.every(s => wCls(W).skillChoices.from.includes(s) && !wBgSkills(W).includes(s))]; }), [2, true], 'compétences de la classe, hors historique');
+    eq(await sug('Langues'), [true, false, ''], 'langues'); eq(await p.evaluate(() => S.W.langs), ['Elfique', 'Nain'], 'deux langues');
+    eq([await sug('Équipement'), await sug('Détails'), await sug('Classe')].map(r => r[0]), [false, false, false], 'pas de suggestion là où il n’y a rien à proposer');
+    eq(await p.evaluate(() => wNeeds(S.W).map(n => n.name)), ['Identité'], 'il ne reste que le nom');
+    // Roublard humain : compétence en plus et expertises ; guerrier : style Défense
+    eq(await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { cls: 'roublard', bg: 'srd:criminel', sp: 'srd:humain' }); Object.assign(W, wSugDraft(W, 'Compétences')); const all = [...W.skills, ...wBgSkills(W), W.extraSkill];
+      return [W.skills.length, !!W.extraSkill, new Set(all).size === all.length, W.exp.length, W.exp.every(s => all.includes(s)), wLineMsg(W, 'Compétences')]; }), [4, true, true, 2, true, ''], 'roublard humain complet en une suggestion');
+    eq(await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' }); Object.assign(W, wSugDraft(W, 'Compétences')); return [(S.C.feats.find(f => 'srd:' + f.id === W.style) || {}).name, wLineMsg(W, 'Compétences')]; }), ['Défense', ''], 'style Défense proposé');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],

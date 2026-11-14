@@ -206,6 +206,32 @@ function wPreview(W){ const c=wCls(W); let pv="";
     <div class="wabmini">${AB.map(a=>`<span><small>${ABS[a]}</small><b class="num">${D.abEff[a]}</b><small class="num">${sg(D.mods[a])}</small></span>`).join("")}</div>
     <div class="muted wsaves" style="font-size:var(--fs-sm)">Sauvegardes : ${AB.filter(a=>D.saves[a].prof).map(a=>ABN[a]).join(", ")}</div></div>`; }catch(e){ pv=""; } }
   return pv||`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:var(--fs-sm)">La fiche se calcule dès que la classe est choisie.</div></div>`; }
+/* Suggestions (chantier 17) : un bouton par fenêtre remplit ce qui est encore vide, sans jamais remplacer un choix déjà fait.
+   Le joueur valide ou change ensuite. Les listes ci-dessous sont des propositions de départ, pas des règles. */
+const SUG_SK={barbare:["athletisme","perception"],barde:["persuasion","representation","tromperie"],clerc:["intuition","religion"],druide:["nature","perception"],ensorceleur:["arcanes","persuasion"],guerrier:["athletisme","perception"],
+  magicien:["arcanes","investigation"],moine:["acrobaties","discretion"],occultiste:["arcanes","tromperie"],paladin:["athletisme","persuasion"],rodeur:["perception","discretion","survie"],roublard:["discretion","escamotage","perception","tromperie"]};
+const SUG_SP={barde:[["moquerie-cruelle","lumiere","main-du-mage"],["mot-de-guerison","charme-personne","vague-tonnante","murmures-dissonants","lueurs-feeriques"]],
+  clerc:[["flamme-sacree","assistance","lumiere","thaumaturgie"],["soins","benediction","mot-de-guerison","bouclier-de-la-foi","rayon-tracant"]],
+  druide:[["crosse-des-druides","assistance","flammes"],["soins","enchevetrement","lueurs-feeriques","mot-de-guerison","vague-tonnante"]],
+  ensorceleur:[["trait-de-feu","main-du-mage","lumiere","prestidigitation","rayon-de-givre"],["bouclier","projectile-magique","armure-du-mage","mains-brulantes"]],
+  magicien:[["trait-de-feu","main-du-mage","lumiere","prestidigitation"],["bouclier","projectile-magique","armure-du-mage","detection-de-la-magie","sommeil","mains-brulantes"]],
+  occultiste:[["decharge-occulte","main-du-mage","illusion-mineure"],["malefice","represailles-infernales","charme-personne"]],
+  paladin:[[],["benediction","soins","bouclier-de-la-foi","faveur-divine"]],rodeur:[[],["marque-du-chasseur","soins","enchevetrement"]]};
+function wSugPrio(W){ const c=wCls(W); return [...new Set([...(c?c.primary:[]),"con",...(c?c.saves:[]),"dex","sag","cha","int","for"])]; }
+// Ce que la suggestion changerait pour cette fenêtre : {champ: valeur} (vide s'il n'y a rien à proposer)
+function wSugDraft(W,st){ const c=wCls(W), o={}, fill=(cur,n,cands)=>{ const a=Array.from({length:n},(_,i)=>cur[i]||""); const pool=cands.filter(x=>!a.includes(x)); for(let i=0;i<n;i++) if(!a[i]&&pool.length) a[i]=pool.shift(); return a; };
+  const diff=(k,v)=>{ if(JSON.stringify(v)!==JSON.stringify(W[k])) o[k]=v; };
+  if(st==="Historique"&&W.bg&&W.asiMode==="21"){ const abs=wBgAbs(W); if(abs.length===3){ const pr=wSugPrio(W).filter(a=>abs.includes(a)); const a2=W.asi2||pr.find(a=>a!==W.asi1), a1=W.asi1||pr.find(a=>a!==a2); diff("asi2",a2); diff("asi1",a1); } }
+  if(st==="Caractéristiques"&&W.method==="std"){ const std=Object.assign({},W.std), free=STD_ARRAY.filter(v=>!AB.some(a=>+std[a]===v)); for(const a of wSugPrio(W)) if(!std[a]&&free.length) std[a]=String(free.shift()); diff("std",std); }
+  if(st==="Compétences"&&c){ const have=[...wBgSkills(W),wSpSkills(W)?W.spSkill:""].filter(Boolean), n=c.skillChoices.count, from=c.skillChoices.from.filter(s=>!have.includes(s));
+    const skills=fill(W.skills,n,[...(SUG_SK[c.id]||[]).filter(s=>from.includes(s)),...from]).filter(Boolean); diff("skills",skills);
+    let extra=W.extraSkill; if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")&&!extra){ extra=["perception","discretion","athletisme",...S.C.skills.map(s=>s.id)].find(s=>!have.includes(s)&&!skills.includes(s))||""; diff("extraSkill",extra); }
+    if(wStyle1(W)&&!W.style){ const l=wStyles(), d=l.find(x=>x[1]==="Défense")||l[0]; if(d) o.style=d[0]; }
+    const ne=wExpN(W); if(ne){ const prof=[...new Set([...have,...skills,extra].filter(Boolean))], cur=(W.exp||[]).filter(s=>prof.includes(s)).slice(0,ne); diff("exp",fill(cur,ne,[...["discretion","escamotage","perception"].filter(s=>prof.includes(s)),...prof]).filter(Boolean)); } }
+  if(st==="Sorts"&&c){ const cast=wCast(W), sg=SUG_SP[c.id]||[[],[]], D={cls:c}, refs=(l,pref)=>{ const all=l.map(x=>x.ref); return [...pref.map(i=>"srd:"+i).filter(r=>all.includes(r)),...all]; };
+    const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(nc) diff("can",fill(W.can,nc,refs(classSpells(D,0),sg[0]))); if(np) diff("spl",fill(W.spl,np,refs(classSpells(D,null,1),sg[1]))); }
+  if(st==="Langues") diff("langs",fill(wLangs(W),wLangN(W),["Elfique","Nain","Gobelin",...LANGS]).filter(Boolean));
+  return o; }
 function wLines(W){ return [...wSteps(W).filter(s=>s!=="Identité"),"Détails"]; }
 function wLineMsg(W,st){ const i=wSteps(W).indexOf(st); return i<0?"":wCheck(W,i); }
 function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)||{}).name||id, pl=(n,w)=>n+" "+w+(n>1?"s":"");
@@ -234,7 +260,7 @@ function viewWizard(){ const W=S.W, c=wCls(W), lv=+W.level||1;
 function wModal(){ const W=S.W, st=W.open, msg=wLineMsg(W,st);
   return `<div class="picker" data-act="wclose"><div class="box wbox" role="dialog" aria-label="${esc(st)}" style="grid-template-rows:auto minmax(0,1fr) auto;max-width:760px">
     ${winHead(esc(st),"wclose")}<div class="stack wbody">${wStepBody(W,st)}</div>
-    ${winFoot(`<span class="warntxt wmsg" role="status" style="font-size:var(--fs-sm);flex:1;align-self:center">${esc(msg)}</span><button class="btn primary" data-act="wclose">${msg?"Fermer":"Valider"}</button>`)}</div></div>`; }
+    ${winFoot(`${Object.keys(wSugDraft(W,st)).length?`<button class="btn small" data-act="wsug" title="Remplit ce qui est encore vide ; tu peux tout changer ensuite">Suggestion</button>`:""}<span class="warntxt wmsg" role="status" style="font-size:var(--fs-sm);flex:1;align-self:center">${esc(msg)}</span><button class="btn primary" data-act="wclose">${msg?"Fermer":"Valider"}</button>`)}</div></div>`; }
 function wCreate(){
   const W=S.W, c=wCls(W); const id="perso_"+uid(); const d=wDoc(W); S.docs[id]=d; d.armor="none"; d.shield=false;
   const eq=wEqItems(W); for(const it of eq.items) d.bag.push({id:uid(),name:it.name,qty:it.qty,note:""}); d.gold={po:eq.gold};
