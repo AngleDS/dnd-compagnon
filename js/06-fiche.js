@@ -237,7 +237,7 @@ function weaponAttack(a,ch,D){
   const hit=mgN+D.mods[ab]+(prof?D.pb:0)+(+a.bonusHit||0)+(ranged?D.effs.filter(e=>e.t==="bonus"&&e.cible==="attaque_dist").reduce((t,e)=>t+evalF(e.val,D.ctx),0):0)+D.effs.filter(e=>e.t==="bonus"&&e.cible==="attaque").reduce((t,e)=>t+evalF(e.val,D.ctx),0);
   const dice=a.dice||w?.damage||"1d4";
   const dmgB=mgN+D.mods[ab]+(+a.bonusDmg||0)+D.effs.filter(e=>e.t==="bonus"&&e.cible==="degats").reduce((t,e)=>t+evalF(e.val,D.ctx),0);
-  return {mgN,name:a.name||w?.name||"Attaque sans nom", hit, dmg:dice+(dmgB?sg(dmgB):""), type:a.dmgType||w?.damageType||"", props:w?.properties||"", mastery:w?.mastery, ab};
+  return {mgN,name:a.name||w?.name||"Attaque sans nom", hit, dmg:dice+(dmgB?sg(dmgB):""), type:a.dmgType||w?.damageType||"", props:w?.properties||"", mastery:masteryOn(ch,D,a.weapon)?w?.mastery:undefined, ab}; // botte seulement pour les armes retenues (chantier 14)
 }
 function hbWeapon(ref){ const h=hb(ref); if(!h) return null; return {name:h.name, damage:h.dice, damageType:h.dmgType, properties:h.properties||"", finesse:/finesse/i.test(h.properties||""), kind:/portée|munitions/i.test(h.properties||"")&&!/lancer/i.test(h.properties||"")?"dist":"cac"}; }
 function attackRows(ch,D){

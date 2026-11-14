@@ -735,6 +735,13 @@ function chSenses(ch,D){ const best={}, look=(txt,src)=>{ for(const k in SENSE_R
   for(const s of D.sources||[]) look(s.text,(s.origin?s.origin+" · ":"")+s.name);
   { const lo=lineageOf(ch); if(lo&&lo.opt.vision) look("Vision dans le noir "+lo.opt.vision+" m",lo.def.label+" · "+lo.opt.name); } // Drow : 36 m (chantier 13)
   return ["noir","aveugle","vibr","lucide"].filter(k=>best[k]).map(k=>best[k]); }
+/* Bottes d'arme retenues (chantier 14) : ch.masteries = armes choisies (« srd:epee-longue »), au plus bottesN(D).
+   Sans choix enregistré : les premiers types d'arme de la fiche. La botte n'est montrée que pour ces armes, et pour personne sans l'aptitude. */
+function masteryCandidates(ch){ return [...new Set((ch.attacks||[]).map(a=>a.weapon).filter(w=>w&&(srd("weapons",w)||{}).mastery))]; }
+function masteryList(ch,D){ const n=bottesN(D); if(!n) return []; const ok=w=>!!(srd("weapons",w)||{}).mastery;
+  return (Array.isArray(ch.masteries)?ch.masteries.filter(ok):masteryCandidates(ch)).slice(0,n); }
+function masteryOn(ch,D,wref){ return !!wref&&masteryList(ch,D).includes(wref); }
+function masteryToggle(ch,D,wref){ const n=bottesN(D), L=masteryList(ch,D); ch.masteries=L.includes(wref)?L.filter(w=>w!==wref):(L.length<n?[...L,wref]:L); }
 /* Bottes d'arme : nombre de types d'arme (colonne de la classe, sinon 2 dès qu'elle a l'aptitude). */
 function bottesN(D){ const cls=D.cls; if(!cls||!cls.features.some(f=>f.level<=D.L&&/^Bottes d.arme$/.test(f.name))) return 0; const v=colVal(cls,"Bottes d’arme",D.L); return +v||2; }
 const BOTTES={"Coup double":"Quand tu attaques avec cette arme légère grâce à l'action Attaque, ton attaque en plus avec l'autre arme légère se fait sans l'action bonus habituelle.",
@@ -779,10 +786,12 @@ function infoData(ch,D,id){
           :"Ton personnage n'a pas de vision dans le noir : sans lumière, il ne voit rien. Une torche ou un sort de lumière devient vite utile.",
         rows:L.length?L.map(x=>[SENSES[x.k]+" ("+x.src+")",mFmt(x.m)+" m"]):[["Aucun sens particulier","—"]],noTotal:true,
         note:L.some(x=>x.k!=="noir")?L.filter(x=>x.k!=="noir").map(x=>({aveugle:"Vision aveugle : tu perçois ce qui t'entoure à cette distance sans avoir besoin de tes yeux, même dans le noir ou face à l'invisible.",vibr:"Perception des vibrations : tu sens la position de ce qui bouge à cette distance, si tu touches le même sol (ou le même liquide).",lucide:"Vision lucide : à cette distance, tu vois dans tout type de noir, tu vois l'invisible et tu perces les illusions et les métamorphoses."}[x.k])).join(" "):"La vision dans le noir vient de ton espèce ou d'une aptitude. Les sorts qui en donnent pour un temps ne sont pas comptés ici."}; },
-    bottes:()=>{ const n=bottesN(D); if(!n) return null; const atk=(S.Titems||[]).filter(i=>i.kind==="atk"&&i.mastery), seen=new Set();
-      return {title:"Bottes d’arme",v:n,desc:`Tu peux utiliser la botte de ${n} types d'arme, choisis parmi celles que tu maîtrises. Tu peux changer un de ces choix à chaque repos long. La botte s'applique quand tu attaques avec l'arme.`,
-        rows:atk.length?atk.map(i=>[i.name,i.mastery]):[["Aucune attaque avec une botte dans la fiche","—"]],noTotal:true,
-        note:atk.filter(i=>!seen.has(i.mastery)&&seen.add(i.mastery)).map(i=>`<b>${esc(i.mastery)}</b> : ${BOTTES[i.mastery]||""}`).join("<br>")||"Ajoute tes armes dans l'onglet Feuille pour voir leurs bottes."}; },
+    bottes:()=>{ const n=bottesN(D); if(!n) return null; const cand=masteryCandidates(ch), on=masteryList(ch,D), W=w=>srd("weapons",w)||{}, seen=new Set();
+      const chips=cand.map(w=>{ const sel=on.includes(w), full=!sel&&on.length>=n; return `<span class="condpick"><button class="chip" aria-pressed="${sel}" data-act="mastTog" data-v="${esc(w)}"${full?" disabled":""}>${esc(W(w).name)} · ${esc(W(w).mastery)}</button></span>`; }).join("");
+      return {title:"Bottes d’arme",v:on.length+"/"+n,desc:`Tu peux utiliser la botte de ${n} types d'arme, choisis parmi celles que tu maîtrises. Tu peux changer un de ces choix à chaque repos long. La botte s'applique quand tu attaques avec l'arme.`,
+        rows:on.length?on.map(w=>[W(w).name,W(w).mastery]):[["Aucune botte choisie","—"]],noTotal:true,
+        note:(cand.length?`<div class="label" style="margin-bottom:6px">Tes armes (${on.length}/${n} choisies)</div><div class="condgrid mastpick">${chips}</div>`:"Ajoute tes armes dans l'onglet Feuille pour choisir leurs bottes.")
+          +on.map(w=>W(w).mastery).filter(m=>!seen.has(m)&&seen.add(m)).map(m=>`<div style="margin-top:6px"><b>${esc(m)}</b> : ${BOTTES[m]||""}</div>`).join("")}; },
     agrip:()=>({title:"Agripper et bousculer",v:8+D.pb+D.mods.for,desc:"À la place d'une attaque à mains nues, tu peux tenter d'agripper une créature (une main libre, taille au plus un cran au-dessus de la tienne) ou de la bousculer (la repousser de 1,50 m ou la faire tomber À terre). Elle fait une sauvegarde de Force ou de Dextérité, à son choix, contre ce DD.",rows:dcRows("for"),note:"Une créature agrippée a une Vitesse de 0 ; elle peut tenter de se libérer à son tour contre le même DD."}),
     saut:()=>{ const f=+(D.abEff?.for??10), h=Math.max(0,0.9+0.3*D.mods.for);
       return {title:"Saut",v:mFmt(f*0.3)+" m",desc:"Avec au moins 3 m d'élan. Sans élan, la distance est divisée par deux. Le saut se décompte de ton déplacement.",rows:[["En longueur (Force × 30 cm)",mFmt(f*0.3)+" m"],["En hauteur (90 cm + mod. de Force × 30 cm)",mFmt(h)+" m"]],noTotal:true,note:"En hauteur, tu peux tendre les bras pour attraper un rebord un peu plus haut."}; },

@@ -2979,6 +2979,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(imp, ['ok', 'import_invalid', 'import_invalid', 'import_invalid'], 'import : lignage valide accepté, invalide refusé ; effet sans nom refusé');
   });
 
+  await test('Bottes d’arme : seules les armes retenues montrent leur botte, choix limité au nombre de la classe, rien sans l’aptitude', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { const ch = cur(); ch.level = 1; delete ch.masteries; ch.attacks = ['epee-longue', 'javeline', 'arc-court', 'lance'].map((w, i) => ({ id: 'a' + i, weapon: 'srd:' + w, name: w, ability: 'auto', prof: true })); render(); });
+    const shown = () => p.evaluate(() => (S.Titems || []).filter(i => i.kind === 'atk').map(i => [i.wref.slice(4), i.mastery || '']));
+    const n = await p.evaluate(() => bottesN(derive(cur())));
+    ok(n >= 2 && n < 4, 'le guerrier a moins de bottes que d’armes dans la fiche : ' + n);
+    let r = await shown(); eq(r.filter(x => x[1]).length, n, 'sans choix enregistré : les ' + n + ' premières armes');
+    eq(r[3][1], '', 'la dernière arme n’a pas de botte');
+    await p.evaluate(() => { S.T.pop = 'info:bottes'; render(); });
+    ok(await p.locator('.tpop .mastpick [data-v="srd:lance"]').isDisabled(), 'quota atteint : les autres armes sont grisées');
+    await p.click('.tpop .mastpick [data-v="srd:epee-longue"]'); await p.click('.tpop .mastpick [data-v="srd:lance"]');
+    r = await shown(); eq([r[0][1], r[3][1] !== '', await p.evaluate(() => cur().masteries.includes('srd:lance') && !cur().masteries.includes('srd:epee-longue'))], ['', true, true], 'épée longue retirée, lance retenue, choix enregistré');
+    await p.evaluate(() => { const ch = cur(); ch.classId = 'clerc'; render(); });
+    eq((await shown()).filter(x => x[1]).length, 0, 'sans l’aptitude Bottes d’arme : aucune botte affichée');
+    const imp = await p.evaluate(() => { const perso = { type: 'perso', name: 'X', level: 1, abilities: { for: 8, dex: 8, con: 8, int: 8, sag: 8, cha: 8 } }, out = [];
+      for (const masteries of [['srd:lance'], 'srd:lance', [3]]) { try { importPack({ registre: 1, perso: Object.assign({}, perso, { masteries }) }); out.push('ok'); } catch (e) { out.push(e.message); } } return out; });
+    eq(imp, ['ok', 'import_invalid', 'import_invalid'], 'import : choix valide accepté, invalide refusé');
+  });
+
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
     await open(p, { noClaude: true });
     await p.evaluate(() => setVirtualDice(true));

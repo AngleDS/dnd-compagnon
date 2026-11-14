@@ -102,6 +102,7 @@ document.addEventListener("click",e=>{
     case "diceDisplay": setDiceDisplayMode(diceDisplayMode()==="3d"?"direct":"3d"); try{ studioWarm(); }catch(_){} renderModal(); break;
     case "dice3dSkip": studioSkip(); break;
     // Défenses (chantier 5)
+    case "mastTog": masteryToggle(ch,derive(ch),t.dataset.v); touch(S.cur); render(); break; // bottes d'arme retenues (chantier 14)
     case "defEdit": S.T.defEdit=S.T.defEdit===t.dataset.c?null:t.dataset.c; render(); break;
     case "defTog": defToggle(ch,t.dataset.c,t.dataset.v); touch(S.cur); render(); break;
     case "fxFollow": { const sp=spellOf(t.dataset.ref); if(sp&&spellDur(sp)){ fxAdd(ch,{name:sp.name,dur:spellDur(sp),src:"ton sort",conc:!!sp.concentration}); touch(S.cur); render(); } break; }
