@@ -242,7 +242,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Création : page unique, une ligne par sujet, fenêtres, compteur et bouton d’état, largeur iPhone', async p => {
     await open(p);
-    await p.evaluate(() => { S.view = 'list'; render(); }); await p.click('[data-act="wizard"]');
+    await p.evaluate(() => { S.view = 'list'; render(); }); await p.click('[data-act="wizard"]'); await p.click('[data-act="wmode"][data-v="direct"]');
     const lines = () => p.evaluate(() => [...document.querySelectorAll('.wline')].map(b => [b.dataset.v, b.disabled, b.querySelector('.st').textContent, (b.querySelector('small') || {}).textContent || '']));
     const foot = () => p.evaluate(() => { const b = document.querySelector('[data-act="wcreate"]'); return [document.querySelector('#wfoot .wleft').textContent, b.disabled, b.textContent]; });
     eq((await lines()).map(l => l[0]), ['Classe', 'Historique', 'Espèce', 'Caractéristiques', 'Compétences', 'Langues', 'Équipement', 'Détails'], 'lignes de la page');
@@ -267,7 +267,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     // Largeur iPhone : rien ne dépasse, lignes assez hautes pour le doigt, fenêtre dans l'écran, la liste garde sa position
     await p.setViewportSize({ width: 390, height: 844 });
     eq(await p.evaluate(() => [document.documentElement.scrollWidth <= 390, [...document.querySelectorAll('.wline')].every(b => b.getBoundingClientRect().height >= 44 && b.getBoundingClientRect().right <= 390)]), [true, true], 'page à 390 px');
-    eq(await p.evaluate(() => { const t = document.getElementById('wcount'), cs = getComputedStyle(t); window.scrollTo(0, 600); const r = t.getBoundingClientRect(); window.scrollTo(0, 0); return [cs.display, cs.position, /^Reste à faire \(\d+\) /.test(t.textContent), r.top >= 0 && r.top < 10 && r.right <= 390]; }), ['block', 'sticky', true, true], 'téléphone : compteur en haut, qui reste visible en défilant');
+    eq(await p.evaluate(() => { const t = document.getElementById('wcount'), cs = getComputedStyle(t); window.scrollTo(0, 600); const r = t.getBoundingClientRect(), top = document.querySelector('.top').getBoundingClientRect(), hit = document.elementFromPoint(r.left + 20, r.top + r.height / 2); window.scrollTo(0, 0);
+      return [cs.display, cs.position, /^Reste à faire \(\d+\) /.test(t.textContent), r.top >= top.bottom - 1 && r.top < top.bottom + 12 && r.right <= 390, !!hit && t.contains(hit)]; }), ['block', 'sticky', true, true, true], 'téléphone : compteur en haut, juste sous l’en-tête de l’appli, visible (pas recouvert) en défilant');
     await p.click('.wline[data-v="Sorts"]');
     eq(await p.evaluate(() => { const r = document.querySelector('#modal .box').getBoundingClientRect(); return [r.left >= 0, r.right <= 390, r.bottom <= 844, document.documentElement.scrollWidth <= 390]; }), [true, true, true, true], 'fenêtre à 390 px');
     await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('.wline[data-v="Historique"]'); await p.click('#modal [data-act="wsrc"][data-v="other"]');
@@ -475,7 +476,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const reload = async () => { await p.reload(); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.CAT); };
     const list = () => p.evaluate(() => [document.querySelector('[data-act="wizard"]').textContent, !!document.querySelector('[data-act="wdrop"]')]);
     await p.evaluate(() => { S.view = 'list'; render(); }); eq(await list(), ['Créer un personnage', false], 'au départ : rien à reprendre');
-    await p.click('[data-act="wizard"]'); await p.fill('input[data-w="name"]', 'Brouillon'); await reload();
+    await p.click('[data-act="wizard"]'); await p.click('[data-act="wmode"][data-v="direct"]'); await p.fill('input[data-w="name"]', 'Brouillon'); await reload();
     eq(await list(), ['Reprendre ma création', true], 'après rechargement : reprise proposée, abandon possible');
     await p.click('[data-act="wizard"]'); eq(await p.evaluate(() => [S.view, S.W.name, document.querySelector('input[data-w="name"]').value]), ['wizard', 'Brouillon', 'Brouillon'], 'le nom tapé (sans autre action) est revenu');
     await p.click('.wline[data-v="Classe"]'); await p.click('#modal [data-act="wpick"][data-v="clerc"]'); await p.selectOption('#modal select[data-w="order"]', 'thaumaturge');
@@ -488,8 +489,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="wdrop"]'); eq([await list(), await p.evaluate(() => [hbs().length, localStorage.getItem('registre-creation-v1'), !!S.W])], [['Créer un personnage', false], [0, null, false]], 'abandon : plus de brouillon, fiches inutilisées supprimées');
     await reload(); eq(await list(), ['Créer un personnage', false], 'toujours rien après rechargement');
     // « Abandonner » sur la page fait la même chose ; créer le personnage efface le brouillon
-    await p.click('[data-act="wizard"]'); await p.fill('input[data-w="name"]', 'X'); await p.click('[data-act="wcancel"]'); eq(await p.evaluate(() => [S.view, localStorage.getItem('registre-creation-v1')]), ['list', null], 'abandon depuis la page');
-    await p.click('[data-act="wizard"]'); await p.evaluate(() => { const W = S.W; Object.assign(W, { name: 'Créé', langs: ['Elfique', 'Nain'], cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' }); for (const st of ['Historique', 'Caractéristiques', 'Compétences']) Object.assign(W, wSugDraft(W, st)); render(); });
+    await p.click('[data-act="wizard"]'); await p.click('[data-act="wmode"][data-v="direct"]'); await p.fill('input[data-w="name"]', 'X'); await p.click('[data-act="wcancel"]'); eq(await p.evaluate(() => [S.view, localStorage.getItem('registre-creation-v1')]), ['list', null], 'abandon depuis la page');
+    await p.click('[data-act="wizard"]'); await p.evaluate(() => { const W = S.W; Object.assign(W, { mode: '', name: 'Créé', langs: ['Elfique', 'Nain'], cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' }); for (const st of ['Historique', 'Caractéristiques', 'Compétences']) Object.assign(W, wSugDraft(W, st)); render(); });
     ok(await p.evaluate(() => !!localStorage.getItem('registre-creation-v1')), 'brouillon enregistré pendant la création'); await p.click('[data-act="wcreate"]');
     eq(await p.evaluate(() => [cur().name, localStorage.getItem('registre-creation-v1')]), ['Créé', null], 'personnage créé : brouillon effacé');
     // Brouillon abîmé ou mal formé : ignoré ou nettoyé, jamais d'erreur
@@ -517,6 +518,50 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     // Un contenu hors des règles de base n'a pas de carte : sa propre description suffit
     await p.evaluate(() => { S.docs.hb_tc = { type: 'hb', kind: 'classe', name: 'Classe test', label: '', hitDie: 10, features: [], effects: [] }; const W = S.W; W.open = 'Classe'; W.cls = 'hb:hb_tc'; render(); });
     eq(await p.evaluate(() => [!!document.querySelector('#modal .wchosen'), !!document.querySelector('#modal .winfo')]), [true, false], 'pas de carte pour une classe personnelle');
+  });
+
+  await test('Création : mode guidé (choix du mode, trois écrans préremplis, retour, bascule vers le mode direct, largeur iPhone)', async p => {
+    await open(p);
+    await p.evaluate(() => { S.view = 'list'; render(); }); await p.click('[data-act="wizard"]');
+    eq(await p.evaluate(() => [[...document.querySelectorAll('.wmodec b')].map(b => b.textContent), document.querySelectorAll('.wline, input[data-w="name"]').length]), [['Guidé', 'Direct'], 0], 'création neuve : on choisit d’abord le mode');
+    await p.click('[data-act="wmode"][data-v="guide"]');
+    const st = () => p.evaluate(() => { const b = document.querySelector('#wfoot .btn.primary'); return [document.querySelector('h1').textContent, document.querySelector('#wfoot .wleft').textContent, b.dataset.act, b.disabled, b.textContent]; });
+    // Écran 1 : nom et classe
+    eq(await st(), ['Qui es-tu ?', 'Étape 1 sur 3', 'wgnext', true, 'Donne un nom à ton personnage.'], 'écran 1');
+    eq(await p.evaluate(() => [!!document.querySelector('input[data-w="level"]'), !!document.querySelector('.wline'), document.querySelectorAll('.wcard[data-k="cls"]').length]), [false, false, 12], 'ni niveau ni lignes : seulement le nom et les classes');
+    await p.fill('input[data-w="name"]', 'Mirela'); eq((await st())[4], 'Choisis une classe.', 'le bouton suit la saisie du nom');
+    await p.click('[data-act="wpick"][data-v="magicien"]');
+    eq([await st(), await p.evaluate(() => /En jeu/i.test(document.querySelector('.winfo').textContent))], [['Qui es-tu ?', 'Étape 1 sur 3', 'wgnext', false, 'Suivant : D\'où viens-tu ?'], true], 'classe choisie : carte d’explication, suite ouverte');
+    await p.click('[data-act="wgnext"]');
+    // Écran 2 : historique et espèce ; le bonus d'historique est proposé dès le choix
+    eq(await st(), ['D\'où viens-tu ?', 'Étape 2 sur 3', 'wgnext', true, 'Choisis un historique.'], 'écran 2');
+    await p.click('[data-act="wpick"][data-v="srd:sage"]');
+    eq(await p.evaluate(() => [S.W.asi2, !!S.W.asi1, document.querySelector('select[data-w="asi2"]').value]), ['int', true, 'int'], 'bonus d’historique proposé (Intelligence du magicien d’abord), visible et modifiable');
+    eq((await st())[4], 'Choisis une espèce.', 'reste l’espèce'); await p.click('[data-act="wpick"][data-v="srd:elfe"]');
+    eq((await st())[4], 'Lignage elfique : fais ton choix.', 'le lignage n’est pas choisi à la place du joueur'); await p.selectOption('select[data-w="lin"]', 'haut-elfe'); await p.selectOption('select[data-w="spSkill"]', 'perception');
+    eq(await st(), ['D\'où viens-tu ?', 'Étape 2 sur 3', 'wgnext', false, 'Suivant : Finitions'], 'écran 2 complet'); await p.click('[data-act="wgnext"]');
+    // Écran 3 : tout est prérempli, il n'y a plus qu'à créer
+    eq(await st(), ['Finitions', 'Étape 3 sur 3', 'wcreate', false, 'Créer le personnage'], 'écran 3 : prêt à créer sans rien toucher');
+    eq(await p.evaluate(() => [[...document.querySelectorAll('.wline')].map(b => b.dataset.v + b.querySelector('.st').textContent), wNeeds(S.W).length, S.W.level]), [['Caractéristiques✓', 'Compétences✓', 'Sorts✓', 'Langues✓', 'Équipement✓', 'Détails'], 0, 1], 'cinq lignes cochées, niveau 1');
+    // Changer une proposition, revenir en arrière, basculer de mode : rien n'est perdu
+    await p.click('.wline[data-v="Langues"]'); await p.click('#modal .wlangs .chip[data-v="Elfique"]'); await p.click('#modal .wlangs .chip[data-v="Orc"]'); await p.click('#modal .wfoot [data-act="wclose"]');
+    eq(await p.evaluate(() => S.W.langs), ['Nain', 'Orc'], 'proposition changée'); await p.click('[data-act="wgprev"]'); await p.click('[data-act="wgnext"]');
+    eq(await p.evaluate(() => [S.W.langs, wGStep(S.W)]), [['Nain', 'Orc'], 2], 'aller-retour : le choix du joueur n’est pas remplacé par la proposition');
+    await p.click('[data-act="wmode"][data-v="direct"]');
+    eq(await p.evaluate(() => [S.W.mode, document.querySelectorAll('.wline').length, document.querySelectorAll('.wline .st').length - [...document.querySelectorAll('.wline .st')].filter(s => !s.textContent).length, document.querySelector('input[data-w="name"]').value]), ['', 9, 8, 'Mirela'], 'mode direct : la même création, toutes les lignes cochées');
+    await p.evaluate(() => { S.W.level = 4; render(); }); await p.click('[data-act="wmode"][data-v="guide"]');
+    eq(await p.evaluate(() => [S.W.mode, wGStep(S.W), S.W.level]), ['guide', 2, 1], 'retour au guidé : dernier écran, niveau 1');
+    // Changer de classe en arrière : les finitions sont reproposées pour la nouvelle classe
+    await p.click('[data-act="wgprev"]'); await p.click('[data-act="wgprev"]'); await p.click('[data-act="wchg"][data-k="cls"]'); await p.click('[data-act="wpick"][data-v="guerrier"]'); await p.click('[data-act="wgnext"]'); await p.click('[data-act="wgnext"]');
+    eq(await p.evaluate(() => [wNeeds(S.W).length, S.W.skills.length, !!S.W.style, [...document.querySelectorAll('.wline')].map(b => b.dataset.v).includes('Sorts')]), [0, 2, true, false], 'guerrier : compétences et style reproposés, plus de ligne Sorts');
+    // Largeur iPhone sur les trois écrans, puis brouillon : le mode et l'écran reviennent
+    await p.setViewportSize({ width: 390, height: 844 });
+    for (const back of [0, 1, 1]) { if (back) await p.click('[data-act="wgprev"]'); eq(await p.evaluate(() => [document.documentElement.scrollWidth <= 390, [...document.querySelectorAll('#wfoot .btn, .wcard, .wline, .wswitch')].every(b => b.getBoundingClientRect().right <= 390)]), [true, true], 'écran guidé à 390 px'); }
+    await p.setViewportSize({ width: 1200, height: 900 }); await p.click('[data-act="wgnext"]');
+    await p.reload(); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.CAT); await p.click('[data-act="wizard"]');
+    eq(await p.evaluate(() => [S.W.mode, wGStep(S.W), document.querySelector('h1').textContent, S.W.cls]), ['guide', 1, 'D\'où viens-tu ?', 'guerrier'], 'brouillon repris dans le mode guidé, au même écran');
+    await p.click('[data-act="wgnext"]'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => { const c = cur(); return [S.view, c.name, c.classId, c.level, c.lineage.id, c.languages, !!S.pending]; }), ['sheet', 'Mirela', 'guerrier', 1, 'haut-elfe', 'Commun, Nain, Orc', false], 'personnage créé au niveau 1');
   });
 
   for (const [label, o, want, noteRe] of [

@@ -119,9 +119,12 @@ document.addEventListener("click",e=>{
     case "new": S.newName={}; renderModal(); break;
     case "newCancel": if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } break; // clic à côté de la fenêtre ou sur sa croix, pas dedans
     case "wclose": if(S.W&&(e.target===t||t.tagName==="BUTTON")){ S.W.open=null; render(); } break;
-    case "wizard": if(!S.W) S.W=wDraftLoad()||wNew(); S.W.open=null; S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
+    case "wizard": if(!S.W){ const d=wDraftLoad(); S.W=d||wNew(); if(!d) S.W.mode="?"; } S.W.open=null; /* création neuve : on choisit d'abord le mode */ S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
     case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; (S.W.seen=S.W.seen||{})[t.dataset.v]=true; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;
+    case "wmode": { const W=S.W; W.mode=t.dataset.v==="guide"?"guide":""; W.open=null; if(W.mode==="guide"){ W.level=1; W.gstep=wGFirst(W); if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); } render(); window.scrollTo(0,0); break; }
+    case "wgnext": { const W=S.W, i=wGStep(W); if(wGNeeds(W,i).length) break; W.gstep=i+1; if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); render(); window.scrollTo(0,0); break; }
+    case "wgprev": S.W.gstep=Math.max(0,wGStep(S.W)-1); render(); window.scrollTo(0,0); break;
     case "wsrc": (S.W.src=S.W.src||{})[t.dataset.k]=t.dataset.v; render(); break;
     case "wcancel": wAbandon(); break;
     case "wdrop": wAbandon(); break; // depuis la liste des personnages
@@ -129,7 +132,7 @@ document.addEventListener("click",e=>{
     case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; W.spSkill=""; W.size=""; }
-      W[k]=v; if(k==="bg"&&W.spSkill&&wBgSkills(W).includes(W.spSkill)) W.spSkill=""; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } if(k==="bg"&&W.hFeat&&W.hFeat===wBgFeat(W)) W.hFeat=""; render(); break; }
+      W[k]=v; if(k==="bg"&&W.spSkill&&wBgSkills(W).includes(W.spSkill)) W.spSkill=""; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } if(k==="bg"&&W.hFeat&&W.hFeat===wBgFeat(W)) W.hFeat=""; if(k==="bg"&&W.mode==="guide") wGuideFill(W,["Historique"]); render(); break; }
     case "wpt": { const a=t.dataset.a; S.W.pts[a]=Math.max(8,Math.min(15,(+S.W.pts[a]||8)+(+t.dataset.v))); render(); break; }
     case "wroll": { const W=S.W; if(W.rolled||W.dice.some(v=>v!=="")) break; roll3d(Array(W.dice.length*4).fill(6),()=>{ if(W.rolled||W.dice.some(v=>v!=="")) return; const bd=[]; W.dice=W.dice.map(()=>{ const r=[rnd(6),rnd(6),rnd(6),rnd(6)].sort((x,y)=>y-x); bd.push(r[0]+r[1]+r[2]); return r[0]+r[1]+r[2]; }); W.rolled=true; W.rollBd=bd.join(", "); W.diceAs={};
       addLog({label:"Création · 6 jets de 4d6",total:"✓",bd:W.rollBd,kind:"info",quiet:true}); render(); }); break; }

@@ -15,7 +15,7 @@ function wDraftLoad(){ try{ const j=JSON.parse(localStorage.getItem(W_DRAFT_KEY)
     if(W.cls&&!clsOf(W.cls)) W.cls=""; if(W.bg&&!wBg(W)) W.bg=""; if(W.sp&&!(srd("species",W.sp)||hb(W.sp))) W.sp=""; return W; }catch(e){ return null; } }
 // Abandonner : le brouillon et les fiches du catalogue créées pour lui (encore à remplir et inutilisées) disparaissent
 function wAbandon(){ const W=S.W||wDraftLoad(), made=(W&&W.catMade)||[]; S.W=null; wDraftClear(); for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); }
-function wNew(){ return {step:0,cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
+function wNew(){ return {mode:"",gstep:0,step:0,cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
 function eqOptions(txt){ const t=String(txt||"").replace(/^Choisissez[^:]*:\s*/,""); const out=[]; const re=/\(([A-Z])\)\s*([\s\S]*?)(?=\s*;\s*(?:ou\s*)?\([A-Z]\)|$)/g; let m;
   while((m=re.exec(t))){ const items=[]; let gold=0;
     for(let part of m[2].replace(/\s*;?\s*$/,"").split(/,\s*|\s+\+\s+/)){ part=part.trim(); const last=part.match(/^(.*)\s+et\s+(\d+ po)$/); const segs=last?[last[1],last[2]]:[part];
@@ -295,15 +295,37 @@ function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)|
   if(st==="Détails") return [wAlign(W),String(W.notes||"").trim()?"notes":""].filter(Boolean).join(" · ")||"Alignement, notes (facultatif)";
   return ""; }
 // Compteur de ce qui reste à faire et bouton d'état : tant qu'il manque quelque chose, le bouton est grisé et le nomme
-function wFoot(W){ const n=wNeeds(W), names=n.map(x=>x.name==="Identité"?"nom":x.name.toLowerCase());
+function wFoot(W){ if(W.mode==="guide") return wGFoot(W); const n=wNeeds(W), names=n.map(x=>x.name==="Identité"?"nom":x.name.toLowerCase());
   return `<div class="wfootbar" id="wfoot"><div class="wleft" role="status">${n.length?`<b>Reste à faire (${n.length})</b> <span class="muted">${esc(names.join(", "))}</span>`:`<span class="muted">Tout est choisi.</span>`}</div><button class="btn primary" data-act="wcreate" ${n.length?"disabled":""}>${esc(n.length?n[0].msg:"Créer le personnage")}</button></div>`; }
 // Sur téléphone, le compteur est aussi en haut de la page (le pied est loin) ; caché sur ordinateur
-function wCount(W){ const n=wNeeds(W); return `<div class="wcount" id="wcount" aria-hidden="true">${n.length?`<b>Reste à faire (${n.length})</b> <span class="muted">${esc(n.map(x=>x.name==="Identité"?"nom":x.name.toLowerCase()).join(", "))}</span>`:`<b>Tout est choisi.</b> <span class="muted">Tu peux créer le personnage.</span>`}</div>`; }
-function viewWizard(){ const W=S.W, c=wCls(W), lv=+W.level||1; wDraftSave(); // chaque affichage de la page enregistre le brouillon
-  // Une ligne pas encore ouverte reste neutre (« À choisir ») ; le rouge est gardé pour une ligne ouverte puis laissée incomplète
-  const rows=wLines(W).map(st=>{ const msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement"), seen=!!(W.seen||{})[st];
-    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(st)}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }).join("");
-  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux.</div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
+function wCount(W){ const g=W.mode==="guide", n=g?wGNeeds(W,wGStep(W)):wNeeds(W); return `<div class="wcount" id="wcount" aria-hidden="true">${n.length?`<b>Reste à faire (${n.length})</b> <span class="muted">${esc(n.map(x=>x.name==="Identité"?"nom":x.name.toLowerCase()).join(", "))}</span>`:`<b>Tout est choisi.</b> <span class="muted">${g&&wGStep(W)<2?"Tu peux passer à la suite.":"Tu peux créer le personnage."}</span>`}</div>`; }
+/* Deux modes sur le même état S.W (chantier 17) : W.mode "" = direct (une page, toutes les lignes), "guide" = trois écrans préremplis,
+   "?" = écran de choix du mode, montré seulement à l'entrée d'une création neuve. On passe de l'un à l'autre sans rien perdre. */
+function viewWizard(){ const W=S.W; wDraftSave(); // chaque affichage enregistre le brouillon
+  return W.mode==="?"?wModeView(W):W.mode==="guide"?wGuideView(W):wDirectView(W); }
+function wModeView(W){ return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Comment veux-tu le créer ? Tu pourras changer de mode en cours de route.</div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>
+    <div class="wmodes"><button class="wcard wmodec" data-act="wmode" data-v="guide"><b>Guidé</b><span>Pour débuter. Trois écrans, et des propositions déjà faites : tu valides ou tu changes. Le personnage commence au niveau 1.</span></button>
+    <button class="wcard wmodec" data-act="wmode" data-v="direct"><b>Direct</b><span>Une seule page avec tous les choix, dans l'ordre que tu veux. Pour créer vite, ou à un niveau plus élevé.</span></button></div>`; }
+// Mode guidé : les trois écrans et les sujets de chacun
+const G_STEPS=[["Qui es-tu ?",["Identité","Classe"]],["D'où viens-tu ?",["Historique","Espèce"]],["Finitions",["Caractéristiques","Compétences","Sorts","Langues","Équipement"]]];
+function wGStep(W){ return Math.max(0,Math.min(2,+W.gstep||0)); }
+function wGNeeds(W,i){ return wNeeds(W).filter(n=>G_STEPS[i][1].includes(n.name)); }
+function wGFirst(W){ for(let i=0;i<3;i++) if(wGNeeds(W,i).length) return i; return 2; }
+// Préremplissage du mode guidé : les suggestions, qui ne touchent jamais à un choix déjà fait
+function wGuideFill(W,list){ for(const st of list) Object.assign(W,wSugDraft(W,st)); }
+function wGFoot(W){ const i=wGStep(W), n=wGNeeds(W,i);
+  return `<div class="wfootbar" id="wfoot">${i?`<button class="btn" data-act="wgprev">← Retour</button>`:""}<div class="wleft muted" role="status">Étape ${i+1} sur 3</div><button class="btn primary" data-act="${i<2?"wgnext":"wcreate"}" ${n.length?"disabled":""}>${esc(n.length?n[0].msg:i<2?"Suivant : "+G_STEPS[i+1][0]:"Créer le personnage")}</button></div>`; }
+function wGuideView(W){ const i=wGStep(W); let h="";
+  if(i===0) h=`<label class="field wgname"><span>Comment s'appelle ton personnage ?</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><h2 class="wgh">Sa classe</h2>${wStepBody(W,"Classe")}`;
+  if(i===1) h=`<h2 class="wgh">Son historique</h2>${wStepBody(W,"Historique")}<h2 class="wgh">Son espèce</h2>${wStepBody(W,"Espèce")}`;
+  if(i===2) h=`<p class="muted">Tout est déjà proposé d'après ta classe et ton origine. Touche une ligne pour voir ou changer.</p><div class="wlines">${[...G_STEPS[2][1].filter(s=>wSteps(W).includes(s)),"Détails"].map(st=>wRow(W,st)).join("")}</div>`;
+  return `<div class="list-head"><div><h1>${esc(G_STEPS[i][0])}</h1><div class="muted">Étape ${i+1} sur 3 · mode guidé <button class="btn small ghost wswitch" data-act="wmode" data-v="direct">Passer en mode direct</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
+    <div class="wz"><section class="stack" style="min-width:0">${h}${wGFoot(W)}</section>${wPreview(W)}</div>`; }
+// Une ligne pas encore ouverte reste neutre (« À choisir ») ; le rouge est gardé pour une ligne ouverte puis laissée incomplète
+function wRow(W,st){ const c=wCls(W), msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement"), seen=!!(W.seen||{})[st];
+    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(st)}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }
+function wDirectView(W){ const c=wCls(W), lv=+W.level||1, rows=wLines(W).map(st=>wRow(W,st)).join("");
+  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux. <button class="btn small ghost wswitch" data-act="wmode" data-v="guide">Passer en mode guidé</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
     <div class="wz"><section class="stack" style="min-width:0">
       <div class="wid"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
       ${lv>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${lv}.</div>`:""}
