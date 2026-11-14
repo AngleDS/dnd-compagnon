@@ -70,19 +70,46 @@ function wOriginFeats(cur){ const l=[...S.C.feats.filter(f=>/origine/i.test(f.ca
 /* Contenus proposés par l'assistant (décision du 14 nov. 2026) : « Règles de base » (SRD) et « Autres contenus », c'est-à-dire seulement
    les fiches complètes de « Mes contenus ». Rien d'« à remplir » ; la création de contenu se fait dans « Mes contenus », pas ici.
    Un historique est complet dès qu'il a ses 3 caractéristiques, ses 2 compétences et son don (les 12 du Manuel des joueurs dans le catalogue). */
+/* Cartes d'explication (chantier 17, lot B) : pour chaque classe et chaque espèce des règles de base, une accroche (t), ce que ça donne
+   en jeu (p) et une complexité (cx). Textes rédigés pour l'appli, à partir des traits et aptitudes du SRD ; ce ne sont pas des règles. */
+const W_INFO={classe:{
+  barbare:{t:"Un combattant porté par sa rage, qui encaisse et frappe fort.",p:"Tu fonces au contact, tu entres en rage pour résister aux coups et tu fais très mal.",cx:"Simple"},
+  barde:{t:"Un artiste dont la musique et les mots sont de la magie.",p:"Tu inspires tes alliés, tu embrouilles tes ennemis et tu te débrouilles dans presque toutes les situations.",cx:"Intermédiaire"},
+  clerc:{t:"Le serviteur d'une divinité, qui soigne et protège.",p:"Tu soignes, tu bénis tes alliés et tu frappes avec la magie divine. Selon ton ordre, tu tiens la ligne en armure ou tu maîtrises plus de magie.",cx:"Intermédiaire"},
+  druide:{t:"Un gardien de la nature, qui commande aux éléments et aux bêtes.",p:"Tu lances des sorts de nature et, dès le niveau 2, tu prends la forme d'animaux.",cx:"Avancée"},
+  ensorceleur:{t:"Un lanceur de sorts dont la magie est innée.",p:"Tu connais peu de sorts, mais tu les lances souvent et tu apprends à les modifier. Reste loin des coups.",cx:"Intermédiaire"},
+  guerrier:{t:"Un maître des armes et des armures.",p:"Tu attaques, tu tiens bon et tu récupères en plein combat. Peu de règles à retenir.",cx:"Simple"},
+  magicien:{t:"Un érudit qui apprend la magie dans ses livres.",p:"Tu as le plus grand choix de sorts du jeu, mais très peu de points de vie : reste à l'abri.",cx:"Avancée"},
+  moine:{t:"Un artiste martial rapide, qui combat à mains nues.",p:"Tu frappes plusieurs fois par tour, tu te déplaces vite et tu évites les coups sans armure.",cx:"Intermédiaire"},
+  occultiste:{t:"Un lanceur de sorts lié par un pacte à une puissance surnaturelle.",p:"Tu as peu d'emplacements de sorts, mais ils reviennent après un repos court, et tu disposes d'une attaque magique à volonté.",cx:"Intermédiaire"},
+  paladin:{t:"Un chevalier lié par un serment sacré.",p:"Tu combats en armure lourde, tu soignes par imposition des mains et, très vite, tu renforces tes coups avec la magie divine.",cx:"Intermédiaire"},
+  rodeur:{t:"Un chasseur et pisteur à l'aise dans la nature.",p:"Tu combats à l'arc ou à deux armes, tu marques ta proie et tu aides le groupe à explorer.",cx:"Intermédiaire"},
+  roublard:{t:"Un spécialiste de la discrétion et des coups précis.",p:"Tu places une attaque sournoise par tour, tu excelles dans beaucoup de compétences et tu te sors des mauvais pas.",cx:"Simple"}},
+ espece:{
+  drakeide:{t:"Un descendant de dragons.",p:"Tu craches un souffle d'énergie, tu résistes à un type de dégâts et tu vois dans le noir.",cx:"Simple"},
+  elfe:{t:"Un être ancien, perceptif et magique.",p:"Tu vois dans le noir, tu résistes aux charmes, tu n'as pas besoin de dormir et ton lignage te donne des sorts.",cx:"Intermédiaire"},
+  gnome:{t:"Un petit être curieux et rusé.",p:"Tu vois dans le noir, tu résistes mieux à ce qui vise l'esprit et ton lignage te donne quelques tours de magie.",cx:"Intermédiaire"},
+  goliath:{t:"Un lointain descendant des géants, grand et puissant.",p:"Tu te déplaces plus vite, tu portes plus lourd et ton ascendance te donne un pouvoir de géant.",cx:"Simple"},
+  halfelin:{t:"Un petit être chanceux et courageux.",p:"Tu relances tes 1 au d20, tu résistes à la peur et tu te faufiles entre les créatures plus grandes que toi.",cx:"Simple"},
+  humain:{t:"Polyvalent et débrouillard.",p:"Tu gagnes un don d'origine et une compétence de plus, et tu retrouves l'inspiration héroïque à chaque repos long.",cx:"Simple"},
+  nain:{t:"Un être robuste, né sous la montagne.",p:"Tu vois dans le noir, tu résistes au poison et tu as plus de points de vie.",cx:"Simple"},
+  orc:{t:"Un être endurant, taillé pour l'effort.",p:"Tu vois dans le noir, tu peux foncer en action bonus et, une fois par repos long, tu restes debout au lieu de tomber à 0 PV.",cx:"Simple"},
+  tieffelin:{t:"Un être marqué par un héritage des plans inférieurs.",p:"Tu vois dans le noir, tu connais un tour de magie et ton héritage te donne une résistance et des sorts.",cx:"Intermédiaire"}}};
+function wInfoOf(kind,ref){ return (W_INFO[kind]||{})[String(ref||"").replace(/^srd:/,"")]||null; }
+function wInfoCard(kind,ref){ const i=wInfoOf(kind,ref); return i?`<div class="winfo"><div><span class="label">En jeu</span> ${esc(i.p)}</div><div class="muted" style="font-size:var(--fs-sm)">Complexité : ${esc(i.cx)}</div></div>`:""; }
 function wBgReady(h){ return Array.isArray(h.abilities)&&h.abilities.filter(Boolean).length===3&&(h.effects||[]).filter(e=>e.t==="maitrise"&&/^comp:/.test(e.cible||"")).length>=2&&!!(h.feat||h.featRef); }
 function wSources(kind){ const tag=h=>catShort(h.label)||"Personnalisée";
-  if(kind==="classe") return {base:S.C.classes.map(x=>[x.id,x.name,`d${x.hitDie} · ${x.primary.map(a=>ABN[a]).join(" ou ")}${x.casting?" · sorts":""}`]),
+  if(kind==="classe") return {base:S.C.classes.map(x=>[x.id,x.name,(wInfoOf("classe",x.id)||{}).t||`d${x.hitDie} · ${x.primary.map(a=>ABN[a]).join(" ou ")}${x.casting?" · sorts":""}`]),
     other:hbs("classe").filter(h=>!h.pending).map(x=>["hb:"+x._id,x.name,tag(x)+" · d"+(+x.hitDie||8)])};
   if(kind==="historique") return {base:S.C.backgrounds.map(b=>["srd:"+b.id,b.name,b.abilities.map(a=>ABS[a]).join(", ")+" · "+b.feat]),
     other:[...hbs("historique").filter(h=>!h.pending||wBgReady(h)).map(x=>["hb:"+x._id,x.name,tag(x)+(x.feat?" · "+x.feat:"")]),
       ...catAll().filter(e=>e.k==="historique"&&!catHb(e)&&(e.ab||[]).length===3&&(e.sk||[]).length===2&&(e.feat||e.featRef)).map(e=>["cat:"+e.id,e.n,catShort(e.b)+" · "+e.feat])].sort((a,b)=>a[1].localeCompare(b[1],"fr"))};
-  return {base:S.C.species.map(x=>["srd:"+x.id,x.name,x.traits.map(t=>t.name).join(", ")]),other:hbs("espece").filter(h=>!h.pending).map(x=>["hb:"+x._id,x.name,tag(x)])}; }
+  return {base:S.C.species.map(x=>["srd:"+x.id,x.name,(wInfoOf("espece",x.id)||{}).t||x.traits.map(t=>t.name).join(", ")]),other:hbs("espece").filter(h=>!h.pending).map(x=>["hb:"+x._id,x.name,tag(x)])}; }
 // Liste de choix avec ses deux onglets ; « Autres contenus » n'existe que s'il y a quelque chose de complet à y montrer
 function wPick(W,kind,key){ const s=wSources(kind), tab=s.other.length&&(W.src||{})[kind]==="other"?"other":"base";
   // Une fois le choix fait, la liste se replie : ses détails et ses sous-choix sont juste dessous, pas sous le pli
   const got=W[key]&&W.chg!==key?[...s.base,...s.other].find(x=>x[0]===W[key]):null;
-  if(got) return `<div class="wchosen"><span><b>${esc(got[1])}</b>${got[2]?`<span class="muted">${esc(got[2])}</span>`:""}</span><button class="btn small" data-act="wchg" data-k="${key}">Changer</button></div>`;
+  if(got) return `<div class="wchosen"><span><b>${esc(got[1])}</b>${got[2]?`<span class="muted">${esc(got[2])}</span>`:""}</span><button class="btn small" data-act="wchg" data-k="${key}">Changer</button></div>${wInfoCard(kind,W[key])}`;
   return (s.other.length?`<div class="adv wsrc" role="group" style="grid-template-columns:1fr 1fr"><button aria-pressed="${tab==="base"}" data-act="wsrc" data-k="${kind}" data-v="base">Règles de base</button><button aria-pressed="${tab==="other"}" data-act="wsrc" data-k="${kind}" data-v="other">Autres contenus (${s.other.length})</button></div>`:"")
     +wCards(s[tab],W[key],key)
     +`<div class="muted wmore" style="font-size:var(--fs-sm);margin-top:8px">Tu ne trouves pas ? Ce qui sort des règles de base se prépare dans <button class="btn small ghost" data-act="nav" data-v="hb">Mes contenus</button> Ta création en cours t'attendra.</div>`; }

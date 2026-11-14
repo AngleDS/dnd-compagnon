@@ -500,6 +500,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const W = S.W; return [W.name, W.skills, W.std, W.cls, W.langs, W.seen, W.level, W.nh, !!document.querySelector('.wline')]; }), ['Tordu', [], {}, '', undefined, undefined, 3, null, true], 'champs mal formés écartés, le reste gardé, la page s’affiche');
   });
 
+  await test('Création : cartes d’explication des 12 classes et des 9 espèces des règles de base', async p => {
+    await open(p);
+    const cov = await p.evaluate(() => { const bad = []; for (const [k, list] of [['classe', S.C.classes], ['espece', S.C.species]]) for (const x of list) { const i = wInfoOf(k, x.id); if (!i || !i.t || !i.p || !['Simple', 'Intermédiaire', 'Avancée'].includes(i.cx) || i.t.length > 80 || i.p.length > 170) bad.push(x.id); }
+      return [bad, Object.keys(W_INFO.classe).length, Object.keys(W_INFO.espece).length, S.C.classes.length, S.C.species.length]; });
+    eq(cov, [[], 12, 9, 12, 9], 'une carte courte pour chaque classe et chaque espèce, rien en trop');
+    await p.evaluate(() => { S.W = wNew(); S.view = 'wizard'; S.W.open = 'Classe'; render(); });
+    eq(await p.evaluate(() => document.querySelector('#modal .wcard[data-v="guerrier"] span').textContent), 'Un maître des armes et des armures.', 'accroche dans la liste');
+    for (const vp of [{ width: 1200, height: 700 }, { width: 390, height: 700 }]) { await p.setViewportSize(vp);
+      eq(await p.evaluate(() => { const r = s => document.querySelector(s).getBoundingClientRect(), b = r('#modal .wbody'), f = r('#modal .wfoot'), x = r('#modal .box'), e = document.querySelector('#modal .wbody'); return [e.scrollHeight > e.clientHeight, b.bottom <= f.top + 1, f.bottom <= innerHeight, x.right <= innerWidth]; }), [true, true, true, true], 'longue liste (' + vp.width + ' px) : elle défile dans la fenêtre, le pied reste visible et cliquable'); }
+    await p.setViewportSize({ width: 1200, height: 900 });
+    await p.click('#modal [data-act="wpick"][data-v="guerrier"]');
+    eq(await p.evaluate(() => document.querySelector('#modal .winfo').innerText.replace(/\s+/g, ' ').trim()), 'EN JEU Tu attaques, tu tiens bon et tu récupères en plein combat. Peu de règles à retenir. Complexité : Simple', 'carte de la classe choisie');
+    await p.evaluate(() => { S.W.open = 'Espèce'; render(); }); await p.click('#modal [data-act="wpick"][data-v="srd:orc"]');
+    ok(await p.evaluate(() => /Complexité : Simple/.test(document.querySelector('#modal .winfo').textContent)), 'carte de l’espèce choisie');
+    // Un contenu hors des règles de base n'a pas de carte : sa propre description suffit
+    await p.evaluate(() => { S.docs.hb_tc = { type: 'hb', kind: 'classe', name: 'Classe test', label: '', hitDie: 10, features: [], effects: [] }; const W = S.W; W.open = 'Classe'; W.cls = 'hb:hb_tc'; render(); });
+    eq(await p.evaluate(() => [!!document.querySelector('#modal .wchosen'), !!document.querySelector('#modal .winfo')]), [true, false], 'pas de carte pour une classe personnelle');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],
