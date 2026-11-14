@@ -30,6 +30,10 @@ function wBg(W){ return srd("backgrounds",W.bg)||hb(W.bg); }
 function wBgAbs(W){ const b=srd("backgrounds",W.bg); if(b) return b.abilities; const h=hb(W.bg); return h&&Array.isArray(h.abilities)&&h.abilities.filter(Boolean).length===3?h.abilities:AB.slice(); }
 function wBgSkills(W){ const b=srd("backgrounds",W.bg); if(b) return b.skills||[]; const h=hb(W.bg); return h?(h.effects||[]).filter(e=>e.t==="maitrise"&&/^comp:/.test(e.cible||"")).map(e=>e.cible.slice(5)):[]; }
 function wBgFeat(W){ const b=srd("backgrounds",W.bg); if(!b) return W.feat||""; const n=norm(String(b.feat||"").replace(/\s*\(.*\)\s*/,"")); const f=S.C.feats.find(x=>norm(x.name)===n); return f?"srd:"+f.id:""; }
+// Choix d'espèce en plus du lignage (chantier 17) : la compétence de Sens aiguisés (elfe) et la taille quand l'espèce en propose deux
+const SP_SKILL={"Sens aiguisés":["intuition","perception","survie"]};
+function wSpSkills(W){ const s=srd("species",W.sp), t=s&&s.traits.find(t=>SP_SKILL[t.name]); return t?{name:t.name,from:SP_SKILL[t.name]}:null; }
+function wSizes(W){ const s=srd("species",W.sp), m=s?String(s.size||"").replace(/,\s*à choisir.*$/,"").split(/\s+ou\s+/):[]; return m.length===2?m:null; }
 function wIsHuman(W){ const s=srd("species",W.sp); return !!(s&&s.traits.some(t=>t.name==="Polyvalent")); }
 // Dons d'origine proposés : règles de base, puis dons complets de « Mes contenus ». cur : le don déjà retenu reste dans la liste.
 function wOriginFeats(cur){ const l=[...S.C.feats.filter(f=>/origine/i.test(f.category||"")).map(f=>["srd:"+f.id,f.name]),...hbs("don").filter(h=>!h.pending).map(h=>["hb:"+h._id,h.name])];
@@ -66,10 +70,10 @@ function wSteps(W){ const c=wCls(W), cast=wCast(W); const st=["Classe","Historiq
   if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Équipement","Identité"); return st; }
 function wEqItems(W){ const c=wCls(W), out=[]; let gold=0; const add=(txt,key)=>{ const opts=eqOptions(txt); const cur=opts.find(o=>o.k===W[key])||opts[0]; if(!cur) return; gold+=cur.gold; cur.items.forEach((it,ix)=>{ if(!W.eqOff[key+cur.k+ix]) out.push(it); }); };
   if(c) add(c.equipment,"eqC"); const bgS=srd("backgrounds",W.bg); if(bgS) add(bgS.equipment,"eqB"); return {items:out,gold}; }
-function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill].filter(Boolean)) skills[s]=1;
+function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill,wSpSkills(W)?W.spSkill:""].filter(Boolean)) skills[s]=1;
   const feats=[...new Set([wBgFeat(W), wIsHuman(W)?W.hFeat:"", wStyle1(W)?W.style:""].filter(Boolean))];
   const bgS=srd("backgrounds",W.bg);
-  return {type:"perso",name:W.name||"Nouveau personnage",player:W.player||"",level:1,classId:W.cls,species:W.sp,lineage:W.lin&&LINEAGES[String(W.sp||"").replace(/^srd:/,"")]?{id:W.lin,ab:W.linAb||"cha"}:undefined,background:W.bg,abilities:wAbilities(W),skills,
+  return {type:"perso",name:W.name||"Nouveau personnage",player:W.player||"",level:1,classId:W.cls,species:W.sp,size:wSizes(W)&&W.size?W.size:undefined,lineage:W.lin&&LINEAGES[String(W.sp||"").replace(/^srd:/,"")]?{id:W.lin,ab:W.linAb||"cha"}:undefined,background:W.bg,abilities:wAbilities(W),skills,
     hp:{cur:1,temp:0},attacks:[],spells:[...W.can,...W.spl].filter(Boolean).map(r=>({ref:r,prepared:true})),feats,features:[],invocations:W.inv.map((id,i)=>id?id+(W.invc[i]?"|"+W.invc[i]:""):"").filter(Boolean),
     conditions:[],gold:{po:0},tools:[bgS?bgS.tools:(hb(W.bg)||{}).tools,c&&c.tools].filter(Boolean).join(" ; "),alignment:wAlign(W),notes:W.notes||"",hpMode:"auto",bag:[],updatedAt:Date.now(),
     ...(()=>{ const its=wEqItems(W).items.map(it=>eqInfo({name:it.name})); const a=its.find(e=>e.type==="armor"), sh=its.find(e=>e.type==="shield"); return {armor:a?"srd:"+a.a.id:"none",shield:!!(sh&&c&&(c.armor||[]).includes("bouclier"))}; })()}; }
@@ -77,7 +81,9 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
   if(!c&&(st==="Compétences"||st==="Sorts"||st==="Équipement")) return "Choisis d'abord une classe.";
   if(st==="Classe") return c?"":"Choisis une classe.";
   if(st==="Historique"){ if(!W.bg) return "Choisis un historique."; if(W.asiMode==="21"&&(!W.asi2||!W.asi1||W.asi1===W.asi2)) return "Choisis +2 et +1 sur deux caractéristiques différentes."; if(W.asiMode==="111"&&wBgAbs(W).length!==3&&new Set(W.asiT.filter(Boolean)).size<3) return "Choisis trois caractéristiques différentes."; if(!srd("backgrounds",W.bg)&&!W.feat) return "Choisis le don d'origine de cet historique."; return ""; }
-  if(st==="Espèce"){ if(!W.sp) return "Choisis une espèce."; if(wIsHuman(W)&&!W.hFeat) return "Humain : choisis ton don d'origine (Polyvalent)."; return ""; }
+  if(st==="Espèce"){ if(!W.sp) return "Choisis une espèce."; if(wIsHuman(W)&&!W.hFeat) return "Humain : choisis ton don d'origine (Polyvalent).";
+    const def=LINEAGES[String(W.sp).replace(/^srd:/,"")]; if(def&&!(W.lin&&def.opts[W.lin])) return def.label+" : fais ton choix.";
+    const sk=wSpSkills(W); if(sk&&!W.spSkill) return sk.name+" : choisis ta compétence."; if(wSizes(W)&&!W.size) return "Choisis ta taille."; return ""; }
   if(st==="Caractéristiques"){ const b=wBase(W); if(AB.some(a=>b[a]==null)) return "Attribue une valeur à chaque caractéristique."; if(W.method==="std"){ const v=AB.map(a=>+W.std[a]).sort((x,y)=>y-x); if(v.join()!==STD_ARRAY.join()) return "Chaque valeur du tableau standard ne s'utilise qu'une fois."; } if(W.method==="dice"){ const ix=AB.map(a=>W.diceAs[a]); if(new Set(ix).size<6) return "Chaque résultat ne s'utilise qu'une fois."; }
     if(W.method==="pts"&&AB.reduce((t,a)=>t+PT_COST[+W.pts[a]],0)>27) return "Tu dépasses les 27 points."; return ""; }
   if(st==="Compétences"){ const n=c.skillChoices.count; if(W.skills.length!==n) return `Choisis ${n} compétences de classe.`; if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")&&!W.extraSkill) return "Humain : choisis ta compétence en plus (Compétent)."; if(wStyle1(W)&&!W.style) return "Choisis ton style de combat."; return ""; }
@@ -92,7 +98,7 @@ function wInvN(W){ const c=wCls(W); if(!c||c.id!=="occultiste") return 0; const 
 function wCards(list,cur,key){ return `<div class="wcards">${list.map(([v,t,sub])=>`<button class="wcard" aria-pressed="${v===cur}" data-act="wpick" data-k="${key}" data-v="${esc(v)}"><b>${esc(t)}</b>${sub?`<span class="muted">${esc(sub)}</span>`:""}</button>`).join("")}</div>`; }
 // Lignage ou ascendance de l'espèce (chantier 13) : choisi ici, modifiable ensuite dans l'onglet Personnage
 function wLineage(W,s){ const def=LINEAGES[s.id]; if(!def) return ""; const o=def.opts[W.lin];
-  return `<label class="field" style="margin-top:12px"><span>${esc(def.label)}</span>${wSel("lin",Object.entries(def.opts).map(([v,x])=>[v,x.name]),W.lin)}</label>`
+  return `<label class="field"><span>${esc(def.label)}</span>${wSel("lin",Object.entries(def.opts).map(([v,x])=>[v,x.name]),W.lin)}</label>`
     +(def.ability?`<label class="field"><span>Caractéristique d'incantation</span>${wSel("linAb",LINEAGE_AB,W.linAb||"cha")}</label>`:"")
     +(o?`<div class="muted" style="font-size:var(--fs-sm)">${esc(lineageSummary(def,o))}.</div>`:""); }
 function wSel(key,opts,cur,ph){ return `<select data-w="${key}"><option value="">${esc(ph||"— Choisir —")}</option>${opts.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`).join("")}</select>`; }
@@ -118,9 +124,13 @@ function wStepBody(W,st){ const c=wCls(W);
     h+=`<p class="muted">L'espèce donne des traits : vision, résistances, capacités spéciales.</p>`+wPick(W,"espece","sp");
     { const xh=hb(W.sp); if(xh) h+=`<div class="panel stack" style="margin-top:12px"><div class="prose">${prose(xh.text)||'<span class="muted">Pas de description.</span>'}</div>${hbFoot(xh)}</div>`; }
     const s=srd("species",W.sp);
-    if(s) h+=`<div class="panel stack" style="margin-top:12px">${s.traits.map(t=>`<details class="feat"><summary><span class="nm">${esc(t.name)}</span></summary><div class="prose">${prose(t.text)}</div></details>`).join("")}
-      ${wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(W.hFeat),W.hFeat)}</label>`:""}
-      ${wLineage(W,s)}${/Choisissez/i.test(s.traits.map(t=>t.text).join(" "))&&!wIsHuman(W)&&!LINEAGES[s.id]?`<div class="muted" style="font-size:var(--fs-sm)">Certains traits demandent un choix (lignage, ascendance…) : note-le dans la fiche après la création.</div>`:""}</div>`;
+    if(s){ const sk=wSpSkills(W), sz=wSizes(W), bgS=wBgSkills(W);
+      const ch=(wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(W.hFeat),W.hFeat)}</label>`:"")+wLineage(W,s)
+        +(sk?`<label class="field"><span>${esc(sk.name)} : une compétence</span>${wSel("spSkill",sk.from.filter(k=>!bgS.includes(k)).map(k=>[k,(S.C.skills.find(x=>x.id===k)||{}).name]),W.spSkill)}</label>`:"")
+        +(sz?`<label class="field"><span>Taille</span>${wSel("size",sz.map(v=>[v,v]),W.size)}</label>`:"");
+      // les choix d'abord, la lecture des traits ensuite
+      h+=(ch?`<div class="panel stack wchoices" style="margin-top:12px"><div class="label">Tes choix</div>${ch}</div>`:"")
+        +`<div class="panel stack" style="margin-top:12px">${s.traits.map(t=>`<details class="feat"><summary><span class="nm">${esc(t.name)}</span></summary><div class="prose">${prose(t.text)}</div></details>`).join("")}</div>`; }
   }
   if(st==="Caractéristiques"){
     const b=wBase(W), x=wBonus(W), fin=wAbilities(W);
@@ -140,10 +150,10 @@ function wStepBody(W,st){ const c=wCls(W);
       if(W.method==="dice") inp=wSel("diceAs."+a,W.dice.map((v,i)=>[i,v===""?"—":String(v)]).filter(([i,v])=>v!=="—"&&!AB.some(z=>z!==a&&String(W.diceAs[z]??"")===String(i))),W.diceAs[a]??"","—");
       return `<div class="wab${cp.includes(a)?" prim":""}"><span class="nm">${ABN[a]}${cp.includes(a)?` <small class="muted">principale</small>`:""}</span>${inp}<span class="muted num">${x[a]?sg(x[a])+" historique":""}</span><b class="num">${b[a]==null?"—":fin[a]} <small class="muted">${b[a]==null?"":sg(Math.floor((fin[a]-10)/2))}</small></b></div>`; }).join("")}</div>`;
   }
-  if(st==="Compétences"){ const have=new Set(wBgSkills(W)); const n=c.skillChoices.count;
-    h+=`<p class="muted">Choisis ${n} compétences de ${esc(c.name)} (${W.skills.length}/${n}). Celles de ton historique sont déjà acquises.</p><div class="row" style="flex-wrap:wrap;gap:6px">${c.skillChoices.from.map(s=>{ const k=S.C.skills.find(x=>x.id===s); const bg=have.has(s); return `<button class="chip" aria-pressed="${bg||W.skills.includes(s)}" ${bg?"disabled title=\"Déjà acquise par l'historique\"":""} data-act="wskill" data-v="${s}">${esc(k?k.name:s)}${bg?" · historique":""}</button>`; }).join("")}</div>`;
+  if(st==="Compétences"){ const have=new Set(wBgSkills(W)), spk=wSpSkills(W)?W.spSkill:""; const n=c.skillChoices.count;
+    h+=`<p class="muted">Choisis ${n} compétences de ${esc(c.name)} (${W.skills.length}/${n}). Celles de ton historique sont déjà acquises.</p><div class="row" style="flex-wrap:wrap;gap:6px">${c.skillChoices.from.map(s=>{ const k=S.C.skills.find(x=>x.id===s); const bg=have.has(s), sp=!bg&&s===spk; return `<button class="chip" aria-pressed="${bg||sp||W.skills.includes(s)}" ${bg||sp?"disabled":""} data-act="wskill" data-v="${s}">${esc(k?k.name:s)}${bg?" · historique":sp?" · espèce":""}</button>`; }).join("")}</div>`;
     if(wStyle1(W)) h+=`<label class="field" style="margin-top:12px"><span>Style de combat</span>${wSel("style",styleOpts({feats:[]}),W.style||"")}</label><div class="muted" style="font-size:var(--fs-sm)">Défense : +1 CA en armure (recommandé). Archerie : +2 aux attaques à distance.</div>`;
-    if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")) h+=`<label class="field" style="margin-top:12px"><span>Humain · Compétent : une compétence en plus</span>${wSel("extraSkill",S.C.skills.filter(s=>!have.has(s.id)&&!W.skills.includes(s.id)).map(s=>[s.id,s.name]),W.extraSkill)}</label>`;
+    if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")) h+=`<label class="field" style="margin-top:12px"><span>Humain · Compétent : une compétence en plus</span>${wSel("extraSkill",S.C.skills.filter(s=>!have.has(s.id)&&s.id!==spk&&!W.skills.includes(s.id)).map(s=>[s.id,s.name]),W.extraSkill)}</label>`;
   }
   if(st==="Sorts"){ const cast=wCast(W), nc=cast?(cast.cantrips||[])[0]||0:0, np=cast?(cast.prepared||[])[0]||0:0, Dt={cls:c};
     const can=classSpells(Dt,0), l1=classSpells(Dt,null,1);

@@ -126,8 +126,8 @@ document.addEventListener("click",e=>{
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
     case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
-      if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; }
-      W[k]=v; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } render(); break; }
+      if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; W.spSkill=""; W.size=""; }
+      W[k]=v; if(k==="bg"&&W.spSkill&&wBgSkills(W).includes(W.spSkill)) W.spSkill=""; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } render(); break; }
     case "wpt": { const a=t.dataset.a; S.W.pts[a]=Math.max(8,Math.min(15,(+S.W.pts[a]||8)+(+t.dataset.v))); render(); break; }
     case "wroll": { const W=S.W; if(W.rolled||W.dice.some(v=>v!=="")) break; roll3d(Array(W.dice.length*4).fill(6),()=>{ if(W.rolled||W.dice.some(v=>v!=="")) return; const bd=[]; W.dice=W.dice.map(()=>{ const r=[rnd(6),rnd(6),rnd(6),rnd(6)].sort((x,y)=>y-x); bd.push(r[0]+r[1]+r[2]); return r[0]+r[1]+r[2]; }); W.rolled=true; W.rollBd=bd.join(", "); W.diceAs={};
       addLog({label:"Création · 6 jets de 4d6",total:"✓",bd:W.rollBd,kind:"info",quiet:true}); render(); }); break; }
@@ -398,6 +398,7 @@ document.addEventListener("change",e=>{
     if(k.startsWith("dice.")&&v!==""){ v=String(Math.max(3,Math.min(18,Math.round(+v)||3))); }
     if(k==="level") v=String(Math.max(1,Math.min(20,Math.round(+v)||1)));
     if(k.startsWith("nh.")&&!S.W.nh) return;
+    if(k==="spSkill"&&v){ S.W.skills=S.W.skills.filter(s=>s!==v); if(S.W.extraSkill===v) S.W.extraSkill=""; }
     setPath(S.W,k,v); if(t.tagName==="SELECT"||k.startsWith("dice.")||k==="level") render(); return; }
   if(t.id==="cc-dmg"&&S.T&&S.T.cc){ S.T.cc.dmg=Math.max(0,+t.value||0); render(); return; }
   if(t.dataset.arcsel){ const ch=cur(); if(ch){ ch.arcanum=ch.arcanum||{}; if(t.value) ch.arcanum[t.dataset.arcsel]=t.value; else delete ch.arcanum[t.dataset.arcsel]; touch(S.cur); render(); } return; }

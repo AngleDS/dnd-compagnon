@@ -280,6 +280,39 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.view, cur().name, cur().classId, cur().background, !!S.W]), ['sheet', 'Mirela', 'magicien', 'srd:sage', false], 'personnage créé');
   });
 
+  await test('Création : choix d’espèce obligatoires (lignage, Sens aiguisés, taille), fiche sans taille intacte', async p => {
+    await open(p);
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Elfe test', cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:elfe', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, skills: ['perception', 'survie'] }); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Espèce'; render(); });
+    const msg = () => p.evaluate(() => document.querySelector('#modal .wmsg').textContent);
+    const opts = k => p.evaluate(k => [...document.querySelectorAll('#modal select[data-w="' + k + '"] option')].map(o => o.value).filter(Boolean), k);
+    eq(await msg(), 'Lignage elfique : fais ton choix.', 'le lignage est obligatoire');
+    ok(await p.evaluate(() => { const c = document.querySelector('#modal .wchoices'), d = document.querySelector('#modal details'); return c && (c.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING) > 0 && !/note-le dans la fiche/.test(document.getElementById('modal').innerText); }), 'les choix passent avant la lecture des traits');
+    await p.selectOption('#modal select[data-w="lin"]', 'drow');
+    eq([await msg(), await opts('spSkill')], ['Sens aiguisés : choisis ta compétence.', ['intuition', 'perception', 'survie']], 'Sens aiguisés à choisir');
+    await p.selectOption('#modal select[data-w="spSkill"]', 'perception');
+    eq([await msg(), await p.evaluate(() => S.W.skills)], ['', ['survie']], 'choix complet ; la compétence d’espèce sort des compétences de classe');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('.wline[data-v="Compétences"]');
+    eq(await p.evaluate(() => [...document.querySelectorAll('#modal .chip')].filter(b => b.disabled).map(b => b.textContent).sort()), ['Athlétisme · historique', 'Intimidation · historique', 'Perception · espèce'], 'compétences déjà acquises, avec leur origine');
+    await p.click('#modal .chip[data-v="acrobaties"]'); await p.click('#modal .wfoot [data-act="wclose"]');
+    eq(await p.evaluate(() => wNeeds(S.W).length), 0, 'plus rien à choisir');
+    // Un historique qui donne déjà la compétence d'espèce la libère
+    await p.evaluate(() => { S.W.spSkill = 'intuition'; S.W.open = 'Historique'; S.W.chg = 'bg'; render(); }); await p.click('#modal [data-act="wpick"][data-v="srd:acolyte"]');
+    eq(await p.evaluate(() => [S.W.spSkill, wSources('espece').base.length > 0 && wLineMsg(S.W, 'Espèce')]), ['', 'Sens aiguisés : choisis ta compétence.'], 'doublon avec l’historique : à rechoisir');
+    await p.evaluate(() => { const W = S.W, abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1]; W.spSkill = 'survie'; W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s) && s !== 'survie').slice(0, 2); W.open = null; render(); });
+    await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => { const c = cur(); return [c.skills.survie, c.lineage.id, c.size === undefined, derive(c).skills.survie.lv]; }), [1, 'drow', true, 1], 'elfe créé : compétence, lignage, pas de taille à choisir');
+    // Tieffelin : héritage puis taille
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Tieffelin test', cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:tieffelin', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Espèce'; render(); });
+    eq(await msg(), 'Héritage fiélon : fais ton choix.', 'héritage obligatoire'); await p.selectOption('#modal select[data-w="lin"]', 'infernal');
+    eq([await msg(), (await opts('size')).map(v => v.slice(0, 10))], ['Choisis ta taille.', ['M (moyenne', 'P (petite,']], 'taille à choisir');
+    await p.selectOption('#modal select[data-w="size"]', { index: 2 }); eq(await msg(), '', 'espèce complète');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => [/^P \(petite, [^)]*\)$/.test(cur().size), chSize(cur()) === cur().size]), [true, true], 'taille choisie gardée sur la fiche, sans « ou »');
+    // Une fiche créée sans taille (ancienne ou importée) s'ouvre telle quelle
+    const id = await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
+    eq(await p.evaluate(id => { const c = S.docs[id], before = JSON.stringify(c); S.tab = 'table'; render(); return [c.size === undefined, / ou /.test(chSize(c)), JSON.stringify(c) === before]; }, id), [true, true, true], 'fiche sans taille : affichage d’origine, rien d’écrit');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],
