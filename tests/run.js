@@ -420,6 +420,27 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' }); Object.assign(W, wSugDraft(W, 'Compétences')); return [(S.C.feats.find(f => 'srd:' + f.id === W.style) || {}).name, wLineMsg(W, 'Compétences')]; }), ['Défense', ''], 'style Défense proposé');
   });
 
+  await test('Création : l’humain ne peut pas reprendre le don de son historique (son choix n’est plus perdu)', async p => {
+    await open(p);
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Humain test', langs: ['Elfique', 'Nain'], cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain', size: wSizes({ sp: 'srd:humain' })[0], asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } });
+      Object.assign(W, wSugDraft(W, 'Compétences')); S.view = 'wizard'; W.open = 'Espèce'; render(); });
+    const opts = () => p.evaluate(() => [...document.querySelectorAll('#modal select[data-w="hFeat"] option')].map(o => o.value).filter(Boolean));
+    ok(!(await opts()).includes('srd:sauvagerie-martiale') && (await opts()).includes('srd:vigilant'), 'le don du Soldat n’est pas proposé à l’humain');
+    eq(await p.evaluate(() => document.querySelector('#modal .wdup').textContent), 'Sauvagerie martiale vient déjà de ton historique : choisis un autre don.', 'explication affichée');
+    // Un doublon entré autrement (ancien brouillon) ne passe pas pour un choix fait
+    eq(await p.evaluate(() => { S.W.hFeat = 'srd:sauvagerie-martiale'; render(); return [wLineMsg(S.W, 'Espèce'), document.querySelector('#modal select[data-w="hFeat"]').value]; }), ['Humain : choisis ton don d\'origine (Polyvalent).', ''], 'doublon refusé');
+    await p.selectOption('#modal select[data-w="hFeat"]', 'srd:vigilant'); eq(await p.evaluate(() => wLineMsg(S.W, 'Espèce')), '', 'autre don accepté');
+    // Changer d'historique pour celui qui donne ce don : le choix de l'humain est à refaire
+    await p.evaluate(() => { S.W.open = 'Historique'; S.W.chg = 'bg'; render(); }); await p.click('#modal [data-act="wpick"][data-v="srd:criminel"]');
+    eq(await p.evaluate(() => [S.W.hFeat, wLineMsg(S.W, 'Espèce')]), ['', 'Humain : choisis ton don d\'origine (Polyvalent).'], 'don repris par le nouvel historique : à rechoisir');
+    // Don répétable : la note explique la limite de la fiche
+    await p.evaluate(() => { S.W.chg = 'bg'; render(); }); await p.click('#modal [data-act="wpick"][data-v="srd:acolyte"]'); await p.evaluate(() => { S.W.open = 'Espèce'; render(); });
+    ok(/Initié à la magie vient déjà de ton historique.*deux fois.*ajoute-le à la main/.test(await p.evaluate(() => document.querySelector('#modal .wdup').textContent)), 'don répétable : limite expliquée');
+    await p.evaluate(() => { const W = S.W; W.bg = 'srd:soldat'; W.asi2 = 'for'; W.asi1 = 'con'; W.hFeat = 'srd:vigilant'; W.skills = []; W.extraSkill = ''; Object.assign(W, wSugDraft(W, 'Compétences')); W.open = null; render(); });
+    eq(await p.evaluate(() => wNeeds(S.W).map(n => n.msg)), [], 'création complète'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => { const f = cur().feats; return [f.includes('srd:sauvagerie-martiale'), f.includes('srd:vigilant'), new Set(f).size === f.length]; }), [true, true, true], 'les deux dons sont sur la fiche');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],

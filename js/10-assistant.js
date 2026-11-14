@@ -100,7 +100,7 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
   if(!c&&(st==="Compétences"||st==="Sorts"||st==="Équipement")) return "Choisis d'abord une classe.";
   if(st==="Classe"){ if(!c) return "Choisis une classe."; const od=ORDERS[c.id]; return od&&!od.opts[W.order]?od.label+" : fais ton choix.":""; }
   if(st==="Historique"){ if(!W.bg) return "Choisis un historique."; if(W.asiMode==="21"&&(!W.asi2||!W.asi1||W.asi1===W.asi2)) return "Choisis +2 et +1 sur deux caractéristiques différentes."; if(W.asiMode==="111"&&wBgAbs(W).length!==3&&new Set(W.asiT.filter(Boolean)).size<3) return "Choisis trois caractéristiques différentes."; if(!srd("backgrounds",W.bg)&&!W.feat) return "Choisis le don d'origine de cet historique."; return ""; }
-  if(st==="Espèce"){ if(!W.sp) return "Choisis une espèce."; if(wIsHuman(W)&&!W.hFeat) return "Humain : choisis ton don d'origine (Polyvalent).";
+  if(st==="Espèce"){ if(!W.sp) return "Choisis une espèce."; if(wIsHuman(W)&&(!W.hFeat||W.hFeat===wBgFeat(W))) return "Humain : choisis ton don d'origine (Polyvalent).";
     const def=LINEAGES[String(W.sp).replace(/^srd:/,"")]; if(def&&!(W.lin&&def.opts[W.lin])) return def.label+" : fais ton choix.";
     const sk=wSpSkills(W); if(sk&&!W.spSkill) return sk.name+" : choisis ta compétence."; if(wSizes(W)&&!W.size) return "Choisis ta taille."; return ""; }
   if(st==="Caractéristiques"){ const b=wBase(W); if(AB.some(a=>b[a]==null)) return "Attribue une valeur à chaque caractéristique."; if(W.method==="std"){ const v=AB.map(a=>+W.std[a]).sort((x,y)=>y-x); if(v.join()!==STD_ARRAY.join()) return "Chaque valeur du tableau standard ne s'utilise qu'une fois."; } if(W.method==="dice"){ const ix=AB.map(a=>W.diceAs[a]); if(new Set(ix).size<6) return "Chaque résultat ne s'utilise qu'une fois."; }
@@ -146,7 +146,9 @@ function wStepBody(W,st){ const c=wCls(W);
     { const xh=hb(W.sp); if(xh) h+=`<div class="panel stack" style="margin-top:12px"><div class="prose">${prose(xh.text)||'<span class="muted">Pas de description.</span>'}</div>${hbFoot(xh)}</div>`; }
     const s=srd("species",W.sp);
     if(s){ const sk=wSpSkills(W), sz=wSizes(W), bgS=wBgSkills(W);
-      const ch=(wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(W.hFeat),W.hFeat)}</label>`:"")+wLineage(W,s)
+      // Le don de l'historique n'est pas proposé une seconde fois : la fiche ne garde chaque don qu'une fois, le choix de l'humain serait perdu
+      const bf=wBgFeat(W), bfd=bf?(S.C.feats.find(f=>"srd:"+f.id===bf)||hb(bf)):null, hf=W.hFeat===bf?"":W.hFeat;
+      const ch=(wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(hf).filter(([v])=>v!==bf),hf)}</label>${bfd?`<div class="muted wdup" style="font-size:var(--fs-sm)">${esc(bfd.name)} vient déjà de ton historique : choisis un autre don.${bfd.repeatable?" Les règles permettent de le prendre deux fois, mais la fiche ne le note qu'une fois : vois avec ton MJ et ajoute-le à la main.":""}</div>`:""}`:"")+wLineage(W,s)
         +(sk?`<label class="field"><span>${esc(sk.name)} : une compétence</span>${wSel("spSkill",sk.from.filter(k=>!bgS.includes(k)).map(k=>[k,(S.C.skills.find(x=>x.id===k)||{}).name]),W.spSkill)}</label>`:"")
         +(sz?`<label class="field"><span>Taille</span>${wSel("size",sz.map(v=>[v,v]),W.size)}</label>`:"");
       // les choix d'abord, la lecture des traits ensuite
