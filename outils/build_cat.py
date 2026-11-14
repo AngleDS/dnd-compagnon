@@ -28,9 +28,9 @@ for b,c,n,anc,page in SUP_SUB:
     add({'id':'sc-'+norm(n).replace(' ','-'),'k':'sous-classe','n':n,'b':BOOKS[b][0],'c':c,'u':f'{DDB}/sources/dnd/{page or BOOKS[b][1]}#{anc}'})
 for b,n,vo,page in CLASSES:
     add({'id':'cl-'+norm(n),'k':'classe','n':n,'vo':vo,'b':BOOKS[b][0],'u':f'{DDB}/sources/dnd/{page}'})
-for anc,n,ab,feat,sk,tool in PHB_BG:
+for anc,n,ab,feat,sk,tool,eq in PHB_BG:
     assert norm(n) not in srdbg
-    add({'id':'bg-'+anc,'k':'historique','n':n,'b':PHB,'ab':ab.split(),'sk':sk.split(),'tools':tool,'feat':feat,'u':f'{AIDE}/regles-24/origines-des-personnages/description-des-historiques/#{anc}'})
+    add({'id':'bg-'+anc,'k':'historique','n':n,'b':PHB,'ab':ab.split(),'sk':sk.split(),'tools':tool,'feat':feat,'eq':'Choisissez A ou B : (A) '+eq+' ; ou (B) 50 po','u':f'{AIDE}/regles-24/origines-des-personnages/description-des-historiques/#{anc}'})
 for b,slug,n,feat,sk in SUP_BG:
     add({'id':'bg-'+slug.split('-',1)[1],'k':'historique','n':n,'b':BOOKS[b][0],'sk':[SK[x.strip()] for x in sk.split(',')],'feat':FEN.get(feat,feat),'u':f'{DDB}/backgrounds/{slug}'})
 for b,slug,n in SPECIES:

@@ -48,19 +48,20 @@ SUP_SUB = [
 CLASSES = [("EFotA","Artificier","Artificer","efota/the-artificer")]
  
 # Historiques du Manuel des joueurs hors SRD : (ancre, nom, caractéristiques, don, compétences, outil)
+# Dernier champ : équipement de départ de l'option A (liste d'objets et or, donnée mécanique) ; l'option B vaut toujours 50 po
 PHB_BG = [
- ("artisan","Artisan","for dex int","Façonneur","investigation persuasion","Un type d'outils d'artisan au choix"),
- ("artiste","Artiste","for dex cha","Musicien","acrobaties representation","Un instrument de musique au choix"),
- ("charlatan","Charlatan","dex con cha","Doué","escamotage tromperie","Matériel de contrefaçon"),
- ("ermite","Ermite","con sag cha","Guérisseur","medecine religion","Matériel d'herboriste"),
- ("fermier","Fermier","for con sag","Robuste","dressage nature","Outils de charpentier"),
- ("garde","Garde","for int sag","Vigilant","athletisme perception","Un type de boîte de jeux au choix"),
- ("guide","Guide","dex con sag","Initié à la magie (druide)","discretion survie","Outils de cartographe"),
- ("marchand","Marchand","con int cha","Chanceux","dressage persuasion","Instruments de navigateur"),
- ("marin","Marin","for dex sag","Bagarreur de tavernes","acrobaties perception","Instruments de navigateur"),
- ("noble","Noble","for int cha","Doué","histoire persuasion","Un type de boîte de jeux au choix"),
- ("scribe","Scribe","dex int sag","Doué","investigation perception","Matériel de calligraphe"),
- ("voyageur","Voyageur","dex sag cha","Chanceux","discretion intuition","Outils de voleur"),
+ ("artisan","Artisan","for dex int","Façonneur","investigation persuasion","Un type d'outils d'artisan au choix","Outils d'artisan (au choix), 2 sacoches, tenue de voyage, 32 po"),
+ ("artiste","Artiste","for dex cha","Musicien","acrobaties representation","Un instrument de musique au choix","Instrument de musique (au choix), 2 costumes, miroir, parfum, tenue de voyage, 11 po"),
+ ("charlatan","Charlatan","dex con cha","Doué","escamotage tromperie","Matériel de contrefaçon","Matériel de contrefaçon, costume, beaux habits, 15 po"),
+ ("ermite","Ermite","con sag cha","Guérisseur","medecine religion","Matériel d'herboriste","Bâton de combat, matériel d'herboriste, sac de couchage, livre (philosophie), lampe, 3 flasques d'huile, tenue de voyage, 16 po"),
+ ("fermier","Fermier","for con sag","Robuste","dressage nature","Outils de charpentier","Serpe, outils de charpentier, trousse de soins, pot en fer, pelle, tenue de voyage, 30 po"),
+ ("garde","Garde","for int sag","Vigilant","athletisme perception","Un type de boîte de jeux au choix","Lance, arbalète légère + 20 carreaux, boîte de jeux (au choix), lanterne à capote, menottes, carquois, tenue de voyage, 12 po"),
+ ("guide","Guide","dex con sag","Initié à la magie (druide)","discretion survie","Outils de cartographe","Arc court + 20 flèches, outils de cartographe, sac de couchage, carquois, tente, tenue de voyage, 3 po"),
+ ("marchand","Marchand","con int cha","Chanceux","dressage persuasion","Instruments de navigateur","Instruments de navigateur, 2 sacoches, tenue de voyage, 22 po"),
+ ("marin","Marin","for dex sag","Bagarreur de tavernes","acrobaties perception","Instruments de navigateur","Dague, instruments de navigateur, corde, tenue de voyage, 20 po"),
+ ("noble","Noble","for int cha","Doué","histoire persuasion","Un type de boîte de jeux au choix","Boîte de jeux (au choix), beaux habits, parfum, 29 po"),
+ ("scribe","Scribe","dex int sag","Doué","investigation perception","Matériel de calligraphe","Matériel de calligraphe, beaux habits, lampe, 3 flasques d'huile, parchemin (12 feuilles), 23 po"),
+ ("voyageur","Voyageur","dex sag cha","Chanceux","discretion intuition","Outils de voleur","2 dagues, outils de voleur, boîte de jeux (au choix), sac de couchage, 2 sacoches, tenue de voyage, 16 po"),
 ]
 # Historiques des suppléments : (livre, slug DDB, nom VO, don VO, compétences VO)
 SUP_BG = [

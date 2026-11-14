@@ -11,7 +11,7 @@ function catMat(id){ const e=catGet(id); if(!e) return ""; const ex=catHb(e); if
   const hid="hb_"+uid(), d={type:"hb",kind:e.k,name:e.n,label:e.b,link:e.u,text:"",effects:[],catId:e.id,pending:true,updatedAt:Date.now()};
   if(e.k==="sous-classe"){ d.features=[]; if(S.C.classes.some(c=>c.id===e.c)) d.classId=e.c; else { const hc=hbs("classe").find(h=>catClassOk(e,{id:"hb:"+h._id,name:h.name})); if(hc) d.classId="hb:"+hc._id; } }
   if(e.k==="classe"){ d.features=[]; d.hitDie=8; d.castType=""; }
-  if(e.k==="historique"){ if(e.ab) d.abilities=e.ab.slice(); d.effects=(e.sk||[]).map(k=>({t:"maitrise",cible:"comp:"+k,niveau:1})); d.tools=e.tools||""; if(e.feat) d.feat=e.feat; if(e.featRef) d.featRef=e.featRef; }
+  if(e.k==="historique"){ if(e.ab) d.abilities=e.ab.slice(); d.effects=(e.sk||[]).map(k=>({t:"maitrise",cible:"comp:"+k,niveau:1})); d.tools=e.tools||""; if(e.eq) d.equipment=e.eq; if(e.feat) d.feat=e.feat; if(e.featRef) d.featRef=e.featRef; }
   if(e.k==="espece") d.speed=9;
   if(e.k==="don"){ d.category=e.cat; if(e.pre) d.prerequisite=e.pre; if(e.rep) d.repeatable=true; }
   if(e.k==="sort"){ d.level=e.lv; d.school=e.ec||""; d.classes=(e.cl||[]).slice(); d.casting_time=e.ct||""; d.concentration=!!e.conc; d.ritual=!!e.rit; d.mech={}; }

@@ -29,6 +29,8 @@ function wCls(W){ return clsOf(W.cls); }
 function wBg(W){ return srd("backgrounds",W.bg)||hb(W.bg); }
 function wBgAbs(W){ const b=srd("backgrounds",W.bg); if(b) return b.abilities; const h=hb(W.bg); return h&&Array.isArray(h.abilities)&&h.abilities.filter(Boolean).length===3?h.abilities:AB.slice(); }
 function wBgSkills(W){ const b=srd("backgrounds",W.bg); if(b) return b.skills||[]; const h=hb(W.bg); return h?(h.effects||[]).filter(e=>e.t==="maitrise"&&/^comp:/.test(e.cible||"")).map(e=>e.cible.slice(5)):[]; }
+// Équipement de départ de l'historique : règles de base, fiche de « Mes contenus », ou catalogue pour une fiche créée avant que le catalogue ne le connaisse
+function wBgEquip(W){ const b=srd("backgrounds",W.bg); if(b) return b.equipment||""; const h=hb(W.bg); return h?(h.equipment||(catGet(h.catId)||{}).eq||""):""; }
 function wBgFeat(W){ const b=srd("backgrounds",W.bg); if(!b) return W.feat||""; const n=norm(String(b.feat||"").replace(/\s*\(.*\)\s*/,"")); const f=S.C.feats.find(x=>norm(x.name)===n); return f?"srd:"+f.id:""; }
 // Choix d'espèce en plus du lignage (chantier 17) : la compétence de Sens aiguisés (elfe) et la taille quand l'espèce en propose deux
 const SP_SKILL={"Sens aiguisés":["intuition","perception","survie"]};
@@ -88,7 +90,7 @@ function wNC(W){ const cast=wCast(W), n=cast?(cast.cantrips||[])[0]||0:0, o=wOrd
 function wSteps(W){ const c=wCls(W), cast=wCast(W); const st=["Classe","Historique","Espèce","Caractéristiques","Compétences"];
   if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Langues","Équipement","Identité"); return st; }
 function wEqItems(W){ const c=wCls(W), out=[]; let gold=0; const add=(txt,key)=>{ const opts=eqOptions(txt); const cur=opts.find(o=>o.k===W[key])||opts[0]; if(!cur) return; gold+=cur.gold; cur.items.forEach((it,ix)=>{ if(!W.eqOff[key+cur.k+ix]) out.push(it); }); };
-  if(c) add(c.equipment,"eqC"); const bgS=srd("backgrounds",W.bg); if(bgS) add(bgS.equipment,"eqB"); return {items:out,gold}; }
+  if(c) add(c.equipment,"eqC"); const be=wBgEquip(W); if(be) add(be,"eqB"); return {items:out,gold}; }
 function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill,wSpSkills(W)?W.spSkill:""].filter(Boolean)) skills[s]=1; for(const s of wExp(W)) skills[s]=2;
   const feats=[...new Set([wBgFeat(W), wIsHuman(W)?W.hFeat:"", wStyle1(W)?W.style:""].filter(Boolean))];
   const bgS=srd("backgrounds",W.bg);
@@ -185,12 +187,12 @@ function wStepBody(W,st){ const c=wCls(W);
     h+=pick("can",nc,can,"Sorts mineurs")+pick("spl",np,l1,"Sorts de niveau 1");
     const ni=wInvN(W); if(ni){ const tmp=wDoc(W); h+=`<div class="label" style="margin-top:10px">Manifestation occulte (${ni})</div>`+Array.from({length:ni},(_,i)=>{ const id=W.inv[i]||""; return `<div class="row" style="gap:6px">${wSel("inv."+i,invAvailFor(tmp,1).map(x=>[x.id,x.name]),id)}${INV_CHOICE[id]?wSel("invc."+i,invChoices(tmp,id,W.can),W.invc[i]||"","— Cible —"):""}</div>`; }).join(""); }
   }
-  if(st==="Équipement"){ const bgS=srd("backgrounds",W.bg);
+  if(st==="Équipement"){ const be=wBgEquip(W), bgN=(wBg(W)||{}).name||"";
     const block=(title,txt,key)=>{ const opts=eqOptions(txt); if(!opts.length) return `<div class="panel"><b>${esc(title)}</b><div class="muted">${esc(txt||"Rien à choisir.")}</div></div>`; const cur=opts.find(o=>o.k===W[key])||opts[0];
       return `<div class="panel stack"><b>${esc(title)}</b><div class="adv" role="group">${opts.map(o=>`<button aria-pressed="${o.k===cur.k}" data-act="wpick" data-k="${key}" data-v="${o.k}">Option ${o.k}${o.items.length?"":" · "+o.gold+" po"}</button>`).join("")}</div>
         ${cur.items.length?`<div class="stack" style="gap:2px">${cur.items.map((it,ix)=>{ const id=key+cur.k+ix; return `<label class="row" style="gap:8px"><input type="checkbox" data-act="weq" data-v="${id}" ${W.eqOff[id]?"":"checked"}>${it.qty>1?it.qty+" × ":""}${esc(it.name)}</label>`; }).join("")}</div>`:""}
         <div class="muted" style="font-size:var(--fs-sm)">${cur.gold} po</div></div>`; };
-    h+=`<p class="muted">Suggestion des règles : prends l'un des lots ou l'or à la place. Décoche ce que tu ne veux pas, tout reste modifiable dans l'inventaire.</p>`+block("Classe · "+c.name,c.equipment,"eqC")+(bgS?block("Historique · "+bgS.name,bgS.equipment,"eqB"):`<div class="panel muted">Cet historique ne fait pas partie des règles de base : ajoute son équipement dans l'inventaire après la création.</div>`);
+    h+=`<p class="muted">Suggestion des règles : prends l'un des lots ou l'or à la place. Décoche ce que tu ne veux pas, tout reste modifiable dans l'inventaire.</p>`+block("Classe · "+c.name,c.equipment,"eqC")+(be?block("Historique · "+bgN,be,"eqB"):W.bg?`<div class="panel muted wnoeq">L'appli ne connaît pas l'équipement de cet historique : ajoute-le dans l'inventaire après la création.</div>`:"");
     { const m=wMast(W); if(m.n&&m.cands.length) h+=`<div class="panel stack wmast"><b>Bottes d'arme (${m.list.length}/${m.n})</b><div class="muted" style="font-size:var(--fs-sm)">Les armes dont tu utilises la botte. Tu peux en changer à chaque repos long.</div><div class="row" style="flex-wrap:wrap;gap:6px">${m.cands.map(w=>{ const x=srd("weapons",w); return `<button class="chip" aria-pressed="${m.list.includes(w)}" data-act="wmast" data-v="${w}">${esc(x.name)} · ${esc(x.mastery)}</button>`; }).join("")}</div></div>`; }
   }
   if(st==="Langues"){ const n=wLangN(W), L=wLangs(W), fx=wLangFixed(W);

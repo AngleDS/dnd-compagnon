@@ -448,6 +448,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => { const f = cur().feats; return [f.includes('srd:sauvagerie-martiale'), f.includes('srd:vigilant'), new Set(f).size === f.length]; }), [true, true, true], 'les deux dons sont sur la fiche');
   });
 
+  await test('Création : équipement des 12 historiques du Manuel des joueurs (catalogue), fiche créée avant, historique sans équipement', async p => {
+    await open(p);
+    const all = await p.evaluate(() => catAll().filter(e => e.k === 'historique' && e.eq).map(e => { const o = eqOptions(e.eq); return [e.id, o.length, o[0].items.length >= 3, o[0].gold > 0 && o[0].gold < 50, o[1].items.length, o[1].gold]; }));
+    eq([all.length, all.every(a => a[1] === 2 && a[2] && a[3] && a[4] === 0 && a[5] === 50)], [12, true], 'les 12 historiques ont un lot A (objets et or) et une option B à 50 po');
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Garde test', langs: ['Elfique', 'Nain'], cls: 'guerrier', sp: 'srd:nain', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } }); W.bg = catRes('cat:bg-garde'); W.feat = catRes(hb(W.bg).featRef);
+      Object.assign(W, wSugDraft(W, 'Historique'), wSugDraft(W, 'Compétences')); S.view = 'wizard'; W.open = 'Équipement'; render(); });
+    eq(await p.evaluate(() => { const b = [...document.querySelectorAll('#modal .panel b')].map(x => x.textContent); return [b.some(t => t === 'Historique · Garde'), !!document.querySelector('#modal .wnoeq'), wMast(S.W).cands.includes('srd:arbalete-legere')]; }), [true, false, true], 'bloc d’équipement de l’historique, arbalète proposée pour les bottes');
+    const g0 = await p.evaluate(() => wEqItems(S.W).gold);
+    await p.click('#modal [data-act="wpick"][data-k="eqB"][data-v="B"]'); eq(await p.evaluate(() => wEqItems(S.W).gold) - g0, 38, 'option B : 50 po au lieu de 12');
+    await p.click('#modal [data-act="wpick"][data-k="eqB"][data-v="A"]'); await p.click('#modal .wfoot [data-act="wclose"]');
+    eq(await p.evaluate(() => wNeeds(S.W).map(n => n.msg)), [], 'création complète'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => { const c = cur(), n = c.bag.map(b => b.name); return [n.includes('Menottes'), n.includes('Lanterne à capote'), (c.bag.find(b => b.name === 'Carreaux') || {}).qty, c.attacks.some(a => a.weapon === 'srd:arbalete-legere'), c.attacks.some(a => a.weapon === 'srd:lance')]; }), [true, true, 20, true, true], 'objets, munitions et attaques de l’historique sur la fiche');
+    // Une fiche d'historique créée avant cet ajout (sans équipement) le retrouve par le catalogue ; un historique personnel sans équipement est signalé
+    eq(await p.evaluate(() => { S.rv = null; const h = Object.keys(S.docs).find(k => S.docs[k].catId === 'bg-garde'); delete S.docs[h].equipment; return eqOptions(wBgEquip({ bg: 'hb:' + h }))[0].gold; }), 12, 'ancienne fiche : équipement lu dans le catalogue');
+    await p.evaluate(() => { S.docs.hb_tb = { type: 'hb', kind: 'historique', name: 'Perso', abilities: ['for', 'dex', 'con'], effects: [{ t: 'maitrise', cible: 'comp:arcanes', niveau: 1 }, { t: 'maitrise', cible: 'comp:histoire', niveau: 1 }], feat: 'Vigilant', featRef: 'srd:vigilant' };
+      const W = S.W = wNew(); Object.assign(W, { cls: 'guerrier', bg: 'hb:hb_tb' }); S.view = 'wizard'; W.open = 'Équipement'; render(); });
+    ok(await p.evaluate(() => /ne connaît pas l'équipement/.test((document.querySelector('#modal .wnoeq') || {}).textContent || '')), 'historique sans équipement : signalé');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],
