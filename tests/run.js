@@ -224,6 +224,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="wsrc"][data-v="other"]');
     const bgs = await vals(); eq([bgs.length, bgs.every(v => v.startsWith('cat:bg-')), bgs.includes('cat:bg-artisan'), bgs.some(v => /house|harper/.test(v))], [12, true, true, false], '12 historiques complets, aucun à remplir');
     await p.click('[data-act="wpick"][data-v="cat:bg-garde"]');
+    ok(/Cet historique sort des règles de base : ses effets de jeu sont pris en compte, mais sa description reste à compléter\. Une fenêtre te le proposera après la création\./.test(await p.evaluate(() => document.querySelector('#modal .wbgnote').textContent)) && !/équipement/.test(await p.evaluate(() => document.querySelector('#modal .wbgnote').textContent)), 'limite de l’historique annoncée dès le choix');
     ok(/Don d'origine : Vigilant/.test(await txt()) && await p.evaluate(() => !document.querySelector('select[data-w="feat"]') && S.W.feat === 'srd:vigilant'), 'don fixé par l’historique, pas de liste');
     eq(await p.evaluate(() => [document.querySelectorAll('#modal .wcard').length, document.querySelector('#modal .wchosen b').textContent]), [0, 'Garde'], 'choix fait : la liste se replie sur lui');
     await p.click('[data-act="wchg"]'); ok((await vals()).some(v => v.startsWith('hb:')) && (await vals()).length === 12, '« Changer » rouvre la liste, l’historique choisi y reste');
@@ -266,6 +267,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     // Largeur iPhone : rien ne dépasse, lignes assez hautes pour le doigt, fenêtre dans l'écran, la liste garde sa position
     await p.setViewportSize({ width: 390, height: 844 });
     eq(await p.evaluate(() => [document.documentElement.scrollWidth <= 390, [...document.querySelectorAll('.wline')].every(b => b.getBoundingClientRect().height >= 44 && b.getBoundingClientRect().right <= 390)]), [true, true], 'page à 390 px');
+    eq(await p.evaluate(() => { const t = document.getElementById('wcount'), cs = getComputedStyle(t); window.scrollTo(0, 600); const r = t.getBoundingClientRect(); window.scrollTo(0, 0); return [cs.display, cs.position, /^Reste à faire \(\d+\) /.test(t.textContent), r.top >= 0 && r.top < 10 && r.right <= 390]; }), ['block', 'sticky', true, true], 'téléphone : compteur en haut, qui reste visible en défilant');
     await p.click('.wline[data-v="Sorts"]');
     eq(await p.evaluate(() => { const r = document.querySelector('#modal .box').getBoundingClientRect(); return [r.left >= 0, r.right <= 390, r.bottom <= 844, document.documentElement.scrollWidth <= 390]; }), [true, true, true, true], 'fenêtre à 390 px');
     await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('.wline[data-v="Historique"]'); await p.click('#modal [data-act="wsrc"][data-v="other"]');
@@ -277,7 +279,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, wCls(W).skillChoices.count); const cast = wCast(W), D = { cls: wCls(W) };
       W.can = classSpells(D, 0).slice(0, cast.cantrips[0]).map(x => x.ref); render(); });
     eq(await foot(), ['Reste à faire (2) nom, sorts', true, 'Donne un nom à ton personnage.'], 'compteur après les choix');
-    await p.fill('input[data-w="name"]', 'Mirela');
+    eq(await p.evaluate(() => getComputedStyle(document.getElementById('wcount')).display), 'none', 'ordinateur : pas de compteur en double');
+    await p.fill('input[data-w="name"]', 'Mirela'); eq(await p.evaluate(() => document.getElementById('wcount').textContent), 'Reste à faire (1) sorts', 'le compteur du haut suit la saisie du nom');
     const f3 = await foot(); eq([f3[0], f3[1], /^Choisis \d+ sorts de niveau 1\.$/.test(f3[2])], ['Reste à faire (1) sorts', true, true], 'le bouton nomme le choix suivant');
     await p.evaluate(() => { const W = S.W, cast = wCast(W); W.spl = classSpells({ cls: wCls(W) }, null, 1).slice(0, cast.prepared[0]).map(x => x.ref); render(); });
     eq(await foot(), ['Tout est choisi.', false, 'Créer le personnage'], 'tout est choisi');

@@ -31,6 +31,9 @@ function wBgAbs(W){ const b=srd("backgrounds",W.bg); if(b) return b.abilities; c
 function wBgSkills(W){ const b=srd("backgrounds",W.bg); if(b) return b.skills||[]; const h=hb(W.bg); return h?(h.effects||[]).filter(e=>e.t==="maitrise"&&/^comp:/.test(e.cible||"")).map(e=>e.cible.slice(5)):[]; }
 // Équipement de départ de l'historique : règles de base, fiche de « Mes contenus », ou catalogue pour une fiche créée avant que le catalogue ne le connaisse
 function wBgEquip(W){ const b=srd("backgrounds",W.bg); if(b) return b.equipment||""; const h=hb(W.bg); return h?(h.equipment||(catGet(h.catId)||{}).eq||""):""; }
+// Historique hors des règles de base : dire dès le choix ce qui restera à faire après la création (plutôt que de le découvrir à la fin)
+function wBgNote(W,x){ if(!x) return ""; const fd=(hb(W.feat)||{}).pending, todo=x.pending||fd, noEq=!wBgEquip(W); if(!todo&&!noEq) return "";
+  return `<div class="muted wbgnote" style="font-size:var(--fs-sm)">${todo?`Cet historique sort des règles de base : ses effets de jeu sont pris en compte, mais sa description${fd?" et celle de son don restent":" reste"} à compléter. Une fenêtre te le proposera après la création.`:""}${noEq?" Son équipement n'est pas connu de l'appli : tu l'ajouteras à la main dans l'inventaire.":""}</div>`; }
 function wBgFeat(W){ const b=srd("backgrounds",W.bg); if(!b) return W.feat||""; const n=norm(String(b.feat||"").replace(/\s*\(.*\)\s*/,"")); const f=S.C.feats.find(x=>norm(x.name)===n); return f?"srd:"+f.id:""; }
 // Choix d'espèce en plus du lignage (chantier 17) : la compétence de Sens aiguisés (elfe) et la taille quand l'espèce en propose deux
 const SP_SKILL={"Sens aiguisés":["intuition","perception","survie"]};
@@ -115,7 +118,7 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
 // Tout ce qui manque encore avant de pouvoir créer : [{step, name, msg}] (une entrée par étape incomplète)
 function wNeeds(W){ return wSteps(W).map((name,step)=>({step,name,msg:wCheck(W,step)})).filter(x=>x.msg).sort((a,b)=>(b.name==="Identité")-(a.name==="Identité")); }
 // Pendant la saisie du nom (pas de nouveau rendu) : le bouton Créer et le message suivent
-function wNavSync(){ const W=S.W, f=document.getElementById("wfoot"); if(W&&f) f.outerHTML=wFoot(W); }
+function wNavSync(){ const W=S.W, f=document.getElementById("wfoot"), t=document.getElementById("wcount"); if(W&&f) f.outerHTML=wFoot(W); if(W&&t) t.outerHTML=wCount(W); }
 function wInvN(W){ const c=wCls(W); if(!c||c.id!=="occultiste") return 0; const col=c.columns.find(x=>x.label.startsWith("Manifestations")); return col?+col.values[0]||0:0; }
 function wCards(list,cur,key){ return `<div class="wcards">${list.map(([v,t,sub])=>`<button class="wcard" aria-pressed="${v===cur}" data-act="wpick" data-k="${key}" data-v="${esc(v)}"><b>${esc(t)}</b>${sub?`<span class="muted">${esc(sub)}</span>`:""}</button>`).join("")}</div>`; }
 // Lignage ou ascendance de l'espèce (chantier 13) : choisi ici, modifiable ensuite dans l'onglet Personnage
@@ -137,7 +140,7 @@ function wStepBody(W,st){ const c=wCls(W);
   if(st==="Historique"){
     h+=`<p class="muted">L'historique donne des bonus de caractéristiques, un don d'origine, 2 compétences et un outil.</p>`+wPick(W,"historique","bg");
     if(W.bg){ const abs=wBgAbs(W), b=srd("backgrounds",W.bg), x=hb(W.bg);
-      h+=`<div class="panel stack" style="margin-top:12px">${b?`<div class="muted" style="font-size:var(--fs-sm)">Don : ${esc(b.feat)} · Compétences : ${b.skills.map(s=>(S.C.skills.find(k=>k.id===s)||{}).name).join(", ")} · Outil : ${esc(b.tools||"")}</div>`:`<div class="muted" style="font-size:var(--fs-sm)">${esc(x&&x.text||"")}</div>`}
+      h+=`<div class="panel stack" style="margin-top:12px">${b?`<div class="muted" style="font-size:var(--fs-sm)">Don : ${esc(b.feat)} · Compétences : ${b.skills.map(s=>(S.C.skills.find(k=>k.id===s)||{}).name).join(", ")} · Outil : ${esc(b.tools||"")}</div>`:`<div class="muted" style="font-size:var(--fs-sm)">${esc(x&&x.text||"")}</div>${wBgNote(W,x)}`}
         <div class="label">Bonus de caractéristiques</div>
         <div class="adv" role="group"><button aria-pressed="${W.asiMode==="21"}" data-act="wpick" data-k="asiMode" data-v="21">+2 et +1</button><button aria-pressed="${W.asiMode==="111"}" data-act="wpick" data-k="asiMode" data-v="111">+1 / +1 / +1</button></div>
         ${W.asiMode==="21"?`<div class="row">+2 ${wSel("asi2",abs.map(a=>[a,ABN[a]]),W.asi2)} +1 ${wSel("asi1",abs.filter(a=>a!==W.asi2).map(a=>[a,ABN[a]]),W.asi1)}</div>`:(abs.length===3?`<div class="muted">+1 en ${abs.map(a=>ABN[a]).join(", ")}</div>`:`<div class="row">${[0,1,2].map(i=>wSel("asiT."+i,AB.map(a=>[a,ABN[a]]),W.asiT[i])).join(" ")}</div>`)}
@@ -252,11 +255,13 @@ function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)|
 // Compteur de ce qui reste à faire et bouton d'état : tant qu'il manque quelque chose, le bouton est grisé et le nomme
 function wFoot(W){ const n=wNeeds(W), names=n.map(x=>x.name==="Identité"?"nom":x.name.toLowerCase());
   return `<div class="wfootbar" id="wfoot"><div class="wleft" role="status">${n.length?`<b>Reste à faire (${n.length})</b> <span class="muted">${esc(names.join(", "))}</span>`:`<span class="muted">Tout est choisi.</span>`}</div><button class="btn primary" data-act="wcreate" ${n.length?"disabled":""}>${esc(n.length?n[0].msg:"Créer le personnage")}</button></div>`; }
+// Sur téléphone, le compteur est aussi en haut de la page (le pied est loin) ; caché sur ordinateur
+function wCount(W){ const n=wNeeds(W); return `<div class="wcount" id="wcount" aria-hidden="true">${n.length?`<b>Reste à faire (${n.length})</b> <span class="muted">${esc(n.map(x=>x.name==="Identité"?"nom":x.name.toLowerCase()).join(", "))}</span>`:`<b>Tout est choisi.</b> <span class="muted">Tu peux créer le personnage.</span>`}</div>`; }
 function viewWizard(){ const W=S.W, c=wCls(W), lv=+W.level||1;
   // Une ligne pas encore ouverte reste neutre (« À choisir ») ; le rouge est gardé pour une ligne ouverte puis laissée incomplète
   const rows=wLines(W).map(st=>{ const msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement"), seen=!!(W.seen||{})[st];
     return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(st)}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }).join("");
-  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux.</div></div><button class="btn ghost" data-act="wcancel">Annuler</button></div>
+  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux.</div></div><button class="btn ghost" data-act="wcancel">Annuler</button></div>${wCount(W)}
     <div class="wz"><section class="stack" style="min-width:0">
       <div class="wid"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
       ${lv>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${lv}.</div>`:""}
