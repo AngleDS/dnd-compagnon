@@ -236,7 +236,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     // Partir voir « Mes contenus » ne perd pas la création en cours
     await p.click('[data-act="wchg"]'); await p.click('.wmore [data-act="nav"]'); eq(await p.evaluate(() => [S.view, !!S.W]), ['hb', true], 'Mes contenus ouvert, création gardée');
     await p.evaluate(() => { S.view = 'list'; S.cur = null; render(); });
-    eq(await p.evaluate(() => document.querySelector('[data-act="wizard"]').textContent), 'Reprendre la création', 'bouton de reprise');
+    eq(await p.evaluate(() => document.querySelector('[data-act="wizard"]').textContent), 'Reprendre ma création', 'bouton de reprise');
     await p.click('[data-act="wizard"]'); eq(await p.evaluate(() => [S.view, S.W.sp, S.W.cls, S.W.open, document.getElementById('modal').innerHTML]), ['wizard', 'srd:humain', 'guerrier', null, ''], 'création reprise telle quelle, fenêtre refermée');
   });
 
@@ -468,6 +468,36 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.docs.hb_tb = { type: 'hb', kind: 'historique', name: 'Perso', abilities: ['for', 'dex', 'con'], effects: [{ t: 'maitrise', cible: 'comp:arcanes', niveau: 1 }, { t: 'maitrise', cible: 'comp:histoire', niveau: 1 }], feat: 'Vigilant', featRef: 'srd:vigilant' };
       const W = S.W = wNew(); Object.assign(W, { cls: 'guerrier', bg: 'hb:hb_tb' }); S.view = 'wizard'; W.open = 'Équipement'; render(); });
     ok(await p.evaluate(() => /ne connaît pas l'équipement/.test((document.querySelector('#modal .wnoeq') || {}).textContent || '')), 'historique sans équipement : signalé');
+  });
+
+  await test('Création : brouillon enregistré (rechargement, reprise, abandon, effacé à la création, brouillon abîmé ignoré)', async p => {
+    await open(p);
+    const reload = async () => { await p.reload(); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.CAT); };
+    const list = () => p.evaluate(() => [document.querySelector('[data-act="wizard"]').textContent, !!document.querySelector('[data-act="wdrop"]')]);
+    await p.evaluate(() => { S.view = 'list'; render(); }); eq(await list(), ['Créer un personnage', false], 'au départ : rien à reprendre');
+    await p.click('[data-act="wizard"]'); await p.fill('input[data-w="name"]', 'Brouillon'); await reload();
+    eq(await list(), ['Reprendre ma création', true], 'après rechargement : reprise proposée, abandon possible');
+    await p.click('[data-act="wizard"]'); eq(await p.evaluate(() => [S.view, S.W.name, document.querySelector('input[data-w="name"]').value]), ['wizard', 'Brouillon', 'Brouillon'], 'le nom tapé (sans autre action) est revenu');
+    await p.click('.wline[data-v="Classe"]'); await p.click('#modal [data-act="wpick"][data-v="clerc"]'); await p.selectOption('#modal select[data-w="order"]', 'thaumaturge');
+    await reload(); await p.click('[data-act="wizard"]'); // rechargement fenêtre ouverte
+    eq(await p.evaluate(() => [S.W.cls, S.W.order, S.W.open, document.getElementById('modal').innerHTML, document.querySelector('.wline[data-v="Classe"] .val').textContent, !!S.W.seen.Classe]), ['clerc', 'thaumaturge', null, '', 'Clerc · Thaumaturge', true], 'choix revenus, fenêtre refermée');
+    eq(await p.evaluate(() => [Object.keys(S.docs).some(k => /creation|brouillon/i.test(k)), Object.values(S.docs).filter(d => d.type === 'perso').length]), [false, 0], 'le brouillon n’est pas une fiche');
+    // Abandonner depuis la liste : brouillon et fiches du catalogue créées pour lui effacés
+    await p.evaluate(() => { const W = S.W; W.bg = catRes('cat:bg-ermite'); W.feat = catRes(hb(W.bg).featRef); render(); S.view = 'list'; S.cur = null; render(); });
+    ok(await p.evaluate(() => hbs().length === 2), 'fiches du catalogue créées pour le brouillon'); await reload();
+    await p.click('[data-act="wdrop"]'); eq([await list(), await p.evaluate(() => [hbs().length, localStorage.getItem('registre-creation-v1'), !!S.W])], [['Créer un personnage', false], [0, null, false]], 'abandon : plus de brouillon, fiches inutilisées supprimées');
+    await reload(); eq(await list(), ['Créer un personnage', false], 'toujours rien après rechargement');
+    // « Abandonner » sur la page fait la même chose ; créer le personnage efface le brouillon
+    await p.click('[data-act="wizard"]'); await p.fill('input[data-w="name"]', 'X'); await p.click('[data-act="wcancel"]'); eq(await p.evaluate(() => [S.view, localStorage.getItem('registre-creation-v1')]), ['list', null], 'abandon depuis la page');
+    await p.click('[data-act="wizard"]'); await p.evaluate(() => { const W = S.W; Object.assign(W, { name: 'Créé', langs: ['Elfique', 'Nain'], cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' }); for (const st of ['Historique', 'Caractéristiques', 'Compétences']) Object.assign(W, wSugDraft(W, st)); render(); });
+    ok(await p.evaluate(() => !!localStorage.getItem('registre-creation-v1')), 'brouillon enregistré pendant la création'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => [cur().name, localStorage.getItem('registre-creation-v1')]), ['Créé', null], 'personnage créé : brouillon effacé');
+    // Brouillon abîmé ou mal formé : ignoré ou nettoyé, jamais d'erreur
+    await p.evaluate(() => localStorage.setItem('registre-creation-v1', '{oups')); await reload(); await p.click('[data-act="wizard"]');
+    eq(await p.evaluate(() => [S.W.name, S.W.cls, wNeeds(S.W).length]), ['', '', 8], 'brouillon illisible : création neuve');
+    await p.evaluate(() => { localStorage.setItem('registre-creation-v1', JSON.stringify({ v: 1, W: { name: 'Tordu', skills: 'x', std: [], cls: 'inconnue', langs: 5, seen: 'non', level: 3, nh: { kind: 'classe' } } })); S.W = null; });
+    await reload(); await p.click('[data-act="wizard"]');
+    eq(await p.evaluate(() => { const W = S.W; return [W.name, W.skills, W.std, W.cls, W.langs, W.seen, W.level, W.nh, !!document.querySelector('.wline')]; }), ['Tordu', [], {}, '', undefined, undefined, 3, null, true], 'champs mal formés écartés, le reste gardé, la page s’affiche');
   });
 
   for (const [label, o, want, noteRe] of [

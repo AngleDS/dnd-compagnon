@@ -1,5 +1,20 @@
 /* ---------- assistant de création ---------- */
 const STD_ARRAY=[15,14,13,12,10,8], PT_COST={8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9}, PT_EXT={3:-9,4:-6,5:-4,6:-2,7:-1,8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9,16:12,17:15,18:19};
+/* Brouillon de création (chantier 17) : la création en cours est enregistrée dans ce navigateur sous sa propre clé, à part des fiches
+   (elle n'est ni dans S.docs, ni dans la copie personnelle, ni synchronisée). Elle survit à un rechargement ; elle est effacée quand le
+   personnage est créé ou la création abandonnée. Un brouillon illisible ou mal formé est ignoré. */
+const W_DRAFT_KEY="registre-creation-v1";
+function wDraftSave(){ try{ const W=S.W; if(!W) return; const o=Object.assign({},W); for(const k of ["open","openShown","chg","nh"]) delete o[k]; localStorage.setItem(W_DRAFT_KEY,JSON.stringify({v:1,t:Date.now(),W:o})); }catch(e){} }
+function wDraftHas(){ try{ return !!localStorage.getItem(W_DRAFT_KEY); }catch(e){ return false; } }
+function wDraftClear(){ try{ localStorage.removeItem(W_DRAFT_KEY); }catch(e){} }
+function wDraftLoad(){ try{ const j=JSON.parse(localStorage.getItem(W_DRAFT_KEY)||"null"); if(!j||j.v!==1||!j.W||typeof j.W!=="object"||Array.isArray(j.W)) return null;
+    const b=wNew(), W=Object.assign({},b), isO=v=>!!v&&typeof v==="object"&&!Array.isArray(v), extra={langs:Array.isArray,exp:Array.isArray,catMade:Array.isArray,mast:v=>v===null||Array.isArray(v),seen:isO,src:isO};
+    for(const k of Object.keys(j.W)){ const v=j.W[k], d=b[k]; if(k==="nh") continue;
+      if(d!==undefined){ if(Array.isArray(d)?Array.isArray(v):isO(d)?isO(v):typeof d===typeof v) W[k]=v; }
+      else if(extra[k]?extra[k](v):typeof v==="string") W[k]=v; }
+    if(W.cls&&!clsOf(W.cls)) W.cls=""; if(W.bg&&!wBg(W)) W.bg=""; if(W.sp&&!(srd("species",W.sp)||hb(W.sp))) W.sp=""; return W; }catch(e){ return null; } }
+// Abandonner : le brouillon et les fiches du catalogue créées pour lui (encore à remplir et inutilisées) disparaissent
+function wAbandon(){ const W=S.W||wDraftLoad(), made=(W&&W.catMade)||[]; S.W=null; wDraftClear(); for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); }
 function wNew(){ return {step:0,cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
 function eqOptions(txt){ const t=String(txt||"").replace(/^Choisissez[^:]*:\s*/,""); const out=[]; const re=/\(([A-Z])\)\s*([\s\S]*?)(?=\s*;\s*(?:ou\s*)?\([A-Z]\)|$)/g; let m;
   while((m=re.exec(t))){ const items=[]; let gold=0;
@@ -257,11 +272,11 @@ function wFoot(W){ const n=wNeeds(W), names=n.map(x=>x.name==="Identité"?"nom":
   return `<div class="wfootbar" id="wfoot"><div class="wleft" role="status">${n.length?`<b>Reste à faire (${n.length})</b> <span class="muted">${esc(names.join(", "))}</span>`:`<span class="muted">Tout est choisi.</span>`}</div><button class="btn primary" data-act="wcreate" ${n.length?"disabled":""}>${esc(n.length?n[0].msg:"Créer le personnage")}</button></div>`; }
 // Sur téléphone, le compteur est aussi en haut de la page (le pied est loin) ; caché sur ordinateur
 function wCount(W){ const n=wNeeds(W); return `<div class="wcount" id="wcount" aria-hidden="true">${n.length?`<b>Reste à faire (${n.length})</b> <span class="muted">${esc(n.map(x=>x.name==="Identité"?"nom":x.name.toLowerCase()).join(", "))}</span>`:`<b>Tout est choisi.</b> <span class="muted">Tu peux créer le personnage.</span>`}</div>`; }
-function viewWizard(){ const W=S.W, c=wCls(W), lv=+W.level||1;
+function viewWizard(){ const W=S.W, c=wCls(W), lv=+W.level||1; wDraftSave(); // chaque affichage de la page enregistre le brouillon
   // Une ligne pas encore ouverte reste neutre (« À choisir ») ; le rouge est gardé pour une ligne ouverte puis laissée incomplète
   const rows=wLines(W).map(st=>{ const msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement"), seen=!!(W.seen||{})[st];
     return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(st)}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }).join("");
-  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux.</div></div><button class="btn ghost" data-act="wcancel">Annuler</button></div>${wCount(W)}
+  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux.</div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
     <div class="wz"><section class="stack" style="min-width:0">
       <div class="wid"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
       ${lv>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${lv}.</div>`:""}
@@ -279,7 +294,7 @@ function wCreate(){
   const arm=d.bag.find(b=>eqInfo(b).type==="armor"); if(arm) eqSet(d,"corps",arm.id);
   const sh=d.bag.find(b=>eqInfo(b).type==="shield"); if(sh&&(c.armor||[]).includes("bouclier")) eqSet(d,"mainS",sh.id);
   const D=derive(d); d.hp={cur:D.hpMax,temp:0};
-  touch(id); S.cur=id; S.view="sheet"; S.tab="jeu"; const lv=Math.max(1,Math.min(20,+W.level||1)); S.W=null;
+  touch(id); S.cur=id; S.view="sheet"; S.tab="jeu"; const lv=Math.max(1,Math.min(20,+W.level||1)); S.W=null; wDraftClear();
   for(const hid of W.catMade||[]) if(S.docs[hid]&&S.docs[hid].pending&&!hbUsed(hid)) removeDoc(hid);
   if(lv>1){ S.lvlTarget={id,to:lv}; S.pending={type:"lvl",hp:"avg"}; }
   render(); if(lv<=1) rvStart(id);

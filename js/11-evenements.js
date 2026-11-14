@@ -119,11 +119,12 @@ document.addEventListener("click",e=>{
     case "new": S.newName={}; renderModal(); break;
     case "newCancel": if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } break; // clic à côté de la fenêtre ou sur sa croix, pas dedans
     case "wclose": if(S.W&&(e.target===t||t.tagName==="BUTTON")){ S.W.open=null; render(); } break;
-    case "wizard": if(!S.W) S.W=wNew(); S.W.open=null; S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
+    case "wizard": if(!S.W) S.W=wDraftLoad()||wNew(); S.W.open=null; S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
     case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; (S.W.seen=S.W.seen||{})[t.dataset.v]=true; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;
     case "wsrc": (S.W.src=S.W.src||{})[t.dataset.k]=t.dataset.v; render(); break;
-    case "wcancel": { const made=(S.W&&S.W.catMade)||[]; S.W=null; for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); break; }
+    case "wcancel": wAbandon(); break;
+    case "wdrop": wAbandon(); break; // depuis la liste des personnages
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
     case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
@@ -451,7 +452,7 @@ document.addEventListener("input",e=>{
   if(e.target&&(e.target.id==="catq")&&S.catPick){ S.catPick.q=e.target.value; const l=document.getElementById("catlist"); if(l) l.innerHTML=catPickList(); return; }
   const t=e.target;
   if(virtualDiceEnabled()&&t.matches(DICE_INPUTS)) return;
-  if(t.dataset&&t.dataset.w&&S.W&&t.tagName!=="SELECT"&&!t.dataset.w.startsWith("dice.")&&t.dataset.w!=="level"){ setPath(S.W,t.dataset.w,t.value); if(t.dataset.w==="name"){ const b=document.querySelector(".wprev b"); if(b) b.textContent=t.value||"Nouveau personnage"; wNavSync(); } return; }
+  if(t.dataset&&t.dataset.w&&S.W&&t.tagName!=="SELECT"&&!t.dataset.w.startsWith("dice.")&&t.dataset.w!=="level"){ setPath(S.W,t.dataset.w,t.value); if(t.dataset.w==="name"){ const b=document.querySelector(".wprev b"); if(b) b.textContent=t.value||"Nouveau personnage"; wNavSync(); } wDraftSave(); return; }
   if(t.dataset&&t.dataset.bind&&t.type==="number"&&!t.dataset.hb&&!t.dataset.bag&&!t.dataset.att&&!t.dataset.cnt&&t.value!==""&&t.id){
     const ch=cur(); if(ch){ let nv=+t.value; if(/^abilities\./.test(t.dataset.bind)){ nv=Math.max(1,Math.min(30,Math.round(nv)||1)); if(String(nv)!==t.value&&t.value.length>=2) t.value=nv; } setPath(ch,t.dataset.bind,nv); touch(S.cur); clearTimeout(numTimer); const id=t.id;
       numTimer=setTimeout(()=>{ const a=document.activeElement; const still=a&&a.id===id; render(); if(still){ const n=document.getElementById(id); if(n){ try{ n.focus({preventScroll:true}); }catch(e){} } } },450); }
