@@ -34,6 +34,15 @@ function wBgFeat(W){ const b=srd("backgrounds",W.bg); if(!b) return W.feat||""; 
 const SP_SKILL={"Sens aiguisés":["intuition","perception","survie"]};
 function wSpSkills(W){ const s=srd("species",W.sp), t=s&&s.traits.find(t=>SP_SKILL[t.name]); return t?{name:t.name,from:SP_SKILL[t.name]}:null; }
 function wSizes(W){ const s=srd("species",W.sp), m=s?String(s.size||"").replace(/,\s*à choisir.*$/,"").split(/\s+ou\s+/):[]; return m.length===2?m:null; }
+// Choix de classe du niveau 1 (chantier 17) : expertise (2 compétences maîtrisées) et bottes d'arme (parmi les armes du lot choisi)
+function wExpN(W){ const c=wCls(W); return c&&c.features.some(f=>f.level===1&&/^Expertise$/.test(f.name))?2:0; }
+function wProf(W){ return [...new Set([...wBgSkills(W),wSpSkills(W)?W.spSkill:"",...W.skills,W.extraSkill].filter(Boolean))]; }
+function wExp(W){ const p=wProf(W); return (W.exp||[]).filter(s=>p.includes(s)).slice(0,wExpN(W)); }
+function wMast(W){ const c=wCls(W), n=c?bottesN({cls:c,L:1}):0; if(!n) return {n:0,cands:[],list:[]};
+  const cands=[...new Set(wEqItems(W).items.map(it=>eqInfo({name:it.name})).filter(e=>e.type==="weapon"&&e.w.mastery).map(e=>"srd:"+e.w.id))];
+  return {n,cands,list:(Array.isArray(W.mast)?W.mast.filter(w=>cands.includes(w)):cands).slice(0,n)}; }
+// Styles de combat proposés à la création : règles de base et dons complets, rien d'« à remplir »
+function wStyles(){ return styleOpts({feats:[]}).filter(([v])=>!String(v).startsWith("cat:")&&!(hb(v)||{}).pending).map(([v,l])=>[v,String(l).replace(/\s*\(hors SRD[^)]*\)$/,"")]); }
 function wIsHuman(W){ const s=srd("species",W.sp); return !!(s&&s.traits.some(t=>t.name==="Polyvalent")); }
 // Dons d'origine proposés : règles de base, puis dons complets de « Mes contenus ». cur : le don déjà retenu reste dans la liste.
 function wOriginFeats(cur){ const l=[...S.C.feats.filter(f=>/origine/i.test(f.category||"")).map(f=>["srd:"+f.id,f.name]),...hbs("don").filter(h=>!h.pending).map(h=>["hb:"+h._id,h.name])];
@@ -70,7 +79,7 @@ function wSteps(W){ const c=wCls(W), cast=wCast(W); const st=["Classe","Historiq
   if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Équipement","Identité"); return st; }
 function wEqItems(W){ const c=wCls(W), out=[]; let gold=0; const add=(txt,key)=>{ const opts=eqOptions(txt); const cur=opts.find(o=>o.k===W[key])||opts[0]; if(!cur) return; gold+=cur.gold; cur.items.forEach((it,ix)=>{ if(!W.eqOff[key+cur.k+ix]) out.push(it); }); };
   if(c) add(c.equipment,"eqC"); const bgS=srd("backgrounds",W.bg); if(bgS) add(bgS.equipment,"eqB"); return {items:out,gold}; }
-function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill,wSpSkills(W)?W.spSkill:""].filter(Boolean)) skills[s]=1;
+function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill,wSpSkills(W)?W.spSkill:""].filter(Boolean)) skills[s]=1; for(const s of wExp(W)) skills[s]=2;
   const feats=[...new Set([wBgFeat(W), wIsHuman(W)?W.hFeat:"", wStyle1(W)?W.style:""].filter(Boolean))];
   const bgS=srd("backgrounds",W.bg);
   return {type:"perso",name:W.name||"Nouveau personnage",player:W.player||"",level:1,classId:W.cls,species:W.sp,size:wSizes(W)&&W.size?W.size:undefined,lineage:W.lin&&LINEAGES[String(W.sp||"").replace(/^srd:/,"")]?{id:W.lin,ab:W.linAb||"cha"}:undefined,background:W.bg,abilities:wAbilities(W),skills,
@@ -86,7 +95,7 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
     const sk=wSpSkills(W); if(sk&&!W.spSkill) return sk.name+" : choisis ta compétence."; if(wSizes(W)&&!W.size) return "Choisis ta taille."; return ""; }
   if(st==="Caractéristiques"){ const b=wBase(W); if(AB.some(a=>b[a]==null)) return "Attribue une valeur à chaque caractéristique."; if(W.method==="std"){ const v=AB.map(a=>+W.std[a]).sort((x,y)=>y-x); if(v.join()!==STD_ARRAY.join()) return "Chaque valeur du tableau standard ne s'utilise qu'une fois."; } if(W.method==="dice"){ const ix=AB.map(a=>W.diceAs[a]); if(new Set(ix).size<6) return "Chaque résultat ne s'utilise qu'une fois."; }
     if(W.method==="pts"&&AB.reduce((t,a)=>t+PT_COST[+W.pts[a]],0)>27) return "Tu dépasses les 27 points."; return ""; }
-  if(st==="Compétences"){ const n=c.skillChoices.count; if(W.skills.length!==n) return `Choisis ${n} compétences de classe.`; if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")&&!W.extraSkill) return "Humain : choisis ta compétence en plus (Compétent)."; if(wStyle1(W)&&!W.style) return "Choisis ton style de combat."; return ""; }
+  if(st==="Compétences"){ const n=c.skillChoices.count; if(W.skills.length!==n) return `Choisis ${n} compétences de classe.`; if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")&&!W.extraSkill) return "Humain : choisis ta compétence en plus (Compétent)."; if(wStyle1(W)&&!W.style) return "Choisis ton style de combat."; const ne=wExpN(W); if(ne&&wExp(W).length<ne) return `Choisis ${ne} expertises parmi tes compétences.`; return ""; }
   if(st==="Sorts"){ const cast=wCast(W); const nc=cast?(cast.cantrips||[])[0]||0:0, np=cast?(cast.prepared||[])[0]||0:0; if(W.can.filter(Boolean).length<nc) return `Choisis ${nc} sorts mineurs.`; if(W.spl.filter(Boolean).length<np) return `Choisis ${np} sorts de niveau 1.`; if(c.id==="occultiste"&&W.inv.filter(Boolean).length<wInvN(W)) return "Choisis ta manifestation occulte."; if(W.inv.some((id,i)=>id&&INV_CHOICE[id]&&!W.invc[i])) return "Choisis la cible de ta manifestation."; return ""; }
   if(st==="Identité") return String(W.name||"").trim()?"":"Donne un nom à ton personnage.";
   return ""; }
@@ -152,8 +161,9 @@ function wStepBody(W,st){ const c=wCls(W);
   }
   if(st==="Compétences"){ const have=new Set(wBgSkills(W)), spk=wSpSkills(W)?W.spSkill:""; const n=c.skillChoices.count;
     h+=`<p class="muted">Choisis ${n} compétences de ${esc(c.name)} (${W.skills.length}/${n}). Celles de ton historique sont déjà acquises.</p><div class="row" style="flex-wrap:wrap;gap:6px">${c.skillChoices.from.map(s=>{ const k=S.C.skills.find(x=>x.id===s); const bg=have.has(s), sp=!bg&&s===spk; return `<button class="chip" aria-pressed="${bg||sp||W.skills.includes(s)}" ${bg||sp?"disabled":""} data-act="wskill" data-v="${s}">${esc(k?k.name:s)}${bg?" · historique":sp?" · espèce":""}</button>`; }).join("")}</div>`;
-    if(wStyle1(W)) h+=`<label class="field" style="margin-top:12px"><span>Style de combat</span>${wSel("style",styleOpts({feats:[]}),W.style||"")}</label><div class="muted" style="font-size:var(--fs-sm)">Défense : +1 CA en armure (recommandé). Archerie : +2 aux attaques à distance.</div>`;
+    if(wStyle1(W)) h+=`<label class="field" style="margin-top:12px"><span>Style de combat</span>${wSel("style",wStyles(),W.style||"")}</label><div class="muted" style="font-size:var(--fs-sm)">Défense : +1 CA en armure (recommandé). Archerie : +2 aux attaques à distance.</div>`;
     if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")) h+=`<label class="field" style="margin-top:12px"><span>Humain · Compétent : une compétence en plus</span>${wSel("extraSkill",S.C.skills.filter(s=>!have.has(s.id)&&s.id!==spk&&!W.skills.includes(s.id)).map(s=>[s.id,s.name]),W.extraSkill)}</label>`;
+    { const ne=wExpN(W); if(ne){ const ex=wExp(W); h+=`<div class="label" style="margin-top:12px">Expertise (${ex.length}/${ne})</div><div class="muted" style="font-size:var(--fs-sm)">Ton bonus de maîtrise compte double pour ces compétences.</div><div class="row wexp" style="flex-wrap:wrap;gap:6px">${wProf(W).map(s=>`<button class="chip" aria-pressed="${ex.includes(s)}" data-act="wexp" data-v="${s}">${esc((S.C.skills.find(x=>x.id===s)||{}).name||s)}</button>`).join("")||`<span class="muted">Choisis d'abord tes compétences.</span>`}</div>`; } }
   }
   if(st==="Sorts"){ const cast=wCast(W), nc=cast?(cast.cantrips||[])[0]||0:0, np=cast?(cast.prepared||[])[0]||0:0, Dt={cls:c};
     const can=classSpells(Dt,0), l1=classSpells(Dt,null,1);
@@ -166,7 +176,8 @@ function wStepBody(W,st){ const c=wCls(W);
       return `<div class="panel stack"><b>${esc(title)}</b><div class="adv" role="group">${opts.map(o=>`<button aria-pressed="${o.k===cur.k}" data-act="wpick" data-k="${key}" data-v="${o.k}">Option ${o.k}${o.items.length?"":" · "+o.gold+" po"}</button>`).join("")}</div>
         ${cur.items.length?`<div class="stack" style="gap:2px">${cur.items.map((it,ix)=>{ const id=key+cur.k+ix; return `<label class="row" style="gap:8px"><input type="checkbox" data-act="weq" data-v="${id}" ${W.eqOff[id]?"":"checked"}>${it.qty>1?it.qty+" × ":""}${esc(it.name)}</label>`; }).join("")}</div>`:""}
         <div class="muted" style="font-size:var(--fs-sm)">${cur.gold} po</div></div>`; };
-    h+=`<p class="muted">Suggestion des règles : prends l'un des lots ou l'or à la place. Décoche ce que tu ne veux pas, tout reste modifiable dans l'inventaire.</p>`+block("Classe · "+c.name,c.equipment,"eqC")+(bgS?block("Historique · "+bgS.name,bgS.equipment,"eqB"):`<div class="panel muted">Historique hors SRD : ajoute son équipement dans l'inventaire après la création.</div>`);
+    h+=`<p class="muted">Suggestion des règles : prends l'un des lots ou l'or à la place. Décoche ce que tu ne veux pas, tout reste modifiable dans l'inventaire.</p>`+block("Classe · "+c.name,c.equipment,"eqC")+(bgS?block("Historique · "+bgS.name,bgS.equipment,"eqB"):`<div class="panel muted">Cet historique ne fait pas partie des règles de base : ajoute son équipement dans l'inventaire après la création.</div>`);
+    { const m=wMast(W); if(m.n&&m.cands.length) h+=`<div class="panel stack wmast"><b>Bottes d'arme (${m.list.length}/${m.n})</b><div class="muted" style="font-size:var(--fs-sm)">Les armes dont tu utilises la botte. Tu peux en changer à chaque repos long.</div><div class="row" style="flex-wrap:wrap;gap:6px">${m.cands.map(w=>{ const x=srd("weapons",w); return `<button class="chip" aria-pressed="${m.list.includes(w)}" data-act="wmast" data-v="${w}">${esc(x.name)} · ${esc(x.mastery)}</button>`; }).join("")}</div></div>`; }
   }
   if(st==="Détails"){
     h+=`<div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:var(--fs-sm)">${esc(wAlign(W))}</span>`:""}</div>
@@ -211,6 +222,7 @@ function wCreate(){
   const W=S.W, c=wCls(W); const id="perso_"+uid(); const d=wDoc(W); S.docs[id]=d; d.armor="none"; d.shield=false;
   const eq=wEqItems(W); for(const it of eq.items) d.bag.push({id:uid(),name:it.name,qty:it.qty,note:""}); d.gold={po:eq.gold};
   for(const b of d.bag){ const e=eqInfo(b); if(e.type==="weapon"&&!d.attacks.some(a=>a.weapon==="srd:"+e.w.id)) d.attacks.push({id:uid(),name:e.w.name,weapon:"srd:"+e.w.id,ability:"auto",prof:true}); }
+  { const m=wMast(W); if(m.n&&Array.isArray(W.mast)) d.masteries=m.list; } // sans retouche : la fiche garde son choix par défaut (premières armes)
   const arm=d.bag.find(b=>eqInfo(b).type==="armor"); if(arm) eqSet(d,"corps",arm.id);
   const sh=d.bag.find(b=>eqInfo(b).type==="shield"); if(sh&&(c.armor||[]).includes("bouclier")) eqSet(d,"mainS",sh.id);
   const D=derive(d); d.hp={cur:D.hpMax,temp:0};

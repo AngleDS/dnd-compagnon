@@ -313,6 +313,34 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(id => { const c = S.docs[id], before = JSON.stringify(c); S.tab = 'table'; render(); return [c.size === undefined, / ou /.test(chSize(c)), JSON.stringify(c) === before]; }, id), [true, true, true], 'fiche sans taille : affichage d’origine, rien d’écrit');
   });
 
+  await test('Création : choix de classe du niveau 1 (expertise du roublard, bottes d’arme, style sans « à remplir »)', async p => {
+    await open(p);
+    const base = { bg: 'srd:soldat', sp: 'srd:nain', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } };
+    await p.evaluate(b => { const W = S.W = wNew(); Object.assign(W, b, { name: 'Roublard test', cls: 'roublard' }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 4); S.view = 'wizard'; W.open = 'Compétences'; render(); }, base);
+    eq(await p.evaluate(() => [document.querySelector('#modal .wmsg').textContent, document.querySelectorAll('#modal .wexp .chip').length]), ['Choisis 2 expertises parmi tes compétences.', 6], 'expertise à choisir parmi les 6 compétences maîtrisées');
+    await p.click('#modal .wexp .chip[data-v="athletisme"]'); await p.click('#modal .wexp .chip >> nth=2'); await p.click('#modal .wexp .chip >> nth=3');
+    eq(await p.evaluate(() => [S.W.exp.length, S.W.exp[0], document.querySelector('#modal .wmsg').textContent]), [2, 'athletisme', ''], 'deux expertises au plus, compétence d’historique acceptée');
+    // Retirer une compétence de classe retire son expertise
+    const second = await p.evaluate(() => S.W.exp[1]); await p.click('#modal .chip[data-act="wskill"][data-v="' + second + '"]');
+    eq(await p.evaluate(() => [wExp(S.W), wLineMsg(S.W, 'Compétences')]), [['athletisme'], 'Choisis 4 compétences de classe.'], 'expertise retirée avec la compétence');
+    await p.click('#modal .chip[data-act="wskill"][data-v="' + second + '"]'); await p.click('#modal .wfoot [data-act="wclose"]');
+    eq(await p.evaluate(() => wNeeds(S.W).length), 0, 'roublard complet'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(s => { const c = cur(), D = derive(c); return [c.skills.athletisme, c.skills[s], D.skills.athletisme.lv, Object.values(c.skills).filter(v => v === 2).length]; }, second), [2, 2, 2, 2], 'expertises sur la fiche');
+    // Guerrier : style sans contenu à remplir ; bottes parmi les armes du lot
+    await p.evaluate(b => { const W = S.W = wNew(); Object.assign(W, b, { name: 'Guerrier test', cls: 'guerrier' }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); S.view = 'wizard'; W.open = 'Compétences'; render(); }, base);
+    ok(await p.evaluate(() => { const o = [...document.querySelectorAll('#modal select[data-w="style"] option')]; return o.length > 4 && o.every(x => !x.value.startsWith('cat:') && !/à remplir|hors SRD/.test(x.textContent)); }), 'styles de combat : règles de base seulement');
+    await p.selectOption('#modal select[data-w="style"]', { index: 1 }); await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('.wline[data-v="Équipement"]');
+    const m0 = await p.evaluate(() => { const m = wMast(S.W); return [m.n, m.cands.length, m.list.length, document.querySelectorAll('#modal .wmast .chip[aria-pressed="true"]').length]; });
+    ok(m0[0] === 3 && m0[1] >= 2 && m0[2] === Math.min(3, m0[1]) && m0[3] === m0[2], 'bottes : les premières armes du lot sont retenues par défaut (' + m0 + ')');
+    await p.click('#modal .wmast .chip[aria-pressed="true"] >> nth=0');
+    const kept = await p.evaluate(() => S.W.mast); eq(kept.length, m0[2] - 1, 'une botte retirée');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => cur().masteries), kept, 'bottes retenues gardées sur la fiche');
+    // Sans retouche, la fiche garde le comportement du chantier 14
+    const id = await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
+    eq(await p.evaluate(id => [S.docs[id].masteries === undefined, masteryList(S.docs[id], derive(S.docs[id])).length > 0], id), [true, true], 'pas de choix enregistré : premières armes de la fiche');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],

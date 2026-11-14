@@ -132,6 +132,8 @@ document.addEventListener("click",e=>{
     case "wroll": { const W=S.W; if(W.rolled||W.dice.some(v=>v!=="")) break; roll3d(Array(W.dice.length*4).fill(6),()=>{ if(W.rolled||W.dice.some(v=>v!=="")) return; const bd=[]; W.dice=W.dice.map(()=>{ const r=[rnd(6),rnd(6),rnd(6),rnd(6)].sort((x,y)=>y-x); bd.push(r[0]+r[1]+r[2]); return r[0]+r[1]+r[2]; }); W.rolled=true; W.rollBd=bd.join(", "); W.diceAs={};
       addLog({label:"Création · 6 jets de 4d6",total:"✓",bd:W.rollBd,kind:"info",quiet:true}); render(); }); break; }
     case "wskill": { const W=S.W, v=t.dataset.v, n=wCls(W).skillChoices.count; if(W.skills.includes(v)) W.skills=W.skills.filter(x=>x!==v); else if(W.skills.length<n) W.skills.push(v); if(W.extraSkill===v) W.extraSkill=""; render(); break; }
+    case "wexp": { const W=S.W, v=t.dataset.v, L=wExp(W); W.exp=L.includes(v)?L.filter(x=>x!==v):(L.length<wExpN(W)?[...L,v]:L); render(); break; }
+    case "wmast": { const W=S.W, v=t.dataset.v, m=wMast(W); W.mast=m.list.includes(v)?m.list.filter(x=>x!==v):(m.list.length<m.n?[...m.list,v]:m.list); render(); break; }
     case "weq": { S.W.eqOff[t.dataset.v]=!t.checked; render(); break; }
     case "wcreate": if(wNeeds(S.W).length) break; wCreate(); break;
     case "afRun": afRun(t.dataset.mode==="hb"?{mode:"hb",id:t.dataset.id}:{mode:"nh"}); break;
