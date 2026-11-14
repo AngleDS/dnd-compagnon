@@ -1399,6 +1399,8 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&QMENU){ qMenuClose
 function qBack(){ const T=S.T; if(T.pop&&T.pop!=="qroll"&&T.pop!=="card") T.qrBack=T.pop; else if(T.pop!=="qroll") T.qrBack=null; }
 function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch) return;
   if(r==="d20"&&key==="conc"&&ch.conc){ T.cc={dmg:0,mode:m==="a"||m==="d"?m:"n",d1:"",d2:"",res:null}; T.pop="concchk"; render(); return; } // sort en cours : dégâts subis, DD, puis le jet
+  // Dégâts enchaînés depuis la fenêtre de jet (après Toucher ou un sort lancé) : le parcours est fini, fermer ramène à « À la table » (demande d'Angle, 14 nov. 2026)
+  if(r==="dmg"&&T.pop==="qroll") T.qrBack=null;
   qBack();
   const keep=from==="cast"&&T.castDone===key; // jets d'un sort qui vient d'être lancé : on ne relance pas le sort
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,itemUseReceipt:null,mode:r==="hit"||r==="d20"?(m==="a"||m==="d"?m:"n"):"n"}); if(!keep) T.castDone=null;

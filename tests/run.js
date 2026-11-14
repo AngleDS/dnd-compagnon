@@ -1703,7 +1703,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => document.querySelector('.tpop .qchain[data-r="dmg"] b').textContent), '4d6', 'dégâts au niveau 2 (3d6 + 1d6)');
     await p.click('.tpop .qchain[data-r="dmg"]'); await p.click('.qmenu [data-m="n"]');
     eq(await p.evaluate(() => [S.T.pop, cur().slotsUsed[2], /Mains brûlantes · dégâts/.test(cur().rollLog[0].label), /^4d6/.test(cur().rollLog[0].bd)]), ['qroll', 1, true, true], 'dégâts lancés sans redépenser d’emplacement');
-    await p.keyboard.press('Escape'); eq(await p.evaluate(() => S.T.pop), 'list:sorts', 'retour à la liste des sorts');
+    await p.keyboard.press('Escape'); eq(await p.evaluate(() => S.T.pop), null, 'dégâts enchaînés : retour à « À la table » (demande d’Angle, 14 nov. 2026)');
+    await p.evaluate(() => { S.T.pop = 'list:sorts'; render(); }); // on rouvre la liste des sorts pour la suite du test
     await row('Lumière').locator('.tkcast').click();
     eq(await p.evaluate(() => [S.T.pop, !document.querySelector('.qmenu'), /Sort mineur lancé/.test(document.querySelector('.tpop').textContent)]), ['qroll', true, true], 'sort mineur sans jet : lancé directement');
     // message au premier plan
@@ -2531,7 +2532,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.fill('#t-d1', '20'); ok(await p.evaluate(() => !!document.querySelector('.qhitnext .qcrit.on')), '20 naturel : Critique mis en avant');
     await p.click('.qhitnext .qcrit');
     eq(await p.evaluate(() => [S.T.pop, S.T.qr.r, S.T.qr.crit, document.activeElement && document.activeElement.id]), ['qroll', 'dmg', true, 't-dmg'], 'Critique : fenêtre des dégâts doublés, case active');
-    await p.click('.tpop .tpophead [data-act="tpopclose"]'); eq(await p.evaluate(() => S.T.pop), 'eco:action', 'la croix ramène à la liste');
+    await p.click('.tpop .tpophead [data-act="tpopclose"]'); eq(await p.evaluate(() => S.T.pop), null, 'dégâts enchaînés : la croix ramène à « À la table » (demande d’Angle, 14 nov. 2026)');
+    await p.evaluate(() => { S.T.pop = 'eco:action'; render(); }); // on rouvre la liste pour la suite du test
     const n0 = await p.evaluate(() => cur().rollLog.length);
     await hit(); await p.fill('#t-d1', '3'); await p.click('.qhitnext .qmiss');
     eq(await p.evaluate(n0 => [cur().rollLog.length - n0, /toucher/.test(cur().rollLog[1].label), cur().turn.action], n0), [2, true, true], 'le jet de toucher saisi est enregistré (et l’action comptée) avant le raté');
@@ -2927,6 +2929,18 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { cur().conc = ''; render(); });
     eq(await p.evaluate(() => [...document.querySelectorAll('.health-card .hpconds .hpcond')].map(x => x.textContent)), ['Empoisonné', '⏱ Potion de résistance'], 'fin de concentration : le sort suivi disparaît de la rangée');
     await p.click('.health-card .hpconds'); eq(await p.getAttribute('.tpop', 'aria-label'), 'États et effets', 'la rangée ouvre « États et effets »');
+  });
+
+  await test('Jet enchaîné : après Toucher puis Dégâts, fermer revient à « À la table » ; après Toucher seul, à la liste', async p => {
+    await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('direct'); S.T.pop = 'eco:action'; render(); });
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    await p.click('.tpophead [data-act="tpopclose"]');
+    eq(await p.evaluate(() => S.T.pop), 'eco:action', 'Toucher seul : retour à la liste d’origine');
+    await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
+    await p.click('.qhitnext .qchain[data-m="n"]');
+    ok(await p.evaluate(() => S.T.pop === 'qroll' && S.T.qr.r === 'dmg' && S.T.dmg !== ''), 'dégâts affichés dans la fenêtre de jet');
+    await p.click('.tpophead [data-act="tpopclose"]');
+    eq(await p.evaluate(() => S.T.pop), null, 'Toucher puis Dégâts : retour direct à « À la table »');
   });
 
   await test('Dés : détail des dés tirés et relancés pour la future animation', async p => {
