@@ -122,7 +122,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Assistant : choix du catalogue, relecture et validation', async p => {
     await open(p);
     await p.evaluate(() => { S.W = wNew(); S.W.cls = 'guerrier'; S.view = 'wizard'; S.W.step = 1; render(); });
-    await p.click('[data-act="wpick"][data-k="bg"][data-v="cat:bg-artisan"]');
+    await p.click('[data-act="wsrc"][data-k="historique"][data-v="other"]'); await p.click('[data-act="wpick"][data-k="bg"][data-v="cat:bg-artisan"]');
     const w = await p.evaluate(() => ({ feat: (hb(S.W.feat) || {}).name, bgSk: wBgSkills(S.W) }));
     eq(w, { feat: 'Façonneur', bgSk: ['investigation', 'persuasion'] }, 'don et compétences de l’historique');
     await p.evaluate(() => { const W = S.W; W.sp = catRes('cat:sp-aasimar'); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'Test' }); wCreate(); });
@@ -137,7 +137,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
   await test('Assistant : les choix abandonnés sont supprimés', async p => {
     await open(p);
     await p.evaluate(() => { S.W = wNew(); S.W.cls = 'guerrier'; S.view = 'wizard'; S.W.step = 1; render(); });
-    await p.click('[data-act="wpick"][data-k="bg"][data-v="cat:bg-ermite"]');
+    await p.click('[data-act="wsrc"][data-k="historique"][data-v="other"]'); await p.click('[data-act="wpick"][data-k="bg"][data-v="cat:bg-ermite"]');
     ok(await p.evaluate(() => hbs().length === 2), 'fiches créées au choix');
     await p.click('[data-act="wcancel"]');
     eq(await p.evaluate(() => hbs().length), 0, 'fiches restantes après annulation');
@@ -199,6 +199,42 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => !document.querySelector('[data-act="wcreate"]').disabled && !document.querySelector('.wnav .warntxt').textContent), 'bouton libéré pendant la saisie');
     await p.click('[data-act="wcreate"]');
     eq(await p.evaluate(() => [S.view, cur().name]), ['sheet', 'Mirela'], 'personnage créé avec son nom');
+  });
+
+  await test('Création : règles de base d’abord, « Autres contenus » seulement pour le complet, rien à créer dans l’assistant', async p => {
+    await open(p);
+    const vals = () => p.evaluate(() => [...document.querySelectorAll('.wcard')].map(b => b.dataset.v));
+    const txt = () => p.evaluate(() => document.getElementById('app').innerText);
+    // Classe : sans contenu complet, pas d'onglet ; ni catalogue « à remplir », ni création de classe, ni le mot SRD
+    await p.evaluate(() => { S.W = wNew(); S.view = 'wizard'; render(); });
+    eq(await p.evaluate(() => document.querySelectorAll('.wsrc').length), 0, 'aucun onglet sans contenu complet');
+    eq((await vals()).length, await p.evaluate(() => S.C.classes.length), 'seulement les classes des règles de base');
+    ok(!/SRD|à remplir|Nouvelle classe/.test(await txt()), 'ni « SRD », ni « à remplir », ni création de classe');
+    // Une classe incomplète de « Mes contenus » reste absente ; complète, elle arrive dans « Autres contenus »
+    await p.evaluate(() => { S.docs.hb_tc = { type: 'hb', kind: 'classe', name: 'Classe test', label: '', hitDie: 10, features: [], effects: [], pending: true }; render(); });
+    eq(await p.evaluate(() => document.querySelectorAll('.wsrc').length), 0, 'classe à remplir : toujours pas d’onglet');
+    await p.evaluate(() => { delete S.docs.hb_tc.pending; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.wsrc button')].map(b => b.textContent + ':' + b.getAttribute('aria-pressed'))), ['Règles de base:true', 'Autres contenus (1):false'], 'onglets, règles de base ouvertes');
+    ok(!(await vals()).includes('hb:hb_tc'), 'la classe perso n’est pas mêlée aux règles de base');
+    await p.click('[data-act="wsrc"][data-v="other"]'); eq(await vals(), ['hb:hb_tc'], 'onglet Autres contenus');
+    // Historique : les 12 du Manuel des joueurs, pas le reste du catalogue ; le don vient avec l'historique
+    await p.evaluate(() => { S.W.cls = 'guerrier'; S.W.step = 1; render(); });
+    eq(await vals(), await p.evaluate(() => S.C.backgrounds.map(b => 'srd:' + b.id)), 'historiques des règles de base');
+    await p.click('[data-act="wsrc"][data-v="other"]');
+    const bgs = await vals(); eq([bgs.length, bgs.every(v => v.startsWith('cat:bg-')), bgs.includes('cat:bg-artisan'), bgs.some(v => /house|harper/.test(v))], [12, true, true, false], '12 historiques complets, aucun à remplir');
+    await p.click('[data-act="wpick"][data-v="cat:bg-garde"]');
+    ok(/Don d'origine : Vigilant/.test(await txt()) && await p.evaluate(() => !document.querySelector('select[data-w="feat"]') && S.W.feat === 'srd:vigilant'), 'don fixé par l’historique, pas de liste');
+    ok((await vals()).some(v => v.startsWith('hb:')) && (await vals()).length === 12, 'l’historique choisi reste dans la liste');
+    // Espèce : pas d'onglet (aucune espèce complète), 17 espèces du catalogue absentes ; Humain : dons d'origine sans « à remplir »
+    await p.evaluate(() => { S.W.asi2 = wBgAbs(S.W)[0]; S.W.asi1 = wBgAbs(S.W)[1]; S.W.step = 2; render(); });
+    eq([(await vals()).length, await p.evaluate(() => document.querySelectorAll('.wsrc').length)], [await p.evaluate(() => S.C.species.length), 0], 'espèces des règles de base seulement');
+    await p.click('[data-act="wpick"][data-v="srd:humain"]');
+    ok(await p.evaluate(() => [...document.querySelectorAll('select[data-w="hFeat"] option')].every(o => !/à remplir|hors SRD/.test(o.textContent) && !o.value.startsWith('cat:'))), 'dons d’origine : rien du catalogue');
+    // Partir voir « Mes contenus » ne perd pas la création en cours
+    await p.click('.wmore [data-act="nav"]'); eq(await p.evaluate(() => [S.view, !!S.W]), ['hb', true], 'Mes contenus ouvert, création gardée');
+    await p.evaluate(() => { S.view = 'list'; S.cur = null; render(); });
+    eq(await p.evaluate(() => document.querySelector('[data-act="wizard"]').textContent), 'Reprendre la création', 'bouton de reprise');
+    await p.click('[data-act="wizard"]'); eq(await p.evaluate(() => [S.view, S.W.sp, S.W.cls]), ['wizard', 'srd:humain', 'guerrier'], 'création reprise telle quelle');
   });
 
   for (const [label, o, want, noteRe] of [

@@ -31,7 +31,25 @@ function wBgAbs(W){ const b=srd("backgrounds",W.bg); if(b) return b.abilities; c
 function wBgSkills(W){ const b=srd("backgrounds",W.bg); if(b) return b.skills||[]; const h=hb(W.bg); return h?(h.effects||[]).filter(e=>e.t==="maitrise"&&/^comp:/.test(e.cible||"")).map(e=>e.cible.slice(5)):[]; }
 function wBgFeat(W){ const b=srd("backgrounds",W.bg); if(!b) return W.feat||""; const n=norm(String(b.feat||"").replace(/\s*\(.*\)\s*/,"")); const f=S.C.feats.find(x=>norm(x.name)===n); return f?"srd:"+f.id:""; }
 function wIsHuman(W){ const s=srd("species",W.sp); return !!(s&&s.traits.some(t=>t.name==="Polyvalent")); }
-function wOriginFeats(){ return [...S.C.feats.filter(f=>/origine/i.test(f.category||"")).map(f=>["srd:"+f.id,f.name]),...hbs("don").map(h=>["hb:"+h._id,h.name+hbTag(h)]),...catOpts("don",e=>e.cat==="origines"||e.cat==="don sombre")]; }
+// Dons d'origine proposés : règles de base, puis dons complets de « Mes contenus ». cur : le don déjà retenu reste dans la liste.
+function wOriginFeats(cur){ const l=[...S.C.feats.filter(f=>/origine/i.test(f.category||"")).map(f=>["srd:"+f.id,f.name]),...hbs("don").filter(h=>!h.pending).map(h=>["hb:"+h._id,h.name])];
+  if(cur&&!l.some(x=>x[0]===cur)){ const h=hb(cur); if(h) l.push([cur,h.name]); } return l; }
+/* Contenus proposés par l'assistant (décision du 14 nov. 2026) : « Règles de base » (SRD) et « Autres contenus », c'est-à-dire seulement
+   les fiches complètes de « Mes contenus ». Rien d'« à remplir » ; la création de contenu se fait dans « Mes contenus », pas ici.
+   Un historique est complet dès qu'il a ses 3 caractéristiques, ses 2 compétences et son don (les 12 du Manuel des joueurs dans le catalogue). */
+function wBgReady(h){ return Array.isArray(h.abilities)&&h.abilities.filter(Boolean).length===3&&(h.effects||[]).filter(e=>e.t==="maitrise"&&/^comp:/.test(e.cible||"")).length>=2&&!!(h.feat||h.featRef); }
+function wSources(kind){ const tag=h=>catShort(h.label)||"Personnalisée";
+  if(kind==="classe") return {base:S.C.classes.map(x=>[x.id,x.name,`d${x.hitDie} · ${x.primary.map(a=>ABN[a]).join(" ou ")}${x.casting?" · sorts":""}`]),
+    other:hbs("classe").filter(h=>!h.pending).map(x=>["hb:"+x._id,x.name,tag(x)+" · d"+(+x.hitDie||8)])};
+  if(kind==="historique") return {base:S.C.backgrounds.map(b=>["srd:"+b.id,b.name,b.abilities.map(a=>ABS[a]).join(", ")+" · "+b.feat]),
+    other:[...hbs("historique").filter(h=>!h.pending||wBgReady(h)).map(x=>["hb:"+x._id,x.name,tag(x)+(x.feat?" · "+x.feat:"")]),
+      ...catAll().filter(e=>e.k==="historique"&&!catHb(e)&&(e.ab||[]).length===3&&(e.sk||[]).length===2&&(e.feat||e.featRef)).map(e=>["cat:"+e.id,e.n,catShort(e.b)+" · "+e.feat])].sort((a,b)=>a[1].localeCompare(b[1],"fr"))};
+  return {base:S.C.species.map(x=>["srd:"+x.id,x.name,x.traits.map(t=>t.name).join(", ")]),other:hbs("espece").filter(h=>!h.pending).map(x=>["hb:"+x._id,x.name,tag(x)])}; }
+// Liste de choix avec ses deux onglets ; « Autres contenus » n'existe que s'il y a quelque chose de complet à y montrer
+function wPick(W,kind,key){ const s=wSources(kind), tab=s.other.length&&(W.src||{})[kind]==="other"?"other":"base";
+  return (s.other.length?`<div class="adv wsrc" role="group" style="grid-template-columns:1fr 1fr"><button aria-pressed="${tab==="base"}" data-act="wsrc" data-k="${kind}" data-v="base">Règles de base</button><button aria-pressed="${tab==="other"}" data-act="wsrc" data-k="${kind}" data-v="other">Autres contenus (${s.other.length})</button></div>`:"")
+    +wCards(s[tab],W[key],key)
+    +`<div class="muted wmore" style="font-size:var(--fs-sm);margin-top:8px">Tu ne trouves pas ? Ce qui sort des règles de base se prépare dans <button class="btn small ghost" data-act="nav" data-v="hb">Mes contenus</button> Ta création en cours t'attendra.</div>`; }
 function wBase(W){ const o={};
   for(const a of AB){ if(W.method==="std") o[a]=W.std[a]?+W.std[a]:null; else if(W.method==="pts") o[a]=+W.pts[a]||8; else { const i=W.diceAs[a]; o[a]=i!==undefined&&i!==""&&W.dice[+i]!==""?+W.dice[+i]:null; } }
   return o; }
@@ -78,26 +96,24 @@ function viewWizard(){
   const W=S.W, steps=wSteps(W); W.step=Math.min(W.step,steps.length-1); const st=steps[W.step], c=wCls(W);
   let h="";
   if(st==="Classe"){
-    h+=`<p class="muted">La classe définit ton rôle : dé de vie, maîtrises, sorts et aptitudes.</p>`+wCards([...S.C.classes.map(x=>[x.id,x.name,`d${x.hitDie} · ${x.primary.map(a=>ABN[a]).join(" ou ")}${x.casting?" · sorts":""}`]),...hbs("classe").map(x=>["hb:"+x._id,x.name,"hors SRD · d"+(+x.hitDie||8)+(x.pending?" · à remplir":"")]),...catAll().filter(e=>e.k==="classe"&&!catHb(e)).map(e=>["cat:"+e.id,e.n,"hors SRD · "+catShort(e.b)+" · à remplir"])],W.cls,"cls")+wNhBtn(W,"classe","cls","Nouvelle classe hors SRD");
+    h+=`<p class="muted">La classe définit ton rôle : dé de vie, maîtrises, sorts et aptitudes.</p>`+wPick(W,"classe","cls");
     if(c) h+=`<div class="panel stack" style="margin-top:12px"><b>${esc(c.name)}</b><div class="muted" style="font-size:var(--fs-sm)">Dé de vie d${c.hitDie} · Sauvegardes : ${c.saves.map(a=>ABN[a]).join(", ")} · Armures : ${esc((c.armor||[]).join(", ")||"aucune")} · Armes : ${esc(c.weapons||"")}${c.tools?" · Outils : "+esc(c.tools):""}</div></div>`;
   }
   if(st==="Historique"){
-    const list=[...S.C.backgrounds.map(b=>["srd:"+b.id,b.name,b.abilities.map(a=>ABS[a]).join(", ")+" · "+b.feat]),...hbs("historique").map(x=>["hb:"+x._id,x.name,x.pending?"hors SRD · à remplir":"hors SRD"]),...catAll().filter(e=>e.k==="historique"&&!catHb(e)).map(e=>["cat:"+e.id,e.n,"hors SRD · "+catShort(e.b)+" · à remplir"])];
-    h+=`<p class="muted">L'historique donne des bonus de caractéristiques, un don d'origine, 2 compétences et un outil.</p>`+wCards(list,W.bg,"bg")+wNhBtn(W,"historique","bg","Nouvel historique hors SRD");
+    h+=`<p class="muted">L'historique donne des bonus de caractéristiques, un don d'origine, 2 compétences et un outil.</p>`+wPick(W,"historique","bg");
     if(W.bg){ const abs=wBgAbs(W), b=srd("backgrounds",W.bg), x=hb(W.bg);
       h+=`<div class="panel stack" style="margin-top:12px">${b?`<div class="muted" style="font-size:var(--fs-sm)">Don : ${esc(b.feat)} · Compétences : ${b.skills.map(s=>(S.C.skills.find(k=>k.id===s)||{}).name).join(", ")} · Outil : ${esc(b.tools||"")}</div>`:`<div class="muted" style="font-size:var(--fs-sm)">${esc(x&&x.text||"")}</div>`}
         <div class="label">Bonus de caractéristiques</div>
         <div class="adv" role="group"><button aria-pressed="${W.asiMode==="21"}" data-act="wpick" data-k="asiMode" data-v="21">+2 et +1</button><button aria-pressed="${W.asiMode==="111"}" data-act="wpick" data-k="asiMode" data-v="111">+1 / +1 / +1</button></div>
         ${W.asiMode==="21"?`<div class="row">+2 ${wSel("asi2",abs.map(a=>[a,ABN[a]]),W.asi2)} +1 ${wSel("asi1",abs.filter(a=>a!==W.asi2).map(a=>[a,ABN[a]]),W.asi1)}</div>`:(abs.length===3?`<div class="muted">+1 en ${abs.map(a=>ABN[a]).join(", ")}</div>`:`<div class="row">${[0,1,2].map(i=>wSel("asiT."+i,AB.map(a=>[a,ABN[a]]),W.asiT[i])).join(" ")}</div>`)}
-        ${b?"":`<label class="field"><span>Don d'origine</span>${wSel("feat",wOriginFeats(),W.feat)}</label>${wNhBtn(W,"don","feat","Nouveau don hors SRD")}`}</div>`; }
+        ${b?"":(x&&(x.featRef||x.feat)&&W.feat?`<div class="muted" style="font-size:var(--fs-sm)">Don d'origine : ${esc((hb(W.feat)||S.C.feats.find(f=>"srd:"+f.id===W.feat)||{}).name||x.feat||"")}</div>`:`<label class="field"><span>Don d'origine</span>${wSel("feat",wOriginFeats(W.feat),W.feat)}</label>`)}</div>`; }
   }
   if(st==="Espèce"){
-    const list=[...S.C.species.map(x=>["srd:"+x.id,x.name,x.traits.map(t=>t.name).join(", ")]),...hbs("espece").map(x=>["hb:"+x._id,x.name,x.pending?"hors SRD · à remplir":"hors SRD"]),...catAll().filter(e=>e.k==="espece"&&!catHb(e)).map(e=>["cat:"+e.id,e.n,"hors SRD · "+catShort(e.b)+" · à remplir"])];
-    h+=`<p class="muted">L'espèce donne des traits : vision, résistances, capacités spéciales.</p>`+wCards(list,W.sp,"sp")+wNhBtn(W,"espece","sp","Nouvelle espèce hors SRD");
+    h+=`<p class="muted">L'espèce donne des traits : vision, résistances, capacités spéciales.</p>`+wPick(W,"espece","sp");
     { const xh=hb(W.sp); if(xh) h+=`<div class="panel stack" style="margin-top:12px"><div class="prose">${prose(xh.text)||'<span class="muted">Pas de description.</span>'}</div>${hbFoot(xh)}</div>`; }
     const s=srd("species",W.sp);
     if(s) h+=`<div class="panel stack" style="margin-top:12px">${s.traits.map(t=>`<details class="feat"><summary><span class="nm">${esc(t.name)}</span></summary><div class="prose">${prose(t.text)}</div></details>`).join("")}
-      ${wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(),W.hFeat)}</label>${wNhBtn(W,"don","hFeat","Nouveau don hors SRD")}`:""}
+      ${wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(W.hFeat),W.hFeat)}</label>`:""}
       ${wLineage(W,s)}${/Choisissez/i.test(s.traits.map(t=>t.text).join(" "))&&!wIsHuman(W)&&!LINEAGES[s.id]?`<div class="muted" style="font-size:var(--fs-sm)">Certains traits demandent un choix (lignage, ascendance…) : note-le dans la fiche après la création.</div>`:""}</div>`;
   }
   if(st==="Caractéristiques"){

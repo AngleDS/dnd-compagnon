@@ -117,7 +117,8 @@ document.addEventListener("click",e=>{
     case "setMain": setMain(t.dataset.id); render(); break;
     case "openTable": S.unlockEdit=false; S.cur=t.dataset.id; S.view="sheet"; S.tab="table"; if(!mainId()) setMain(t.dataset.id); render(); window.scrollTo(0,0); break;
     case "new": S.newName={}; renderModal(); break;
-    case "wizard": S.W=wNew(); S.view="wizard"; window.scrollTo(0,0); render(); break;
+    case "wizard": if(!S.W) S.W=wNew(); S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
+    case "wsrc": (S.W.src=S.W.src||{})[t.dataset.k]=t.dataset.v; render(); break;
     case "wcancel": { const made=(S.W&&S.W.catMade)||[]; S.W=null; for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); break; }
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
     case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; if(k==="cls"&&W.cls!==v){ W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }

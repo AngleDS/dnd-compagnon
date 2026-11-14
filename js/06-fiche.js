@@ -103,7 +103,7 @@ function viewList(){
     </article>`;}).join("");
   return `<div class="list-head"><div><h1>Liste des personnages</h1><div class="muted">Chaque joueur voit uniquement ses propres fiches.</div></div>
     <div class="row"><button class="btn" data-act="saveApp" title="Crée un fichier personnel contenant les personnages, portraits, notes et éléments de Mes contenus visibles ici">Télécharger ma copie personnelle</button><label class="btn" for="importFile">Importer un personnage</label><input id="importFile" type="file" accept=".json,application/json" hidden>
-    <button class="btn" data-act="new" title="Fiche vide à remplir à la main">Fiche vide</button><button class="btn primary" data-act="wizard">Créer un personnage</button></div></div>
+    <button class="btn" data-act="new" title="Fiche vide à remplir à la main">Fiche vide</button><button class="btn primary" data-act="wizard">${S.W?"Reprendre la création":"Créer un personnage"}</button></div></div>
     <div class="muted" style="margin:8px 0 14px">L'application distribuée est vierge. « Télécharger ma copie personnelle » crée un autre fichier qui contient tes personnages, portraits, notes et contenus personnalisés : ne le partage pas sans le vouloir.</div>
     ${loading?`<div class="empty">Chargement de tes personnages…</div>`:(cards?`<div class="cards">${cards}</div>`:`<div class="empty">Aucun personnage pour l'instant. Crée le premier avec « Créer un personnage » : tu choisiras sa classe, son espèce et ses caractéristiques, et la fiche se calcule toute seule.</div>`)}`;
 }
