@@ -177,6 +177,21 @@ function chargeRest(ch,kind){ const log=[];
  
 /* ---------- derived sheet ---------- */
 const colVal=(cls,lab,L)=>{ const c=cls&&(cls.columns||[]).find(x=>x.label===lab); return c?c.values[L-1]:null; };
+/* Ordre divin (Clerc) et Ordre primitif (Druide), aptitude de niveau 1 (chantier 17). Le choix est gardé dans ch.order (champ facultatif :
+   sans lui, la fiche se calcule comme avant). Thaumaturge et Mage : un sort mineur de plus et un bonus égal au modificateur de Sagesse (minimum +1)
+   à deux compétences, calculés dans derive(). Protecteur et Gardien : maîtrises d'armes et d'armures, rappelées en texte (la fiche ne les contrôle pas). */
+const ORDERS={
+  clerc:{label:"Ordre divin",opts:{
+    protecteur:{name:"Protecteur",note:"Maîtrise des armes de guerre et formation aux armures lourdes."},
+    thaumaturge:{name:"Thaumaturge",note:"Un sort mineur de clerc en plus. Bonus aux tests d'Arcanes et de Religion égal à ton modificateur de Sagesse (minimum +1).",cantrip:1,skills:["arcanes","religion"]}}},
+  druide:{label:"Ordre primitif",opts:{
+    gardien:{name:"Gardien",note:"Maîtrise des armes de guerre et formation aux armures intermédiaires."},
+    mage:{name:"Mage",note:"Un sort mineur de druide en plus. Bonus aux tests d'Arcanes et de Nature égal à ton modificateur de Sagesse (minimum +1).",cantrip:1,skills:["arcanes","nature"]}}}
+};
+function orderOf(ch,cls){ const def=cls&&ORDERS[cls.id], o=def&&ch&&def.opts[ch.order]; return o?Object.assign({id:ch.order,label:def.label},o):null; }
+// Onglet de construction : le choix reste modifiable après la création
+function orderFields(ch){ const def=ORDERS[String(ch.classId||"")]; if(!def) return ""; const o=def.opts[ch.order];
+  return `<label class="field"><span>${esc(def.label)}</span><select id="b-order" data-bind="order"><option value="">— Choisir —</option>${Object.entries(def.opts).map(([v,x])=>`<option value="${v}" ${v===ch.order?"selected":""}>${esc(x.name)}</option>`).join("")}</select>${o?`<span class="muted" style="font-size:var(--fs-sm)">${esc(o.note)}</span>`:""}</label>`; }
 function derive(ch){
   const L=Math.max(1,Math.min(20,+ch.level||1)), pb=PB(L);
   const cls=clsOf(ch.classId);
@@ -188,8 +203,9 @@ function derive(ch){
   const effs=[]; for(const s of sources) for(const e of s.effects||[]) effs.push(Object.assign({_src:s.name},e));
   for(const e of MG.eff) effs.push(e);
   if(cls&&cls.hb) for(const f of cls.features) if(f.level<=L) for(const e of f.effects||[]) effs.push(Object.assign({_src:f.name},e));
+  const order=orderOf(ch,cls); if(order&&order.skills) for(const k of order.skills) effs.push({_src:order.label+" · "+order.name,t:"bonus",cible:"comp:"+k,val:Math.max(1,mods.sag)});
   const bonus=c=>effs.filter(e=>e.t==="bonus"&&e.cible===c).reduce((t,e)=>t+evalF(e.val,ctx),0);
-  const D={L,pb,mods,cls,sources,effs,ctx,mg:MG,abEff};
+  const D={L,pb,mods,cls,sources,effs,ctx,mg:MG,abEff,order};
   D.testB=bonus("test:all");
   // saves
   D.saves={}; for(const a of AB){
@@ -245,7 +261,7 @@ function derive(ch){
     const ab=cast?cast.ability:(lineageOf(ch)?.ab||"cha");
     D.cast={ability:ab, dc:8+pb+mods[ab]+bonus("dd"), atk:pb+mods[ab]+bonus("attaque_sort"), type:cast?cast.type:null};
     if(cast){
-      D.cast.cantrips=cast.cantrips[L-1]; D.cast.prepared=cast.prepared[L-1];
+      D.cast.cantrips=cast.cantrips[L-1]+(order&&order.cantrip&&cast.cantrips[L-1]!==undefined?order.cantrip:0); D.cast.prepared=cast.prepared[L-1];
       if(cast.type==="pact"){ D.cast.pactSlots=cast.pactSlots[L-1]; D.cast.pactLevel=cast.pactLevel[L-1]; }
       else if(cast.slots){ D.cast.slots=cast.slots[L-1]||[]; }
     }

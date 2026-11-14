@@ -415,6 +415,7 @@ function tabBuild(ch,D){
       <label class="field"><span>Classe</span>${classSel}</label>
       <label class="field"><span>Niveau</span><input id="b-level" type="number" min="1" max="20" data-bind="level" data-num value="${esc(ch.level||1)}"></label>
       <label class="field"><span>Sous-classe ${cls?`(niveau ${cls.subclassLevel})`:""}</span>${sel("b-sub","subclass",subOpts,ch.subclass)}</label>
+      ${orderFields(ch)}
       <label class="field"><span>Espèce</span>${sel("b-species","species",spOpts,ch.species)}</label>
       ${lineageFields(ch)}
       <label class="field"><span>Historique</span>${sel("b-bg","background",bgOpts,ch.background)}</label>

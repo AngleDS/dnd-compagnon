@@ -124,7 +124,7 @@ document.addEventListener("click",e=>{
     case "wsrc": (S.W.src=S.W.src||{})[t.dataset.k]=t.dataset.v; render(); break;
     case "wcancel": { const made=(S.W&&S.W.catMade)||[]; S.W=null; for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); break; }
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
-    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
+    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; W.spSkill=""; W.size=""; }
       W[k]=v; if(k==="bg"&&W.spSkill&&wBgSkills(W).includes(W.spSkill)) W.spSkill=""; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } render(); break; }

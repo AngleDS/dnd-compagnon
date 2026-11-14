@@ -341,6 +341,40 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(id => [S.docs[id].masteries === undefined, masteryList(S.docs[id], derive(S.docs[id])).length > 0], id), [true, true], 'pas de choix enregistré : premières armes de la fiche');
   });
 
+  await test('Ordre divin et Ordre primitif : choix obligatoire à la création, sort mineur et bonus de compétences, fiche sans ordre inchangée', async p => {
+    await open(p);
+    const calc = (cls, order, sag) => p.evaluate(([cls, order, sag]) => { const D = derive({ type: 'perso', name: 'T', level: 1, classId: cls, order, abilities: { for: 10, dex: 10, con: 10, int: 12, sag, cha: 10 }, skills: { religion: 1 }, attacks: [], spells: [], feats: [], features: [], invocations: [], conditions: [] });
+      return [D.cast.cantrips, D.skills.arcanes.val, D.skills.religion.val, D.skills.nature.val, D.skills.histoire.val]; }, [cls, order, sag]);
+    eq(await calc('clerc', undefined, 16), [3, 1, 3, 1, 1], 'clerc sans ordre : calcul d’avant');
+    eq(await calc('clerc', 'protecteur', 16), [3, 1, 3, 1, 1], 'Protecteur : pas de bonus chiffré');
+    eq(await calc('clerc', 'thaumaturge', 16), [4, 4, 6, 1, 1], 'Thaumaturge : un sort mineur, Arcanes et Religion + Sagesse');
+    eq(await calc('clerc', 'thaumaturge', 8), [4, 2, 4, 1, 1], 'Thaumaturge : minimum +1');
+    eq(await calc('druide', 'mage', 14), [3, 3, 3, 3, 1], 'Mage : un sort mineur, Arcanes et Nature + Sagesse');
+    eq(await calc('druide', 'thaumaturge', 14), [2, 1, 3, 1, 1], 'un ordre d’une autre classe est ignoré');
+    eq(await calc('clerc', 'thaumaturge', 16).then(() => p.evaluate(() => derive({ type: 'perso', level: 1, classId: 'guerrier', order: 'thaumaturge', abilities: {}, skills: {} }).skills.arcanes.val)), 0, 'ni pour une classe sans ordre');
+    // Assistant : l'ordre est demandé avec la classe ; le Thaumaturge choisit un sort mineur de plus
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Clerc test', bg: 'srd:acolyte', sp: 'srd:nain', std: { for: 14, dex: 8, con: 13, int: 10, sag: 15, cha: 12 } }); const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1]; S.view = 'wizard'; W.open = 'Classe'; render(); });
+    await p.click('#modal [data-act="wpick"][data-v="clerc"]');
+    eq(await p.evaluate(() => [document.querySelector('#modal .wmsg').textContent, wLineMsg(S.W, 'Classe')]), ['Ordre divin : fais ton choix.', 'Ordre divin : fais ton choix.'], 'ordre obligatoire');
+    await p.selectOption('#modal select[data-w="order"]', 'thaumaturge');
+    ok(await p.evaluate(() => !document.querySelector('#modal .wmsg').textContent && /Arcanes et de Religion/.test(document.querySelector('#modal .wchoices').textContent)), 'ordre choisi et expliqué');
+    await p.click('#modal .wfoot [data-act="wclose"]');
+    eq(await p.evaluate(() => [document.querySelector('.wline[data-v="Classe"] .val').textContent, wLineMsg(S.W, 'Sorts')]), ['Clerc · Thaumaturge', 'Choisis 4 sorts mineurs.'], 'ligne de classe et quatrième sort mineur');
+    await p.evaluate(() => { const W = S.W, D = { cls: wCls(W) }; W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.can = classSpells(D, 0).slice(0, 4).map(x => x.ref); W.spl = classSpells(D, null, 1).slice(0, wCast(W).prepared[0]).map(x => x.ref); render(); });
+    eq(await p.evaluate(() => [wNeeds(S.W).length, wDoc(S.W).spells.length - S.W.spl.length]), [0, 4], 'clerc complet, 4 sorts mineurs');
+    await p.evaluate(() => { S.W.order = 'protecteur'; render(); });
+    eq(await p.evaluate(() => [wNeeds(S.W).length, wDoc(S.W).spells.length - S.W.spl.length]), [0, 3], 'Protecteur : le sort mineur en trop n’est pas gardé');
+    await p.evaluate(() => { S.W.order = 'thaumaturge'; render(); }); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => [cur().order, derive(cur()).cast.cantrips]), ['thaumaturge', 4], 'ordre gardé sur la fiche');
+    // Onglet de construction : modifiable ; absent pour une classe sans ordre ; changer de classe côté assistant efface l'ordre
+    await p.evaluate(() => { S.rv = null; renderModal(); S.unlockEdit = true; S.tab = 'build'; render(); });
+    await p.selectOption('#b-order', 'protecteur'); eq(await p.evaluate(() => [cur().order, derive(cur()).cast.cantrips]), ['protecteur', 3], 'ordre changé dans la fiche');
+    const id = await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
+    eq(await p.evaluate(id => { S.rv = null; S.pending = null; renderModal(); S.cur = id; S.unlockEdit = true; S.tab = 'build'; render(); return [!!document.getElementById('b-order'), JSON.stringify(S.docs[id]).includes('"order"')]; }, id), [false, false], 'guerrier : pas d’ordre');
+    await p.evaluate(() => { const W = S.W = wNew(); W.cls = 'clerc'; W.order = 'thaumaturge'; S.view = 'wizard'; W.open = 'Classe'; W.chg = 'cls'; render(); });
+    await p.click('#modal [data-act="wpick"][data-v="druide"]'); eq(await p.evaluate(() => [S.W.order, wLineMsg(S.W, 'Classe')]), ['', 'Ordre primitif : fais ton choix.'], 'changer de classe efface l’ordre');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],
