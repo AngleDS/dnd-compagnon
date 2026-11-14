@@ -179,7 +179,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [cur().name, S.tab, !!document.getElementById('nn-name')]), ['Vide', 'build', false], 'fiche vide nommée');
     // Assistant : tableau standard
     await p.evaluate(() => { const W = S.W = wNew(); W.cls = 'guerrier'; W.bg = 'srd:soldat'; W.sp = 'srd:nain'; const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1];
-      W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Caractéristiques'; render(); });
+      W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; W.langs = ['Elfique', 'Nain']; S.view = 'wizard'; W.open = 'Caractéristiques'; render(); });
     const opts = k => p.evaluate(k => [...document.querySelectorAll('select[data-w="' + k + '"] option')].map(o => o.value).filter(Boolean), k);
     await p.selectOption('select[data-w="std.for"]', '15');
     eq(await opts('std.dex'), ['14', '13', '12', '10', '8'], '15 déjà pris : plus proposé ailleurs');
@@ -243,9 +243,9 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.view = 'list'; render(); }); await p.click('[data-act="wizard"]');
     const lines = () => p.evaluate(() => [...document.querySelectorAll('.wline')].map(b => [b.dataset.v, b.disabled, b.querySelector('.st').textContent, (b.querySelector('small') || {}).textContent || '']));
     const foot = () => p.evaluate(() => { const b = document.querySelector('[data-act="wcreate"]'); return [document.querySelector('#wfoot .wleft').textContent, b.disabled, b.textContent]; });
-    eq((await lines()).map(l => l[0]), ['Classe', 'Historique', 'Espèce', 'Caractéristiques', 'Compétences', 'Équipement', 'Détails'], 'lignes de la page');
+    eq((await lines()).map(l => l[0]), ['Classe', 'Historique', 'Espèce', 'Caractéristiques', 'Compétences', 'Langues', 'Équipement', 'Détails'], 'lignes de la page');
     eq((await lines()).filter(l => l[1]).map(l => l[0]), ['Compétences', 'Équipement'], 'lignes en attente de la classe');
-    eq(await foot(), ['Reste à faire (7) nom, classe, historique, espèce, caractéristiques, compétences, équipement', true, 'Donne un nom à ton personnage.'], 'compteur et bouton d’état au départ');
+    eq(await foot(), ['Reste à faire (8) nom, classe, historique, espèce, caractéristiques, compétences, langues, équipement', true, 'Donne un nom à ton personnage.'], 'compteur et bouton d’état au départ');
     // Une ligne ouvre sa fenêtre ; un clic dans la fenêtre ne la ferme pas, un clic à côté oui
     await p.click('.wline[data-v="Classe"]');
     eq(await p.evaluate(() => [document.querySelector('#modal [role="dialog"]').getAttribute('aria-label'), document.querySelector('#modal .wmsg').textContent, document.querySelector('#modal .wfoot .btn').textContent]), ['Classe', 'Choisis une classe.', 'Fermer'], 'fenêtre Classe');
@@ -268,7 +268,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [document.querySelectorAll('#modal .wcard').length, document.querySelector('#modal .wchosen b').textContent, !!document.querySelector('#modal select[data-w="asi2"]')]), [0, 'Noble', true], 'la liste se replie, les choix de l’historique sont sous les yeux');
     await p.setViewportSize({ width: 1280, height: 900 });
     // Tout remplir : le compteur descend, le bouton nomme ce qui manque, puis crée
-    await p.evaluate(() => { const W = S.W; W.open = null; W.bg = 'srd:sage'; W.feat = ''; const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1]; W.sp = 'srd:nain'; W.std = { for: 8, dex: 14, con: 13, int: 15, sag: 12, cha: 10 };
+    await p.evaluate(() => { const W = S.W; W.open = null; W.langs = ['Elfique', 'Nain']; W.bg = 'srd:sage'; W.feat = ''; const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1]; W.sp = 'srd:nain'; W.std = { for: 8, dex: 14, con: 13, int: 15, sag: 12, cha: 10 };
       W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, wCls(W).skillChoices.count); const cast = wCast(W), D = { cls: wCls(W) };
       W.can = classSpells(D, 0).slice(0, cast.cantrips[0]).map(x => x.ref); render(); });
     eq(await foot(), ['Reste à faire (2) nom, sorts', true, 'Donne un nom à ton personnage.'], 'compteur après les choix');
@@ -282,7 +282,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Création : choix d’espèce obligatoires (lignage, Sens aiguisés, taille), fiche sans taille intacte', async p => {
     await open(p);
-    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Elfe test', cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:elfe', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, skills: ['perception', 'survie'] }); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Espèce'; render(); });
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Elfe test', langs: ['Elfique', 'Nain'], cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:elfe', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, skills: ['perception', 'survie'] }); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Espèce'; render(); });
     const msg = () => p.evaluate(() => document.querySelector('#modal .wmsg').textContent);
     const opts = k => p.evaluate(k => [...document.querySelectorAll('#modal select[data-w="' + k + '"] option')].map(o => o.value).filter(Boolean), k);
     eq(await msg(), 'Lignage elfique : fais ton choix.', 'le lignage est obligatoire');
@@ -302,7 +302,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('[data-act="wcreate"]');
     eq(await p.evaluate(() => { const c = cur(); return [c.skills.survie, c.lineage.id, c.size === undefined, derive(c).skills.survie.lv]; }), [1, 'drow', true, 1], 'elfe créé : compétence, lignage, pas de taille à choisir');
     // Tieffelin : héritage puis taille
-    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Tieffelin test', cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:tieffelin', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Espèce'; render(); });
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Tieffelin test', langs: ['Elfique', 'Nain'], cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:tieffelin', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Espèce'; render(); });
     eq(await msg(), 'Héritage fiélon : fais ton choix.', 'héritage obligatoire'); await p.selectOption('#modal select[data-w="lin"]', 'infernal');
     eq([await msg(), (await opts('size')).map(v => v.slice(0, 10))], ['Choisis ta taille.', ['M (moyenne', 'P (petite,']], 'taille à choisir');
     await p.selectOption('#modal select[data-w="size"]', { index: 2 }); eq(await msg(), '', 'espèce complète');
@@ -315,7 +315,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Création : choix de classe du niveau 1 (expertise du roublard, bottes d’arme, style sans « à remplir »)', async p => {
     await open(p);
-    const base = { bg: 'srd:soldat', sp: 'srd:nain', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } };
+    const base = { langs: ['Elfique', 'Nain', 'Orc'], bg: 'srd:soldat', sp: 'srd:nain', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } };
     await p.evaluate(b => { const W = S.W = wNew(); Object.assign(W, b, { name: 'Roublard test', cls: 'roublard' }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 4); S.view = 'wizard'; W.open = 'Compétences'; render(); }, base);
     eq(await p.evaluate(() => [document.querySelector('#modal .wmsg').textContent, document.querySelectorAll('#modal .wexp .chip').length]), ['Choisis 2 expertises parmi tes compétences.', 6], 'expertise à choisir parmi les 6 compétences maîtrisées');
     await p.click('#modal .wexp .chip[data-v="athletisme"]'); await p.click('#modal .wexp .chip >> nth=2'); await p.click('#modal .wexp .chip >> nth=3');
@@ -353,7 +353,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await calc('druide', 'thaumaturge', 14), [2, 1, 3, 1, 1], 'un ordre d’une autre classe est ignoré');
     eq(await calc('clerc', 'thaumaturge', 16).then(() => p.evaluate(() => derive({ type: 'perso', level: 1, classId: 'guerrier', order: 'thaumaturge', abilities: {}, skills: {} }).skills.arcanes.val)), 0, 'ni pour une classe sans ordre');
     // Assistant : l'ordre est demandé avec la classe ; le Thaumaturge choisit un sort mineur de plus
-    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Clerc test', bg: 'srd:acolyte', sp: 'srd:nain', std: { for: 14, dex: 8, con: 13, int: 10, sag: 15, cha: 12 } }); const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1]; S.view = 'wizard'; W.open = 'Classe'; render(); });
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Clerc test', langs: ['Elfique', 'Nain'], bg: 'srd:acolyte', sp: 'srd:nain', std: { for: 14, dex: 8, con: 13, int: 10, sag: 15, cha: 12 } }); const abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1]; S.view = 'wizard'; W.open = 'Classe'; render(); });
     await p.click('#modal [data-act="wpick"][data-v="clerc"]');
     eq(await p.evaluate(() => [document.querySelector('#modal .wmsg').textContent, wLineMsg(S.W, 'Classe')]), ['Ordre divin : fais ton choix.', 'Ordre divin : fais ton choix.'], 'ordre obligatoire');
     await p.selectOption('#modal select[data-w="order"]', 'thaumaturge');
@@ -373,6 +373,23 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(id => { S.rv = null; S.pending = null; renderModal(); S.cur = id; S.unlockEdit = true; S.tab = 'build'; render(); return [!!document.getElementById('b-order'), JSON.stringify(S.docs[id]).includes('"order"')]; }, id), [false, false], 'guerrier : pas d’ordre');
     await p.evaluate(() => { const W = S.W = wNew(); W.cls = 'clerc'; W.order = 'thaumaturge'; S.view = 'wizard'; W.open = 'Classe'; W.chg = 'cls'; render(); });
     await p.click('#modal [data-act="wpick"][data-v="druide"]'); eq(await p.evaluate(() => [S.W.order, wLineMsg(S.W, 'Classe')]), ['', 'Ordre primitif : fais ton choix.'], 'changer de classe efface l’ordre');
+  });
+
+  await test('Création : langues (commun acquis, deux au choix, argot des voleurs et druidique)', async p => {
+    await open(p);
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Langues test', cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; render(); });
+    eq(await p.evaluate(() => [wNeeds(S.W).map(n => n.msg), document.querySelector('.wline[data-v="Langues"] .val').textContent]), [['Choisis 2 langues.'], 'CommunChoisis 2 langues.'], 'seules les langues manquent');
+    await p.click('.wline[data-v="Langues"]');
+    eq(await p.evaluate(() => [document.querySelectorAll('#modal .wlangs .chip').length, /Tu parles déjà : Commun\./.test(document.querySelector('#modal .wbody').textContent)]), [9, true], 'neuf langues standard, commun acquis');
+    for (const l of ['Elfique', 'Nain', 'Orc']) await p.click('#modal .wlangs .chip[data-v="' + l + '"]');
+    eq(await p.evaluate(() => [S.W.langs, document.querySelector('#modal .wmsg').textContent]), [['Elfique', 'Nain'], ''], 'deux langues, pas une de plus');
+    await p.click('#modal .wlangs .chip[data-v="Elfique"]'); await p.click('#modal .wlangs .chip[data-v="Orc"]'); await p.click('#modal .wfoot [data-act="wclose"]');
+    eq(await p.evaluate(() => document.querySelector('.wline[data-v="Langues"] .val').textContent), 'Commun, Nain, Orc', 'ligne Langues');
+    // Roublard : argot des voleurs et une langue de plus ; Druide : druidique
+    eq(await p.evaluate(() => { const W = S.W; W.cls = 'roublard'; return [wLangFixed(W), wLangN(W), wLineMsg(W, 'Langues')]; }), [['Commun', 'Argot des voleurs'], 3, 'Choisis 3 langues.'], 'roublard');
+    eq(await p.evaluate(() => { const W = S.W; W.cls = 'druide'; return [wLangFixed(W), wLangN(W), wLineMsg(W, 'Langues')]; }), [['Commun', 'Druidique'], 2, ''], 'druide');
+    await p.evaluate(() => { S.W.cls = 'guerrier'; render(); }); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => cur().languages), 'Commun, Nain, Orc', 'langues écrites dans le champ de la fiche');
   });
 
   for (const [label, o, want, noteRe] of [

@@ -75,11 +75,18 @@ function wBonus(W){ const o={}; for(const a of AB) o[a]=0; const abs=wBgAbs(W);
   return o; }
 function wAbilities(W){ const b=wBase(W), x=wBonus(W), o={}; for(const a of AB) o[a]=Math.min(20,(b[a]??10)+x[a]); return o; }
 function wCast(W){ const c=wCls(W); return c&&c.casting?c.casting:null; }
+/* Langues (chantier 17) : tout personnage parle le commun et choisit 2 langues standard ; le Roublard reçoit l'argot des voleurs et une langue de plus,
+   le Druide le druidique. Le résultat va dans le champ texte ch.languages, qui reste libre dans la fiche (langues rares, avec l'accord du MJ). */
+const LANGS=["Draconique","Elfique","Géant","Gnome","Gobelin","Halfelin","Langue des signes commune","Nain","Orc"];
+function wLangHas(W,n){ const c=wCls(W); return !!(c&&c.features.some(f=>f.level===1&&f.name===n)); }
+function wLangFixed(W){ return ["Commun",...(wLangHas(W,"Argot des voleurs")?["Argot des voleurs"]:[]),...(wLangHas(W,"Druidique")?["Druidique"]:[])]; }
+function wLangN(W){ return 2+(wLangHas(W,"Argot des voleurs")?1:0); }
+function wLangs(W){ return (W.langs||[]).filter(l=>LANGS.includes(l)).slice(0,wLangN(W)); }
 function wOrder(W){ return orderOf({order:W.order},wCls(W)); }
 // Sorts mineurs à choisir au niveau 1 (un de plus pour le Thaumaturge et le Mage)
 function wNC(W){ const cast=wCast(W), n=cast?(cast.cantrips||[])[0]||0:0, o=wOrder(W); return n+(n&&o&&o.cantrip?o.cantrip:0); }
 function wSteps(W){ const c=wCls(W), cast=wCast(W); const st=["Classe","Historique","Espèce","Caractéristiques","Compétences"];
-  if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Équipement","Identité"); return st; }
+  if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Langues","Équipement","Identité"); return st; }
 function wEqItems(W){ const c=wCls(W), out=[]; let gold=0; const add=(txt,key)=>{ const opts=eqOptions(txt); const cur=opts.find(o=>o.k===W[key])||opts[0]; if(!cur) return; gold+=cur.gold; cur.items.forEach((it,ix)=>{ if(!W.eqOff[key+cur.k+ix]) out.push(it); }); };
   if(c) add(c.equipment,"eqC"); const bgS=srd("backgrounds",W.bg); if(bgS) add(bgS.equipment,"eqB"); return {items:out,gold}; }
 function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill,wSpSkills(W)?W.spSkill:""].filter(Boolean)) skills[s]=1; for(const s of wExp(W)) skills[s]=2;
@@ -87,7 +94,7 @@ function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,
   const bgS=srd("backgrounds",W.bg);
   return {type:"perso",name:W.name||"Nouveau personnage",player:W.player||"",level:1,classId:W.cls,species:W.sp,size:wSizes(W)&&W.size?W.size:undefined,lineage:W.lin&&LINEAGES[String(W.sp||"").replace(/^srd:/,"")]?{id:W.lin,ab:W.linAb||"cha"}:undefined,background:W.bg,abilities:wAbilities(W),skills,
     hp:{cur:1,temp:0},attacks:[],order:c&&ORDERS[c.id]&&ORDERS[c.id].opts[W.order]?W.order:undefined,spells:[...W.can.slice(0,wNC(W)),...W.spl].filter(Boolean).map(r=>({ref:r,prepared:true})),feats,features:[],invocations:W.inv.map((id,i)=>id?id+(W.invc[i]?"|"+W.invc[i]:""):"").filter(Boolean),
-    conditions:[],gold:{po:0},tools:[bgS?bgS.tools:(hb(W.bg)||{}).tools,c&&c.tools].filter(Boolean).join(" ; "),alignment:wAlign(W),notes:W.notes||"",hpMode:"auto",bag:[],updatedAt:Date.now(),
+    conditions:[],gold:{po:0},tools:[bgS?bgS.tools:(hb(W.bg)||{}).tools,c&&c.tools].filter(Boolean).join(" ; "),alignment:wAlign(W),languages:[...wLangFixed(W),...wLangs(W)].join(", "),notes:W.notes||"",hpMode:"auto",bag:[],updatedAt:Date.now(),
     ...(()=>{ const its=wEqItems(W).items.map(it=>eqInfo({name:it.name})); const a=its.find(e=>e.type==="armor"), sh=its.find(e=>e.type==="shield"); return {armor:a?"srd:"+a.a.id:"none",shield:!!(sh&&c&&(c.armor||[]).includes("bouclier"))}; })()}; }
 function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
   if(!c&&(st==="Compétences"||st==="Sorts"||st==="Équipement")) return "Choisis d'abord une classe.";
@@ -100,6 +107,7 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
     if(W.method==="pts"&&AB.reduce((t,a)=>t+PT_COST[+W.pts[a]],0)>27) return "Tu dépasses les 27 points."; return ""; }
   if(st==="Compétences"){ const n=c.skillChoices.count; if(W.skills.length!==n) return `Choisis ${n} compétences de classe.`; if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")&&!W.extraSkill) return "Humain : choisis ta compétence en plus (Compétent)."; if(wStyle1(W)&&!W.style) return "Choisis ton style de combat."; const ne=wExpN(W); if(ne&&wExp(W).length<ne) return `Choisis ${ne} expertises parmi tes compétences.`; return ""; }
   if(st==="Sorts"){ const cast=wCast(W); const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(W.can.slice(0,nc).filter(Boolean).length<nc) return `Choisis ${nc} sorts mineurs.`; if(W.spl.filter(Boolean).length<np) return `Choisis ${np} sorts de niveau 1.`; if(c.id==="occultiste"&&W.inv.filter(Boolean).length<wInvN(W)) return "Choisis ta manifestation occulte."; if(W.inv.some((id,i)=>id&&INV_CHOICE[id]&&!W.invc[i])) return "Choisis la cible de ta manifestation."; return ""; }
+  if(st==="Langues"){ const n=wLangN(W); return wLangs(W).length<n?`Choisis ${n} langues.`:""; }
   if(st==="Identité") return String(W.name||"").trim()?"":"Donne un nom à ton personnage.";
   return ""; }
 // Tout ce qui manque encore avant de pouvoir créer : [{step, name, msg}] (une entrée par étape incomplète)
@@ -183,6 +191,10 @@ function wStepBody(W,st){ const c=wCls(W);
     h+=`<p class="muted">Suggestion des règles : prends l'un des lots ou l'or à la place. Décoche ce que tu ne veux pas, tout reste modifiable dans l'inventaire.</p>`+block("Classe · "+c.name,c.equipment,"eqC")+(bgS?block("Historique · "+bgS.name,bgS.equipment,"eqB"):`<div class="panel muted">Cet historique ne fait pas partie des règles de base : ajoute son équipement dans l'inventaire après la création.</div>`);
     { const m=wMast(W); if(m.n&&m.cands.length) h+=`<div class="panel stack wmast"><b>Bottes d'arme (${m.list.length}/${m.n})</b><div class="muted" style="font-size:var(--fs-sm)">Les armes dont tu utilises la botte. Tu peux en changer à chaque repos long.</div><div class="row" style="flex-wrap:wrap;gap:6px">${m.cands.map(w=>{ const x=srd("weapons",w); return `<button class="chip" aria-pressed="${m.list.includes(w)}" data-act="wmast" data-v="${w}">${esc(x.name)} · ${esc(x.mastery)}</button>`; }).join("")}</div></div>`; }
   }
+  if(st==="Langues"){ const n=wLangN(W), L=wLangs(W), fx=wLangFixed(W);
+    h+=`<p class="muted">Tu parles déjà : ${esc(fx.join(", "))}. Choisis ${n} autres langues (${L.length}/${n}).</p><div class="row wlangs" style="flex-wrap:wrap;gap:6px">${LANGS.map(l=>`<button class="chip" aria-pressed="${L.includes(l)}" data-act="wlang" data-v="${esc(l)}">${esc(l)}</button>`).join("")}</div>
+      <div class="muted" style="font-size:var(--fs-sm);margin-top:10px">Les langues rares se décident avec ton MJ : tu pourras les ajouter dans la fiche.</div>`;
+  }
   if(st==="Détails"){
     h+=`<div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:var(--fs-sm)">${esc(wAlign(W))}</span>`:""}</div>
       <label class="field"><span>Notes (apparence, personnalité, histoire)</span><textarea data-w="notes" style="min-height:120px">${esc(W.notes)}</textarea></label>`;
@@ -203,6 +215,7 @@ function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)|
   if(st==="Caractéristiques"){ const b=wBase(W), f=wAbilities(W); return AB.some(a=>b[a]==null)?({std:"Tableau standard",pts:"Achat de points",dice:"Dés (4d6)"})[W.method]:AB.map(a=>ABS[a]+" "+f[a]).join(" · "); }
   if(st==="Compétences"){ if(!c) return ""; const l=[...W.skills,W.extraSkill].filter(Boolean); return l.length?l.map(nm).join(", "):"0 / "+c.skillChoices.count; }
   if(st==="Sorts"){ const n=[...W.can,...W.spl].filter(Boolean).length; return n?pl(n,"sort")+" choisi"+(n>1?"s":""):""; }
+  if(st==="Langues") return [...wLangFixed(W),...wLangs(W)].join(", ");
   if(st==="Équipement"){ if(!c) return ""; const e=wEqItems(W); return pl(e.items.length,"objet")+" · "+e.gold+" po"; }
   if(st==="Détails") return [wAlign(W),String(W.notes||"").trim()?"notes":""].filter(Boolean).join(" · ")||"Alignement, notes (facultatif)";
   return ""; }
