@@ -1406,11 +1406,11 @@ function qMenuOpen(btn){ qMenuClose(); const k=btn.dataset.k, r=btn.dataset.r, f
   (m.querySelector("[aria-current]")||m.querySelector("button:not([disabled])"))?.focus(); }
 document.addEventListener("pointerdown",e=>{ if(QMENU&&!e.target.closest(".qmenu")&&!e.target.closest('[data-act="tqroll"]')) qMenuClose(); },true);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&QMENU){ qMenuClose(); e.stopPropagation(); } },true);
-function qBack(){ const T=S.T; if(T.pop&&T.pop!=="qroll"&&T.pop!=="card") T.qrBack=T.pop; else if(T.pop!=="qroll") T.qrBack=null; }
+/* Chantier 33 (règle validée par Angle, 15 nov. 2026) : un jet ou une utilisation se termine sur « À la table », plus de retour à la fenêtre d'origine (liste, recherche…). */
+function qBack(){ S.T.qrBack=null; }
 function quickRoll(key,r,m,from){ const T=S.T, ch=cur(), i=(S.Titems||[]).find(x=>x.key===key); if(!i||!ch) return;
   if(r==="d20"&&key==="conc"&&ch.conc){ T.cc={dmg:0,mode:m==="a"||m==="d"?m:"n",d1:"",d2:"",res:null}; T.pop="concchk"; render(); return; } // sort en cours : dégâts subis, DD, puis le jet
   // Dégâts enchaînés depuis la fenêtre de jet (après Toucher ou un sort lancé) : le parcours est fini, fermer ramène à « À la table » (demande d'Angle, 14 nov. 2026)
-  if(r==="dmg"&&T.pop==="qroll") T.qrBack=null;
   qBack();
   const keep=from==="cast"&&T.castDone===key; // jets d'un sort qui vient d'être lancé : on ne relance pas le sort
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,smiteBd:"",d1:"",d2:"",dmg:"",dmgBd:"",slot:null,itemUseReceipt:null,mode:r==="hit"||r==="d20"?(m==="a"||m==="d"?m:"n"):"n"}); if(!keep) T.castDone=null;
@@ -1555,16 +1555,18 @@ function usePvMenu(btn){ qMenuClose(); const k=btn.dataset.k, i=(S.Titems||[]).f
   document.body.append(m); QMENU=m; const b=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
   m.style.left=Math.max(8,Math.min(innerWidth-w-8,b.right-w))+"px"; m.style.top=(b.bottom+6+h>innerHeight-8?Math.max(8,b.top-6-h):b.bottom+6)+"px"; m.querySelector("#t-pvn")?.focus(); }
 function performUse(key,n=1,opt={}){ const ch=cur(), i=(S.Titems||[]).find(x=>x.key===key), u=useKind(i); if(!ch||!u) return false; const D=derive(ch), T=S.T;
-  const before={turn:Object.assign({},ch.turn||{}),resUsed:Object.assign({},ch.resUsed||{}),qty:null}; let note="";
+  let note="";
   if(u==="res"||u==="pv"){ const r=i.res, used=+((ch.resUsed||{})[r.id]||0), left=r.max-used; n=Math.min(left,Math.floor(+n||0)); if(left<=0||n<1) return false;
     ch.resUsed=Object.assign({},ch.resUsed,{[r.id]:used+n}); note=(u==="pv"?(opt.poison?"5 points dépensés : l’état Empoisonné de la créature touchée prend fin (sans rendre de PV)":n+" PV pris dans la réserve"):(n>1?n+" usages dépensés":"1 usage dépensé"))+" · reste "+(left-n)+"/"+r.max; }
-  else if(u==="drink"){ const b=(ch.bag||[]).find(z=>z.id===i.bagId); if(!b||!(+b.qty>0)) return false; before.qty=[b.id,+b.qty]; b.qty=+b.qty-1; note="1 "+b.name+" bue · reste "+b.qty; }
+  else if(u==="drink"){ const b=(ch.bag||[]).find(z=>z.id===i.bagId); if(!b||!(+b.qty>0)) return false; b.qty=+b.qty-1; note="1 "+b.name+" bue · reste "+b.qty; }
   consumeTableCost(i.cost);
   addLog({label:i.name+(u==="drink"?" bue":" utilisée"),total:u==="pv"?(opt.poison?"−5":"−"+n+" PV"):"✓",bd:note||ECO[i.cost]+" consommée",kind:"info",quiet:true});
   qMenuClose(); qBack();
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,d1:"",d2:"",dmg:"",dmgBd:"",castDone:null});
   T.itemUseReceipt=u==="drink"?tableItemReceipt():null;
-  T.used={k:key,n,poison:!!opt.poison,note,cost:i.cost,before,fixed:u==="pv",heal:u==="pv"?"":useHeal(ch,D,i)};
+  T.used={k:key,n,poison:!!opt.poison,note,cost:i.cost,fixed:u==="pv",heal:u==="pv"?"":useHeal(ch,D,i)};
+  // Chantier 33 : sans soins à lancer ou à appliquer, l'utilisation est finie : retour à « À la table », le message résume
+  if(!(T.used.fixed&&!T.used.poison)&&!T.used.heal){ T.used=null; T.pop=null; touch(S.cur); render(); showToast({label:i.name+(u==="drink"?" bue":" utilisée"),total:"✓",bd:note||ECO[i.cost]+" consommée",kind:"info"}); return true; }
   T.pop="used"; touch(S.cur); render();
   if(T.used.heal&&!virtualDiceEnabled()) document.getElementById("t-dmg")?.focus();
   return true; }
@@ -1576,7 +1578,7 @@ function usedPop(ch,D,wrap){ const T=S.T, U=T.used, i=U&&(S.Titems||[]).find(x=>
     x=`<div class="tbig"><span class="num">${esc(U.heal)}</span><span class="muted">soins</span></div>
       <div class="row tin"><label class="field"><span>Total de tes dés${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" inputmode="numeric" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" value="${esc(T.dmg)}" data-tin="dmg"></label><button class="btn small vroll" data-virtual data-act="tvdmg" data-e="${esc(dice)}">Lancer ${esc(dice)}</button></div>
       <div class="ttotal qtot" id="t-dtot" data-flat="${flat}">${damageTotalHtml(T.dmg,flat)}</div>${T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}<div class="row" style="margin-top:8px"><button class="btn" data-act="tpoolself">Appliquer à moi</button></div>`; }
-  return wrap(i.name+(useKind(i)==="drink"?" · bue":" · utilisée"),`<div class="qres">${head}${x}<div class="row" style="margin-top:12px"><button class="btn small ghost" data-act="tuseundo">Annuler l’utilisation</button></div></div>`); }
+  return wrap(i.name+(useKind(i)==="drink"?" · bue":" · utilisée"),`<div class="qres">${head}${x}</div>`); }
 function tableSelected(){ return (S.Titems||[]).find(i=>i.key===S.T?.sel); }
 function tableCardCost(i=tableSelected()){
   if(!i) return null;

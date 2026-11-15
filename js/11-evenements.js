@@ -109,7 +109,7 @@ document.addEventListener("click",e=>{
     case "fxFollow": { const sp=spellOf(t.dataset.ref); if(sp&&spellDur(sp)){ fxAdd(ch,{name:sp.name,dur:spellDur(sp),src:"ton sort",conc:!!sp.concentration}); touch(S.cur); render(); } break; }
     case "fxDone": fxDone(ch,t.dataset.id); touch(S.cur); render(); break;
     case "fxDur": S.T.fxDur=S.T.fxDur===t.dataset.v?null:t.dataset.v; document.querySelectorAll('[data-act="fxDur"]').forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===S.T.fxDur))); break; // sans nouveau rendu : le nom saisi reste
-    case "defOpen": S.pending=null; renderModal(); if(!(S.view==="sheet"&&S.tab==="table")){ S.view="sheet"; S.tab="table"; } render(); S.T.pop="def"; S.T.defEdit=null; render(); break;
+    case "defOpen": S.T.defBack=S.pending&&S.pending.type==="hp"?Object.assign({},S.pending):null; S.pending=null; renderModal(); if(!(S.view==="sheet"&&S.tab==="table")){ S.view="sheet"; S.tab="table"; } render(); S.T.pop="def"; S.T.defEdit=null; render(); break;
     case "nav": if(t.dataset.v==="hb"||t.dataset.v==="comp"){ if(S.view==="sheet") S.navFrom="perso"; else if(S.view==="list") S.navFrom="menu"; }
       if(t.dataset.v==="main"||t.dataset.v==="table"){ // rester sur le perso affiché ; le perso principal seulement en venant d'ailleurs
         const here=S.cur&&S.docs[S.cur]&&S.docs[S.cur].type==="perso"; const m=here?S.cur:mainId(); if(m){ S.tab = t.dataset.v==="table" ? "table" : (S.cur===m&&S.tab!=="table"?S.tab:"jeu"); if(t.dataset.v==="main") S.unlockEdit=false; S.cur=m; S.view="sheet"; render(); window.scrollTo(0,0); } break; } S.view=t.dataset.v; S.cur=S.view==="list"?null:S.cur; render(); break;
@@ -184,18 +184,18 @@ document.addEventListener("click",e=>{
     case "spendhd": { if((+ch.hdUsed||0)>=derive(ch).L) break; roll3d([derive(ch).hd],()=>{ const ch=cur(), D=derive(ch); if((+ch.hdUsed||0)>=D.L) return; const r=rollExpr("1d"+D.hd); const heal=Math.max(1,r.total+D.mods.con); ch.hdUsed=(+ch.hdUsed||0)+1; ch.hp=ch.hp||{cur:0,temp:0}; ch.hp.cur=Math.min(D.hpMax,(+ch.hp.cur||0)+heal);
       addLog({label:"Dé de vie dépensé",total:heal,bd:r.bd+" "+sg(D.mods.con)+" Con"}); touch(S.cur); render(); }); break; }
     case "pip": { const k=t.dataset.k, i=+t.dataset.i, max=+t.dataset.max, isUsed=t.dataset.used==="1";
-      if(k.startsWith("cnt:")){ const c=(ch.counters||[]).find(x=>x.id===k.slice(4)); if(!c) break; const left=+c.cur||0; c.cur = i<left ? i : i+1; touch(S.cur); render(); break; }
+      if(k.startsWith("cnt:")){ const c=(ch.counters||[]).find(x=>x.id===k.slice(4)); if(!c) break; const left=+c.cur||0; c.cur = i<left ? i : i+1; touch(S.cur); if(c.cur<left&&/^ctr:/.test(S.T?.pop||"")) S.T.pop=null; render(); break; }
       let cv = k==="pact"?(+ch.pactUsed||0) : k.startsWith("slot:")?+(ch.slotsUsed?.[k.slice(5)]||0) : k.startsWith("res:")?+(ch.resUsed?.[k.slice(4)]||0) : +(getPath(ch,k)||0);
       let nv;
       if(isUsed){ const left=max-cv; nv = i<left ? max-i : max-(i+1); nv=Math.max(0,Math.min(max,nv)); }
       else { nv = cv===i+1 ? i : i+1; }
       if(k==="pact") ch.pactUsed=nv; else if(k.startsWith("slot:")){ ch.slotsUsed=ch.slotsUsed||{}; ch.slotsUsed[k.slice(5)]=nv; } else if(k.startsWith("res:")){ ch.resUsed=ch.resUsed||{}; ch.resUsed[k.slice(4)]=nv; if(nv>cv) cardSpendMarks(k.slice(4)); } else setPath(ch,k,nv);
-      touch(S.cur); render(); break; }
+      touch(S.cur); if(nv>cv&&/^(res|ctr):/.test(S.T?.pop||"")) S.T.pop=null; render(); break; } // dépense depuis la fenêtre d'une ressource : finie (chantier 33)
     case "ammoNew": if(ch){ const name=String(t.dataset.v||"Munitions").slice(0,40); if(!ammoCounter(ch,name)&&!ammoItem(ch,name)){ ensureBag(ch); ch.bag.push({id:uid(),name,qty:20,note:""}); touch(S.cur); } render(); } break;
     case "ammoEnd": if(ch){ const c=t.dataset.obj?(ch.bag||[]).find(x=>x.id===t.dataset.obj):(ch.counters||[]).find(x=>x.id===t.dataset.id); if(!c) break; const back=Math.floor((+c.spent||0)/2);
       if(t.dataset.obj) c.qty=(+c.qty||0)+back; else c.cur=Math.min(+c.max||Infinity,(+c.cur||0)+back); c.spent=0;
-      addLog({label:c.name+" récupérées",total:back,bd:"Moitié des munitions tirées pendant le combat",kind:"info"}); touch(S.cur); render(); } break;
-    case "ctrUse": if(ch&&ctrUse(ch,t.dataset.v)) render(); break;
+      addLog({label:c.name+" récupérées",total:back,bd:"Moitié des munitions tirées pendant le combat",kind:"info"}); touch(S.cur); if(/^ctr:/.test(S.T?.pop||"")) S.T.pop=null; render(); } break;
+    case "ctrUse": if(ch&&ctrUse(ch,t.dataset.v)){ if(S.T) S.T.pop=null; render(); } break; // allumer, un jour passe… : geste final (chantier 33)
     case "compstep": if(ch){ const c=JSON.parse(JSON.stringify(ch.companion||{name:"",ac:10,hp:{cur:10,max:10}})); c.hp=c.hp||{cur:0,max:0}; const d=+t.dataset.v, k=t.dataset.k;
       if(k==="ac") c.ac=Math.max(0,Math.min(40,(+c.ac||10)+d)); else if(k==="max"){ c.hp.max=Math.max(1,Math.min(999,(+c.hp.max||0)+d)); c.hp.cur=Math.min(c.hp.cur,c.hp.max); } else if(k==="cur") c.hp.cur=Math.max(0,Math.min(+c.hp.max||0,(+c.hp.cur||0)+d));
       ch.companion=c; touch(S.cur); render(); } break;
@@ -213,16 +213,14 @@ document.addEventListener("click",e=>{
     case "tuseq": performUse(t.dataset.k,1); break;
     case "tusepv": usePvMenu(t); break;
     case "tusepvgo": performUse(t.dataset.k,+t.dataset.n,{poison:t.dataset.poison==="1"}); break;
-    case "tuseundo": { const U=S.T.used; if(ch&&U){ const B=U.before; ch.turn=B.turn; ch.resUsed=B.resUsed; if(B.qty){ const b=(ch.bag||[]).find(z=>z.id===B.qty[0]); if(b) b.qty=B.qty[1]; } const i=(S.Titems||[]).find(x=>x.key===U.k); addLog({label:(i?i.name:"Utilisation")+" : utilisation annulée",total:"↺",bd:"Usage et action du tour rendus.",kind:"info",quiet:true}); touch(S.cur); }
-      S.T.used=null; S.T.itemUseReceipt=null; S.T.pop=S.T.qrBack||null; S.T.qrBack=null; render(); break; }
-    case "tmiss": hitCommit(); { const i=(S.Titems||[]).find(x=>x.key===t.dataset.k); addLog({label:(i?i.name:"Attaque")+" — raté",total:"raté",bd:"Le MJ annonce que l'attaque ne touche pas.",kind:"info"}); const T=S.T; T.pop=T.qrBack||null; T.qrBack=null; render(); break; }
+    case "tmiss": hitCommit(); { const i=(S.Titems||[]).find(x=>x.key===t.dataset.k); addLog({label:(i?i.name:"Attaque")+" — raté",total:"raté",bd:"Le MJ annonce que l'attaque ne touche pas.",kind:"info"}); S.T.pop=null; render(); break; } // fin de la chaîne de jets : « À la table » (chantier 33)
     case "tqgo": if(t.closest(".qhitnext")) hitCommit(); qMenuClose(); if(t.dataset.r==="cast") quickCast(t.dataset.k,t.dataset.m); else quickRoll(t.dataset.k,t.dataset.r,t.dataset.m,t.dataset.from); break;
     case "saveApp": saveApp(); break;
-    case "hpmaxb": hpMaxAdd(ch,+t.dataset.v); render(); break;
+    case "hpmaxb": hpMaxAdd(ch,+t.dataset.v); if(!t.classList.contains("stepb")) S.T.pop=null; render(); break; // raccourcis (+5, +10, remise à zéro) : geste final ; − / + : en série
     case "hpask": S.pending={type:"hp",mode:t.dataset.v}; renderModal(); break;
     case "hpquick": hpApply(+t.dataset.v); break;
     case "chg": { const b=(ch.bag||[]).find(x=>x.id===t.dataset.id); if(!b) break; const c=Object.assign({},itemCharges(ch,b)); const i=+t.dataset.i, left=c.max-(+c.used||0);
-      c.used = i<left ? c.max-i : c.max-(i+1); c.auto=false; b.charges=c; touch(S.cur); render(); break; }
+      c.used = i<left ? c.max-i : c.max-(i+1); c.auto=false; b.charges=c; touch(S.cur); if(c.max-c.used<left&&/^ctr:/.test(S.T?.pop||"")) S.T.pop=null; render(); break; }
     case "itemN": S.T.itemN=+t.dataset.v; render(); break;
     case "itemUse": if(performTableItemUse(t.dataset)) render(); break;
     case "chgedit": S.pending={type:"chg",id:t.dataset.id}; renderModal(); break;
@@ -247,14 +245,14 @@ document.addEventListener("click",e=>{
     case "setClose": S.settings=false; renderModal(); break;
     case "themeSet": setTheme(t.dataset.v); render(); renderModal(); break;
     case "helpReset": { try{ Object.keys(localStorage).filter(k=>k.startsWith("registre-banner-")).forEach(k=>localStorage.removeItem(k)); }catch(e){} S.helpReset=true; renderModal(); break; }
-    case "pvTileSet": if(ch){ const v=t.dataset.v; ch.layout=Object.assign({},ch.layout); if(v==="__def") delete ch.layout.pvTile; else ch.layout.pvTile=String(v).slice(0,80); touch(S.cur); render(); } break;
+    case "pvTileSet": if(ch){ const v=t.dataset.v; ch.layout=Object.assign({},ch.layout); if(v==="__def") delete ch.layout.pvTile; else ch.layout.pvTile=String(v).slice(0,80); touch(S.cur); S.T.pop=null; render(); } break; // choix unique (chantier 33)
     case "restOpen": S.T=S.T||{}; S.T.restKind=t.dataset.v||""; S.T.pop="rest"; render(); break;
     case "restKind": S.T.restKind=t.dataset.v; render(); break;
     case "restLong": if(applyRest("long")===false){ render(); break; } S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": if(applyRest("court")===false){ render(); break; } S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
     case "tpop": if(/^res:/.test(t.dataset.v||"")){ const it=(S.Titems||[]).find(x=>x.res&&"res:"+x.res.id===t.dataset.v); if(it){ tSelect(it.key); break; } } // une ressource : une seule fenêtre, celle de l'aptitude (lot 2)
       S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
-    case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="qroll"&&S.T.qrBack){ S.T.pop=S.T.qrBack; S.T.qrBack=null; render(); break; } S.T.pop=null; render(); } break;
+    case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="def"&&S.T.defBack){ S.pending=S.T.defBack; S.T.defBack=null; S.T.pop=null; render(); renderModal(); break; } S.T.pop=null; render(); } break; // Défenses ouvertes depuis Dégâts : on y revient (chantier 33)
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
     case "tvroll": { const T=S.T, mode=T.mode, alive=rollAlive();
@@ -267,7 +265,7 @@ document.addEventListener("click",e=>{
       ch.hp.cur=Math.max(0,Math.min(D.hpMax,before+v)); if(before<=0&&ch.hp.cur>0) ch.death={s:0,f:0};
       if(v<0&&ch.conc&&before>0) concDamage(1);
       touch(S.cur); render(); break; }
-    case "tmpstep": { const D=derive(ch); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; ch.hp.temp=Math.max(0,(+ch.hp.temp||0)+(+t.dataset.v)); touch(S.cur); render(); break; }
+    case "tmpstep": { const D=derive(ch); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; ch.hp.temp=Math.max(0,(+ch.hp.temp||0)+(+t.dataset.v)); touch(S.cur); if(!t.classList.contains("stepb")&&S.T) S.T.pop=null; render(); break; }
     case "portrait": { // champ fichier gardé hors du rendu : un nouveau rendu pendant le choix de l'image ne le détruit plus
       let inp=document.getElementById("portrait-file"); if(!inp){ inp=document.createElement("input"); inp.type="file"; inp.id="portrait-file"; inp.accept="image/*"; inp.hidden=true; document.body.appendChild(inp); }
       inp.dataset.id=S.cur||""; inp.value=""; inp.click(); break; }

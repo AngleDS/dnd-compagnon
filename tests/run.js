@@ -1668,6 +1668,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => /6 m/.test(document.querySelector('.tpop .ctrpop').textContent)), 'torche : rayons de lumière affichés');
     await p.click('.tpop [data-act="ctrUse"]');
     eq(await p.evaluate(() => [cur().bag.find(b => b.id === 'to').qty, S.log[0].label]), [4, 'Torche allumée'], 'allumer : une torche de moins, notée dans l’historique');
+    eq(await p.evaluate(() => S.T.pop), null, 'allumer : geste final, la fenêtre se ferme (chantier 33)'); await p.evaluate(() => { S.T.pop = 'ctr:obj:to'; render(); });
     await p.click('.tpop .ctrstep [data-v="-1"]'); await p.click('.tpop .ctrstep [data-v="1"]'); await p.click('.tpop .ctrstep [data-v="1"]');
     eq(await p.evaluate(() => cur().bag.find(b => b.id === 'to').qty), 5, '− puis + + : quantité corrigée');
     ok(await p.evaluate(() => { const t = document.querySelector('.tpop'); return t.scrollWidth <= t.clientWidth + 1 && t.getBoundingClientRect().right <= innerWidth + 1; }), 'iPhone : la fenêtre ne déborde pas');
@@ -2068,12 +2069,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { setVirtualDice(true); cur().turn = {}; S.T.pop = 'list:atk'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
     eq(await p.evaluate(() => S.T.pop), 'qroll', 'résultat affiché');
-    await p.keyboard.press('Escape'); eq(await p.evaluate(() => S.T.pop), 'list:atk', 'Échap : retour à la liste d’attaques');
+    await p.keyboard.press('Escape'); eq(await p.evaluate(() => S.T.pop), null, 'Échap : retour à « À la table » (chantier 33)');
+    await p.evaluate(() => { S.T.pop = 'list:atk'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="dmg"]').first().click(); await p.click('.qmenu [data-m="c"]');
     ok(await p.evaluate(() => { const b = document.querySelector('.tpop .qbd'); return !!b && /^Critique · \d+d\d+ \[\d+(, \d+)+\]/.test(b.textContent); }), 'critique virtuel : le détail de chaque dé est affiché');
-    await p.click('.tpop [data-act="tpopclose"].btn, .tpop .tpophead [data-act="tpopclose"]'); eq(await p.evaluate(() => S.T.pop), 'list:atk', '× : retour à la liste');
+    await p.click('.tpop [data-act="tpopclose"].btn, .tpop .tpophead [data-act="tpopclose"]'); eq(await p.evaluate(() => S.T.pop), null, '× : retour à « À la table »');
     // contrôle du total en dés physiques
-    await p.evaluate(() => { setVirtualDice(false); cur().turn = {}; render(); });
+    await p.evaluate(() => { setVirtualDice(false); cur().turn = {}; S.T.pop = 'list:atk'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="dmg"]').first().click(); await p.click('.qmenu [data-m="n"]');
     const rg = await p.evaluate(() => { const i = document.getElementById('t-dmg'); return [+i.min, +i.max, /\(\d+ à \d+\)/.test(i.closest('label').textContent)]; });
     ok(rg[0] >= 1 && rg[1] > rg[0] && rg[2], 'dés physiques : plage indiquée et imposée ' + rg);
@@ -2806,7 +2808,8 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => S.T.pop === 'pvtile' && !!document.querySelector('.tpop [data-act="pvTileSet"][data-v="maitrise"]') && !document.querySelector('.tpop [data-act="pvTileSet"][data-v="init"]') && !document.querySelector('.tpop [data-act="pvTileSet"][data-v="search"]')), 'crayon : fenêtre de choix (tuiles 1×1, sans celles déjà à l’écran)');
     await p.click('.tpop [data-act="pvTileSet"][data-v="maitrise"]');
     eq([await p.evaluate(() => cur().layout.pvTile), await side()], ['maitrise', ['repos', 'info:maitrise']], 'Maîtrise choisie (Initiative, déjà dans les Repères, n’est pas proposée)');
-    await p.click('.tpop [data-act="pvTileSet"][data-v=""]');
+    eq(await p.evaluate(() => S.T.pop), null, 'choix unique : la fenêtre se ferme (chantier 33)');
+    await p.click('.tblk[data-blk="pv"] .tedpen'); await p.click('.tpop [data-act="pvTileSet"][data-v=""]');
     eq(await side(), ['repos', 'pvtile'], 'laisser vide : « + » en mode Personnaliser');
     await p.evaluate(() => { S.T.pop = null; S.layoutEdit = false; render(); });
     eq(await side(), ['repos', 'rtile tvoid'], 'vide : case invisible en jeu');
@@ -2933,7 +2936,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const n0 = await p.evaluate(() => cur().rollLog.length);
     await hit(); await p.fill('#t-d1', '3'); await p.click('.qhitnext .qmiss');
     eq(await p.evaluate(n0 => [cur().rollLog.length - n0, /toucher/.test(cur().rollLog[1].label), cur().turn.action], n0), [2, true, true], 'le jet de toucher saisi est enregistré (et l’action comptée) avant le raté');
-    eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label === S.Titems.find(i => i.kind === 'atk').name + ' — raté', cur().rollLog[0].total]), ['eco:action', true, 'raté'], 'Raté : noté dans l’historique, retour à la liste');
+    eq(await p.evaluate(() => [S.T.pop, cur().rollLog[0].label === S.Titems.find(i => i.kind === 'atk').name + ' — raté', cur().rollLog[0].total]), [null, true, 'raté'], 'Raté : noté dans l’historique, retour à « À la table » (chantier 33)');
   });
 
   await test('Attaque d’opportunité : armes de corps à corps en tête de la fenêtre Réaction, l’attaque consomme la réaction', async p => {
@@ -2947,7 +2950,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => !!cur().turn.action), true, 'depuis Actions : l’action, comme avant');
   });
 
-  await test('« Utiliser » / « Boire » sur la ligne : dépense, action du tour, jet de soins, Annuler ; dans Détails, dépenser marque l’action', async p => {
+  await test('« Utiliser » / « Boire » sur la ligne : dépense, action du tour, jet de soins ; sans suite, retour à « À la table » ; dans Détails, dépenser marque l’action', async p => {
     await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'paladin');
     await p.evaluate(() => { const ch = cur(); ch.level = 5; ch.turn = {}; ch.hp = { cur: 10, temp: 0 }; ch.bag = (ch.bag || []).concat([{ id: 'bp', name: 'Potion de guérison', qty: 2 }]); S.T.pop = 'eco:bonus'; render(); });
     const imp = '.tpop .trow[data-k="feat:paladin/imposition des mains"]';
@@ -2958,11 +2961,11 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.fill('#t-pvn', '7'); await p.click('.qmenu .qmpvf button[type="submit"]');
     eq(await p.evaluate(() => [S.T.pop, cur().resUsed['cls:imposition-des-mains'], cur().turn.bonus, /7 PV pris dans la réserve · reste 18\/25/.test(document.querySelector('.tpop').textContent)]), ['used', 7, true, true], '7 PV pris, action bonus marquée, fenêtre de résultat');
     await p.click('.tpop [data-act="tpoolself"]'); eq(await p.evaluate(() => cur().hp.cur), 17, 'Appliquer à moi : +7 PV');
-    await p.click('.tpop [data-act="tuseundo"]');
-    eq(await p.evaluate(() => [S.T.pop, +(cur().resUsed['cls:imposition-des-mains'] || 0), !!cur().turn.bonus]), ['eco:bonus', 0, false], 'Annuler : réserve et action bonus rendues, retour à la liste');
+    eq(await p.evaluate(() => !document.querySelector('.tpop [data-act="tuseundo"]')), true, 'plus de bouton Annuler (chantier 33)');
+    await p.evaluate(() => { cur().resUsed = {}; cur().turn = {}; S.T.pop = 'eco:bonus'; render(); });
     await p.click(imp + ' [data-act="tusepv"]'); await p.click('.qmenu [data-poison="1"]');
-    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], /Empoisonné/.test(document.querySelector('.tpop').textContent), !document.querySelector('.tpop [data-act="tpoolself"]')]), [5, true, true], 'Retirer Empoisonné : 5 points, sans soins');
-    await p.click('.tpop [data-act="tuseundo"]');
+    eq(await p.evaluate(() => [cur().resUsed['cls:imposition-des-mains'], S.T.pop, /Empoisonné/.test(cur().rollLog[0].bd), !!document.getElementById('toast')?.textContent]), [5, null, true, true], 'Retirer Empoisonné : 5 points, rien à appliquer, retour à « À la table » avec un message');
+    await p.evaluate(() => { cur().turn = {}; S.T.pop = 'eco:bonus'; render(); });
     await p.click('.tpop .trow[data-k="bag:bp"] [data-act="tuseq"]');
     eq(await p.evaluate(() => [S.T.pop, cur().bag.find(b => b.id === 'bp').qty, cur().turn.bonus, document.querySelector('.tpop .tbig .num').textContent]), ['used', 1, true, '2d4+2'], 'Boire : une potion de moins, action bonus, soins 2d4+2');
     await p.fill('#t-dmg', '5'); await p.click('.tpop [data-act="tpoolself"]'); eq(await p.evaluate(() => cur().hp.cur), 17, 'soins de la potion : 5 + 2');
@@ -2971,7 +2974,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.tpop .trow[data-k="feat:guerrier/second souffle"] [data-act="tuseq"]');
     eq(await p.evaluate(() => [cur().resUsed['cls:second-souffle'], cur().turn.bonus, document.querySelector('.tpop .tbig .num').textContent]), [1, true, '1d10+5'], 'Second souffle : un usage, action bonus, soins 1d10 + niveau');
     await p.evaluate(() => { S.T.pop = 'eco:action'; render(); }); await p.click('.tpop summary'); await p.click('.tpop .trow[data-k="basic:esquive"] [data-act="tuseq"]');
-    eq(await p.evaluate(() => [S.T.pop, cur().turn.action]), ['used', true], 'Esquive : action marquée');
+    eq(await p.evaluate(() => [S.T.pop, cur().turn.action]), [null, true], 'Esquive : action marquée, rien d’autre à faire : retour à « À la table »');
     // dans la fenêtre Détails : dépenser un usage marque l'action
     await p.evaluate(() => { cur().turn = {}; cur().resUsed = {}; S.T.pop = null; render(); tSelect('feat:guerrier/second souffle'); });
     await p.click('.tpop .tcbody button.pip[data-i="2"]'); eq(await p.evaluate(() => [cur().resUsed['cls:second-souffle'], cur().turn.bonus]), [1, true], 'Détails : la pastille dépensée marque l’action bonus');
@@ -3327,16 +3330,44 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('.health-card .hpconds'); eq(await p.getAttribute('.tpop', 'aria-label'), 'États et effets', 'la rangée ouvre « États et effets »');
   });
 
-  await test('Jet enchaîné : après Toucher puis Dégâts, fermer revient à « À la table » ; après Toucher seul, à la liste', async p => {
+  await test('Jet enchaîné : après Toucher puis Dégâts, comme après Toucher seul, fermer revient à « À la table »', async p => {
     await diceTable(p); await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('direct'); S.T.pop = 'eco:action'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
     await p.click('.tpophead [data-act="tpopclose"]');
-    eq(await p.evaluate(() => S.T.pop), 'eco:action', 'Toucher seul : retour à la liste d’origine');
+    eq(await p.evaluate(() => S.T.pop), null, 'Toucher seul : retour à « À la table » (chantier 33)');
+    await p.evaluate(() => { S.T.pop = 'eco:action'; render(); });
     await p.locator('.tpop .trow .tkb[data-r="hit"]').first().click(); await p.click('.qmenu [data-m="n"]');
     await p.click('.qhitnext .qchain[data-m="n"]');
     ok(await p.evaluate(() => S.T.pop === 'qroll' && S.T.qr.r === 'dmg' && S.T.dmg !== ''), 'dégâts affichés dans la fenêtre de jet');
     await p.click('.tpophead [data-act="tpopclose"]');
     eq(await p.evaluate(() => S.T.pop), null, 'Toucher puis Dégâts : retour direct à « À la table »');
+  });
+
+  await test('Après un clic (chantier 33) : geste final ferme la fenêtre, gestes en série la gardent, Défenses ramène à Dégâts', async p => {
+    await diceTable(p, 'clerc');
+    await p.evaluate(() => { const ch = cur(); ch.level = 6; ch.resUsed = {}; ch.bag = (ch.bag || []).concat([{ id: 'to', name: 'Torche', qty: 3 }]); render(); });
+    const pop = () => p.evaluate(() => S.T.pop);
+    const rid = await p.evaluate(() => 'res:' + derive(cur()).res.find(r => r.max > 1 && r.max <= 8 && !r.pool).id);
+    await p.evaluate(rid => { S.T.pop = rid; render(); }, rid);
+    await p.locator('.tpop button.pip:not(.used)').last().click(); eq(await pop(), null, 'ressource : une dépense ferme la fenêtre');
+    await p.evaluate(rid => { S.T.pop = rid; render(); }, rid);
+    await p.locator('.tpop button.pip.used').first().click(); eq(await pop(), rid, 'ressource : rendre un usage (correction) garde la fenêtre');
+    await p.evaluate(() => { S.T.pop = 'ctr:obj:to'; render(); });
+    await p.click('.tpop [data-act="bagq"][data-v="-1"]'); eq(await pop(), 'ctr:obj:to', 'compteur : − / + gardent la fenêtre');
+    await p.click('.tpop [data-act="ctrUse"]'); eq([await pop(), await p.evaluate(() => cur().bag.find(b => b.id === 'to').qty)], [null, 1], 'compteur : Allumer une torche ferme la fenêtre');
+    await p.evaluate(() => { S.T.pop = 'hptemp'; render(); });
+    await p.click('.tpop .stepb[data-act="tmpstep"][data-v="1"]'); eq(await pop(), 'hptemp', 'PV temp. : le pas de 1 garde la fenêtre');
+    await p.click('.tpop [data-act="tmpstep"][data-v="5"]'); eq([await pop(), await p.evaluate(() => cur().hp.temp)], [null, 6], 'PV temp. : +5 ferme la fenêtre');
+    await p.evaluate(() => { S.T.pop = 'hpmax'; render(); });
+    await p.click('.tpop [data-act="hpmaxb"][data-v="5"]'); eq(await pop(), null, 'PV max : +5 (Aide) ferme la fenêtre');
+    await p.evaluate(() => { S.T.pop = 'cond'; render(); });
+    await p.click('.tpop [data-act="cond"]'); eq(await pop(), 'cond', 'états : cocher garde la fenêtre (gestes en série)');
+    await p.evaluate(() => { S.T.pop = null; render(); }); await p.click('[data-act="hpask"][data-v="dmg"]');
+    await p.click('#modal [data-act="defOpen"]'); eq([await pop(), await p.evaluate(() => S.pending)], ['def', null], 'Dégâts → Défenses');
+    await p.click('.tpop .tpophead [data-act="tpopclose"]');
+    eq([await pop(), await p.evaluate(() => S.pending && S.pending.type + ':' + S.pending.mode)], [null, 'hp:dmg'], 'fermer les Défenses ramène à la fenêtre Dégâts');
+    await p.evaluate(() => { S.pending = null; renderModal(); S.T.pop = 'def'; S.T.defBack = null; render(); }); await p.keyboard.press('Escape');
+    eq([await pop(), await p.evaluate(() => S.pending)], [null, null], 'Défenses ouvertes seules : fermer ramène à « À la table »');
   });
 
   await test('Lignages : elfe, gnome, tieffelin, drakéide et goliath (sorts, lancers gratuits, vision, vitesse, résistances, souffle), fiche, assistant, import', async p => {
