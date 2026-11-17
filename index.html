@@ -97,9 +97,9 @@ textarea{width:100%;min-height:90px;font-family:var(--f-body);font-size:var(--fs
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .badge{font-size:var(--fs-xs);letter-spacing:.08em;text-transform:uppercase;border-radius:3px;padding:1px 6px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .badge.srd{border-color:var(--brass);color:var(--brass)}
-.badge.perso{border-color:var(--blood);color:var(--blood)}
+.badge.perso{border-color:var(--brass);color:var(--brass)}
 .chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--sheet);font-size:var(--fs-sm)}
-.chip[aria-pressed="true"]{background:var(--blood-soft);border-color:var(--blood);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--brass-soft);border-color:var(--brass);color:var(--ink)}
 .chip.insp[aria-pressed="true"]{background:var(--ok-soft);border-color:var(--ok);color:var(--ink)}
 .prose{font-family:var(--f-body);font-size:var(--fs-md);line-height:1.55;max-width:68ch}
 .prose p{margin:.4em 0}
@@ -130,6 +130,7 @@ details>summary::-webkit-details-marker{display:none}
 .wcount{display:none}@media (max-width:560px){.wcount{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) + 90px);z-index:5;margin-bottom:10px;background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;font-size:var(--fs-sm)}}
 .wmodes{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:760px}.wmodec{padding:18px 16px;gap:6px}.wmodec b{font-size:var(--fs-lg)}.wgh{margin:10px 0 0;font-size:var(--fs-lg)}.wswitch{margin-left:4px}
 @media (max-width:560px){.wmodes{grid-template-columns:1fr}}
+.wlvbody .lusec{display:grid;gap:6px}.wlvbody select{max-width:100%}
 .winfo{display:grid;gap:4px;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--sheet)}.winfo .label{margin-right:6px}
 .wchosen{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--brass);border-radius:var(--r);background:var(--brass-soft);padding:10px 12px}.wchosen>span{display:flex;flex-direction:column;gap:2px;min-width:0}.wchosen .muted{font-size:var(--fs-sm)}
 @media (max-width:560px){.wid{grid-template-columns:1fr 1fr}.wid label:first-child{grid-column:1/-1}.wline{grid-template-columns:minmax(0,1fr) 22px}.wline .val{grid-column:1;grid-row:2}.wline .st{grid-column:2;grid-row:1/3}.wfootbar .btn{width:100%}.wprev .wsaves,.wprev .wabmini,.wprev>.label{display:none}}
@@ -182,17 +183,17 @@ span.pip{cursor:default}
 fieldset.bare{border:0;margin:0;padding:0;min-width:0}
 fieldset.bare[disabled] input,fieldset.bare[disabled] select,fieldset.bare[disabled] button{opacity:.65;cursor:not-allowed}
 .editbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin-bottom:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--sheet)}
-.editbar.on{border-color:var(--blood);background:var(--blood-soft)}
+.editbar.on{border-color:var(--brass);background:var(--brass-soft)}
 .editbar .lock{min-height:34px;padding:4px 12px}
 .lock{border:1px solid var(--line)!important;min-width:30px;min-height:28px;justify-content:center}
 .lock svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2}
-.lock[aria-pressed="true"]{color:var(--blood);border-color:var(--blood)}
+.lock[aria-pressed="true"]{color:var(--brass);border-color:var(--brass)}
 .pip.used{background:none}
 .res{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}
 .skill{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
 .skill .dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--muted)}
 .skill .dot.p1{background:var(--brass);border-color:var(--brass)}
-.skill .dot.p2{background:var(--blood);border-color:var(--blood)}
+.skill .dot.p2{background:var(--brass);border-color:var(--brass)}
 .skill .ab3{font-size:var(--fs-xs);color:var(--muted);margin-left:4px}
 .spell{border-bottom:1px solid var(--line);padding:8px 0;display:grid;gap:6px}
 .spell .h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -358,7 +359,7 @@ body.blkdragging{cursor:grabbing;user-select:none;-webkit-user-select:none}
 .tbig .num{font-size:54px;font-weight:700;line-height:1}
 .tparts{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:var(--fs-sm);color:var(--muted)}
 .tparts b{color:var(--ink)}
-.tnotes{font-size:var(--fs-sm);background:var(--blood-soft);border-radius:var(--r);padding:8px 10px}
+.tnotes{font-size:var(--fs-sm);background:color-mix(in srgb,var(--brass) 12%,var(--sheet));border-radius:var(--r);padding:8px 10px}
 .tadvice{font-size:var(--fs-sm);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .tin{align-items:end;margin-top:6px}
 .tin input{width:84px;font-size:var(--fs-lg)}
@@ -428,7 +429,7 @@ body.blkdragging{cursor:grabbing;user-select:none;-webkit-user-select:none}
 .tpbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:72px;padding:10px 6px;border:1.5px solid var(--line);border-radius:var(--r);background:var(--sheet);color:var(--ink);font:inherit;font-size:var(--fs-sm);font-weight:600;line-height:1.2;text-align:center;cursor:pointer;position:relative;transition:border-color .15s,transform .1s}
 .tpbtn:hover{border-color:var(--brass)}.tpbtn:active{transform:scale(.97)}
 .tpi{width:24px;height:24px;fill:none;stroke:var(--brass);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
-.tpn{position:absolute;top:6px;right:8px;background:var(--blood);color:#fff;border-radius:999px;font-size:var(--fs-xs);min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px}
+.tpn{position:absolute;top:6px;right:8px;background:var(--brass);color:var(--sheet);border-radius:999px;font-size:var(--fs-xs);min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px}
 .tpopback{position:fixed;inset:0;z-index:30;background:rgba(10,8,9,.55);display:grid;place-items:center;padding:16px;animation:tpf .15s ease-out}
 .tpop{background:var(--sheet);border:1.5px solid var(--brass);border-radius:var(--r);width:min(640px,100%);max-height:82vh;display:grid;grid-template-rows:auto 1fr;box-shadow:0 20px 50px rgba(0,0,0,.35);animation:tpu .18s ease-out}
 .tpophead{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-md)}
@@ -532,7 +533,7 @@ html[data-virtual-dice="on"] [data-physical]{display:none!important}
 html{background:var(--df-101113)}
 /* Fond : une seule couche fixe, composée une fois (transform), au lieu d'un fond « fixed » redessiné à chaque défilement (saccades de Safari en haut et en bas de page). */
 body{background:var(--df-101113);font-size:var(--fs-md);line-height:1.5}
-body::after{content:"";position:fixed;pointer-events:none;inset:0;z-index:-1;background:repeating-linear-gradient(115deg,transparent 0 3px,var(--df-ffffff02) 3px 4px),radial-gradient(ellipse at 12% 0%,var(--df-42302255),transparent 48%),radial-gradient(ellipse at 95% 35%,var(--df-401d2350),transparent 55%);transform:translateZ(0);will-change:transform;backface-visibility:hidden}
+body::after{content:"";position:fixed;pointer-events:none;inset:0;z-index:-1;background:repeating-linear-gradient(115deg,transparent 0 3px,var(--df-ffffff02) 3px 4px),radial-gradient(ellipse at 12% 0%,var(--df-42302255),transparent 48%),radial-gradient(ellipse at 95% 35%,color-mix(in srgb,var(--brass) 14%,transparent),transparent 55%);transform:translateZ(0);will-change:transform;backface-visibility:hidden}
 ::selection{background:var(--df-846437);color:var(--df-fff5df)}
 .wrap{max-width:1240px}
 .top{background:var(--df-101113);border-bottom:1px solid var(--df-b592574f);box-shadow:0 10px 30px var(--df-0003)}
@@ -575,7 +576,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--brass)}
 .tside{padding:18px;border:1px solid var(--df-454039);border-radius:8px;background:linear-gradient(160deg,var(--df-242328),var(--df-18191d));box-shadow:0 8px 24px var(--df-0003)}
 .tturnbtn,.tpbtn{background:linear-gradient(150deg,var(--df-2a292e),var(--df-202125));border-color:var(--df-4b4540);box-shadow:inset 0 1px var(--df-ffffff05)}
 .tturnbtn:hover,.tpbtn:hover{border-color:var(--df-ceb078);background:var(--df-302d29)}.tpi{stroke:var(--df-d2b37a)}.tturnbtn[aria-pressed="true"]{background:var(--df-151619);box-shadow:inset 0 2px 6px var(--df-0005);color:var(--df-b1a99c)}
-.chip{background:var(--df-242428);border-color:var(--df-50473c);padding:5px 12px}.chip[aria-pressed="true"]{background:var(--df-392326);border-color:var(--df-a75e57)}.chip.insp[aria-pressed="true"]{background:var(--df-343023);border-color:var(--df-bea16b);color:var(--df-eed09a)}
+.chip{background:var(--df-242428);border-color:var(--df-50473c);padding:5px 12px}.chip[aria-pressed="true"]{background:var(--brass-soft);border-color:var(--brass)}.chip.insp[aria-pressed="true"]{background:var(--df-343023);border-color:var(--df-bea16b);color:var(--df-eed09a)}
 .tconc.on{box-shadow:0 0 16px var(--df-ceb07812)}.pip{box-shadow:0 1px 5px var(--df-0004)}.pip.used{background:var(--df-111216)}
 .hpbar{height:6px;background:var(--df-111216)}.hpbar i{background:linear-gradient(90deg,var(--df-4f765d),var(--df-a1ba8c))}.hpbar i.low{background:linear-gradient(90deg,var(--df-8f3c40),var(--df-db8a76))}
 .stepb.hpdmgb{background:linear-gradient(var(--df-833b40),var(--df-652a30));border:1px solid var(--df-b36262)}.stepb.hphealb{background:linear-gradient(var(--df-42614c),var(--df-304c3a));border:1px solid var(--df-63836b)}
@@ -1119,6 +1120,20 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 body.dice3d-busy [data-virtual]{opacity:.5;pointer-events:none}
 /* Chantier 5 : effets actifs et lien vers les défenses */
 .fxrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+/* Audit UX, corrections rapides (chantier 30) */
+.qhelp{font-size:var(--fs-sm);margin:2px 0 6px}
+.qmenu .qmtitle{padding:8px 14px 0;font-weight:600}
+.qmenu .qmsep{height:1px;margin:4px 8px;background:var(--line)}
+.tturnn.tnone{opacity:.55}
+/* Blocs retirés, en bas du mode Personnaliser (chantier 8) */
+.tgone{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:14px 0 4px;padding-top:10px;border-top:1px dashed var(--line)}
+.tgone .label{margin-right:4px}
+/* Notes de partie datées (chantier 6) */
+.notelist{margin-top:12px}
+.noteitem{padding:8px 0;border-top:1px solid var(--line)}
+.noteat{font-size:var(--fs-xs)}
+.notetext{display:block;width:100%;text-align:left;background:none;border:0;padding:4px 0;margin:0;color:inherit;font:inherit;cursor:text;min-height:44px}
+.notetext p{margin:0 0 4px}
 .fxsec .fxadd{width:100%;margin-top:10px}
 .fxdef{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border:1px dashed var(--line);border-radius:var(--r);background:transparent;color:inherit;font-size:var(--fs-sm);cursor:pointer;text-align:left}
 .hpbox .hpdef{justify-self:start}
@@ -2857,11 +2872,10 @@ function levelPlan(ch){
   if(D1.pb!==D0.pb) p.pbTxt=`Bonus de maîtrise : ${sg(D0.pb)} → ${sg(D1.pb)}`;
   return p;
 }
-function lvlModal(){
-  const ch=cur(), P=S.pending, p=levelPlan(ch), D0=p.D0;
-  if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto">${winHead("Niveau 20")}<p>Niveau maximum atteint.</p></div></div>`;
+/* Rubriques d'un niveau (sous-classe, PV, caractéristiques ou don, style, manifestations, sorts, arcanum) : partagées par la montée de niveau
+   habituelle (lvlModal, champs data-lu) et l'assistant de création (chantier 17, lot C ; champs data-w). lu(k,i) donne l'attribut du champ. */
+function lvlBody(ch,P,p,lu,req){ const D0=p.D0;
   const o=(v,l,c)=>`<option value="${esc(v)}" ${String(v)===String(c)?"selected":""}>${esc(l)}</option>`;
-  const lu=(k,i)=>`data-lu="${k}"${i!==undefined?` data-i="${i}"`:""}`;
   const sec=(t,b)=>`<div class="lusec"><div class="label">${t}</div>${b}</div>`;
   let h="";
   // gains
@@ -2897,13 +2911,17 @@ function lvlModal(){
   // spells
   const have=new Set((ch.spells||[]).map(s=>s.ref).concat(Object.keys(D0.always)));
   if(p.dCantrips){ const l=classSpells(D0,0).filter(x=>!have.has(x.ref)); h+=sec(`Sorts mineurs (${p.dCantrips})`,Array.from({length:p.dCantrips},(_,i)=>`<select ${lu("can",i)}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,(P.can||[])[i]||"")).join("")}</select>`).join("")); }
-  if(p.dPrepared&&p.maxSpell){ const l=classSpells(D0,null,p.maxSpell).filter(x=>!have.has(x.ref)); h+=sec(`Sorts (${p.dPrepared}, jusqu'au niveau ${p.maxSpell})`,Array.from({length:p.dPrepared},(_,i)=>`<select ${lu("spl",i)}>${o("","— Choisir (ou plus tard) —","")}${l.map(x=>o(x.ref,"niv. "+x.s.level+" · "+x.s.name,(P.spl||[])[i]||"")).join("")}</select>`).join("")); }
+  if(p.dPrepared&&p.maxSpell){ const l=classSpells(D0,null,p.maxSpell).filter(x=>!have.has(x.ref)); h+=sec(`Sorts (${p.dPrepared}, jusqu'au niveau ${p.maxSpell})`,Array.from({length:p.dPrepared},(_,i)=>`<select ${lu("spl",i)}>${o("",(req?"— Choisir —":"— Choisir (ou plus tard) —"),"")}${l.map(x=>o(x.ref,"niv. "+x.s.level+" · "+x.s.name,(P.spl||[])[i]||"")).join("")}</select>`).join("")); }
   if(p.arc){ const l=classSpells(D0,p.arc).filter(x=>!have.has(x.ref)); h+=sec(`Arcanum mystique (sort de niveau ${p.arc})`,`<select ${lu("arc")}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,P.arc||"")).join("")}</select><div class="muted" style="font-size:var(--fs-sm)">Lançable une fois par repos long, sans emplacement.</div>`); }
-  const chain=S.lvlTarget&&S.lvlTarget.id===S.cur&&p.from<S.lvlTarget.to?S.lvlTarget:null;
-  const foot=chain&&P.stop?`<div class="panel stack" style="border-color:var(--blood)"><div>Arrêter la création ici ? ${esc(ch.name||"Le personnage")} restera au <b>niveau ${p.from}</b> au lieu du niveau ${chain.to}. Tu pourras continuer plus tard avec le bouton « Niveau ${p.to} ↑ » en haut de la fiche.</div><div class="row" style="justify-content:flex-end;gap:6px"><button class="btn" data-act="lvlStopNo">Reprendre la montée</button><button class="btn danger" data-act="lvlStopYes">Arrêter au niveau ${p.from}</button></div></div>`
-    :`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:var(--fs-sm)">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
-  return `<div class="picker" data-act="${chain?"noop":"closeModal"}"><div class="box" role="dialog" aria-label="Monter de niveau" style="grid-template-rows:auto 1fr auto">
-    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2>${chain?`<div class="muted" style="font-size:var(--fs-sm)">Création du personnage · niveau ${p.to} sur ${chain.to}</div>`:""}</div>${chain?`<button class="btn small ghost" data-act="lvlStop">Arrêter ici</button>`:`<button class="btn small ghost wclose" type="button" data-act="closeModal" aria-label="Fermer">×</button>`}</div>
+  return h; }
+function lvlModal(){
+  const ch=cur(), P=S.pending, p=levelPlan(ch);
+  if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto">${winHead("Niveau 20")}<p>Niveau maximum atteint.</p></div></div>`;
+  const lu=(k,i)=>`data-lu="${k}"${i!==undefined?` data-i="${i}"`:""}`;
+  const h=lvlBody(ch,P,p,lu);
+  const foot=`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:var(--fs-sm)">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
+  return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" aria-label="Monter de niveau" style="grid-template-rows:auto 1fr auto">
+    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2></div><button class="btn small ghost wclose" type="button" data-act="closeModal" aria-label="Fermer">×</button></div>
     <div class="stack" style="overflow-y:auto;min-height:0">${h}</div>
     ${foot}</div></div>`;
 }
@@ -2966,9 +2984,9 @@ function hdSpend(ch,D,r,phys){
   addLog({label:"Dé de vie",total:"+"+heal,bd:`d${D.hd} ${r} ${sg(D.mods.con)}`+(phys?" · dé physique":""),quiet:true});
   touch(S.cur); render();
 }
-function lvlApply(){
-  const ch=cur(), P=S.pending, p=levelPlan(ch); if(p.from>=20) return;
-  const D0=p.D0, rep0=reperesAuto(ch,D0), res0=D0.res.map(r=>r.name);
+/* Applique les choix P d'un niveau (plan p = levelPlan(ch)) à la fiche ch, sans fenêtre ni historique. Utilisée par la montée de niveau
+   habituelle (lvlApply) et par l'assistant de création pour les niveaux 2 à N (chantier 17, lot C) : une seule règle pour les deux. */
+function lvlApplyTo(ch,P,p){ const D0=p.D0;
   const gain = P.hp==="roll"&&+P.roll ? Math.max(1,Math.min(p.hd,+P.roll)+D0.mods.con)+p.pvniv : p.hpAvg;
   if(P.hp==="roll"&&+P.roll&&ch.hpMode!=="manual"){ ch.hpMode="manual"; ch.hpMaxManual=D0.hpMax; }
   if(ch.hpMode==="manual") ch.hpMaxManual=(+ch.hpMaxManual||D0.hpMax)+gain;
@@ -2984,13 +3002,17 @@ function lvlApply(){
   for(const r of [...(P.can||[]),...(P.spl||[])].filter(Boolean)) if(!ch.spells.some(s=>s.ref===r)) ch.spells.push({ref:r,prepared:true});
   if(p.arc&&P.arc){ ch.arcanum=ch.arcanum||{}; ch.arcanum[p.arc]=P.arc; }
   const D1=derive(ch); ch.hp.cur=Math.min(ch.hp.cur,D1.hpMax);
+  return {gain,D1}; }
+function lvlApply(){
+  const ch=cur(), P=S.pending, p=levelPlan(ch); if(p.from>=20) return;
+  const rep0=reperesAuto(ch,p.D0), res0=p.D0.res.map(r=>r.name);
+  const {gain,D1}=lvlApplyTo(ch,P,p);
   touch(S.cur); S.pending=null; renderModal();
   // Ce qui apparaît dans « À la table » (lot T5) : Repères et Ressources se calculent seuls, on dit au joueur ce qui vient d'y entrer
   const newRep=reperesAuto(ch,D1).filter(id=>!rep0.includes(id)).map(id=>TILE_CAT.reperes[id]||id), newRes=D1.res.map(r=>r.name).filter(n=>!res0.includes(n));
   const newTab=[newRep.length?"Repères : "+newRep.join(", "):"",newRes.length?"Ressources : "+newRes.join(", "):""].filter(Boolean).join(" ; ");
   addLog({label:(ch.name||"Personnage")+" passe niveau "+p.to,total:"↑",bd:`+${gain} PV max.`+(p.feats.length?" Nouveau : "+p.feats.map(f=>f.name).join(", ")+".":"")+(newTab?" Nouveau dans À la table : "+newTab+".":""),kind:"info"});
   if(newTab) setBanner("Niveau "+p.to+" — nouveau dans « À la table » : "+newTab+".");
-  if(S.lvlTarget&&S.lvlTarget.id===S.cur&&ch.level<S.lvlTarget.to){ S.pending={type:"lvl",hp:"avg"}; } else S.lvlTarget=null;
   render(); if(!S.pending) rvStart(S.cur);
 }
 function renderModal(){
@@ -3195,7 +3217,7 @@ function tableItems(ch,D){
   if(D.cast) for(const s of spellList(ch,D)) if(s.prepared||s.sp.level===0){
     const m=spellMech(s.sp);
     const slv=s.sp.level===0?0:(D.cast.type==="pact"?Math.max(D.cast.pactLevel,s.sp.level):s.sp.level);
-    add({key:"spell:"+s.ref,kind:"spell",name:s.sp.name,sub:(s.sp.level?"Sort niv. "+s.sp.level:"Sort mineur")+" · "+[s.sp.casting_time,s.sp.range].filter(Boolean).join(" · "),al:["sort",s.sp.school||""],cost:costOfSpell(s.sp),ref:s.ref,sp:s.sp,m,
+    add({key:"spell:"+s.ref,kind:"spell",name:s.sp.name,sub:(s.sp.level?"Sort niv. "+s.sp.level:"Sort mineur")+" · "+[castShort(s.sp.casting_time),s.sp.range].filter(Boolean).join(" · "),al:["sort",s.sp.school||""],cost:costOfSpell(s.sp),ref:s.ref,sp:s.sp,m,
       roll:m.attack?sg(D.cast.atk):(m.save?"DD "+D.cast.dc:""), dice:diceAt(m,s.sp,slv,D)||"", heal:!!m.heal});
   }
   const featText=[];
@@ -3460,7 +3482,7 @@ function tPop(ch,D){
       <div class="lusec"><div class="label">À la fin du repos</div><ul class="lul"><li>${D.cast&&D.cast.type==="pact"?"Emplacements de pacte récupérés":"Pas d'emplacement récupéré (repos long)"}</li>${shortRes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
       ${winFoot(`<button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button>`)}`); }
   if(k==="search") return wrap("Recherche",searchBar()," tsearchpop");
-  if(k==="notes") return wrap("Notes de partie",`<textarea id="t-notes" data-bind="sessionNotes" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="min-height:260px;width:100%">${esc(ch.sessionNotes||"")}</textarea><div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Séparées des notes du personnage. Enregistrées au fil de la frappe.</div>`);
+  if(k==="notes") return wrap("Notes de partie",notesPop(ch));
   if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } // fenêtres harmonisées, lot 2 : le vrai nom en titre, sous-titre et coût dessous
     return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop wide" role="dialog" aria-modal="true" aria-label="${esc(c.title)}" data-act="noop"><div class="tpophead tchead"><div class="tchw"><b>${esc(c.title)}</b>${c.sub||c.cost?`<div class="tcsub">${c.sub?`<span>${esc(c.sub)}</span>`:""}${c.cost}</div>`:""}</div><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${c.html}</div></div></div>`; }
   if(k==="hist") return wrap("Historique des jets", histBody(ch));
@@ -3473,7 +3495,8 @@ function tPop(ch,D){
     T.pop=null; return ""; }
   if(k.startsWith("eco:")){ const e=k.slice(4); T.eco=e; const used=!!(ch.turn||{})[e];
     // lot 2 : le bouton « Marquer » passe dans le pied, l'en-tête n'a plus que la croix
-    return wrap(ECO[e],`${used?`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">✓ ${TURN_DONE[e]}</div>`:""}${tEco(ch,D)}${winFoot(`<button class="btn${used?"":" primary"}" data-act="tturn" data-v="${e}">${used?"Annuler : "+(e==="autre"?"Autre non terminé":"pas encore consommée"):e==="autre"?"Marquer Autre terminé":"Marquer comme consommée"}</button>`)}`); }
+    const none=TURN_COSTS.includes(e)&&!(S.Titems||[]).some(i=>i.cost===e&&i.kind!=="basic"&&i.kind!=="rule"); // chantier 30 : tuile « Aucune »
+    return wrap(ECO[e],`${used?`<div class="muted" style="font-size:var(--fs-sm);margin-bottom:8px">✓ ${TURN_DONE[e]}</div>`:""}${none?`<div class="muted tnonewhy" style="font-size:var(--fs-sm);margin-bottom:8px">Aucune option propre à ton personnage pour l’instant (classe, espèce, dons, sorts, objets). ${e==="action"?"Les actions communes restent possibles, et tu":"Tu"} peux quand même marquer ${e==="reaction"?"ta réaction":e==="bonus"?"ton action bonus":"ton action"} comme consommée.</div>`:""}${tEco(ch,D)}${winFoot(`<button class="btn${used?"":" primary"}" data-act="tturn" data-v="${e}">${used?"Annuler : "+(e==="autre"?"Autre non terminé":"pas encore consommée"):e==="autre"?"Marquer Autre terminé":"Marquer comme consommée"}</button>`)}`); }
   const B={skills:["Tests de caractéristique",`<div class="tabil">${AB.map(a=>`<div class="tabrow"><button class="tabhead ${sgc(D.mods[a])}" data-act="tqroll" data-r="d20" data-k="abil:${a}"><span>${ABN[a]}</span><b class="num">${sg(D.mods[a])}</b></button><div class="tabsk">${S.C.skills.filter(s=>s.ability===a).map(s=>`<button class="tskc ${sgc(D.skills[s.id].val)}" data-act="tqroll" data-r="d20" data-k="skill:${s.id}">${D.skills[s.id].lv?`<span class="pdot p${D.skills[s.id].lv}" title="${D.skills[s.id].lv>1?"Expertise":"Maîtrise"}"></span>`:""}${esc(s.name)} <b class="num">${sg(D.skills[s.id].val)}</b></button>`).join("")||`<span class="muted" style="font-size:var(--fs-sm)">Aucune compétence</span>`}</div></div>`).join("")}</div>${pLegend(true)}`],saves:["Jets de sauvegarde",`<div class="tsavegrid">${saves}</div>${pLegend(false)}`],cond:["États et effets",`<div class="condgrid">${CONDS.map(c=>`<span class="condpick"><button class="chip" aria-pressed="${(ch.conditions||[]).includes(c)}" data-act="cond" data-v="${esc(c)}">${esc(c)}</button>${S.idx.cond[c]?`<span class="tinfo" role="button" data-act="tip" data-k="rule:${esc(S.idx.cond[c].id)}" aria-label="Règle : ${esc(c)}" title="Règle">i</span>`:""}</span>`).join("")}</div>
         <div class="row"><span class="label">Épuisement</span><span class="hpstep"><button class="btn small stepq" data-act="exh" data-v="-1" aria-label="Retirer un niveau">−</button><b class="num">${+ch.exhaustion||0}</b><button class="btn small stepq" data-act="exh" data-v="1" aria-label="Ajouter un niveau">+</button></span>${+ch.exhaustion?`<span class="muted" style="font-size:var(--fs-sm)">−${2*ch.exhaustion} aux tests d20, vitesse −${String(1.5*ch.exhaustion).replace(".",",")} m</span>`:""}</div>${fxSection(ch)}`],inv:["Inventaire",`${(ch.counters||[]).map(c=>`<div class="res"><b class="tipl" data-act="tip" data-k="cnt:${esc(c.id)}">${esc(c.name)}</b><div class="row">${(+c.max||0)<=20?pips("cnt:"+c.id,+c.max||0,(+c.max||0)-(+c.cur||0),true):""}<span class="muted num" style="font-size:var(--fs-sm)">${+c.cur||0}/${+c.max||0}</span>${c.recharge?`<span class="muted" style="font-size:var(--fs-sm)">· ${esc(rechargeLabel(c.recharge))}</span>`:""}</div></div>`).join("")}
         <div class="tbag">${(ch.bag||[]).map(b=>`<div class="tbagrow${(+b.qty||0)>0?"":" empty"}"><span>${itemName(b)}${b.note?` <span class="muted" style="font-size:var(--fs-sm)">· ${esc(b.note)}</span>`:""}${(b.ref||matchItem(b.name))?"":` <button class="btn small ghost infob mk" data-act="mkItem" data-id="${b.id}" title="Créer la fiche de cet objet dans Mes contenus">+ fiche</button>`}${chargePips(ch,b)}<button class="btn small ghost chgb" data-act="chgedit" data-id="${b.id}" title="${itemCharges(ch,b)?"Modifier le compteur":"Ajouter un compteur (charges, utilisations)"}">${itemCharges(ch,b)?"⚙":"+ compteur"}</button></span><span class="hpstep"><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="-1" aria-label="Utiliser un">−</button><b class="num">${+b.qty||0}</b><button class="btn small stepq" data-act="bagq" data-id="${b.id}" data-v="1" aria-label="Ajouter un">+</button>${S.bagDel===b.id?`<button class="btn small danger" data-act="bagrm" data-id="${b.id}">Supprimer</button>`:`<button class="btn small ghost btndel" data-act="bagdel" data-id="${b.id}" aria-label="Supprimer ${esc(b.name)}" title="Supprimer de l'inventaire">${ICON_TRASH}</button>`}</span></div>`).join("")||`<div class="muted" style="font-size:var(--fs-sm)">Le sac est vide.</div>`}</div>
@@ -3524,7 +3547,7 @@ function viewTable(ch,D,banner=""){
   // Ce tour : des tuiles (hauteur fixe, libellé sur deux lignes au plus, nombre d'options dessous) ; « Autre » occupe le reste de sa rangée
   const tn=blkCols(ch,"tour"), tspan=Math.max(1,tn-((TT.length-1)%tn));
   const turnBtns=TT.map(([k,l])=>{ const used=!!turn[k], n=items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length;
-    const label=used?"✓ "+TURN_DONE[k]:({action:"Actions",bonus:"Actions bonus",reaction:"Réactions"}[k]||l), cnt=!used&&n&&TURN_COSTS.includes(k)?`<small class="tturnn">${n} option${n>1?"s":""}</small>`:"";
+    const label=used?"✓ "+TURN_DONE[k]:({action:"Actions",bonus:"Actions bonus",reaction:"Réactions"}[k]||l), cnt=used?"":k==="move"?`<small class="tturnn">À faire</small>`:!TURN_COSTS.includes(k)||n?"":`<small class="tturnn tnone">Aucune</small>`; // Mouvement à faire / terminé (chantier 30) ; plus de nombre d'options, seulement « Aucune » en gris (chantier 31, choix d'Angle)
     const icon={action:REP_DESIGN_ICON.attaques,bonus:REP_DESIGN_ICON.init,reaction:REP_ICON.ca,move:REP_DESIGN_ICON.vitesse,autre:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'}[k];
     return `<button class="tturnbtn" aria-pressed="${used}" data-act="${k==="move"?"tturn":"tpop"}" data-v="${k==="move"?"move":"eco:"+k}"${k==="autre"&&tspan>1?` style="grid-column:span ${tspan}"`:""} title="${k==="move"?(used?"Annuler":"Marquer le mouvement terminé"):"Options disponibles"}"><span class="tturn-icon" aria-hidden="true"><svg viewBox="0 0 24 24">${icon}</svg></span><span class="tturnl">${label}</span>${cnt}${used&&k==="move"?`<span class="tused">Annuler</span>`:""}</button>`; }).join("");
   const ecoBtns=Object.entries(ECO).map(([k,l])=>`<button class="teco" aria-pressed="${T.eco===k}" data-act="teco" data-v="${k}">${l}<span class="muted num">${items.filter(i=>i.cost===k&&i.kind!=="basic"&&i.kind!=="rule").length}</span></button>`).join("");
@@ -3652,7 +3675,7 @@ function racTileMap(ch,D){
     actions:()=>`<button class="tpbtn" data-act="tpop" data-v="list:actions"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-3.5a1.5 1.5 0 0 1 3 0V11m0-2a1.5 1.5 0 0 1 3 0v5a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14.5V12a1.5 1.5 0 0 1 3 0v1"/></svg>Actions<small class="tpsub">Ce que je peux faire</small></button>`,
     search:()=>`<button class="tpbtn" data-act="tsearch"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>Recherche<small class="tpsub">Jet, action, sort…</small></button>`,
     ...ctrMap(ch,true),
-    notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
+    notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">${(n=>n?n+" note"+(n>1?"s":""):"Pour cette séance")(notesOf(ch).length)}</small></button>`,
   };
 }
 function raccourcisTiles(ch,D){ const R=racTileMap(ch,D), T=repTileMap(ch,D,chSize(ch)), pv=blkHidden(ch,"pv")?"":pvTile(ch,D); return blockTiles(ch,"raccourcis").map(id=>id===pv?"":id).map((id,i)=>(id&&(R[id]?R[id]():T[id]&&T[id]()))||plusTile("raccourcis",i,"tpbtn tplus")).join(""); }
@@ -4234,6 +4257,7 @@ function tableBlocks(ch,blocks){
   return `<div class="tlayouttop tedbar" role="status"><div class="tedl1"><span><b>Mode édition</b> <span class="muted" style="font-size:var(--fs-xs)">· glisse un bloc par ⋮⋮</span></span><button class="btn small primary" data-act="layoutDone">Terminé</button></div>
   <div class="tedl2"><button class="chip" data-act="tpop" data-v="blkadd" aria-label="Ajouter un bloc">＋ Bloc</button><button class="chip" data-act="layoutAuto" title="Disposition recommandée pour ce personnage">Automatique</button><button class="chip" data-act="layoutMag" aria-pressed="${mag}" title="Aimanter aux bords et aux rangées de tuiles des voisins">Aimant</button><button class="chip" data-act="layoutGrav" aria-pressed="${grav}" title="Réduire les marges entre blocs et faire remonter les blocs">Tasser</button></div></div>
   ${box}
+  ${(g=>g.length?`<div class="tgone" aria-label="Blocs retirés"><span class="label">Blocs retirés</span>${g.map(b=>`<button class="chip" data-act="blkRestore" data-v="${b[0]}" aria-label="Remettre le bloc ${esc(b[1])}">＋ ${esc(b[1])}</button>`).join("")}</div>`:"")(TBLK.filter(b=>blkHidden(ch,b[0])))}
   ${u?`<div class="tundo" role="status"><span>${u.auto?"Disposition automatique appliquée":`Bloc « ${esc(u.label)} » supprimé`}</span><button class="btn small ghost" data-act="blkUndo">Annuler</button></div>`:""}`;
 }
 /* Géométrie du placement libre : mêmes mesures que le prototype validé par Angle. */
@@ -4317,8 +4341,30 @@ function tempStepper(ch){
 }
 /* Barre de recherche (tuile Recherche en largeur, ou bloc Recherche) : résultats dans une liste déroulante sous la barre. Une seule barre par écran. */
 function searchBar(){ S.T._tq=true; const T=S.T; return `<div class="tsearchwrap"><form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form><div id="tres" class="tresdrop${T.qOpen===false?" closed":""}">${tResults()}</div></div>`; }
+/* Chantier 30 : temps d'incantation court sur les lignes (« Réaction » au lieu de la condition entière, gardée dans la fiche du sort). */
+function castShort(t){ let x=String(t||"").split(",")[0].replace(/\s*\([^)]*\)/g,"").trim(); if(/^1 (action|réaction)/i.test(x)) x=x.slice(2); x=x.replace(/^action bonus/i,"Action bonus"); return x?x[0].toUpperCase()+x.slice(1):""; }
+/* Chantier 6 : notes de partie datées. ch.noteLog = [{id, t, text}] dans l'ordre d'écriture, affichées de la plus récente à la plus ancienne.
+   L'ancienne zone unique (ch.sessionNotes) devient la première note à la première modification ; elle n'est jamais effacée (seulement ignorée ensuite). */
+function notesOf(ch){ if(Array.isArray(ch.noteLog)) return ch.noteLog; const o=String(ch.sessionNotes||"").trim(); return o?[{id:"old",t:+ch.updatedAt||0,text:o,old:true}]:[]; }
+function notesOwn(ch){ if(!Array.isArray(ch.noteLog)) ch.noteLog=notesOf(ch).map(n=>({id:n.old?uid():n.id,t:n.t,text:n.text})); return ch.noteLog; }
+function noteWhen(t){ if(!t) return "Note d’avant"; const d=new Date(t); return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})+" · "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
+function notesPop(ch){ const L=notesOf(ch).slice().reverse(), ed=S.T.noteEdit;
+  const rows=L.map(n=>n.id===ed?`<form class="noteitem stack" data-form="noteedit" data-id="${esc(n.id)}"><div class="muted noteat">${esc(noteWhen(n.t))}</div><textarea id="t-note-ed" rows="4" style="width:100%">${esc(n.text)}</textarea><div class="row" style="justify-content:flex-end;gap:6px"><button type="button" class="btn small ghost" data-act="noteEdit" data-id="">Annuler</button><button type="submit" class="btn small primary">Enregistrer</button></div></form>`
+    :`<div class="noteitem"><div class="row" style="justify-content:space-between;gap:8px;align-items:center"><span class="muted noteat">${esc(noteWhen(n.t))}</span><button class="btn small ghost danger btndel" data-act="noteDel" data-id="${esc(n.id)}" aria-label="Supprimer la note">${ICON_TRASH}</button></div><button class="notetext" data-act="noteEdit" data-id="${esc(n.id)}" aria-label="Corriger la note">${prose(n.text)}</button></div>`).join("");
+  return `<form class="stack" data-form="noteadd" novalidate><textarea id="t-note-new" rows="3" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="width:100%"></textarea><div class="row" style="justify-content:flex-end"><button type="submit" class="btn small primary">Ajouter</button></div></form>
+    <div class="notelist">${rows||`<div class="muted" style="font-size:var(--fs-sm)">Aucune note pour l’instant.</div>`}</div><div class="muted" style="font-size:var(--fs-sm);margin-top:8px">Séparées des notes du personnage. Date et heure ajoutées toutes seules ; touche une note pour la corriger.</div>`; }
+/* Chantier 7 : les plus utilisés. ch.useFreq = {clé: [nombre, dernière fois]} : jets faits depuis « À la table », sorts lancés, utilisations.
+   Un jet de toucher suivi de ses dégâts compte une fois (T.lastBump). Au plus 40 clés gardées. */
+function useBump(key){ const ch=cur(), T=S.T; if(!ch||!key) return; if(T) T.lastBump=key;
+  const F=ch.useFreq=Object.assign({},ch.useFreq), o=F[key]||[0,0]; F[key]=[(+o[0]||0)+1,Date.now()];
+  const ks=Object.keys(F); if(ks.length>40){ ks.sort((a,b)=>F[a][0]-F[b][0]||F[a][1]-F[b][1]); for(const k of ks.slice(0,ks.length-40)) delete F[k]; } touch(S.cur); }
+function mostUsed(ch,items,n=6){ const F=ch&&ch.useFreq||{};
+  return items.filter(i=>Array.isArray(F[i.key])&&F[i.key][0]>0).sort((a,b)=>F[b.key][0]-F[a.key][0]||F[b.key][1]-F[a.key][1]).slice(0,n); }
 function tResults(){
-  const T=S.T; if(!T||!T.q.trim()) return "";
+  const T=S.T; if(!T) return "";
+  if(!T.q.trim()){ const top=mostUsed(cur(),S.Titems||[]);
+    return top.length?`<div class="label" style="margin:8px 0 4px">Les plus utilisés</div><div class="tlist tmostused">${top.map((i,n)=>tRow(i,n===0)).join("")}</div>`
+      :`<div class="muted" style="padding:6px 2px;font-size:var(--fs-sm)">Tes jets et actions les plus fréquents apparaîtront ici.</div>`; }
   const r=searchItems(S.Titems||[],T.q);
   if(!r.length) return `<div class="muted" style="padding:6px 2px">Rien trouvé pour « ${esc(T.q)} ».</div>`;
   return `<div class="tlist">${r.map((i,n)=>tRow(i,n===0)).join("")}</div>`;
@@ -4601,10 +4647,10 @@ function qrollPop(ch,D,wrap){ const T=S.T, q=T.qr, i=q&&(S.Titems||[]).find(x=>x
       ${m.attack||ex?`<div class="row qchains">${m.attack?btn("hit","Toucher",sg(D.cast.atk)):""}${ex?btn("dmg",m.heal?"Soins":"Dégâts",ex):""}</div>`:""}${fxFollowHtml(ch,sp,i.ref)}</div>`); }
   const d3=T.roll3dPending?`<button class="btn small dice3dskip" data-act="dice3dSkip">Passer l’animation</button>`:"";
   if(q.r==="hit"||q.r==="d20") return wrap(esc(i.name)+(q.r==="hit"?" · Toucher":""),`<div class="qres">${d3}<div class="qmode label">${ML[q.mode]}</div>
-    ${phys?`<div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
+    ${phys?`<div class="muted qhelp">${q.mode==="n"?"Saisis ton d20":"Saisis tes deux d20"}${q.r==="hit"?", puis choisis la suite.":"."}</div><div class="row tin"><label class="field"><span>${q.mode==="n"?"Ton d20":"1er d20"}</span><input id="t-d1" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d1)}" data-tin="d1"></label>${q.mode!=="n"?`<label class="field"><span>2e d20</span><input id="t-d2" type="number" inputmode="numeric" min="1" max="20" value="${esc(T.d2)}" data-tin="d2"></label>`:""}</div>`:""}
     <div class="ttotal qtot" id="t-tot" data-mod="${q.mod}" data-label="${esc(q.label)}">${totalHtml(q.mod)}</div>${q.r==="hit"?hitChain(ch,D,i,q):""}</div>`);
   return wrap(esc(i.name)+" · "+(q.heal?"Soins":"Dégâts"),`<div class="qres">${d3}<div class="qmode label">${q.crit?"Critique : dés doublés":"Normal"}${q.beams>1?` · un ${beamWord(i.m)} sur ${q.beams}`:""}</div>
-    ${phys?(()=>{ const rg=diceRange(q.dice); return `<div class="row tin"><label class="field"><span>Total de tes ${esc(q.dice)}${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`; })():""}
+    ${phys?(()=>{ const rg=diceRange(q.dice); return `<div class="muted qhelp">Lance tes dés et saisis leur total.</div><div class="row tin"><label class="field"><span>Total de tes ${esc(q.dice)}${rg?` (${rg[0]} à ${rg[1]})`:""}</span><input id="t-dmg" type="number" min="${rg?rg[0]:0}"${rg?` max="${rg[1]}"`:""} step="1" inputmode="numeric" value="${esc(T.dmg)}" data-tin="dmg"></label></div>`; })():""}
     ${!phys&&T.dmgBd?`<div class="qbd muted">${esc(T.dmgBd)}</div>`:""}
     <div class="ttotal qtot" id="t-dtot" data-flat="${q.flat}">${damageTotalHtml(T.dmg,q.flat)}</div></div>`); }
 /* Plage d'un total de dés (2d8 : 2 à 16 ; 1d8+1d6 : 2 à 14) ; les nombres fixes ne comptent pas */
@@ -4658,7 +4704,7 @@ function applyChargeRecovery(ch,id,total,virtual=false){
 }
 
 /* Pavé de saisie des dés physiques, commun aux deux modes de dés. */
-const DICE_INPUTS='input[data-tin],#cc-d1,#cc-d2,#t-hd,#t-death,input[data-w^="dice."],input[data-lu="roll"],[data-form="smitePhysical"] input[name="total"],[data-form="chargeRecovery"] input[name="total"],[data-form="free"] input[name="physical"]';
+const DICE_INPUTS='input[data-tin],#cc-d1,#cc-d2,#t-hd,#t-death,input[data-w^="dice."],input[data-lu="roll"],input[data-w^="lv."][data-w$=".roll"],[data-form="smitePhysical"] input[name="total"],[data-form="chargeRecovery"] input[name="total"],[data-form="free"] input[name="physical"]';
 /* Dés physiques (décision d'Angle, 12 nov. 2026) : plus de pavé à l'écran. Les cases de dés sont des champs numériques
    (clavier numérique sur iPhone / iPad, clavier normal sur ordinateur) ; une valeur hors limites affiche un message et n'est pas enregistrée. */
 function diceFieldError(inp){ const v=String(inp.value||"").trim(); if(v==="") return ""; const n=Number(v), min=inp.min===""?0:Number(inp.min), max=inp.max===""?Infinity:Number(inp.max);
@@ -4691,7 +4737,7 @@ function useHeal(ch,D,i){ if(i.kind==="bagitem"){ const b=(ch.bag||[]).find(z=>z
   const m=String(i.text||"").match(/(\d+d\d+)\s*\+\s*(?:votre|ton) niveau de/i); return m?m[1]+"+"+D.L:""; }
 function usePvMenu(btn){ qMenuClose(); const k=btn.dataset.k, i=(S.Titems||[]).find(x=>x.key===k), ch=cur(); if(!i||!ch) return; const r=i.res, left=r.max-(+((ch.resUsed||{})[r.id]||0));
   const m=document.createElement("div"); m.className="qmenu qmpv"; m.setAttribute("role","menu"); m.setAttribute("aria-label","Combien de PV : "+i.name);
-  m.innerHTML=`<form class="qmpvf" data-form="usepv" data-k="${esc(k)}"><label class="field"><span>PV à prendre (reste ${left})</span><input id="t-pvn" type="number" inputmode="numeric" min="1" max="${left}" required></label><button class="btn primary" type="submit">Utiliser</button></form>
+  m.innerHTML=`<div class="qmtitle">Combien de PV utiliser ?</div><form class="qmpvf" data-form="usepv" data-k="${esc(k)}"><label class="field"><span>PV (reste ${left})</span><input id="t-pvn" type="number" inputmode="numeric" min="1" max="${left}" required></label><button class="btn primary" type="submit">Utiliser</button></form><div class="qmsep" role="separator"></div>
     <button role="menuitem" data-act="tusepvgo" data-k="${esc(k)}" data-n="${left}"><span class="qmi" aria-hidden="true">✦</span>Tout (${left} PV)</button>${left>=5?`<button role="menuitem" data-act="tusepvgo" data-k="${esc(k)}" data-n="5" data-poison="1"><span class="qmi" aria-hidden="true">✚</span>Retirer Empoisonné (5)</button>`:""}<button role="menuitem" class="qm-det" data-act="tqdet" data-k="${esc(k)}"><span class="qmi" aria-hidden="true">i</span>Détails</button>`;
   document.body.append(m); QMENU=m; const b=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
   m.style.left=Math.max(8,Math.min(innerWidth-w-8,b.right-w))+"px"; m.style.top=(b.bottom+6+h>innerHeight-8?Math.max(8,b.top-6-h):b.bottom+6)+"px"; m.querySelector("#t-pvn")?.focus(); }
@@ -4700,7 +4746,7 @@ function performUse(key,n=1,opt={}){ const ch=cur(), i=(S.Titems||[]).find(x=>x.
   if(u==="res"||u==="pv"){ const r=i.res, used=+((ch.resUsed||{})[r.id]||0), left=r.max-used; n=Math.min(left,Math.floor(+n||0)); if(left<=0||n<1) return false;
     ch.resUsed=Object.assign({},ch.resUsed,{[r.id]:used+n}); note=(u==="pv"?(opt.poison?"5 points dépensés : l’état Empoisonné de la créature touchée prend fin (sans rendre de PV)":n+" PV pris dans la réserve"):(n>1?n+" usages dépensés":"1 usage dépensé"))+" · reste "+(left-n)+"/"+r.max; }
   else if(u==="drink"){ const b=(ch.bag||[]).find(z=>z.id===i.bagId); if(!b||!(+b.qty>0)) return false; b.qty=+b.qty-1; note="1 "+b.name+" bue · reste "+b.qty; }
-  consumeTableCost(i.cost);
+  consumeTableCost(i.cost); useBump(key);
   addLog({label:i.name+(u==="drink"?" bue":" utilisée"),total:u==="pv"?(opt.poison?"−5":"−"+n+" PV"):"✓",bd:note||ECO[i.cost]+" consommée",kind:"info",quiet:true});
   qMenuClose(); qBack();
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,d1:"",d2:"",dmg:"",dmgBd:"",castDone:null});
@@ -4750,6 +4796,7 @@ function ensureTableRollUse(){
 }
 function tableRollCommitted(kind){
   const i=tableSelected();
+  if(i&&(kind==="d20"||S.T.lastBump!==i.key)) useBump(i.key); // chantier 7 : Toucher puis Dégâts = un seul usage
   // Weapon damage never changes turn tracking, even after an explicit undo.
   if(i?.kind==="atk"&&kind!=="d20") return;
   if(i?.kind==="atk"){ consumeTableCost(S.T.qr&&S.T.qr.from==="opp"?"reaction":undefined); ammoSpend(cur(),i); }
@@ -4792,6 +4839,7 @@ function performTableCast(data){
       const th=+(sp.mech&&sp.mech.tempHp)||0; S.T.castTemp=null;
       if(th){ const v=th*Math.max(1,rit?sp.level:lvl); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const b0=+ch.hp.temp||0; S.T.castTemp={v,b0};
         if(v>b0){ ch.hp.temp=v; addLog({label:sp.name+" · PV temporaires",total:"+"+v,bd:b0?"remplacent tes "+b0+" PV temporaires (pas de cumul)":"",quiet:true}); } }
+      useBump(data.k||("spell:"+data.ref));
       S.T.castDone=data.k||("spell:"+data.ref); S.T.castLvl=rit?sp.level:lvl; S.T.castRit=rit; S.T.castConc=sp.concentration?sp.name:null;
       touch(S.cur); return true;
 }
@@ -4804,7 +4852,7 @@ function performTableItemUse(data){
       else { b.qty=Math.max(0,(+b.qty||0)-1); }
       const cost=data.cost; consumeTableCost(cost);
       addLog({label:b.name,total:c0&&c0.max?(c0.max-(+c0.used||0)-n)+"/"+c0.max:"×"+b.qty,bd:c0&&c0.max?n+" charge"+(n>1?"s":"")+" dépensée"+(n>1?"s":"")+".":"Objet utilisé.",kind:"info",quiet:true});
-      S.T.itemUseReceipt=tableItemReceipt(); touch(S.cur); return true;
+      useBump(tableSelected()?.key); S.T.itemUseReceipt=tableItemReceipt(); touch(S.cur); return true;
 }
 /* ---------- Historique des jets : un jour à la fois, attaque et dégâts regroupés, « Voir plus » ---------- */
 const HIST_PAGE=30, HIST_PAIR_MS=600000;
@@ -4940,18 +4988,19 @@ const STD_ARRAY=[15,14,13,12,10,8], PT_COST={8:0,9:1,10:2,11:3,12:4,13:5,14:7,15
    (elle n'est ni dans S.docs, ni dans la copie personnelle, ni synchronisée). Elle survit à un rechargement ; elle est effacée quand le
    personnage est créé ou la création abandonnée. Un brouillon illisible ou mal formé est ignoré. */
 const W_DRAFT_KEY="registre-creation-v1";
-function wDraftSave(){ try{ const W=S.W; if(!W) return; const o=Object.assign({},W); for(const k of ["open","openShown","chg","nh"]) delete o[k]; localStorage.setItem(W_DRAFT_KEY,JSON.stringify({v:1,t:Date.now(),W:o})); }catch(e){} }
+function wDraftSave(){ try{ const W=S.W; if(!W) return; const o=Object.assign({},W); for(const k of ["open","openShown","chg","nh","askGuide"]) delete o[k]; localStorage.setItem(W_DRAFT_KEY,JSON.stringify({v:1,t:Date.now(),W:o})); }catch(e){} }
 function wDraftHas(){ try{ return !!localStorage.getItem(W_DRAFT_KEY); }catch(e){ return false; } }
 function wDraftClear(){ try{ localStorage.removeItem(W_DRAFT_KEY); }catch(e){} }
 function wDraftLoad(){ try{ const j=JSON.parse(localStorage.getItem(W_DRAFT_KEY)||"null"); if(!j||j.v!==1||!j.W||typeof j.W!=="object"||Array.isArray(j.W)) return null;
-    const b=wNew(), W=Object.assign({},b), isO=v=>!!v&&typeof v==="object"&&!Array.isArray(v), extra={langs:Array.isArray,exp:Array.isArray,catMade:Array.isArray,mast:v=>v===null||Array.isArray(v),seen:isO,src:isO};
+    const b=wNew(), W=Object.assign({},b), isO=v=>!!v&&typeof v==="object"&&!Array.isArray(v), extra={lvSel:Number.isFinite,langs:Array.isArray,exp:Array.isArray,catMade:Array.isArray,mast:v=>v===null||Array.isArray(v),seen:isO,src:isO};
     for(const k of Object.keys(j.W)){ const v=j.W[k], d=b[k]; if(k==="nh") continue;
       if(d!==undefined){ if(Array.isArray(d)?Array.isArray(v):isO(d)?isO(v):typeof d===typeof v) W[k]=v; }
       else if(extra[k]?extra[k](v):typeof v==="string") W[k]=v; }
+    for(const L of Object.keys(W.lv||{})){ const P=W.lv[L]; if(!/^\d{1,2}$/.test(L)||!isO(P)){ delete W.lv[L]; continue; } for(const [f,v] of Object.entries(P)) if(!(typeof v==="string"||(Array.isArray(v)&&v.length<=10&&v.every(x=>typeof x==="string")))) delete P[f]; }
     if(W.cls&&!clsOf(W.cls)) W.cls=""; if(W.bg&&!wBg(W)) W.bg=""; if(W.sp&&!(srd("species",W.sp)||hb(W.sp))) W.sp=""; return W; }catch(e){ return null; } }
 // Abandonner : le brouillon et les fiches du catalogue créées pour lui (encore à remplir et inutilisées) disparaissent
 function wAbandon(){ const W=S.W||wDraftLoad(), made=(W&&W.catMade)||[]; S.W=null; wDraftClear(); for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); }
-function wNew(){ return {mode:"",gstep:0,step:0,cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
+function wNew(){ return {mode:"",gstep:0,step:0,lv:{},cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
 function eqOptions(txt){ const t=String(txt||"").replace(/^Choisissez[^:]*:\s*/,""); const out=[]; const re=/\(([A-Z])\)\s*([\s\S]*?)(?=\s*;\s*(?:ou\s*)?\([A-Z]\)|$)/g; let m;
   while((m=re.exec(t))){ const items=[]; let gold=0;
     for(let part of m[2].replace(/\s*;?\s*$/,"").split(/,\s*|\s+\+\s+/)){ part=part.trim(); const last=part.match(/^(.*)\s+et\s+(\d+ po)$/); const segs=last?[last[1],last[2]]:[part];
@@ -5069,7 +5118,7 @@ function wOrder(W){ return orderOf({order:W.order},wCls(W)); }
 // Sorts mineurs à choisir au niveau 1 (un de plus pour le Thaumaturge et le Mage)
 function wNC(W){ const cast=wCast(W), n=cast?(cast.cantrips||[])[0]||0:0, o=wOrder(W); return n+(n&&o&&o.cantrip?o.cantrip:0); }
 function wSteps(W){ const c=wCls(W), cast=wCast(W); const st=["Classe","Historique","Espèce","Caractéristiques","Compétences"];
-  if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Langues","Équipement","Identité"); return st; }
+  if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Langues","Équipement"); if(wLvN(W)>1) st.push("Niveaux"); st.push("Identité"); return st; }
 function wEqItems(W){ const c=wCls(W), out=[]; let gold=0; const add=(txt,key)=>{ const opts=eqOptions(txt); const cur=opts.find(o=>o.k===W[key])||opts[0]; if(!cur) return; gold+=cur.gold; cur.items.forEach((it,ix)=>{ if(!W.eqOff[key+cur.k+ix]) out.push(it); }); };
   if(c) add(c.equipment,"eqC"); const be=wBgEquip(W); if(be) add(be,"eqB"); return {items:out,gold}; }
 function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill,wSpSkills(W)?W.spSkill:""].filter(Boolean)) skills[s]=1; for(const s of wExp(W)) skills[s]=2;
@@ -5091,6 +5140,7 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
   if(st==="Compétences"){ const n=c.skillChoices.count; if(W.skills.length!==n) return `Choisis ${n} compétences de classe.`; if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")&&!W.extraSkill) return "Humain : choisis ta compétence en plus (Compétent)."; if(wStyle1(W)&&!W.style) return "Choisis ton style de combat."; const ne=wExpN(W); if(ne&&wExp(W).length<ne) return `Choisis ${ne} expertises parmi tes compétences.`; return ""; }
   if(st==="Sorts"){ const cast=wCast(W); const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(W.can.slice(0,nc).filter(Boolean).length<nc) return `Choisis ${nc} sorts mineurs.`; if(W.spl.filter(Boolean).length<np) return `Choisis ${np} sorts de niveau 1.`; if(c.id==="occultiste"&&W.inv.filter(Boolean).length<wInvN(W)) return "Choisis ta manifestation occulte."; if(W.inv.some((id,i)=>id&&INV_CHOICE[id]&&!W.invc[i])) return "Choisis la cible de ta manifestation."; return ""; }
   if(st==="Langues"){ const n=wLangN(W); return wLangs(W).length<n?`Choisis ${n} langues.`:""; }
+  if(st==="Niveaux"){ for(const x of wLevels(W).steps){ const m=wLvMsg(x); if(m) return m; } return ""; }
   if(st==="Identité") return String(W.name||"").trim()?"":"Donne un nom à ton personnage.";
   return ""; }
 // Tout ce qui manque encore avant de pouvoir créer : [{step, name, msg}] (une entrée par étape incomplète)
@@ -5166,7 +5216,7 @@ function wStepBody(W,st){ const c=wCls(W);
     const can=classSpells(Dt,0), l1=classSpells(Dt,null,1);
     const pick=(key,n,list,lab)=>n?`<div class="label" style="margin-top:10px">${lab} (${n})</div><div class="stack">${Array.from({length:n},(_,i)=>wSel(key+"."+i,list.filter(x=>!W[key].some((r,j)=>j!==i&&r===x.ref)).map(x=>[x.ref,x.s.name]),W[key][i]||"")).join("")}</div>`:"";
     h+=pick("can",nc,can,"Sorts mineurs")+pick("spl",np,l1,"Sorts de niveau 1");
-    const ni=wInvN(W); if(ni){ const tmp=wDoc(W); h+=`<div class="label" style="margin-top:10px">Manifestation occulte (${ni})</div>`+Array.from({length:ni},(_,i)=>{ const id=W.inv[i]||""; return `<div class="row" style="gap:6px">${wSel("inv."+i,invAvailFor(tmp,1).map(x=>[x.id,x.name]),id)}${INV_CHOICE[id]?wSel("invc."+i,invChoices(tmp,id,W.can),W.invc[i]||"","— Cible —"):""}</div>`; }).join(""); }
+    const ni=wInvN(W); if(ni){ const tmp=wDoc(W); h+=`<div class="label" style="margin-top:10px">Manifestation occulte (${ni})</div>`+Array.from({length:ni},(_,i)=>{ const id=W.inv[i]||""; return `<div class="row" style="gap:6px">${wSel("inv."+i,invAvailFor(tmp,1).map(x=>[x.id,x.name]),id)}${INV_CHOICE[id]?wSel("invc."+i,invChoices(tmp,id,W.can),W.invc[i]||"","— Cible —"):""}</div>${id?`<div class="muted winvtxt" style="font-size:var(--fs-sm)">${esc((S.C.invocations.find(x=>x.id===id)||{}).text||"")}</div>`:""}`; }).join(""); }
   }
   if(st==="Équipement"){ const be=wBgEquip(W), bgN=(wBg(W)||{}).name||"";
     const block=(title,txt,key)=>{ const opts=eqOptions(txt); if(!opts.length) return `<div class="panel"><b>${esc(title)}</b><div class="muted">${esc(txt||"Rien à choisir.")}</div></div>`; const cur=opts.find(o=>o.k===W[key])||opts[0];
@@ -5180,13 +5230,19 @@ function wStepBody(W,st){ const c=wCls(W);
     h+=`<p class="muted">Tu parles déjà : ${esc(fx.join(", "))}. Choisis ${n} autres langues (${L.length}/${n}).</p><div class="row wlangs" style="flex-wrap:wrap;gap:6px">${LANGS.map(l=>`<button class="chip" aria-pressed="${L.includes(l)}" data-act="wlang" data-v="${esc(l)}">${esc(l)}</button>`).join("")}</div>
       <div class="muted" style="font-size:var(--fs-sm);margin-top:10px">Les langues rares se décident avec ton MJ : tu pourras les ajouter dans la fiche.</div>`;
   }
+  if(st==="Niveaux"){ const {steps}=wLevels(W); if(!steps.length) return `<p class="muted">Choisis d'abord une classe.</p>`;
+    let sel=+W.lvSel; if(!steps.some(x=>x.L===sel)) sel=(steps.find(x=>wLvMsg(x))||steps[0]).L; const cs=steps.find(x=>x.L===sel);
+    h+=`<p class="muted" style="font-size:var(--fs-sm)">Les choix de chaque niveau, comme lors d'une montée de niveau. Le personnage sera créé directement au niveau ${wLvN(W)}.</p>
+      <div class="row wlvpills" role="tablist" style="flex-wrap:wrap;gap:6px">${steps.map(x=>`<button class="chip" role="tab" aria-pressed="${x.L===sel}" data-act="wlvsel" data-v="${x.L}">Niv. ${x.L} ${wLvMsg(x)?"•":"✓"}</button>`).join("")}</div>
+      <h3 class="wgh">Niveau ${sel}</h3><div class="stack wlvbody">${lvlBody(cs.before,cs.P,cs.p,(k,i)=>`data-w="lv.${sel}.${k}${i!==undefined?"."+i:""}"`,true)}</div>`;
+    return h; }
   if(st==="Détails"){
     h+=`<div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:var(--fs-sm)">${esc(wAlign(W))}</span>`:""}</div>
       <label class="field"><span>Notes (apparence, personnalité, histoire)</span><textarea data-w="notes" style="min-height:120px">${esc(W.notes)}</textarea></label>`;
   }
   return h; }
 function wPreview(W){ const c=wCls(W); let pv="";
-  if(c){ try{ const d=wDoc(W), D=derive(d); pv=`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:var(--fs-sm)">${esc([(srd("species",W.sp)||hb(W.sp)||{}).name,c.name+" 1",(wBg(W)||{}).name].filter(Boolean).join(" · "))}</div>
+  if(c){ try{ const d=wLevels(W).d, D=derive(d); pv=`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:var(--fs-sm)">${esc([(srd("species",W.sp)||hb(W.sp)||{}).name,c.name+" "+wLvN(W),(wBg(W)||{}).name].filter(Boolean).join(" · "))}</div>
     <div class="wstats"><span><small class="label">PV</small><b class="num">${D.hpMax}</b></span><span><small class="label">CA</small><b class="num">${D.ac}</b></span><span><small class="label">Init.</small><b class="num">${sg(D.init)}</b></span><span><small class="label">Perc. passive</small><b class="num">${D.passive}</b></span></div>
     <div class="wabmini">${AB.map(a=>`<span><small>${ABS[a]}</small><b class="num">${D.abEff[a]}</b><small class="num">${sg(D.mods[a])}</small></span>`).join("")}</div>
     <div class="muted wsaves" style="font-size:var(--fs-sm)">Sauvegardes : ${AB.filter(a=>D.saves[a].prof).map(a=>ABN[a]).join(", ")}</div></div>`; }catch(e){ pv=""; } }
@@ -5214,9 +5270,30 @@ function wSugDraft(W,st){ const c=wCls(W), o={}, fill=(cur,n,cands)=>{ const a=A
     if(wStyle1(W)&&!W.style){ const l=wStyles(), d=l.find(x=>x[1]==="Défense")||l[0]; if(d) o.style=d[0]; }
     const ne=wExpN(W); if(ne){ const prof=[...new Set([...have,...skills,extra].filter(Boolean))], cur=(W.exp||[]).filter(s=>prof.includes(s)).slice(0,ne); diff("exp",fill(cur,ne,[...["discretion","escamotage","perception"].filter(s=>prof.includes(s)),...prof]).filter(Boolean)); } }
   if(st==="Sorts"&&c){ const cast=wCast(W), sg=SUG_SP[c.id]||[[],[]], D={cls:c}, refs=(l,pref)=>{ const all=l.map(x=>x.ref); return [...pref.map(i=>"srd:"+i).filter(r=>all.includes(r)),...all]; };
-    const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(nc) diff("can",fill(W.can,nc,refs(classSpells(D,0),sg[0]))); if(np) diff("spl",fill(W.spl,np,refs(classSpells(D,null,1),sg[1]))); }
+    const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(nc) diff("can",fill(W.can,nc,refs(classSpells(D,0),sg[0]))); if(np) diff("spl",fill(W.spl,np,refs(classSpells(D,null,1),sg[1])));
+    // Manifestation : une qui ne demande pas d'autre choix (Armure d'ombres d'abord : meilleure CA qu'une armure légère au niveau 1)
+    const ni=wInvN(W); if(ni){ const av=invAvailFor(wDoc(W),1).map(x=>x.id).filter(id=>!INV_CHOICE[id]); diff("inv",fill(W.inv,ni,["armure-dombres","esprit-occulte",...av].filter(id=>av.includes(id)))); } }
+  if(st==="Niveaux"&&c){ const lv=wLvSug(W); if(JSON.stringify(lv)!==JSON.stringify(W.lv||{})) o.lv=lv; }
   if(st==="Langues") diff("langs",fill(wLangs(W),wLangN(W),["Elfique","Nain","Gobelin",...LANGS]).filter(Boolean));
   return o; }
+function wLineName(W,st){ return st==="Niveaux"?`Niveaux 2 à ${wLvN(W)}`:st; }
+/* Suggestions des niveaux 2 à N : remplit ce qui est vide, niveau par niveau (chaque niveau tient compte des précédents), sans toucher aux
+   choix faits. Jamais de sous-classe ni de faveur épique proposée ; le style de combat va à Défense ; +2 sur la caractéristique principale. */
+function wLvSug(W){ const c=wCls(W), out=JSON.parse(JSON.stringify(W.lv||{})), d=wBuild(W), sg=SUG_SP[c&&c.id]||[[],[]];
+  const fill=(cur,n,cands)=>{ const a=Array.from({length:n},(_,i)=>(cur||[])[i]||""); const pool=cands.filter(x=>!a.includes(x)); for(let i=0;i<n;i++) if(!a[i]&&pool.length) a[i]=pool.shift(); return a; };
+  for(let L=2;L<=wLvN(W);L++){ const before=JSON.parse(JSON.stringify(d)), p=levelPlan(before); if(p.from>=20||!p.cls) break;
+    const P=Object.assign({},out[L]||{}), have=new Set((before.spells||[]).map(s=>s.ref).concat(Object.keys(p.D0.always||{})));
+    if(p.asi&&P.asi!=="feat"&&!(P.ab1&&P.ab2)){ const ab=before.abilities||{}, room=a=>20-(+ab[a]||10), pr=wSugPrio(W).filter(a=>room(a)>0);
+      if(pr.length){ const a=pr[0]; if(!P.ab1) P.ab1=a; if(!P.ab2) P.ab2=room(a)>=2?a:(pr[1]||a); } }
+    if(p.style&&!P.style){ const l=wStyles(), x=l.find(s=>s[1]==="Défense")||l[0]; if(x) P.style=x[0]; }
+    if(p.dInv){ const ex=(P.can||[]).filter(Boolean), av=invAvailFor(before,p.to,ex).map(x=>x.id).filter(id=>!INV_CHOICE[id]); P.inv=fill(P.inv,p.dInv,["armure-dombres","esprit-occulte","pacte-de-la-lame",...av].filter(id=>av.includes(id))); }
+    if(p.dCantrips){ const l=classSpells(p.D0,0).map(x=>x.ref).filter(r=>!have.has(r)); P.can=fill(P.can,p.dCantrips,[...sg[0].map(i=>"srd:"+i).filter(r=>l.includes(r)),...l]); }
+    if(p.dPrepared&&p.maxSpell){ const l=classSpells(p.D0,null,p.maxSpell).filter(x=>!have.has(x.ref)).sort((a,b)=>b.s.level-a.s.level), refs=l.map(x=>x.ref);
+      P.spl=fill(P.spl,p.dPrepared,[...sg[1].map(i=>"srd:"+i).filter(r=>refs.includes(r)&&l.find(x=>x.ref===r).s.level===p.maxSpell),...refs]); }
+    if(p.arc&&!P.arc){ const l=classSpells(p.D0,p.arc).map(x=>x.ref).filter(r=>!have.has(r)); if(l[0]) P.arc=l[0]; }
+    for(const k of ["inv","can","spl"]) if(Array.isArray(P[k])&&!P[k].some(Boolean)) delete P[k];
+    if(Object.keys(P).length) out[L]=P; lvlApplyTo(d,Object.assign({hp:"avg"},P),p); }
+  return out; }
 function wLines(W){ return [...wSteps(W).filter(s=>s!=="Identité"),"Détails"]; }
 function wLineMsg(W,st){ const i=wSteps(W).indexOf(st); return i<0?"":wCheck(W,i); }
 function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)||{}).name||id, pl=(n,w)=>n+" "+w+(n>1?"s":"");
@@ -5227,6 +5304,7 @@ function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)|
   if(st==="Compétences"){ if(!c) return ""; const l=[...W.skills,W.extraSkill].filter(Boolean); return l.length?l.map(nm).join(", "):"0 / "+c.skillChoices.count; }
   if(st==="Sorts"){ const n=[...W.can,...W.spl].filter(Boolean).length; return n?pl(n,"sort")+" choisi"+(n>1?"s":""):""; }
   if(st==="Langues") return [...wLangFixed(W),...wLangs(W)].join(", ");
+  if(st==="Niveaux"){ const s=wLevels(W).steps, ok=s.filter(x=>!wLvMsg(x)).length; return `${s.length} niveau${s.length>1?"x":""} · ${ok}/${s.length} complet${ok>1?"s":""}`; }
   if(st==="Équipement"){ if(!c) return ""; const e=wEqItems(W); return pl(e.items.length,"objet")+" · "+e.gold+" po"; }
   if(st==="Détails") return [wAlign(W),String(W.notes||"").trim()?"notes":""].filter(Boolean).join(" · ")||"Alignement, notes (facultatif)";
   return ""; }
@@ -5254,35 +5332,60 @@ function wGFoot(W){ const i=wGStep(W), n=wGNeeds(W,i);
 function wGuideView(W){ const i=wGStep(W); let h="";
   if(i===0) h=`<label class="field wgname"><span>Comment s'appelle ton personnage ?</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><h2 class="wgh">Sa classe</h2>${wStepBody(W,"Classe")}`;
   if(i===1) h=`<h2 class="wgh">Son historique</h2>${wStepBody(W,"Historique")}<h2 class="wgh">Son espèce</h2>${wStepBody(W,"Espèce")}`;
-  if(i===2) h=`<p class="muted">Tout est déjà proposé d'après ta classe et ton origine. Touche une ligne pour voir ou changer.</p><div class="wlines">${[...G_STEPS[2][1].filter(s=>wSteps(W).includes(s)),"Détails"].map(st=>wRow(W,st)).join("")}</div>`;
+  if(i===2){ const n=wGNeeds(W,2); h=`<p class="${n.length?"wgleft":"muted"}">${n.length?`Presque tout est proposé d'après ta classe et ton origine. Il reste à choisir : ${esc(n.map(x=>x.msg.replace(/\.$/,"").replace(/^Choisis /,"").replace(/^ta /,"")+" (ligne "+x.name+")").join(" ; "))}.`:"Tout est déjà proposé d'après ta classe et ton origine. Touche une ligne pour voir ou changer."}</p>`; }
+  if(i===2) h+=`<div class="wlines">${[...G_STEPS[2][1].filter(s=>wSteps(W).includes(s)),"Détails"].map(st=>wRow(W,st)).join("")}</div>`;
   return `<div class="list-head"><div><h1>${esc(G_STEPS[i][0])}</h1><div class="muted">Étape ${i+1} sur 3 · mode guidé <button class="btn small ghost wswitch" data-act="wmode" data-v="direct">Passer en mode direct</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
     <div class="wz"><section class="stack" style="min-width:0">${h}${wGFoot(W)}</section>${wPreview(W)}</div>`; }
 // Une ligne pas encore ouverte reste neutre (« À choisir ») ; le rouge est gardé pour une ligne ouverte puis laissée incomplète
 function wRow(W,st){ const c=wCls(W), msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement"), seen=!!(W.seen||{})[st];
-    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(st)}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }
+    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(wLineName(W,st))}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }
 function wDirectView(W){ const c=wCls(W), lv=+W.level||1, rows=wLines(W).map(st=>wRow(W,st)).join("");
-  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux. <button class="btn small ghost wswitch" data-act="wmode" data-v="guide">Passer en mode guidé</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
+  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux. <button class="btn small ghost wswitch" data-act="${+W.level>1?"wmodeask":"wmode"}" data-v="guide">Passer en mode guidé</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
+    ${W.askGuide&&+W.level>1?`<div class="panel stack wask" role="alert"><div>Le mode guidé crée le personnage au <b>niveau 1</b>. Ton niveau de départ (${+W.level}) sera remis à 1 ; tes autres choix sont gardés.</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="wmode" data-v="guide">Passer en guidé, au niveau 1</button><button class="btn" data-act="wmodeno">Rester en direct</button></div></div>`:""}
     <div class="wz"><section class="stack" style="min-width:0">
       <div class="wid"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
-      ${lv>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${lv}.</div>`:""}
       <div class="wlines">${rows}</div>${wFoot(W)}</section>${wPreview(W)}</div>`; }
 // Fenêtre d'une ligne : ses choix, ce qui manque encore, et un bouton pour revenir à la page
 function wModal(){ const W=S.W, st=W.open, msg=wLineMsg(W,st);
   return `<div class="picker" data-act="wclose"><div class="box wbox" role="dialog" aria-label="${esc(st)}" style="grid-template-rows:auto minmax(0,1fr) auto;max-width:760px">
-    ${winHead(esc(st),"wclose")}<div class="stack wbody">${wStepBody(W,st)}</div>
+    ${winHead(esc(wLineName(W,st)),"wclose")}<div class="stack wbody">${wStepBody(W,st)}</div>
     ${winFoot(`${Object.keys(wSugDraft(W,st)).length?`<button class="btn small" data-act="wsug" title="Remplit ce qui est encore vide ; tu peux tout changer ensuite">Suggestion</button>`:""}<span class="warntxt wmsg" role="status" style="font-size:var(--fs-sm);flex:1;align-self:center">${esc(msg)}</span><button class="btn primary" data-act="wclose">${msg?"Fermer":"Valider"}</button>`)}</div></div>`; }
-function wCreate(){
-  const W=S.W, c=wCls(W); const id="perso_"+uid(); const d=wDoc(W); S.docs[id]=d; d.armor="none"; d.shield=false;
+// Fiche de niveau 1 telle qu'elle sera créée (équipement porté, attaques, PV) : sert à l'aperçu, aux niveaux 2 à N et à la création
+function wBuild(W){ const c=wCls(W), d=wDoc(W); d.armor="none"; d.shield=false;
   const eq=wEqItems(W); for(const it of eq.items) d.bag.push({id:uid(),name:it.name,qty:it.qty,note:""}); d.gold={po:eq.gold};
   for(const b of d.bag){ const e=eqInfo(b); if(e.type==="weapon"&&!d.attacks.some(a=>a.weapon==="srd:"+e.w.id)) d.attacks.push({id:uid(),name:e.w.name,weapon:"srd:"+e.w.id,ability:"auto",prof:true}); }
   { const m=wMast(W); if(m.n&&Array.isArray(W.mast)) d.masteries=m.list; } // sans retouche : la fiche garde son choix par défaut (premières armes)
   const arm=d.bag.find(b=>eqInfo(b).type==="armor"); if(arm) eqSet(d,"corps",arm.id);
-  const sh=d.bag.find(b=>eqInfo(b).type==="shield"); if(sh&&(c.armor||[]).includes("bouclier")) eqSet(d,"mainS",sh.id);
-  const D=derive(d); d.hp={cur:D.hpMax,temp:0};
-  touch(id); S.cur=id; S.view="sheet"; S.tab="jeu"; const lv=Math.max(1,Math.min(20,+W.level||1)); S.W=null; wDraftClear();
+  const sh=d.bag.find(b=>eqInfo(b).type==="shield"); if(sh&&c&&(c.armor||[]).includes("bouclier")) eqSet(d,"mainS",sh.id);
+  const D=derive(d); d.hp={cur:D.hpMax,temp:0}; return d; }
+/* Niveaux 2 à N (chantier 17, lot C) : les choix de chaque niveau sont dans W.lv[L] (mêmes clés que la fenêtre de montée de niveau : hp, roll,
+   sub, asi, ab1, ab2, feat, style, stc, inv, invc, can, spl, arc). Ils sont appliqués dans l'ordre, avec lvlApplyTo, sur une copie (aperçu)
+   ou sur la fiche créée : un personnage créé au niveau N est identique à un personnage monté de 1 à N à la main. */
+function wLvN(W){ return W.mode==="guide"?1:Math.max(1,Math.min(20,Math.round(+W.level)||1)); }
+function wLvP(W,L){ const P=W.lv&&W.lv[L]; return Object.assign({hp:"avg"},P&&typeof P==="object"&&!Array.isArray(P)?JSON.parse(JSON.stringify(P)):{}); }
+let W_LV_CACHE={k:"",v:null};
+function wLevels(W,fresh){ const k=JSON.stringify([W,Object.keys(S.docs).length]); if(!fresh&&W_LV_CACHE.k===k) return W_LV_CACHE.v;
+  const d=wBuild(W), steps=[]; for(let L=2;L<=wLvN(W);L++){ const before=JSON.parse(JSON.stringify(d)), p=levelPlan(before); if(p.from>=20||!p.cls) break; const P=wLvP(W,L); steps.push({L,p,P,before}); lvlApplyTo(d,P,p); }
+  const v={d,steps}; if(!fresh) W_LV_CACHE={k,v}; return v; }
+// Ce qui manque à un niveau (tous les choix sont obligatoires à la création ; les PV ont la moyenne par défaut)
+function wLvMsg(st){ const {L,p,P,before}=st, x="Niveau "+L+" : ", n=(a,k)=>(Array.isArray(a)?a:[]).slice(0,k).filter(Boolean).length;
+  const have=new Set((before.spells||[]).map(s=>s.ref).concat(Object.keys(p.D0.always||{}))), left=l=>l.filter(s=>!have.has(s.ref)).length;
+  if(P.hp==="roll"&&!(+P.roll>=1&&+P.roll<=p.hd)) return x+"saisis ton dé de vie (1 à "+p.hd+").";
+  if(p.needSub&&!P.sub) return x+"choisis ta sous-classe.";
+  if(p.asi&&P.asi!=="feat"&&!(P.ab1&&P.ab2)) return x+"choisis tes augmentations de caractéristique.";
+  if(((p.asi&&P.asi==="feat")||p.epic)&&!P.feat) return x+(p.epic?"choisis ta faveur épique.":"choisis ton don.");
+  if(p.style&&!P.style) return x+"choisis ton style de combat.";
+  if(p.style&&P.style==="alt"&&n(P.stc,2)<2) return x+"choisis tes deux sorts mineurs.";
+  if(p.dInv){ if(n(P.inv,p.dInv)<p.dInv) return x+"choisis "+(p.dInv>1?"tes manifestations.":"ta manifestation."); if((P.inv||[]).slice(0,p.dInv).some((id,i)=>id&&INV_CHOICE[id]&&!(P.invc||[])[i])) return x+"choisis la cible de ta manifestation."; }
+  if(p.dCantrips&&n(P.can,p.dCantrips)<Math.min(p.dCantrips,left(classSpells(p.D0,0)))) return x+"choisis "+(p.dCantrips>1?"tes sorts mineurs.":"ton sort mineur.");
+  if(p.dPrepared&&p.maxSpell&&n(P.spl,p.dPrepared)<Math.min(p.dPrepared,left(classSpells(p.D0,null,p.maxSpell)))) return x+"choisis "+(p.dPrepared>1?"tes sorts.":"ton sort.");
+  if(p.arc&&!P.arc) return x+"choisis ton arcanum mystique.";
+  return ""; }
+function wCreate(){
+  const W=S.W; const id="perso_"+uid(); const d=wLevels(W,true).d; S.docs[id]=d; // niveaux 2 à N déjà appliqués : pas de fenêtre ensuite
+  touch(id); S.cur=id; S.view="sheet"; S.tab="jeu"; S.W=null; wDraftClear();
   for(const hid of W.catMade||[]) if(S.docs[hid]&&S.docs[hid].pending&&!hbUsed(hid)) removeDoc(hid);
-  if(lv>1){ S.lvlTarget={id,to:lv}; S.pending={type:"lvl",hp:"avg"}; }
-  render(); if(lv<=1) rvStart(id);
+  render(); rvStart(id);
 }
 function newNameModal(){ return `<div class="picker" data-act="newCancel"><div class="box" role="dialog" aria-label="Fiche vide" style="grid-template-rows:auto auto auto;max-width:420px">
     ${winHead("Fiche vide","newCancel")}
@@ -5363,6 +5466,8 @@ function validateImportPack(pack){
   if(ch.layout?.tiles!==undefined&&(!plainObject(ch.layout.tiles)||Object.values(ch.layout.tiles).some(v=>!Array.isArray(v)||v.length>16||v.some(x=>typeof x!=="string")))) importFail("Les tuiles d'« À la table » sont invalides.");
   if(ch.companion!==undefined&&(!plainObject(ch.companion)||(ch.companion.name!==undefined&&(typeof ch.companion.name!=="string"||ch.companion.name.length>60))||(ch.companion.ac!==undefined&&!Number.isFinite(ch.companion.ac))||(ch.companion.hp!==undefined&&(!plainObject(ch.companion.hp)||!Number.isFinite(ch.companion.hp.cur)||!Number.isFinite(ch.companion.hp.max))))) importFail("Le compagnon est invalide.");
   // Lignage (chantier 13), défenses et effets en cours (chantier 5)
+  if(ch.noteLog!==undefined&&(!Array.isArray(ch.noteLog)||ch.noteLog.length>500||ch.noteLog.some(n=>!n||typeof n.id!=="string"||n.id.length>40||!Number.isFinite(n.t)||typeof n.text!=="string"||n.text.length>4000))) importFail("Les notes de partie sont invalides.");
+  if(ch.useFreq!==undefined&&(!ch.useFreq||typeof ch.useFreq!=="object"||Array.isArray(ch.useFreq)||Object.keys(ch.useFreq).length>60||Object.entries(ch.useFreq).some(([k,v])=>k.length>120||!Array.isArray(v)||v.length!==2||v.some(x=>!Number.isFinite(x))))) importFail("Les jets les plus utilisés sont invalides.");
   if(ch.masteries!==undefined&&(!Array.isArray(ch.masteries)||ch.masteries.length>20||ch.masteries.some(x=>typeof x!=="string"||x.length>60))) importFail("Les bottes d'arme sont invalides.");
   if(ch.lineage!==undefined&&(!plainObject(ch.lineage)||typeof ch.lineage.id!=="string"||ch.lineage.id.length>30||(ch.lineage.ab!==undefined&&!["int","sag","cha"].includes(ch.lineage.ab)))) importFail("Le lignage ou l'ascendance est invalide.");
   if(ch.defenses!==undefined&&(!plainObject(ch.defenses)||Object.entries(ch.defenses).some(([k,v])=>!["res","imm","vul","cond","off"].includes(k)||!Array.isArray(v)||v.length>40||v.some(x=>typeof x!=="string"||x.length>40)))) importFail("Les défenses sont invalides.");
@@ -5502,6 +5607,8 @@ document.addEventListener("click",e=>{
     case "diceDisplay": setDiceDisplayMode(diceDisplayMode()==="3d"?"direct":"3d"); try{ studioWarm(); }catch(_){} renderModal(); break;
     case "dice3dSkip": studioSkip(); break;
     // Défenses (chantier 5)
+    case "noteEdit": S.T.noteEdit=t.dataset.id||null; render(); { const x=document.getElementById("t-note-ed"); if(x){ x.focus(); x.setSelectionRange(x.value.length,x.value.length); } } break; // notes datées (chantier 6)
+    case "noteDel": if(ch){ const L=notesOwn(ch), i=L.findIndex(n=>n.id===t.dataset.id); if(i>=0){ L.splice(i,1); S.T.noteEdit=null; touch(S.cur); render(); } } break;
     case "mastTog": masteryToggle(ch,derive(ch),t.dataset.v); touch(S.cur); render(); break; // bottes d'arme retenues (chantier 14)
     case "defEdit": S.T.defEdit=S.T.defEdit===t.dataset.c?null:t.dataset.c; render(); break;
     case "defTog": defToggle(ch,t.dataset.c,t.dataset.v); touch(S.cur); render(); break;
@@ -5521,14 +5628,17 @@ document.addEventListener("click",e=>{
     case "wizard": if(!S.W){ const d=wDraftLoad(); S.W=d||wNew(); if(!d) S.W.mode="?"; } S.W.open=null; /* création neuve : on choisit d'abord le mode */ S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
     case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; (S.W.seen=S.W.seen||{})[t.dataset.v]=true; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;
-    case "wmode": { const W=S.W; W.mode=t.dataset.v==="guide"?"guide":""; W.open=null; if(W.mode==="guide"){ W.level=1; W.gstep=wGFirst(W); if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); } render(); window.scrollTo(0,0); break; }
+    case "wlvsel": S.W.lvSel=+t.dataset.v; S.W.openShown=null; render(); break;
+    case "wmodeask": S.W.askGuide=true; render(); break;
+    case "wmodeno": S.W.askGuide=false; render(); break;
+    case "wmode": { const W=S.W; W.askGuide=false; W.mode=t.dataset.v==="guide"?"guide":""; W.open=null; if(W.mode==="guide"){ W.level=1; W.gstep=wGFirst(W); if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); } render(); window.scrollTo(0,0); break; }
     case "wgnext": { const W=S.W, i=wGStep(W); if(wGNeeds(W,i).length) break; W.gstep=i+1; if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); render(); window.scrollTo(0,0); break; }
     case "wgprev": S.W.gstep=Math.max(0,wGStep(S.W)-1); render(); window.scrollTo(0,0); break;
     case "wsrc": (S.W.src=S.W.src||{})[t.dataset.k]=t.dataset.v; render(); break;
     case "wcancel": wAbandon(); break;
     case "wdrop": wAbandon(); break; // depuis la liste des personnages
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
-    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
+    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.lv={}; W.lvSel=null; W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; W.spSkill=""; W.size=""; }
       W[k]=v; if(k==="bg"&&W.spSkill&&wBgSkills(W).includes(W.spSkill)) W.spSkill=""; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } if(k==="bg"&&W.hFeat&&W.hFeat===wBgFeat(W)) W.hFeat=""; if(k==="bg"&&W.mode==="guide") wGuideFill(W,["Historique"]); render(); break; }
@@ -5709,9 +5819,6 @@ document.addEventListener("click",e=>{
     case "editAttack": S.pending={type:"attack",id:t.dataset.id}; renderModal(); break;
     case "rmAttack": ch.attacks=(ch.attacks||[]).filter(x=>x.id!==t.dataset.id); S.pending=null; touch(S.cur); render(); break;
     case "lvlUp": S.pending={type:"lvl",hp:"avg"}; renderModal(); break;
-    case "lvlStop": if(S.pending) S.pending.stop=true; renderModal(); break;
-    case "lvlStopNo": if(S.pending) S.pending.stop=false; renderModal(); break;
-    case "lvlStopYes": S.lvlTarget=null; S.pending=null; renderModal(); render(); rvStart(S.cur); break;
     case "rvGo": for(const it of (S.rv?S.rv.items:[])) if(it.state==="err") it.state="wait"; rvRun(); break;
     case "rvStop": if(S.rv){ S.rv.stop=true; S.af=null; renderModal(); } break;
     case "rvOk": { const it=S.rv&&S.rv.items.find(i=>i.id===t.dataset.id); if(it) rvApply(it); renderModal(); render(); break; }
@@ -5805,7 +5912,8 @@ document.addEventListener("change",e=>{
     if(k==="level") v=String(Math.max(1,Math.min(20,Math.round(+v)||1)));
     if(k.startsWith("nh.")&&!S.W.nh) return;
     if(k==="spSkill"&&v){ S.W.skills=S.W.skills.filter(s=>s!==v); if(S.W.extraSkill===v) S.W.extraSkill=""; }
-    setPath(S.W,k,v); if(t.tagName==="SELECT"||k.startsWith("dice.")||k==="level") render(); return; }
+    setPath(S.W,k,v); if(k==="level"&&S.W.lv) for(const L of Object.keys(S.W.lv)) if(+L>+v) delete S.W.lv[L]; // baisser le niveau retire les choix au-delà
+    if(t.tagName==="SELECT"||k.startsWith("dice.")||k==="level"||k.startsWith("lv.")) render(); return; }
   if(t.id==="cc-dmg"&&S.T&&S.T.cc){ S.T.cc.dmg=Math.max(0,+t.value||0); render(); return; }
   if(t.dataset.arcsel){ const ch=cur(); if(ch){ ch.arcanum=ch.arcanum||{}; if(t.value) ch.arcanum[t.dataset.arcsel]=t.value; else delete ch.arcanum[t.dataset.arcsel]; touch(S.cur); render(); } return; }
   if(t.dataset.lu&&S.pending&&S.pending.type==="lvl"){ const P=S.pending,k=t.dataset.lu; if(t.dataset.i!==undefined){ P[k]=P[k]||[]; P[k][+t.dataset.i]=t.value; } else P[k]=t.value; renderModal(); return; }
@@ -5900,6 +6008,8 @@ document.addEventListener("submit",e=>{
     touch(S.cur); render(); return; }
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
   if(f.dataset.form==="fxadd"){ fxSubmit(); return; }
+  if(f.dataset.form==="noteadd"){ const ch=cur(), v=(document.getElementById("t-note-new")?.value||"").trim(); if(!ch||!v) return; notesOwn(ch).push({id:uid(),t:Date.now(),text:v.slice(0,4000)}); touch(S.cur); render(); document.getElementById("t-note-new")?.focus(); return; }
+  if(f.dataset.form==="noteedit"){ const ch=cur(), v=(document.getElementById("t-note-ed")?.value||"").trim(); if(!ch) return; const L=notesOwn(ch), n=L.find(x=>x.id===f.dataset.id); if(n){ if(v) n.text=v.slice(0,4000); else L.splice(L.indexOf(n),1); } S.T.noteEdit=null; touch(S.cur); render(); return; }
   if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
     if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
   if(f.dataset.form==="usepv"){ performUse(f.dataset.k,+(document.getElementById("t-pvn")||{}).value||0); return; }
