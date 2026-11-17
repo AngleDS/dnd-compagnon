@@ -717,6 +717,40 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       eq(c, [true, true], 'thème ' + th + ' : pastille sélectionnée et expertise en laiton'); }
   });
 
+  await test('Création : suggestions visibles (« Proposé »), en mode guidé comme en direct, et « Revenir à la suggestion » ligne par ligne', async p => {
+    await open(p);
+    const tags = () => p.evaluate(() => [...document.querySelectorAll('.wline')].filter(b => b.querySelector('.wsugtag')).map(b => b.dataset.v));
+    const foot = () => p.evaluate(() => [...document.querySelectorAll('#modal .wfoot .btn')].map(b => b.textContent));
+    // Mode guidé : en Finitions, les lignes préremplies le disent
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { mode: 'guide', gstep: 1, name: 'Guidé', cls: 'magicien', sp: 'srd:nain' }); S.view = 'wizard'; render(); });
+    await p.click('[data-act="wpick"][data-v="srd:sage"]'); await p.click('[data-act="wgnext"]');
+    eq(await tags(), ['Caractéristiques', 'Compétences', 'Sorts', 'Langues'], 'lignes proposées signalées');
+    await p.click('.wline[data-v="Langues"]'); eq(await foot(), ['Valider'], 'proposition intacte : pas de bouton de retour');
+    await p.click('#modal .wlangs .chip[data-v="Elfique"]'); await p.click('#modal .wlangs .chip[data-v="Orc"]');
+    eq([await foot(), await p.evaluate(() => S.W.langs)], [['Revenir à la suggestion', 'Valider'], ['Nain', 'Orc']], 'choix changé : on peut revenir à la suggestion');
+    await p.click('#modal [data-act="wsugreset"]');
+    eq([await p.evaluate(() => S.W.langs), await foot()], [['Elfique', 'Nain'], ['Valider']], 'suggestion retrouvée');
+    await p.click('#modal .wfoot [data-act="wclose"]'); eq(await tags(), ['Caractéristiques', 'Compétences', 'Sorts', 'Langues'], 'ligne de nouveau « Proposé »');
+    // Revenir ne touche qu'à la ligne ouverte
+    await p.evaluate(() => { S.W.langs = ['Orc', 'Gnome']; S.W.std = Object.assign({}, S.W.std, { int: S.W.std.cha, cha: S.W.std.int }); render(); });
+    eq(await tags(), ['Compétences', 'Sorts'], 'deux lignes modifiées : plus « Proposé »');
+    await p.click('.wline[data-v="Caractéristiques"]'); await p.click('#modal [data-act="wsugreset"]'); await p.click('#modal .wfoot [data-act="wclose"]');
+    eq([await tags(), await p.evaluate(() => S.W.langs)], [['Caractéristiques', 'Compétences', 'Sorts'], ['Orc', 'Gnome']], 'seules les caractéristiques reviennent, les langues du joueur restent');
+    // Écran 2 du guidé : bonus d'historique changé → retour possible
+    await p.click('[data-act="wgprev"]'); await p.selectOption('select[data-w="asi2"]', 'sag');
+    ok(await p.evaluate(() => !!document.querySelector('[data-act="wsugreset"][data-v="Historique"]')), 'écran 2 : retour à la suggestion du bonus');
+    await p.click('[data-act="wsugreset"][data-v="Historique"]'); eq(await p.evaluate(() => S.W.asi2), 'int', 'bonus proposé retrouvé');
+    // Mode direct, niveaux : revenir garde la sous-classe et les PV choisis
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Direct', level: 4, cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain', langs: ['Elfique', 'Orc'] });
+      for (const st of ['Historique', 'Caractéristiques', 'Compétences']) Object.assign(W, wSugDraft(W, st)); W.lv = wLvSug(W); W.lv[3] = Object.assign(W.lv[3] || {}, { sub: 'srd:' + wCls(W).subclasses[0].id }); W.lv[2] = Object.assign(W.lv[2] || {}, { hp: 'roll', roll: '7' }); render(); });
+    ok((await tags()).includes('Niveaux'), 'niveaux proposés');
+    await p.evaluate(() => { S.W.lv[4].ab1 = 'sag'; S.W.open = 'Niveaux'; render(); }); eq((await foot())[0], 'Revenir à la suggestion', 'niveau 4 changé');
+    await p.click('#modal [data-act="wsugreset"]');
+    eq(await p.evaluate(() => [S.W.lv[4].ab1, !!S.W.lv[3].sub, S.W.lv[2].roll, wNeeds(S.W).length]), ['for', true, '7', 0], 'suggestion retrouvée, sous-classe et dé de vie gardés');
+    // Classe, espèce, équipement : pas de suggestion, donc ni étiquette ni bouton
+    eq(await p.evaluate(() => ['Classe', 'Espèce', 'Équipement'].map(s => wSugFresh(S.W, s))), [null, null, null], 'lignes sans suggestion');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],

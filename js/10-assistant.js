@@ -311,6 +311,24 @@ function wLvSug(W){ const c=wCls(W), out=JSON.parse(JSON.stringify(W.lv||{})), d
     if(Object.keys(P).length) out[L]=P; lvlApplyTo(d,Object.assign({hp:"avg"},P),p); }
   return out; }
 function wLines(W){ return [...wSteps(W).filter(s=>s!=="Identité"),"Détails"]; }
+/* Suggestions visibles (retours d'Angle, 17 nov. 2026) : une ligne qui correspond à la suggestion affiche « Proposé » ; si le joueur
+   la change, sa fenêtre propose « Revenir à la suggestion », qui ne remplace que les champs de cette ligne. Pour les niveaux, la
+   sous-classe, la faveur épique et les PV choisis sont gardés. */
+const SUG_F={"Historique":["asi2","asi1"],"Caractéristiques":["std"],"Compétences":["skills","extraSkill","style","exp"],"Sorts":["can","spl","inv"],"Langues":["langs"]};
+const SUG_LV=["asi","ab1","ab2","style","inv","can","spl","arc"];
+const wNz=v=>v==null?"":Array.isArray(v)?JSON.stringify(v.filter(Boolean)):typeof v==="object"?JSON.stringify(Object.keys(v).sort().filter(k=>v[k]!==""&&v[k]!=null).map(k=>[k,String(v[k])])):String(v);
+// Ce que la suggestion donnerait pour cette ligne si elle était vide : {champ: valeur}, ou null si la ligne n'a pas de suggestion
+function wSugFresh(W,st){ const C=JSON.parse(JSON.stringify(W)), N=wLvN(W);
+  if(st==="Niveaux"){ if(N<2||!wCls(W)) return null; for(const L of Object.keys(C.lv||{})) if(+L<=N) for(const f of SUG_LV) delete C.lv[L][f]; return {lv:wLvSug(C)}; }
+  const F=SUG_F[st]; if(!F||!wCls(W)) return null;
+  for(const f of F) C[f]=Array.isArray(W[f])?[]:(f==="std"?{}:"");
+  Object.assign(C,wSugDraft(C,st)); const o={}; for(const f of F) o[f]=C[f];
+  return F.some(f=>wNz(o[f])!==wNz(f==="std"?{}:Array.isArray(W[f])?[]:""))?o:null; }
+function wSugKey(W,st,o){ if(st!=="Niveaux") return SUG_F[st].map(f=>wNz(o[f])).join("|"); const N=wLvN(W), lv=o.lv||{};
+  return Array.from({length:Math.max(0,N-1)},(_,i)=>SUG_LV.map(f=>wNz((lv[i+2]||{})[f])).join(",")).join("|"); }
+function wSugSame(W,st){ const R=wSugFresh(W,st); return !!R&&wSugKey(W,st,W)===wSugKey(W,st,R); }
+function wSugReset(W,st){ const R=wSugFresh(W,st); if(!R) return; if(st!=="Niveaux"){ Object.assign(W,R); return; }
+  const N=wLvN(W); W.lv=W.lv||{}; for(const L of Object.keys(R.lv)) if(+L<=N){ const P=W.lv[L]=W.lv[L]||{}; for(const f of SUG_LV){ if(R.lv[L][f]!==undefined) P[f]=R.lv[L][f]; else delete P[f]; } } }
 function wLineMsg(W,st){ const i=wSteps(W).indexOf(st); return i<0?"":wCheck(W,i); }
 function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)||{}).name||id, pl=(n,w)=>n+" "+w+(n>1?"s":"");
   if(st==="Classe"){ const o=wOrder(W); return c?c.name+(o?" · "+o.name:""):""; }
@@ -372,14 +390,14 @@ function wGFoot(W){ const i=wGStep(W), n=wGNeeds(W,i);
   return `<div class="wfootbar" id="wfoot">${i?`<button class="btn" data-act="wgprev">← Retour</button>`:""}<div class="wleft muted" role="status">Étape ${i+1} sur 3</div><button class="btn primary" data-act="${i<2?"wgnext":"wcreate"}" ${n.length?"disabled":""}>${esc(n.length?n[0].msg:i<2?"Suivant : "+G_STEPS[i+1][0]:"Créer le personnage")}</button></div>`; }
 function wGuideView(W){ const i=wGStep(W); let h="";
   if(i===0) h=`<label class="field wgname"><span>Comment s'appelle ton personnage ?</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><h2 class="wgh">Sa classe</h2>${wStepBody(W,"Classe")}`;
-  if(i===1) h=`<h2 class="wgh">Son historique</h2>${wStepBody(W,"Historique")}<h2 class="wgh">Son espèce</h2>${wStepBody(W,"Espèce")}`;
+  if(i===1) h=`<h2 class="wgh">Son historique</h2>${wStepBody(W,"Historique")}${W.bg&&wSugFresh(W,"Historique")&&!wSugSame(W,"Historique")?`<div><button class="btn small" data-act="wsugreset" data-v="Historique">Revenir à la suggestion (bonus de caractéristiques)</button></div>`:""}<h2 class="wgh">Son espèce</h2>${wStepBody(W,"Espèce")}`;
   if(i===2){ const n=wGNeeds(W,2); h=`<p class="${n.length?"wgleft":"muted"}">${n.length?`Presque tout est proposé d'après ta classe et ton origine. Il reste à choisir : ${esc(n.map(x=>x.msg.replace(/\.$/,"").replace(/^Choisis /,"").replace(/^ta /,"")+" (ligne "+x.name+")").join(" ; "))}.`:"Tout est déjà proposé d'après ta classe et ton origine. Touche une ligne pour voir ou changer."}</p>`; }
   if(i===2) h+=`<div class="wlines">${[...G_STEPS[2][1].filter(s=>wSteps(W).includes(s)),"Détails"].map(st=>wRow(W,st)).join("")}</div>`;
   return `<div class="list-head"><div><h1>${esc(G_STEPS[i][0])}</h1><div class="muted">Étape ${i+1} sur 3 · mode guidé <button class="btn small ghost wswitch" data-act="wmode" data-v="direct">Passer en mode direct</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
     <div class="wz"><section class="stack" style="min-width:0">${h}${wGFoot(W)}</section>${wPreview(W)}</div>`; }
 // Une ligne pas encore ouverte reste neutre (« À choisir ») ; le rouge est gardé pour une ligne ouverte puis laissée incomplète
 function wRow(W,st){ const c=wCls(W), msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement"), seen=!!(W.seen||{})[st];
-    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(wLineName(W,st))}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }
+    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(wLineName(W,st))}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${!msg&&(SUG_F[st]||st==="Niveaux")&&wSugSame(W,st)?`<small class="wsugtag">Proposé · modifiable</small>`:""}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }
 function wDirectView(W){ const c=wCls(W), lv=+W.level||1, rows=wLines(W).map(st=>wRow(W,st)).join("");
   return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux. <button class="btn small ghost wswitch" data-act="${+W.level>1?"wmodeask":"wmode"}" data-v="guide">Passer en mode guidé</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
     ${W.askGuide&&+W.level>1?`<div class="panel stack wask" role="alert"><div>Le mode guidé crée le personnage au <b>niveau 1</b>. Ton niveau de départ (${+W.level}) sera remis à 1 ; tes autres choix sont gardés.</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="wmode" data-v="guide">Passer en guidé, au niveau 1</button><button class="btn" data-act="wmodeno">Rester en direct</button></div></div>`:""}
@@ -390,7 +408,7 @@ function wDirectView(W){ const c=wCls(W), lv=+W.level||1, rows=wLines(W).map(st=
 function wModal(){ const W=S.W, st=W.open, msg=wLineMsg(W,st);
   return `<div class="picker" data-act="wclose"><div class="box wbox" role="dialog" aria-label="${esc(st)}" style="grid-template-rows:auto minmax(0,1fr) auto;max-width:760px">
     ${winHead(esc(wLineName(W,st)),"wclose")}<div class="stack wbody">${wStepBody(W,st)}</div>
-    ${winFoot(`${Object.keys(wSugDraft(W,st)).length?`<button class="btn small" data-act="wsug" title="Remplit ce qui est encore vide ; tu peux tout changer ensuite">Suggestion</button>`:""}<span class="warntxt wmsg" role="status" style="font-size:var(--fs-sm);flex:1;align-self:center">${esc(msg)}</span><button class="btn primary" data-act="wclose">${msg?"Fermer":"Valider"}</button>`)}</div></div>`; }
+    ${winFoot(`${Object.keys(wSugDraft(W,st)).length?`<button class="btn small" data-act="wsug" title="Remplit ce qui est encore vide ; tu peux tout changer ensuite">Suggestion</button>`:wSugFresh(W,st)&&!wSugSame(W,st)?`<button class="btn small" data-act="wsugreset" title="Remplace les choix de cette ligne par la proposition">Revenir à la suggestion</button>`:""}<span class="warntxt wmsg" role="status" style="font-size:var(--fs-sm);flex:1;align-self:center">${esc(msg)}</span><button class="btn primary" data-act="wclose">${msg?"Fermer":"Valider"}</button>`)}</div></div>`; }
 // Fiche de niveau 1 telle qu'elle sera créée (équipement porté, attaques, PV) : sert à l'aperçu, aux niveaux 2 à N et à la création
 function wBuild(W){ const c=wCls(W), d=wDoc(W); d.armor="none"; d.shield=false;
   const eq=wEqItems(W); for(const it of eq.items) d.bag.push({id:uid(),name:it.name,qty:it.qty,note:""}); d.gold={po:eq.gold};
