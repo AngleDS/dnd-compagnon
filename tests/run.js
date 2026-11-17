@@ -3459,6 +3459,33 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'rien ne dépasse en largeur iPhone');
   });
 
+  await test('Audit UX, corrections rapides (chantier 30) : aide de la fenêtre de jet, réserve, Mouvement à faire, « Aucune », temps court des sorts', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p, 'magicien');
+    await p.evaluate(() => { const ch = cur(); ch.level = 3; ch.turn = {}; ch.spells = [{ prepared: true, ref: 'srd:bouclier' }]; render(); });
+    const k = await p.evaluate(() => S.Titems.find(i => i.kind === 'atk').key);
+    await p.evaluate(k => quickRoll(k, 'hit', 'n'), k);
+    eq(await p.evaluate(() => document.querySelector('.tpop .qhelp')?.textContent), 'Saisis ton d20, puis choisis la suite.', 'dés physiques : phrase d’aide');
+    await p.evaluate(k => { S.T.pop = null; setVirtualDice(true); setDiceDisplayMode('direct'); quickRoll(k, 'hit', 'n'); }, k);
+    eq(await p.evaluate(() => !!document.querySelector('.tpop .qhelp')), false, 'dés virtuels : rien à saisir, pas de phrase');
+    await p.evaluate(() => { setVirtualDice(false); S.T.pop = null; render(); });
+    const tile = v => p.evaluate(v => document.querySelector(`.tturnbtn[data-v="${v}"]`).textContent.replace(/\s+/g, ' ').trim(), v);
+    ok(/À faire/.test(await tile('move')), 'Mouvement : « À faire »');
+    await p.click('.tturnbtn[data-v="move"]'); ok(/Mouvement terminé/.test(await tile('move')) && !/À faire/.test(await tile('move')), 'un toucher : terminé, sans fenêtre');
+    const none = await p.evaluate(() => ['action', 'bonus', 'reaction'].filter(c => !S.Titems.some(i => i.cost === c && i.kind !== 'basic' && i.kind !== 'rule')));
+    ok(none.length > 0, 'au moins une tuile sans option propre pour ce magicien : ' + none);
+    ok(/Aucune/.test(await tile('eco:' + none[0])), '« Aucune » sur la tuile');
+    await p.click(`.tturnbtn[data-v="eco:${none[0]}"]`);
+    ok(await p.evaluate(() => !!document.querySelector('.tpop .tnonewhy') && !!document.querySelector('.tpop [data-act="tturn"]')), 'la fenêtre explique, et marquer reste possible');
+    await p.evaluate(() => { S.T.pop = 'list:spells'; render(); });
+    const row = await p.evaluate(() => { const r = [...document.querySelectorAll('.trow')].find(x => /Bouclier/.test(x.textContent)); return r ? r.querySelector('.tname').textContent : S.Titems.find(i => /Bouclier/.test(i.name)).sub; });
+    ok(/Réaction · /.test(row) && !/lorsqu/.test(row), 'Bouclier : « Réaction · portée » sur la ligne : ' + row);
+    await p.evaluate(() => { S.T.pop = null; render(); tSelect(S.Titems.find(i => /Bouclier/.test(i.name)).key); });
+    ok(await p.evaluate(() => /lorsqu/.test(document.querySelector('.tpop').textContent)), 'la condition entière reste dans la fiche du sort');
+    await diceTable(p, 'paladin'); await p.evaluate(() => { cur().level = 5; S.T.pop = 'eco:bonus'; render(); });
+    await p.click('.tpop .trow[data-k="feat:paladin/imposition des mains"] [data-act="tusepv"]');
+    eq(await p.evaluate(() => [document.querySelector('.qmenu .qmtitle')?.textContent, !!document.querySelector('.qmenu .qmsep')]), ['Combien de PV utiliser ?', true], 'réserve : titre, saisie séparée des autres usages');
+  });
+
   await test('Bottes d’arme : seules les armes retenues montrent leur botte, choix limité au nombre de la classe, rien sans l’aptitude', async p => {
     await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.level = 1; delete ch.masteries; ch.attacks = ['epee-longue', 'javeline', 'arc-court', 'lance'].map((w, i) => ({ id: 'a' + i, weapon: 'srd:' + w, name: w, ability: 'auto', prof: true })); render(); });
