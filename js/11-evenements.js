@@ -103,8 +103,11 @@ document.addEventListener("click",e=>{
     case "diceDisplay": setDiceDisplayMode(diceDisplayMode()==="3d"?"direct":"3d"); try{ studioWarm(); }catch(_){} renderModal(); break;
     case "dice3dSkip": studioSkip(); break;
     // Défenses (chantier 5)
-    case "noteEdit": S.T.noteEdit=t.dataset.id||null; render(); { const x=document.getElementById("t-note-ed"); if(x){ x.focus(); x.setSelectionRange(x.value.length,x.value.length); } } break; // notes datées (chantier 6)
-    case "noteDel": if(ch){ const L=notesOwn(ch), i=L.findIndex(n=>n.id===t.dataset.id); if(i>=0){ L.splice(i,1); S.T.noteEdit=null; touch(S.cur); render(); } } break;
+    case "noteEdit": { if(ch&&S.T.noteEdit&&!t.dataset.id){ const L=notesOwn(ch), n=L.find(x=>x.id===S.T.noteEdit); if(n&&!String(n.text||"").trim()){ L.splice(L.indexOf(n),1); touch(S.cur); } } // « Terminé » : une note vidée disparaît
+      S.T.noteEdit=t.dataset.id||null; render(); const x=document.getElementById("t-note-ed"); if(x){ x.focus(); x.setSelectionRange(x.value.length,x.value.length); } } break; // notes datées (chantier 6)
+    case "noteDel": S.T.noteDelAsk=t.dataset.id||null; render(); document.querySelector('.noteask [data-act="noteDelNo"]')?.focus(); break; // confirmation avant suppression (choix d'Angle, 17 nov. 2026)
+    case "noteDelNo": S.T.noteDelAsk=null; render(); break;
+    case "noteDelYes": if(ch){ const L=notesOwn(ch), i=L.findIndex(n=>n.id===t.dataset.id); if(i>=0){ L.splice(i,1); S.T.noteEdit=null; touch(S.cur); } } S.T.noteDelAsk=null; render(); break;
     case "mastTog": masteryToggle(ch,derive(ch),t.dataset.v); touch(S.cur); render(); break; // bottes d'arme retenues (chantier 14)
     case "defEdit": S.T.defEdit=S.T.defEdit===t.dataset.c?null:t.dataset.c; render(); break;
     case "defTog": defToggle(ch,t.dataset.c,t.dataset.v); touch(S.cur); render(); break;
@@ -256,7 +259,7 @@ document.addEventListener("click",e=>{
     case "restLong": if(applyRest("long")===false){ render(); break; } S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": if(applyRest("court")===false){ render(); break; } S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
     case "tpop": if(/^res:/.test(t.dataset.v||"")){ const it=(S.Titems||[]).find(x=>x.res&&"res:"+x.res.id===t.dataset.v); if(it){ tSelect(it.key); break; } } // une ressource : une seule fenêtre, celle de l'aptitude (lot 2)
-      S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
+      S.T.eqSlot=null; S.T.cdel=null; S.T.noteDelAsk=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
     case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="def"&&S.T.defBack){ S.pending=S.T.defBack; S.T.defBack=null; S.T.pop=null; render(); renderModal(); break; } S.T.pop=null; render(); } break; // Défenses ouvertes depuis Dégâts : on y revient (chantier 33)
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
@@ -400,6 +403,7 @@ document.addEventListener("change",async e=>{
 });
 document.addEventListener("change",e=>{
   const t=e.target;
+  if(t.id==="t-note-dt"){ const ch=cur(), n=ch&&notesOwn(ch).find(x=>x.id===t.dataset.id), v=Date.parse(t.value); if(n){ n.t=Number.isFinite(v)?v:0; touch(S.cur); render(); } return; } // date de création modifiable
   if(virtualDiceEnabled()&&t.matches(DICE_INPUTS)) return;
   if(t.id==="catk"&&S.catPick){ S.catPick.k=t.value; const l=document.getElementById("catlist"); if(l) l.innerHTML=catPickList(); return; }
   if(t.tagName==="SELECT"&&String(t.value).startsWith("cat:")&&t.id!=="addFeatSel"){ const lab=(t.selectedOptions[0]||{}).textContent||""; const r=catRes(t.value); if(r){ const o=document.createElement("option"); o.value=r; o.textContent=lab; t.appendChild(o); t.value=r; } }
@@ -462,6 +466,8 @@ document.addEventListener("input",e=>{
       numTimer=setTimeout(()=>{ const a=document.activeElement; const still=a&&a.id===id; render(); if(still){ const n=document.getElementById(id); if(n){ try{ n.focus({preventScroll:true}); }catch(e){} } } },450); }
     return; }
   if(!S.T) return;
+  if(t.id==="t-note-new"){ S.T.noteNew=t.value; return; } // nouvelle note commencée : gardée si la fenêtre se ferme
+  if(t.id==="t-note-ed"){ const ch=cur(); if(ch){ const n=notesOwn(ch).find(x=>x.id===t.dataset.id); if(n){ n.text=t.value.slice(0,NOTE_MAX); n.u=Date.now(); touch(S.cur); } } return; } // correction enregistrée au fil de la frappe
   if(t.dataset.bind==="sessionNotes"){ const ch=cur(); if(ch){ ch.sessionNotes=t.value; touch(S.cur); } return; }
   if(t.id==="tq"){ S.T.q=t.value; S.T.qOpen=true; const r=document.getElementById("tres"); if(r){ r.innerHTML=tResults(); r.classList.remove("closed"); } const c=document.querySelector(".tqclear"); if(c) c.hidden=!t.value; return; }
   if(t.dataset.tin){ S.T[t.dataset.tin]=t.value; S.T.logSig=""; if(t.dataset.tin==="dmg") S.T.dmgBd=""; const tt=document.getElementById("t-tot"); if(tt) tt.innerHTML=totalHtml(+tt.dataset.mod);
@@ -504,8 +510,7 @@ document.addEventListener("submit",e=>{
     touch(S.cur); render(); return; }
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
   if(f.dataset.form==="fxadd"){ fxSubmit(); return; }
-  if(f.dataset.form==="noteadd"){ const ch=cur(), v=(document.getElementById("t-note-new")?.value||"").trim(); if(!ch||!v) return; notesOwn(ch).push({id:uid(),t:Date.now(),text:v.slice(0,4000)}); touch(S.cur); render(); document.getElementById("t-note-new")?.focus(); return; }
-  if(f.dataset.form==="noteedit"){ const ch=cur(), v=(document.getElementById("t-note-ed")?.value||"").trim(); if(!ch) return; const L=notesOwn(ch), n=L.find(x=>x.id===f.dataset.id); if(n){ if(v) n.text=v.slice(0,4000); else L.splice(L.indexOf(n),1); } S.T.noteEdit=null; touch(S.cur); render(); return; }
+  if(f.dataset.form==="noteadd"){ const ch=cur(), v=(document.getElementById("t-note-new")?.value||"").trim(); if(!ch||!v) return; const now=Date.now(); notesOwn(ch).push({id:uid(),t:now,u:now,text:v.slice(0,NOTE_MAX)}); S.T.noteNew=""; touch(S.cur); render(); document.getElementById("t-note-new")?.focus(); return; }
   if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
     if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
   if(f.dataset.form==="usepv"){ performUse(f.dataset.k,+(document.getElementById("t-pvn")||{}).value||0); return; }
