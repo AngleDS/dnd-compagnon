@@ -601,6 +601,9 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 body.dice3d-busy [data-virtual]{opacity:.5;pointer-events:none}
 /* Chantier 5 : effets actifs et lien vers les défenses */
 .fxrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+/* Blocs retirés, en bas du mode Personnaliser (chantier 8) */
+.tgone{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:14px 0 4px;padding-top:10px;border-top:1px dashed var(--line)}
+.tgone .label{margin-right:4px}
 /* Notes de partie datées (chantier 6) */
 .notelist{margin-top:12px}
 .noteitem{padding:8px 0;border-top:1px solid var(--line)}

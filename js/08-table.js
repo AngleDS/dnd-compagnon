@@ -1093,6 +1093,7 @@ function tableBlocks(ch,blocks){
   return `<div class="tlayouttop tedbar" role="status"><div class="tedl1"><span><b>Mode édition</b> <span class="muted" style="font-size:var(--fs-xs)">· glisse un bloc par ⋮⋮</span></span><button class="btn small primary" data-act="layoutDone">Terminé</button></div>
   <div class="tedl2"><button class="chip" data-act="tpop" data-v="blkadd" aria-label="Ajouter un bloc">＋ Bloc</button><button class="chip" data-act="layoutAuto" title="Disposition recommandée pour ce personnage">Automatique</button><button class="chip" data-act="layoutMag" aria-pressed="${mag}" title="Aimanter aux bords et aux rangées de tuiles des voisins">Aimant</button><button class="chip" data-act="layoutGrav" aria-pressed="${grav}" title="Réduire les marges entre blocs et faire remonter les blocs">Tasser</button></div></div>
   ${box}
+  ${(g=>g.length?`<div class="tgone" aria-label="Blocs retirés"><span class="label">Blocs retirés</span>${g.map(b=>`<button class="chip" data-act="blkRestore" data-v="${b[0]}" aria-label="Remettre le bloc ${esc(b[1])}">＋ ${esc(b[1])}</button>`).join("")}</div>`:"")(TBLK.filter(b=>blkHidden(ch,b[0])))}
   ${u?`<div class="tundo" role="status"><span>${u.auto?"Disposition automatique appliquée":`Bloc « ${esc(u.label)} » supprimé`}</span><button class="btn small ghost" data-act="blkUndo">Annuler</button></div>`:""}`;
 }
 /* Géométrie du placement libre : mêmes mesures que le prototype validé par Angle. */

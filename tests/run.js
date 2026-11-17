@@ -3446,6 +3446,19 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(imp, ['ok', 'import_invalid', 'import_invalid'], 'import : notes valides acceptées, invalides refusées');
   });
 
+  await test('Blocs retirés en bas du mode Personnaliser (chantier 8) : un toucher remet le bloc, rien hors du mode', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    eq(await p.evaluate(() => !!document.querySelector('.tgone')), false, 'en jeu : pas de ligne');
+    await p.evaluate(() => { S.layoutEdit = true; S.T.pop = null; render(); });
+    const gone = () => p.evaluate(() => [...document.querySelectorAll('.tgone [data-act="blkRestore"]')].map(b => b.dataset.v));
+    eq(await gone(), ['recherche'], 'Personnaliser : Recherche (retirée par défaut) proposée en bas');
+    await p.click('.tblk[data-blk="notes"] [data-act="blkDelNow"]');
+    eq(await gone(), ['recherche', 'notes'], 'bloc supprimé : il apparaît dans la ligne');
+    await p.click('.tgone [data-act="blkRestore"][data-v="notes"]');
+    eq([await gone(), await p.evaluate(() => !!document.querySelector('.tblk[data-blk="notes"]') && !blkHidden(cur(), 'notes'))], [['recherche'], true], 'un toucher le remet à sa place');
+    ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'rien ne dépasse en largeur iPhone');
+  });
+
   await test('Bottes d’arme : seules les armes retenues montrent leur botte, choix limité au nombre de la classe, rien sans l’aptitude', async p => {
     await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.level = 1; delete ch.masteries; ch.attacks = ['epee-longue', 'javeline', 'arc-court', 'lance'].map((w, i) => ({ id: 'a' + i, weapon: 'srd:' + w, name: w, ability: 'auto', prof: true })); render(); });
