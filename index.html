@@ -1134,6 +1134,14 @@ body.dice3d-busy [data-virtual]{opacity:.5;pointer-events:none}
 .noteat{font-size:var(--fs-xs)}
 .notetext{display:block;width:100%;text-align:left;background:none;border:0;padding:4px 0;margin:0;color:inherit;font:inherit;cursor:text;min-height:44px}
 .notetext p{margin:0 0 4px}
+.notedt input{width:100%}
+.noteask,.askover{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.45)}
+.noteaskbox,.askbox{display:grid;gap:10px;width:min(360px,100%);padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--sheet);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.wreview{width:min(560px,100%);max-height:85vh;overflow-y:auto}
+.wrevlist{display:grid;gap:2px}
+.wrevrow{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:baseline;min-height:44px;padding:6px 8px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.wrevrow:hover,.wrevrow:focus-visible{background:var(--sheet2)}
+.noteaskx{font-size:var(--fs-sm);white-space:pre-wrap;overflow-wrap:anywhere}
 .fxsec .fxadd{width:100%;margin-top:10px}
 .fxdef{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border:1px dashed var(--line);border-radius:var(--r);background:transparent;color:inherit;font-size:var(--fs-sm);cursor:pointer;text-align:left}
 .hpbox .hpdef{justify-self:start}
@@ -4343,19 +4351,25 @@ function tempStepper(ch){
 function searchBar(){ S.T._tq=true; const T=S.T; return `<div class="tsearchwrap"><form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form><div id="tres" class="tresdrop${T.qOpen===false?" closed":""}">${tResults()}</div></div>`; }
 /* Chantier 30 : temps d'incantation court sur les lignes (« Réaction » au lieu de la condition entière, gardée dans la fiche du sort). */
 function castShort(t){ let x=String(t||"").split(",")[0].replace(/\s*\([^)]*\)/g,"").trim(); if(/^1 (action|réaction)/i.test(x)) x=x.slice(2); x=x.replace(/^action bonus/i,"Action bonus"); return x?x[0].toUpperCase()+x.slice(1):""; }
-/* Chantier 6 : notes de partie datées. ch.noteLog = [{id, t, text}] dans l'ordre d'écriture, affichées de la plus récente à la plus ancienne.
-   L'ancienne zone unique (ch.sessionNotes) devient la première note à la première modification ; elle n'est jamais effacée (seulement ignorée ensuite). */
-function notesOf(ch){ if(Array.isArray(ch.noteLog)) return ch.noteLog; const o=String(ch.sessionNotes||"").trim(); return o?[{id:"old",t:+ch.updatedAt||0,text:o,old:true}]:[]; }
-function notesOwn(ch){ if(!Array.isArray(ch.noteLog)) ch.noteLog=notesOf(ch).map(n=>({id:n.old?uid():n.id,t:n.t,text:n.text})); return ch.noteLog; }
-function noteWhen(t){ if(!t) return "Note d’avant"; const d=new Date(t); return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})+" · "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
-function notesPop(ch){ const L=notesOf(ch).slice().reverse(), ed=S.T.noteEdit;
-  const rows=L.map(n=>n.id===ed?`<form class="noteitem stack" data-form="noteedit" data-id="${esc(n.id)}"><div class="muted noteat">${esc(noteWhen(n.t))}</div><textarea id="t-note-ed" rows="4" style="width:100%">${esc(n.text)}</textarea><div class="row" style="justify-content:flex-end;gap:6px"><button type="button" class="btn small ghost" data-act="noteEdit" data-id="">Annuler</button><button type="submit" class="btn small primary">Enregistrer</button></div></form>`
-    :`<div class="noteitem"><div class="row" style="justify-content:space-between;gap:8px;align-items:center"><span class="muted noteat">${esc(noteWhen(n.t))}</span><button class="btn small ghost danger btndel" data-act="noteDel" data-id="${esc(n.id)}" aria-label="Supprimer la note">${ICON_TRASH}</button></div><button class="notetext" data-act="noteEdit" data-id="${esc(n.id)}" aria-label="Corriger la note">${prose(n.text)}</button></div>`).join("");
-  return `<form class="stack" data-form="noteadd" novalidate><textarea id="t-note-new" rows="3" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="width:100%"></textarea><div class="row" style="justify-content:flex-end"><button type="submit" class="btn small primary">Ajouter</button></div></form>
-    <div class="notelist">${rows||`<div class="muted" style="font-size:var(--fs-sm)">Aucune note pour l’instant.</div>`}</div><div class="muted" style="font-size:var(--fs-sm);margin-top:8px">Séparées des notes du personnage. Date et heure ajoutées toutes seules ; touche une note pour la corriger.</div>`; }
+/* Chantier 6 : notes de partie datées. ch.noteLog = [{id, t, u, text}] : t = date de création (modifiable ; 0 = inconnue), u = dernier enregistrement.
+   Affichées de la plus récente à la plus ancienne (date inconnue en dernier). Enregistrées au fil de la frappe (suites de l'audit, 17 nov. 2026).
+   L'ancienne zone unique (ch.sessionNotes) devient la première note, date de création inconnue ; elle n'est jamais effacée, seulement ignorée ensuite. */
+const NOTE_MAX=20000;
+function notesOf(ch){ if(Array.isArray(ch.noteLog)) return ch.noteLog; const o=String(ch.sessionNotes||"").trim(); return o?[{id:"old",t:0,u:0,text:o,old:true}]:[]; } // ancienne note : aucune date certaine (ni création, ni enregistrement)
+function notesOwn(ch){ if(!Array.isArray(ch.noteLog)) ch.noteLog=notesOf(ch).map(n=>({id:n.old?uid():n.id,t:n.t,u:n.u,text:n.text})); return ch.noteLog; }
+function noteWhen(t){ if(!t) return ""; const d=new Date(t); return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})+" · "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
+function noteDates(n){ const c=n.t?"Créée "+noteWhen(n.t):"Date de création inconnue"; return n.u&&n.u!==n.t?c+" · enregistrée "+noteWhen(n.u):c; }
+const noteLocal=t=>{ if(!t) return ""; const d=new Date(t), z=x=>String(x).padStart(2,"0"); return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes()); };
+function notesSorted(ch){ return notesOf(ch).map((n,i)=>[n,i]).sort((a,b)=>(b[0].t||-1)-(a[0].t||-1)||b[1]-a[1]).map(x=>x[0]); }
+function notesPop(ch){ const L=notesSorted(ch), ed=S.T.noteEdit, ask=S.T.noteDelAsk, ex=ask&&notesOf(ch).find(n=>n.id===ask);
+  const rows=L.map(n=>n.id===ed?`<div class="noteitem stack"><label class="field notedt"><span>Date de création</span><input id="t-note-dt" type="datetime-local" value="${noteLocal(n.t)}" data-id="${esc(n.id)}"></label><textarea id="t-note-ed" rows="4" maxlength="${NOTE_MAX}" style="width:100%" data-id="${esc(n.id)}">${esc(n.text)}</textarea><div class="row" style="justify-content:space-between;gap:6px;align-items:center"><span class="muted noteat">Enregistrée au fil de la frappe</span><button type="button" class="btn small primary" data-act="noteEdit" data-id="">Terminé</button></div></div>`
+    :`<div class="noteitem"><div class="row" style="justify-content:space-between;gap:8px;align-items:center"><span class="muted noteat">${esc(noteDates(n))}</span><button class="btn small ghost danger btndel" data-act="noteDel" data-id="${esc(n.id)}" aria-label="Supprimer la note">${ICON_TRASH}</button></div><button class="notetext" data-act="noteEdit" data-id="${esc(n.id)}" aria-label="Corriger la note">${prose(n.text)}</button></div>`).join("");
+  const conf=ex?`<div class="noteask" role="alertdialog" aria-modal="true" aria-label="Supprimer la note ?"><div class="noteaskbox"><b>Supprimer cette note ?</b><div class="muted noteaskx">${esc(ex.text.length>120?ex.text.slice(0,120)+"…":ex.text)}</div><div class="row" style="justify-content:flex-end;gap:8px"><button class="btn small ghost" data-act="noteDelNo">Annuler</button><button class="btn small danger" data-act="noteDelYes" data-id="${esc(ex.id)}">Supprimer</button></div></div></div>`:"";
+  return `<form class="stack" data-form="noteadd" novalidate><textarea id="t-note-new" rows="3" maxlength="${NOTE_MAX}" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="width:100%">${esc(S.T.noteNew||"")}</textarea><div class="row" style="justify-content:flex-end"><button type="submit" class="btn small primary">Ajouter</button></div></form>
+    <div class="notelist">${rows||`<div class="muted" style="font-size:var(--fs-sm)">Aucune note pour l’instant.</div>`}</div><div class="muted" style="font-size:var(--fs-sm);margin-top:8px">Séparées des notes du personnage. Touche une note pour la corriger ; tout s’enregistre au fil de la frappe.</div>${conf}`; }
 /* Chantier 7 : les plus utilisés. ch.useFreq = {clé: [nombre, dernière fois]} : jets faits depuis « À la table », sorts lancés, utilisations.
    Un jet de toucher suivi de ses dégâts compte une fois (T.lastBump). Au plus 40 clés gardées. */
-function useBump(key){ const ch=cur(), T=S.T; if(!ch||!key) return; if(T) T.lastBump=key;
+function useBump(key,chain){ const ch=cur(), T=S.T; if(!ch||!key) return; if(T) T.lastBump=chain?key:null; // chain : un Toucher ou un sort lancé, dont les dégâts qui suivent ne recomptent pas
   const F=ch.useFreq=Object.assign({},ch.useFreq), o=F[key]||[0,0]; F[key]=[(+o[0]||0)+1,Date.now()];
   const ks=Object.keys(F); if(ks.length>40){ ks.sort((a,b)=>F[a][0]-F[b][0]||F[a][1]-F[b][1]); for(const k of ks.slice(0,ks.length-40)) delete F[k]; } touch(S.cur); }
 function mostUsed(ch,items,n=6){ const F=ch&&ch.useFreq||{};
@@ -4796,7 +4810,7 @@ function ensureTableRollUse(){
 }
 function tableRollCommitted(kind){
   const i=tableSelected();
-  if(i&&(kind==="d20"||S.T.lastBump!==i.key)) useBump(i.key); // chantier 7 : Toucher puis Dégâts = un seul usage
+  if(i){ if(kind!=="d20"&&S.T.lastBump===i.key) S.T.lastBump=null; else useBump(i.key,kind==="d20"); } // chantier 7 : Toucher puis Dégâts = un ; Dégâts répétés = un chacun (audit, 17 nov. 2026)
   // Weapon damage never changes turn tracking, even after an explicit undo.
   if(i?.kind==="atk"&&kind!=="d20") return;
   if(i?.kind==="atk"){ consumeTableCost(S.T.qr&&S.T.qr.from==="opp"?"reaction":undefined); ammoSpend(cur(),i); }
@@ -4839,7 +4853,7 @@ function performTableCast(data){
       const th=+(sp.mech&&sp.mech.tempHp)||0; S.T.castTemp=null;
       if(th){ const v=th*Math.max(1,rit?sp.level:lvl); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const b0=+ch.hp.temp||0; S.T.castTemp={v,b0};
         if(v>b0){ ch.hp.temp=v; addLog({label:sp.name+" · PV temporaires",total:"+"+v,bd:b0?"remplacent tes "+b0+" PV temporaires (pas de cumul)":"",quiet:true}); } }
-      useBump(data.k||("spell:"+data.ref));
+      useBump(data.k||("spell:"+data.ref),true);
       S.T.castDone=data.k||("spell:"+data.ref); S.T.castLvl=rit?sp.level:lvl; S.T.castRit=rit; S.T.castConc=sp.concentration?sp.name:null;
       touch(S.cur); return true;
 }
@@ -4999,7 +5013,7 @@ function wDraftLoad(){ try{ const j=JSON.parse(localStorage.getItem(W_DRAFT_KEY)
     for(const L of Object.keys(W.lv||{})){ const P=W.lv[L]; if(!/^\d{1,2}$/.test(L)||!isO(P)){ delete W.lv[L]; continue; } for(const [f,v] of Object.entries(P)) if(!(typeof v==="string"||(Array.isArray(v)&&v.length<=10&&v.every(x=>typeof x==="string")))) delete P[f]; }
     if(W.cls&&!clsOf(W.cls)) W.cls=""; if(W.bg&&!wBg(W)) W.bg=""; if(W.sp&&!(srd("species",W.sp)||hb(W.sp))) W.sp=""; return W; }catch(e){ return null; } }
 // Abandonner : le brouillon et les fiches du catalogue créées pour lui (encore à remplir et inutilisées) disparaissent
-function wAbandon(){ const W=S.W||wDraftLoad(), made=(W&&W.catMade)||[]; S.W=null; wDraftClear(); for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); }
+function wAbandon(){ S.wReview=false; S.wClsAsk=null; const W=S.W||wDraftLoad(), made=(W&&W.catMade)||[]; S.W=null; wDraftClear(); for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); }
 function wNew(){ return {mode:"",gstep:0,step:0,lv:{},cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
 function eqOptions(txt){ const t=String(txt||"").replace(/^Choisissez[^:]*:\s*/,""); const out=[]; const re=/\(([A-Z])\)\s*([\s\S]*?)(?=\s*;\s*(?:ou\s*)?\([A-Z]\)|$)/g; let m;
   while((m=re.exec(t))){ const items=[]; let gold=0;
@@ -5316,7 +5330,32 @@ function wCount(W){ const g=W.mode==="guide", n=g?wGNeeds(W,wGStep(W)):wNeeds(W)
 /* Deux modes sur le même état S.W (chantier 17) : W.mode "" = direct (une page, toutes les lignes), "guide" = trois écrans préremplis,
    "?" = écran de choix du mode, montré seulement à l'entrée d'une création neuve. On passe de l'un à l'autre sans rien perdre. */
 function viewWizard(){ const W=S.W; wDraftSave(); // chaque affichage enregistre le brouillon
-  return W.mode==="?"?wModeView(W):W.mode==="guide"?wGuideView(W):wDirectView(W); }
+  return (W.mode==="?"?wModeView(W):W.mode==="guide"?wGuideView(W):wDirectView(W))+wClsAskHtml(W)+(S.wReview&&W.mode!=="guide"&&W.mode!=="?"?wReviewHtml(W):""); }
+/* Suites de l'audit ChatGPT de la création (17 nov. 2026)
+   1. Changer de classe efface ce qui en dépend : on le dit avant, avec Annuler (S.wClsAsk = classe demandée). */
+function wClsLoss(W){ const L=[], some=a=>(Array.isArray(a)?a:[]).some(Boolean), N=wLvN(W);
+  if(some(W.skills)) L.push("compétences de classe"); if(some(W.exp)) L.push("expertise"); if(W.order) L.push("ordre"); if(Array.isArray(W.mast)) L.push("bottes d’arme");
+  if(some(W.can)||some(W.spl)) L.push("sorts"); if(some(W.inv)) L.push("manifestations");
+  if(W.eqC!=="A"||Object.keys(W.eqOff||{}).length) L.push("équipement de classe");
+  if(N>1&&Object.keys(W.lv||{}).some(k=>+k<=N&&W.lv[k]&&Object.keys(W.lv[k]).length)) L.push("choix des niveaux 2 à "+N);
+  return L; }
+function wClsAskHtml(W){ const v=S.wClsAsk; if(!v) return ""; const c=srd("classes",catRes(v))||hb(catRes(v))||{}, L=wClsLoss(W);
+  return `<div class="askover" role="alertdialog" aria-modal="true" aria-label="Changer de classe ?"><div class="askbox"><b>Passer en ${esc(c.name||"nouvelle classe")} ?</b><div class="muted" style="font-size:var(--fs-sm)">Ces choix dépendent de la classe et seront à refaire : ${esc(L.join(", "))}.</div><div class="row" style="justify-content:flex-end;gap:8px"><button class="btn small ghost" data-act="wclsNo">Annuler</button><button class="btn small primary" data-act="wpick" data-k="cls" data-v="${esc(v)}" data-ok="1">Changer de classe</button></div></div></div>`; }
+/* 2. Relecture avant création (mode direct) : chaque ligne ouvre ses choix ; un résumé par niveau. */
+function wLvSum(st){ const {p,P}=st, out=[], ft=r=>(S.C.feats.find(f=>"srd:"+f.id===r)||hb(r)||{}).name||"", sn=r=>(spellOf(r)||{}).name||"";
+  if(P.sub) out.push("sous-classe "+(((p.cls&&p.cls.subclasses)||[]).find(s=>"srd:"+s.id===P.sub)||hb(P.sub)||{name:"choisie"}).name);
+  if(p.epic&&P.feat) out.push("faveur "+ft(P.feat)); else if(p.asi){ if(P.asi==="feat"&&P.feat) out.push("don "+ft(P.feat)); else if(P.ab1&&P.ab2) out.push(P.ab1===P.ab2?"+2 "+ABN[P.ab1]:"+1 "+ABN[P.ab1]+", +1 "+ABN[P.ab2]); }
+  if(P.style) out.push("style "+(ft(P.style)||"choisi"));
+  const sp=[...(P.can||[]),...(P.spl||[])].filter(Boolean).map(sn).filter(Boolean); if(sp.length) out.push("sorts : "+sp.join(", "));
+  const inv=(P.inv||[]).filter(Boolean).length; if(inv) out.push(inv+" manifestation"+(inv>1?"s":""));
+  if(P.arc) out.push("arcanum "+sn(P.arc));
+  out.push(P.hp==="roll"?"PV : dé de "+P.roll:"PV : moyenne");
+  return out.join(" · "); }
+function wReviewHtml(W){ const n=wNeeds(W), rows=wLines(W).filter(st=>st!=="Niveaux").map(st=>`<button class="wrevrow" data-act="wrevgo" data-v="${esc(st)}"><span class="label">${esc(st)}</span> <span>${esc(wLineVal(W,st)||"—")}</span></button>`).join("");
+  const lv=wLvN(W)>1?wLevels(W).steps.map(st=>`<button class="wrevrow" data-act="wrevgo" data-v="Niveaux" data-l="${st.L}"><span class="label">Niveau ${st.L}</span> <span>${esc(wLvMsg(st)||wLvSum(st))}</span></button>`).join(""):"";
+  return `<div class="askover" role="dialog" aria-modal="true" aria-label="Relecture avant création"><div class="askbox wreview"><b>Relecture avant création</b><div class="muted" style="font-size:var(--fs-sm)">${esc(W.name||"Nouveau personnage")} · niveau ${wLvN(W)}. Touche une ligne pour la modifier.</div>
+    <div class="wrevlist">${rows}${lv?`<div class="label" style="margin-top:6px">Niveaux 2 à ${wLvN(W)}</div>${lv}`:""}</div>
+    <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn small ghost" data-act="wrevNo">Modifier</button><button class="btn small primary" data-act="wcreate" data-ok="1"${n.length?" disabled":""}>Créer le personnage</button></div></div></div>`; }
 function wModeView(W){ return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Comment veux-tu le créer ? Tu pourras changer de mode en cours de route.</div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>
     <div class="wmodes"><button class="wcard wmodec" data-act="wmode" data-v="guide"><b>Guidé</b><span>Pour débuter. Trois écrans, et des propositions déjà faites : tu valides ou tu changes. Le personnage commence au niveau 1.</span></button>
     <button class="wcard wmodec" data-act="wmode" data-v="direct"><b>Direct</b><span>Une seule page avec tous les choix, dans l'ordre que tu veux. Pour créer vite, ou à un niveau plus élevé.</span></button></div>`; }
@@ -5381,7 +5420,7 @@ function wLvMsg(st){ const {L,p,P,before}=st, x="Niveau "+L+" : ", n=(a,k)=>(Arr
   if(p.dPrepared&&p.maxSpell&&n(P.spl,p.dPrepared)<Math.min(p.dPrepared,left(classSpells(p.D0,null,p.maxSpell)))) return x+"choisis "+(p.dPrepared>1?"tes sorts.":"ton sort.");
   if(p.arc&&!P.arc) return x+"choisis ton arcanum mystique.";
   return ""; }
-function wCreate(){
+function wCreate(){ S.wReview=false; S.wClsAsk=null;
   const W=S.W; const id="perso_"+uid(); const d=wLevels(W,true).d; S.docs[id]=d; // niveaux 2 à N déjà appliqués : pas de fenêtre ensuite
   touch(id); S.cur=id; S.view="sheet"; S.tab="jeu"; S.W=null; wDraftClear();
   for(const hid of W.catMade||[]) if(S.docs[hid]&&S.docs[hid].pending&&!hbUsed(hid)) removeDoc(hid);
@@ -5466,7 +5505,7 @@ function validateImportPack(pack){
   if(ch.layout?.tiles!==undefined&&(!plainObject(ch.layout.tiles)||Object.values(ch.layout.tiles).some(v=>!Array.isArray(v)||v.length>16||v.some(x=>typeof x!=="string")))) importFail("Les tuiles d'« À la table » sont invalides.");
   if(ch.companion!==undefined&&(!plainObject(ch.companion)||(ch.companion.name!==undefined&&(typeof ch.companion.name!=="string"||ch.companion.name.length>60))||(ch.companion.ac!==undefined&&!Number.isFinite(ch.companion.ac))||(ch.companion.hp!==undefined&&(!plainObject(ch.companion.hp)||!Number.isFinite(ch.companion.hp.cur)||!Number.isFinite(ch.companion.hp.max))))) importFail("Le compagnon est invalide.");
   // Lignage (chantier 13), défenses et effets en cours (chantier 5)
-  if(ch.noteLog!==undefined&&(!Array.isArray(ch.noteLog)||ch.noteLog.length>500||ch.noteLog.some(n=>!n||typeof n.id!=="string"||n.id.length>40||!Number.isFinite(n.t)||typeof n.text!=="string"||n.text.length>4000))) importFail("Les notes de partie sont invalides.");
+  if(ch.noteLog!==undefined&&(!Array.isArray(ch.noteLog)||ch.noteLog.length>500||ch.noteLog.some(n=>!n||typeof n.id!=="string"||n.id.length>40||!Number.isFinite(n.t)||(n.u!==undefined&&!Number.isFinite(n.u))||typeof n.text!=="string"||n.text.length>20000))) importFail("Les notes de partie sont invalides.");
   if(ch.useFreq!==undefined&&(!ch.useFreq||typeof ch.useFreq!=="object"||Array.isArray(ch.useFreq)||Object.keys(ch.useFreq).length>60||Object.entries(ch.useFreq).some(([k,v])=>k.length>120||!Array.isArray(v)||v.length!==2||v.some(x=>!Number.isFinite(x))))) importFail("Les jets les plus utilisés sont invalides.");
   if(ch.masteries!==undefined&&(!Array.isArray(ch.masteries)||ch.masteries.length>20||ch.masteries.some(x=>typeof x!=="string"||x.length>60))) importFail("Les bottes d'arme sont invalides.");
   if(ch.lineage!==undefined&&(!plainObject(ch.lineage)||typeof ch.lineage.id!=="string"||ch.lineage.id.length>30||(ch.lineage.ab!==undefined&&!["int","sag","cha"].includes(ch.lineage.ab)))) importFail("Le lignage ou l'ascendance est invalide.");
@@ -5607,8 +5646,11 @@ document.addEventListener("click",e=>{
     case "diceDisplay": setDiceDisplayMode(diceDisplayMode()==="3d"?"direct":"3d"); try{ studioWarm(); }catch(_){} renderModal(); break;
     case "dice3dSkip": studioSkip(); break;
     // Défenses (chantier 5)
-    case "noteEdit": S.T.noteEdit=t.dataset.id||null; render(); { const x=document.getElementById("t-note-ed"); if(x){ x.focus(); x.setSelectionRange(x.value.length,x.value.length); } } break; // notes datées (chantier 6)
-    case "noteDel": if(ch){ const L=notesOwn(ch), i=L.findIndex(n=>n.id===t.dataset.id); if(i>=0){ L.splice(i,1); S.T.noteEdit=null; touch(S.cur); render(); } } break;
+    case "noteEdit": { if(ch&&S.T.noteEdit&&!t.dataset.id){ const L=notesOwn(ch), n=L.find(x=>x.id===S.T.noteEdit); if(n&&!String(n.text||"").trim()){ L.splice(L.indexOf(n),1); touch(S.cur); } } // « Terminé » : une note vidée disparaît
+      S.T.noteEdit=t.dataset.id||null; render(); const x=document.getElementById("t-note-ed"); if(x){ x.focus(); x.setSelectionRange(x.value.length,x.value.length); } } break; // notes datées (chantier 6)
+    case "noteDel": S.T.noteDelAsk=t.dataset.id||null; render(); document.querySelector('.noteask [data-act="noteDelNo"]')?.focus(); break; // confirmation avant suppression (choix d'Angle, 17 nov. 2026)
+    case "noteDelNo": S.T.noteDelAsk=null; render(); break;
+    case "noteDelYes": if(ch){ const L=notesOwn(ch), i=L.findIndex(n=>n.id===t.dataset.id); if(i>=0){ L.splice(i,1); S.T.noteEdit=null; touch(S.cur); } } S.T.noteDelAsk=null; render(); break;
     case "mastTog": masteryToggle(ch,derive(ch),t.dataset.v); touch(S.cur); render(); break; // bottes d'arme retenues (chantier 14)
     case "defEdit": S.T.defEdit=S.T.defEdit===t.dataset.c?null:t.dataset.c; render(); break;
     case "defTog": defToggle(ch,t.dataset.c,t.dataset.v); touch(S.cur); render(); break;
@@ -5625,7 +5667,7 @@ document.addEventListener("click",e=>{
     case "new": S.newName={}; renderModal(); break;
     case "newCancel": if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } break; // clic à côté de la fenêtre ou sur sa croix, pas dedans
     case "wclose": if(S.W&&(e.target===t||t.tagName==="BUTTON")){ S.W.open=null; render(); } break;
-    case "wizard": if(!S.W){ const d=wDraftLoad(); S.W=d||wNew(); if(!d) S.W.mode="?"; } S.W.open=null; /* création neuve : on choisit d'abord le mode */ S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
+    case "wizard": S.wReview=false; S.wClsAsk=null; if(!S.W){ const d=wDraftLoad(); S.W=d||wNew(); if(!d) S.W.mode="?"; } S.W.open=null; /* création neuve : on choisit d'abord le mode */ S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
     case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; (S.W.seen=S.W.seen||{})[t.dataset.v]=true; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;
     case "wlvsel": S.W.lvSel=+t.dataset.v; S.W.openShown=null; render(); break;
@@ -5638,7 +5680,7 @@ document.addEventListener("click",e=>{
     case "wcancel": wAbandon(); break;
     case "wdrop": wAbandon(); break; // depuis la liste des personnages
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
-    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.lv={}; W.lvSel=null; W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
+    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; if(k==="cls"&&W.mode!=="guide"&&W.cls&&W.cls!==v&&!t.dataset.ok&&wClsLoss(W).length){ S.wClsAsk=t.dataset.v; render(); document.querySelector('.askover [data-act="wclsNo"]')?.focus(); break; } S.wClsAsk=null; W.chg=null; if(k==="cls"&&W.cls!==v){ W.lv={}; W.lvSel=null; W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; W.spSkill=""; W.size=""; }
       W[k]=v; if(k==="bg"&&W.spSkill&&wBgSkills(W).includes(W.spSkill)) W.spSkill=""; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } if(k==="bg"&&W.hFeat&&W.hFeat===wBgFeat(W)) W.hFeat=""; if(k==="bg"&&W.mode==="guide") wGuideFill(W,["Historique"]); render(); break; }
@@ -5651,7 +5693,10 @@ document.addEventListener("click",e=>{
     case "wexp": { const W=S.W, v=t.dataset.v, L=wExp(W); W.exp=L.includes(v)?L.filter(x=>x!==v):(L.length<wExpN(W)?[...L,v]:L); render(); break; }
     case "wmast": { const W=S.W, v=t.dataset.v, m=wMast(W); W.mast=m.list.includes(v)?m.list.filter(x=>x!==v):(m.list.length<m.n?[...m.list,v]:m.list); render(); break; }
     case "weq": { S.W.eqOff[t.dataset.v]=!t.checked; render(); break; }
-    case "wcreate": if(wNeeds(S.W).length) break; wCreate(); break;
+    case "wcreate": if(wNeeds(S.W).length) break; if(!t.dataset.ok&&S.W.mode!=="guide"){ S.wReview=true; render(); break; } S.wReview=false; wCreate(); break; // relecture avant création (mode direct)
+    case "wclsNo": S.wClsAsk=null; render(); break;
+    case "wrevNo": S.wReview=false; render(); break;
+    case "wrevgo": { const W=S.W, st=t.dataset.v; S.wReview=false; if(t.dataset.l) W.lvSel=+t.dataset.l; W.open=st; W.openShown=null; W.chg=null; (W.seen=W.seen||{})[st]=true; render(); break; }
     case "afRun": afRun(t.dataset.mode==="hb"?{mode:"hb",id:t.dataset.id}:{mode:"nh"}); break;
     case "afClose": S.af=null; renderModal(); break;
     case "afApply": afApply(); break;
@@ -5760,7 +5805,7 @@ document.addEventListener("click",e=>{
     case "restLong": if(applyRest("long")===false){ render(); break; } S.T.pop=null; S.T.restKind=""; S.T.hdLast=""; touch(S.cur); render(); break;
     case "restShort": if(applyRest("court")===false){ render(); break; } S.T.pop=null; S.T.hdLast=""; addLog({label:"Repos court",total:"✓",bd:"Emplacements et ressources de repos court récupérés.",kind:"info"}); touch(S.cur); render(); break;
     case "tpop": if(/^res:/.test(t.dataset.v||"")){ const it=(S.Titems||[]).find(x=>x.res&&"res:"+x.res.id===t.dataset.v); if(it){ tSelect(it.key); break; } } // une ressource : une seule fenêtre, celle de l'aptitude (lot 2)
-      S.T.eqSlot=null; S.T.cdel=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
+      S.T.eqSlot=null; S.T.cdel=null; S.T.noteDelAsk=null; S.T.tileSlot=null; S.T.ctile=null; S.T.pop=t.dataset.v; S.histConfirm=false; S.hist=null; render(); if(t.dataset.v==="notes") setTimeout(()=>{ const n=document.getElementById("t-notes"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } },0); break;
     case "tpopclose": if(e.target.closest("[data-act]")===t){ if(S.T.pop==="equip"&&S.T.eqSlot){ S.T.eqSlot=null; render(); break; } if(S.T.pop==="def"&&S.T.defBack){ S.pending=S.T.defBack; S.T.defBack=null; S.T.pop=null; render(); renderModal(); break; } S.T.pop=null; render(); } break; // Défenses ouvertes depuis Dégâts : on y revient (chantier 33)
     case "noop": break;
     case "tqclear": { S.T.q=""; const q=document.getElementById("tq"); if(q){ q.value=""; q.focus(); } document.getElementById("tres").innerHTML=""; t.hidden=true; break; }
@@ -5904,6 +5949,7 @@ document.addEventListener("change",async e=>{
 });
 document.addEventListener("change",e=>{
   const t=e.target;
+  if(t.id==="t-note-dt"){ const ch=cur(), n=ch&&notesOwn(ch).find(x=>x.id===t.dataset.id), v=Date.parse(t.value); if(n){ n.t=Number.isFinite(v)?v:0; touch(S.cur); render(); } return; } // date de création modifiable
   if(virtualDiceEnabled()&&t.matches(DICE_INPUTS)) return;
   if(t.id==="catk"&&S.catPick){ S.catPick.k=t.value; const l=document.getElementById("catlist"); if(l) l.innerHTML=catPickList(); return; }
   if(t.tagName==="SELECT"&&String(t.value).startsWith("cat:")&&t.id!=="addFeatSel"){ const lab=(t.selectedOptions[0]||{}).textContent||""; const r=catRes(t.value); if(r){ const o=document.createElement("option"); o.value=r; o.textContent=lab; t.appendChild(o); t.value=r; } }
@@ -5912,7 +5958,7 @@ document.addEventListener("change",e=>{
     if(k==="level") v=String(Math.max(1,Math.min(20,Math.round(+v)||1)));
     if(k.startsWith("nh.")&&!S.W.nh) return;
     if(k==="spSkill"&&v){ S.W.skills=S.W.skills.filter(s=>s!==v); if(S.W.extraSkill===v) S.W.extraSkill=""; }
-    setPath(S.W,k,v); if(k==="level"&&S.W.lv) for(const L of Object.keys(S.W.lv)) if(+L>+v) delete S.W.lv[L]; // baisser le niveau retire les choix au-delà
+    setPath(S.W,k,v); // baisser le niveau garde les choix des niveaux retirés : ignorés à la création, retrouvés si on remonte (audit, 17 nov. 2026)
     if(t.tagName==="SELECT"||k.startsWith("dice.")||k==="level"||k.startsWith("lv.")) render(); return; }
   if(t.id==="cc-dmg"&&S.T&&S.T.cc){ S.T.cc.dmg=Math.max(0,+t.value||0); render(); return; }
   if(t.dataset.arcsel){ const ch=cur(); if(ch){ ch.arcanum=ch.arcanum||{}; if(t.value) ch.arcanum[t.dataset.arcsel]=t.value; else delete ch.arcanum[t.dataset.arcsel]; touch(S.cur); render(); } return; }
@@ -5966,6 +6012,8 @@ document.addEventListener("input",e=>{
       numTimer=setTimeout(()=>{ const a=document.activeElement; const still=a&&a.id===id; render(); if(still){ const n=document.getElementById(id); if(n){ try{ n.focus({preventScroll:true}); }catch(e){} } } },450); }
     return; }
   if(!S.T) return;
+  if(t.id==="t-note-new"){ S.T.noteNew=t.value; return; } // nouvelle note commencée : gardée si la fenêtre se ferme
+  if(t.id==="t-note-ed"){ const ch=cur(); if(ch){ const n=notesOwn(ch).find(x=>x.id===t.dataset.id); if(n){ n.text=t.value.slice(0,NOTE_MAX); n.u=Date.now(); touch(S.cur); } } return; } // correction enregistrée au fil de la frappe
   if(t.dataset.bind==="sessionNotes"){ const ch=cur(); if(ch){ ch.sessionNotes=t.value; touch(S.cur); } return; }
   if(t.id==="tq"){ S.T.q=t.value; S.T.qOpen=true; const r=document.getElementById("tres"); if(r){ r.innerHTML=tResults(); r.classList.remove("closed"); } const c=document.querySelector(".tqclear"); if(c) c.hidden=!t.value; return; }
   if(t.dataset.tin){ S.T[t.dataset.tin]=t.value; S.T.logSig=""; if(t.dataset.tin==="dmg") S.T.dmgBd=""; const tt=document.getElementById("t-tot"); if(tt) tt.innerHTML=totalHtml(+tt.dataset.mod);
@@ -6008,8 +6056,7 @@ document.addEventListener("submit",e=>{
     touch(S.cur); render(); return; }
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
   if(f.dataset.form==="fxadd"){ fxSubmit(); return; }
-  if(f.dataset.form==="noteadd"){ const ch=cur(), v=(document.getElementById("t-note-new")?.value||"").trim(); if(!ch||!v) return; notesOwn(ch).push({id:uid(),t:Date.now(),text:v.slice(0,4000)}); touch(S.cur); render(); document.getElementById("t-note-new")?.focus(); return; }
-  if(f.dataset.form==="noteedit"){ const ch=cur(), v=(document.getElementById("t-note-ed")?.value||"").trim(); if(!ch) return; const L=notesOwn(ch), n=L.find(x=>x.id===f.dataset.id); if(n){ if(v) n.text=v.slice(0,4000); else L.splice(L.indexOf(n),1); } S.T.noteEdit=null; touch(S.cur); render(); return; }
+  if(f.dataset.form==="noteadd"){ const ch=cur(), v=(document.getElementById("t-note-new")?.value||"").trim(); if(!ch||!v) return; const now=Date.now(); notesOwn(ch).push({id:uid(),t:now,u:now,text:v.slice(0,NOTE_MAX)}); S.T.noteNew=""; touch(S.cur); render(); document.getElementById("t-note-new")?.focus(); return; }
   if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
     if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
   if(f.dataset.form==="usepv"){ performUse(f.dataset.k,+(document.getElementById("t-pvn")||{}).value||0); return; }
