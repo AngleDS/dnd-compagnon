@@ -751,6 +751,33 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => ['Classe', 'Espèce', 'Équipement'].map(s => wSugFresh(S.W, s))), [null, null, null], 'lignes sans suggestion');
   });
 
+  await test('Création : explications dans l’appli (bouton i : sorts, dons, classe, historique, espèce, sous-classe, caractéristiques, compétences)', async p => {
+    await open(p);
+    const tip = () => p.evaluate(() => { const t = document.getElementById('tip'); if (t.hidden) return null; const r = t.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + 20); return [t.querySelector('.tipname').textContent, t.contains(hit), r.left >= 0 && r.right <= innerWidth, t.textContent]; });
+    const close = () => p.click('#tip [data-act="tipclose"]');
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Expl', cls: 'magicien', bg: 'srd:sage', sp: 'srd:humain', level: 3 }); Object.assign(W, wSugDraft(W, 'Sorts')); S.view = 'wizard'; W.open = 'Sorts'; render(); });
+    const sp = await p.evaluate(() => S.idx.spells[S.W.can[0].slice(4)].name);
+    await p.click('#modal .wxrow .wxi >> nth=0'); let t = await tip();
+    eq([t[0], t[1], t[2], /Sort mineur/.test(t[3]), /Portée/.test(t[3])], [sp, true, true, true, true], 'sort : nom, détails, bulle au-dessus de la fenêtre et dans l’écran');
+    await close(); ok(await p.evaluate(() => document.getElementById('tip').hidden && S.W.open === 'Sorts'), 'bulle fermée, fenêtre toujours ouverte');
+    await p.evaluate(() => { S.W.open = 'Caractéristiques'; render(); }); await p.click('#modal [data-k="wx:abil:1"]'); t = await tip();
+    eq([t[0], /Constitution : santé et endurance/.test(t[3]), /modificateur/.test(t[3])], ['Les caractéristiques', true, true], 'caractéristiques expliquées'); await close();
+    await p.evaluate(() => { S.W.open = 'Compétences'; render(); }); await p.click('#modal [data-k^="wx:skills:"]'); t = await tip();
+    eq([t[0], /Arcanes \(Intelligence\)/.test(t[3])], ['Les compétences', true], 'compétences de la classe expliquées'); await close();
+    for (const [line, k, name] of [['Classe', 'wx:cls:magicien', 'Magicien'], ['Historique', 'wx:bg:srd:sage', 'Sage'], ['Espèce', 'wx:sp:srd:humain', 'Humain']]) {
+      await p.evaluate(l => { S.W.open = l; render(); }, line); await p.click('#modal .wchosen [data-k="' + k + '"]'); t = await tip(); eq([t[0], t[1]], [name, true], line + ' : « En savoir plus »'); await close(); }
+    await p.evaluate(() => { S.W.open = 'Espèce'; S.W.hFeat = 'srd:vigilant'; render(); }); await p.click('#modal [data-k="wx:feat:srd:vigilant"]'); t = await tip(); eq(t[0], 'Vigilant', 'don d’origine expliqué'); await close();
+    // Rubriques de niveau : sous-classe dans l'assistant, sorts dans la montée de niveau habituelle
+    await p.evaluate(() => { const W = S.W; W.lv = { 3: { sub: 'srd:' + wCls(W).subclasses[0].id } }; W.open = 'Niveaux'; W.lvSel = 3; render(); });
+    await p.click('#modal .wlvbody [data-k^="wx:sub:"]'); t = await tip(); eq([/Sous-classe · Magicien/.test(t[3]), t[1]], [true, true], 'sous-classe expliquée'); await close();
+    const id = await newWizardChar(p, { cls: 'magicien', bg: 'srd:sage', sp: 'srd:nain' });
+    await p.evaluate(id => { S.rv = null; S.cur = id; const p0 = levelPlan(S.docs[id]); S.pending = { type: 'lvl', hp: 'avg', spl: [classSpells(p0.D0, null, 1)[0].ref] }; renderModal(); }, id);
+    await p.click('#modal [data-k^="wx:spell:"]'); t = await tip(); ok(t && t[1] && /Sort de niveau 1/.test(t[3]), 'montée de niveau : sort expliqué aussi'); await close();
+    // iPhone : la bulle tient dans l'écran
+    await p.evaluate(() => { S.pending = null; renderModal(); S.W = wNew(); S.W.open = 'Caractéristiques'; S.view = 'wizard'; render(); }); await p.setViewportSize({ width: 390, height: 844 });
+    await p.click('#modal [data-k="wx:abil:1"]'); t = await tip(); eq([t[1], t[2]], [true, true], 'bulle à 390 px'); await p.setViewportSize({ width: 1200, height: 900 });
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],

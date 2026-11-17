@@ -46,7 +46,7 @@ function lvlBody(ch,P,p,lu,req){ const D0=p.D0;
     <div class="muted" style="font-size:var(--fs-sm)">Con ${sg(D0.mods.con)} par niveau${p.pvniv?`, +${p.pvniv} d'un effet (ex. Robuste)`:""}.${!manual&&P.hp==="roll"?" Les PV passeront en saisie manuelle.":""}</div>`);
   // subclass
   if(p.needSub){ const opts=[["","— Choisir —"],...p.cls.subclasses.map(s=>["srd:"+s.id,s.name]),...hbs("sous-classe").filter(h=>!h.classId||h.classId===p.cls.id).map(h=>["hb:"+h._id,h.name+hbTag(h)]),...catOpts("sous-classe",e=>catClassOk(e,p.cls))];
-    h+=sec("Sous-classe",`<select ${lu("sub")}>${opts.map(([v,l])=>o(v,l,P.sub||"")).join("")}</select>`); }
+    h+=sec("Sous-classe",`<select ${lu("sub")}>${opts.map(([v,l])=>o(v,l,P.sub||"")).join("")}</select>${wxI("sub",P.sub)}`); }
   // ASI / feat
   if(p.asi||p.epic){
     const featOpts=[["","— Choisir un don —"],...S.C.feats.map(f=>["srd:"+f.id,f.name+(f.category?" ("+f.category+")":"")]),...hbs("don").map(h=>["hb:"+h._id,h.name+hbTag(h)]),...catOpts("don",e=>p.epic?e.cat==="faveur épique":(e.cat==="généraux"&&(e.lv||1)<=p.to))];
@@ -54,10 +54,10 @@ function lvlBody(ch,P,p,lu,req){ const D0=p.D0;
     h+=sec(p.epic?"Faveur épique":"Amélioration de caractéristique",
       (p.asi?`<div class="row"><label class="row"><input type="radio" name="luasi" ${lu("asi")} value="ab" ${P.asi!=="feat"?"checked":""}> Caractéristiques</label><label class="row"><input type="radio" name="luasi" ${lu("asi")} value="feat" ${P.asi==="feat"?"checked":""}> Un don</label></div>`:"")+
       ((p.asi&&P.asi!=="feat")?`<div class="row">+1 ${abSel("ab1")} +1 ${abSel("ab2")}</div><div class="muted" style="font-size:var(--fs-sm)">Choisis deux fois la même pour +2. Maximum 20.</div>`
-        :`<select ${lu("feat")}>${featOpts.map(([v,l])=>o(v,l,P.feat||"")).join("")}</select>`));
+        :`<select ${lu("feat")}>${featOpts.map(([v,l])=>o(v,l,P.feat||"")).join("")}</select>${wxI("feat",P.feat)}`));
   }
   if(p.style){ const opts=[["","— Choisir —"],...styleOpts(ch),...(p.styleAlt?[["alt",p.styleAlt.name+" (2 sorts mineurs de "+p.styleAlt.cls+")"]]:[])];
-    let x=`<select ${lu("style")}>${opts.map(([v,l])=>o(v,l,P.style||"")).join("")}</select>`;
+    let x=`<select ${lu("style")}>${opts.map(([v,l])=>o(v,l,P.style||"")).join("")}</select>${(P.style!=="alt"?wxI("feat",P.style):"")}`;
     if(P.style==="alt"){ const can=classSpells({cls:{name:p.styleAlt.cls}},0); x+=[0,1].map(i=>`<select ${lu("stc",i)}>${o("","— Sort mineur de "+p.styleAlt.cls+" —","")}${can.filter(c=>!(ch.spells||[]).some(s=>s.ref===c.ref)&&!(P.stc||[]).some((r,j)=>j!==i&&r===c.ref)).map(c=>o(c.ref,c.s.name,(P.stc||[])[i]||"")).join("")}</select>`).join(""); }
     h+=sec("Style de combat",x+`<div class="muted" style="font-size:var(--fs-sm)">Défense : +1 CA en armure. Archerie : +2 aux attaques à distance.</div>`); }
   // invocations
@@ -67,9 +67,9 @@ function lvlBody(ch,P,p,lu,req){ const D0=p.D0;
       return `<div class="row" style="gap:6px"><select ${lu("inv",i)}>${o("","— Choisir —","")}${av.map(x=>o(x.id,x.name+(x.repeatable?" (répétable)":"")+(x.prerequisite?" — "+x.prerequisite.replace(/^Niveau d’Occultiste \d+\+,?\s*/,""):""),v)).join("")}</select>${ck?`<select ${lu("invc",i)}>${o("",ck==="feat"?"— Quel don ? —":"— Quel sort mineur ? —","")}${invChoices(ch,v,ex).filter(([c])=>!taken.includes(c)).map(([c,l])=>o(c,l,(P.invc||[])[i]||"")).join("")}</select>`:""}</div>`; }).join("")); }
   // spells
   const have=new Set((ch.spells||[]).map(s=>s.ref).concat(Object.keys(D0.always)));
-  if(p.dCantrips){ const l=classSpells(D0,0).filter(x=>!have.has(x.ref)); h+=sec(`Sorts mineurs (${p.dCantrips})`,Array.from({length:p.dCantrips},(_,i)=>`<select ${lu("can",i)}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,(P.can||[])[i]||"")).join("")}</select>`).join("")); }
-  if(p.dPrepared&&p.maxSpell){ const l=classSpells(D0,null,p.maxSpell).filter(x=>!have.has(x.ref)); h+=sec(`Sorts (${p.dPrepared}, jusqu'au niveau ${p.maxSpell})`,Array.from({length:p.dPrepared},(_,i)=>`<select ${lu("spl",i)}>${o("",(req?"— Choisir —":"— Choisir (ou plus tard) —"),"")}${l.map(x=>o(x.ref,"niv. "+x.s.level+" · "+x.s.name,(P.spl||[])[i]||"")).join("")}</select>`).join("")); }
-  if(p.arc){ const l=classSpells(D0,p.arc).filter(x=>!have.has(x.ref)); h+=sec(`Arcanum mystique (sort de niveau ${p.arc})`,`<select ${lu("arc")}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,P.arc||"")).join("")}</select><div class="muted" style="font-size:var(--fs-sm)">Lançable une fois par repos long, sans emplacement.</div>`); }
+  if(p.dCantrips){ const l=classSpells(D0,0).filter(x=>!have.has(x.ref)); h+=sec(`Sorts mineurs (${p.dCantrips})`,Array.from({length:p.dCantrips},(_,i)=>`<select ${lu("can",i)}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,(P.can||[])[i]||"")).join("")}</select>${wxI("spell",(P.can||[])[i])}`).join("")); }
+  if(p.dPrepared&&p.maxSpell){ const l=classSpells(D0,null,p.maxSpell).filter(x=>!have.has(x.ref)); h+=sec(`Sorts (${p.dPrepared}, jusqu'au niveau ${p.maxSpell})`,Array.from({length:p.dPrepared},(_,i)=>`<select ${lu("spl",i)}>${o("",(req?"— Choisir —":"— Choisir (ou plus tard) —"),"")}${l.map(x=>o(x.ref,"niv. "+x.s.level+" · "+x.s.name,(P.spl||[])[i]||"")).join("")}</select>${wxI("spell",(P.spl||[])[i])}`).join("")); }
+  if(p.arc){ const l=classSpells(D0,p.arc).filter(x=>!have.has(x.ref)); h+=sec(`Arcanum mystique (sort de niveau ${p.arc})`,`<select ${lu("arc")}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,P.arc||"")).join("")}</select>${wxI("spell",P.arc)}<div class="muted" style="font-size:var(--fs-sm)">Lançable une fois par repos long, sans emplacement.</div>`); }
   return h; }
 function lvlModal(){
   const ch=cur(), P=S.pending, p=levelPlan(ch);

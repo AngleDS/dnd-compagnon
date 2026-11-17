@@ -69,6 +69,7 @@ function openTip(key,anchor){
     if(ref&&ref.startsWith("item:arme:")&&!(b.ref||matchItem(b.name))) html=html.replace(/<b class="tipname">[^<]*<\/b>/,`<b class="tipname">${esc(b.name)}</b>`);
     if(!html) html=`${tipHead(b.name,b.note||"")}<div class="muted" style="font-size:var(--fs-sm)">Pas encore de description pour cet objet.</div><div style="margin-top:8px"><button class="btn small" data-act="mkItem" data-id="${esc(b.id)}">Créer sa fiche</button></div>`;
     tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; }
+  if(key.startsWith("wx:")){ const tip=document.getElementById("tip"), html=wxTip(key.slice(3)); if(!html) return; tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; } // explications de la création
   if(key.startsWith("item:")||key.startsWith("hb:")){ const tip=document.getElementById("tip"); const html=itemTipHtml(key); if(!html) return; tip.innerHTML=html; tip.hidden=false; placeTip(tip,anchor); S.tipKey=key; return; }
   const ch=cur(); if(!ch) return; const D=derive(ch);
   const items=S.Titems&&S.view==="sheet"&&S.tab==="table"?S.Titems:tableItems(ch,D);

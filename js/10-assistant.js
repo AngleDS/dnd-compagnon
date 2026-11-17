@@ -97,6 +97,34 @@ const W_INFO={classe:{
   orc:{t:"Un être endurant, taillé pour l'effort.",p:"Tu vois dans le noir, tu peux foncer en action bonus et, une fois par repos long, tu restes debout au lieu de tomber à 0 PV.",cx:"Simple"},
   tieffelin:{t:"Un être marqué par un héritage des plans inférieurs.",p:"Tu vois dans le noir, tu connais un tour de magie et ton héritage te donne une résistance et des sorts.",cx:"Intermédiaire"}}};
 function wInfoOf(kind,ref){ return (W_INFO[kind]||{})[String(ref||"").replace(/^srd:/,"")]||null; }
+/* Explications dans l'appli (retours d'Angle, 17 nov. 2026) : un bouton « i » ouvre une bulle (#tip, clé « wx:… ») avec le texte
+   embarqué (SRD ou fiche de « Mes contenus »). wxI(kind,ref) donne le bouton ; wxTip(spec) le contenu. */
+const W_ABIL={for:"puissance physique : attaques au corps à corps avec la plupart des armes, Athlétisme, charges lourdes.",
+  dex:"agilité et réflexes : armes à distance et armes de finesse, CA sans armure ou en armure légère, initiative, Acrobaties, Discrétion, Escamotage.",
+  con:"santé et endurance : points de vie gagnés à chaque niveau, maintien de la concentration.",
+  int:"raisonnement et mémoire : sorts du magicien, Arcanes, Histoire, Investigation, Nature, Religion.",
+  sag:"perception et intuition : sorts du clerc, du druide et du rôdeur, Perception, Intuition, Médecine, Survie, Dressage.",
+  cha:"présence et personnalité : sorts du barde, de l'ensorceleur, de l'occultiste et du paladin, Persuasion, Tromperie, Intimidation, Représentation."};
+function wxI(kind,ref,lab){ return ref&&/^(srd:|hb:)/.test(String(ref))||(ref&&["abil","skills","cls"].includes(kind))?`<button class="btn small ghost wxi" type="button" data-act="tip" data-k="wx:${kind}:${esc(String(ref))}" aria-label="Explication${lab?" : "+esc(lab):""}">${lab?esc(lab):"i"}</button>`:""; }
+function wxTip(spec){ const i=spec.indexOf(":"), kind=spec.slice(0,i), ref=spec.slice(i+1), P=t=>`<div class="prose tiptext">${prose(t||"")||`<p class="muted">Pas encore de description.</p>`}</div>`, h=hb(ref);
+  const tail=x=>h?hbFoot(h):"";
+  if(kind==="abil") return tipHead("Les caractéristiques","À quoi elles servent")+`<div class="prose tiptext"><p>Chaque caractéristique donne un modificateur (+2 pour 14 ou 15, +3 pour 16 ou 17…), ajouté aux jets qui l'utilisent.</p>${AB.map(a=>`<p><b>${ABN[a]}</b> : ${esc(W_ABIL[a])}</p>`).join("")}</div>`;
+  if(kind==="skills") return tipHead("Les compétences","À quoi elles servent")+`<div class="prose tiptext">${ref.split(",").map(id=>S.C.skills.find(k=>k.id===id)).filter(Boolean).map(k=>`<p><b>${esc(k.name)}</b> (${esc(ABN[k.ability]||"")})${k.examples?" : "+esc(k.examples):""}</p>`).join("")}</div>`;
+  if(kind==="spell"){ const sp=ref.startsWith("srd:")?S.idx.spells[ref.slice(4)]:null;
+    if(sp) return tipHead(sp.name,(sp.level?"Sort de niveau "+sp.level:"Sort mineur")+(sp.school?" · "+sp.school:""))+tipMeta([["Incantation",sp.casting_time],["Portée",sp.range],["Durée",sp.duration],["Composantes",sp.components]])+P(sp.text);
+    return h?tipHead(h.name,"Sort")+P(h.text)+tail():""; }
+  if(kind==="feat"){ const f=ref.startsWith("srd:")?S.C.feats.find(x=>"srd:"+x.id===ref):null;
+    if(f) return tipHead(f.name,"Don"+(f.category?" · "+f.category:""))+tipMeta([["Prérequis",f.prerequisite||""]])+P(f.text);
+    return h?tipHead(h.name,"Don")+P(h.text)+tail():""; }
+  if(kind==="bg"){ const b=srd("backgrounds",ref); if(b) return tipHead(b.name,"Historique")+P(b.text); return h?tipHead(h.name,"Historique")+P(h.text)+tail():""; }
+  if(kind==="sp"){ const s=srd("species",ref); if(s) return tipHead(s.name,"Espèce")+`<div class="prose tiptext">${s.traits.map(t=>`<p><b>${esc(t.name)}.</b> ${esc(t.text)}</p>`).join("")}</div>`; return h?tipHead(h.name,"Espèce")+P(h.text)+tail():""; }
+  if(kind==="cls"){ const c=clsOf(ref); if(!c) return ""; const by=L=>c.features.filter(f=>f.level===L).map(f=>f.name);
+    return tipHead(c.name,"Classe")+tipMeta([["Dé de vie","d"+c.hitDie],["Sauvegardes",c.saves.map(a=>ABN[a]).join(", ")],["Armures",(c.armor||[]).join(", ")||"aucune"],["Armes",c.weapons||""]])
+      +`<div class="prose tiptext">${[1,2,3].map(L=>by(L).length?`<p><b>Niveau ${L}</b> : ${esc(by(L).join(", "))}.</p>`:"").join("")}${c.features.filter(f=>f.level===1).map(f=>`<p><b>${esc(f.name)}.</b> ${esc(String(f.text||"").slice(0,600))}${String(f.text||"").length>600?"…":""}</p>`).join("")}</div>`+(c.hb?tail():""); }
+  if(kind==="sub"){ let s=null, cl=null; if(ref.startsWith("srd:")) for(const c of S.C.classes){ const x=(c.subclasses||[]).find(z=>"srd:"+z.id===ref); if(x){ s=x; cl=c; break; } }
+    if(s) return tipHead(s.name,"Sous-classe · "+cl.name)+`<div class="prose tiptext">${prose(s.intro||"")}${s.features.map(f=>`<p><b>Niveau ${f.level} · ${esc(f.name)}.</b> ${esc(String(f.text||"").slice(0,400))}${String(f.text||"").length>400?"…":""}</p>`).join("")}</div>`;
+    return h?tipHead(h.name,"Sous-classe")+P(h.text)+((h.features||[]).length?`<div class="prose tiptext">${h.features.map(f=>`<p><b>Niveau ${+f.level||"?"} · ${esc(f.name||"")}.</b> ${esc(f.text||"")}</p>`).join("")}</div>`:"")+tail():""; }
+  return ""; }
 function wInfoCard(kind,ref){ const i=wInfoOf(kind,ref); return i?`<div class="winfo"><div><span class="label">En jeu</span> ${esc(i.p)}</div><div class="muted" style="font-size:var(--fs-sm)">Complexité : ${esc(i.cx)}</div></div>`:""; }
 function wBgReady(h){ return Array.isArray(h.abilities)&&h.abilities.filter(Boolean).length===3&&(h.effects||[]).filter(e=>e.t==="maitrise"&&/^comp:/.test(e.cible||"")).length>=2&&!!(h.feat||h.featRef); }
 function wSources(kind){ const tag=h=>catShort(h.label)||"Personnalisée";
@@ -110,7 +138,7 @@ function wSources(kind){ const tag=h=>catShort(h.label)||"Personnalisée";
 function wPick(W,kind,key){ const s=wSources(kind), tab=s.other.length&&(W.src||{})[kind]==="other"?"other":"base";
   // Une fois le choix fait, la liste se replie : ses détails et ses sous-choix sont juste dessous, pas sous le pli
   const got=W[key]&&W.chg!==key?[...s.base,...s.other].find(x=>x[0]===W[key]):null;
-  if(got) return `<div class="wchosen"><span><b>${esc(got[1])}</b>${got[2]?`<span class="muted">${esc(got[2])}</span>`:""}</span><button class="btn small" data-act="wchg" data-k="${key}">Changer</button></div>${wInfoCard(kind,W[key])}`;
+  if(got) return `<div class="wchosen"><span><b>${esc(got[1])}</b>${got[2]?`<span class="muted">${esc(got[2])}</span>`:""}</span><span class="row" style="gap:6px">${wxI({classe:"cls",historique:"bg",espece:"sp"}[kind],W[key],"En savoir plus")}<button class="btn small" data-act="wchg" data-k="${key}">Changer</button></span></div>${wInfoCard(kind,W[key])}`;
   return (s.other.length?`<div class="adv wsrc" role="group" style="grid-template-columns:1fr 1fr"><button aria-pressed="${tab==="base"}" data-act="wsrc" data-k="${kind}" data-v="base">Règles de base</button><button aria-pressed="${tab==="other"}" data-act="wsrc" data-k="${kind}" data-v="other">Autres contenus (${s.other.length})</button></div>`:"")
     +wCards(s[tab],W[key],key)
     +`<div class="muted wmore" style="font-size:var(--fs-sm);margin-top:8px">Tu ne trouves pas ? Ce qui sort des règles de base se prépare dans <button class="btn small ghost" data-act="nav" data-v="hb">Mes contenus</button> Ta création en cours t'attendra.</div>`; }
@@ -188,7 +216,7 @@ function wStepBody(W,st){ const c=wCls(W);
         <div class="label">Bonus de caractéristiques</div>
         <div class="adv" role="group"><button aria-pressed="${W.asiMode==="21"}" data-act="wpick" data-k="asiMode" data-v="21">+2 et +1</button><button aria-pressed="${W.asiMode==="111"}" data-act="wpick" data-k="asiMode" data-v="111">+1 / +1 / +1</button></div>
         ${W.asiMode==="21"?`<div class="row">+2 ${wSel("asi2",abs.map(a=>[a,ABN[a]]),W.asi2)} +1 ${wSel("asi1",abs.filter(a=>a!==W.asi2).map(a=>[a,ABN[a]]),W.asi1)}</div>`:(abs.length===3?`<div class="muted">+1 en ${abs.map(a=>ABN[a]).join(", ")}</div>`:`<div class="row">${[0,1,2].map(i=>wSel("asiT."+i,AB.map(a=>[a,ABN[a]]),W.asiT[i])).join(" ")}</div>`)}
-        ${b?"":(x&&(x.featRef||x.feat)&&W.feat?`<div class="muted" style="font-size:var(--fs-sm)">Don d'origine : ${esc((hb(W.feat)||S.C.feats.find(f=>"srd:"+f.id===W.feat)||{}).name||x.feat||"")}</div>`:`<label class="field"><span>Don d'origine</span>${wSel("feat",wOriginFeats(W.feat),W.feat)}</label>`)}</div>`; }
+        ${b?"":(x&&(x.featRef||x.feat)&&W.feat?`<div class="muted" style="font-size:var(--fs-sm)">Don d'origine : ${esc((hb(W.feat)||S.C.feats.find(f=>"srd:"+f.id===W.feat)||{}).name||x.feat||"")}</div>`:`<label class="field"><span>Don d'origine</span>${wSel("feat",wOriginFeats(W.feat),W.feat)}</label>${wxI("feat",W.feat)}`)}</div>`; }
   }
   if(st==="Espèce"){
     h+=`<p class="muted">L'espèce donne des traits : vision, résistances, capacités spéciales.</p>`+wPick(W,"espece","sp");
@@ -197,7 +225,7 @@ function wStepBody(W,st){ const c=wCls(W);
     if(s){ const sk=wSpSkills(W), sz=wSizes(W), bgS=wBgSkills(W);
       // Le don de l'historique n'est pas proposé une seconde fois : la fiche ne garde chaque don qu'une fois, le choix de l'humain serait perdu
       const bf=wBgFeat(W), bfd=bf?(S.C.feats.find(f=>"srd:"+f.id===bf)||hb(bf)):null, hf=W.hFeat===bf?"":W.hFeat;
-      const ch=(wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(hf).filter(([v])=>v!==bf),hf)}</label>${bfd?`<div class="muted wdup" style="font-size:var(--fs-sm)">${esc(bfd.name)} vient déjà de ton historique : choisis un autre don.${bfd.repeatable?" Les règles permettent de le prendre deux fois, mais la fiche ne le note qu'une fois : vois avec ton MJ et ajoute-le à la main.":""}</div>`:""}`:"")+wLineage(W,s)
+      const ch=(wIsHuman(W)?`<label class="field"><span>Polyvalent : don d'origine</span>${wSel("hFeat",wOriginFeats(hf).filter(([v])=>v!==bf),hf)}</label>${wxI("feat",hf)}${bfd?`<div class="muted wdup" style="font-size:var(--fs-sm)">${esc(bfd.name)} vient déjà de ton historique : choisis un autre don.${bfd.repeatable?" Les règles permettent de le prendre deux fois, mais la fiche ne le note qu'une fois : vois avec ton MJ et ajoute-le à la main.":""}</div>`:""}`:"")+wLineage(W,s)
         +(sk?`<label class="field"><span>${esc(sk.name)} : une compétence</span>${wSel("spSkill",sk.from.filter(k=>!bgS.includes(k)).map(k=>[k,(S.C.skills.find(x=>x.id===k)||{}).name]),W.spSkill)}</label>`:"")
         +(sz?`<label class="field"><span>Taille</span>${wSel("size",sz.map(v=>[v,v]),W.size)}</label>`:"");
       // les choix d'abord, la lecture des traits ensuite
@@ -206,6 +234,7 @@ function wStepBody(W,st){ const c=wCls(W);
   }
   if(st==="Caractéristiques"){
     const b=wBase(W), x=wBonus(W), fin=wAbilities(W);
+    h+=`<div>${wxI("abil","1","À quoi servent les caractéristiques ?")}</div>`;
     h+=`<div class="adv" role="group">${[["std","Tableau standard"],["pts","Achat de points"],["dice","Dés (4d6)"]].map(([k,l])=>`<button aria-pressed="${W.method===k}" data-act="wpick" data-k="method" data-v="${k}">${l}</button>`).join("")}</div>`;
     if(W.method==="std"){ const used=AB.map(a=>W.std[a]).filter(Boolean).map(Number); h+=`<p class="muted" style="font-size:var(--fs-sm)">Répartis 15, 14, 13, 12, 10 et 8. Restent : ${STD_ARRAY.filter((v,i)=>used.filter(u=>u===v).length<1).join(", ")||"—"}</p>`; }
     if(W.method==="pts"){ const spent=AB.reduce((t,a)=>t+PT_COST[+W.pts[a]],0), left=27-spent; h+=`<div class="wpts"><span class="label">Points dépensés</span><b class="num">${spent} / 27</b><span class="${left<0?"warntxt":"muted"}">${left>0?"reste "+left:left===0?"tout est dépensé":"dépassement de "+(-left)}</span></div><p class="muted" style="font-size:var(--fs-sm)">Chaque caractéristique va de 8 à 15 (avant les bonus d'historique). Coût : 9 à 13 = 1 point par cran, 14 = 7, 15 = 9.</p>`; }
@@ -224,13 +253,14 @@ function wStepBody(W,st){ const c=wCls(W);
   }
   if(st==="Compétences"){ const have=new Set(wBgSkills(W)), spk=wSpSkills(W)?W.spSkill:""; const n=c.skillChoices.count;
     h+=`<p class="muted">Choisis ${n} compétences de ${esc(c.name)} (${W.skills.length}/${n}). Celles de ton historique sont déjà acquises.</p><div class="row" style="flex-wrap:wrap;gap:6px">${c.skillChoices.from.map(s=>{ const k=S.C.skills.find(x=>x.id===s); const bg=have.has(s), sp=!bg&&s===spk; return `<button class="chip" aria-pressed="${bg||sp||W.skills.includes(s)}" ${bg||sp?"disabled":""} data-act="wskill" data-v="${s}">${esc(k?k.name:s)}${bg?" · historique":sp?" · espèce":""}</button>`; }).join("")}</div>`;
-    if(wStyle1(W)) h+=`<label class="field" style="margin-top:12px"><span>Style de combat</span>${wSel("style",wStyles(),W.style||"")}</label><div class="muted" style="font-size:var(--fs-sm)">Défense : +1 CA en armure (recommandé). Archerie : +2 aux attaques à distance.</div>`;
+    h+=`<div style="margin-top:8px">${wxI("skills",c.skillChoices.from.join(","),"À quoi servent ces compétences ?")}</div>`;
+    if(wStyle1(W)) h+=`<label class="field" style="margin-top:12px"><span>Style de combat</span>${wSel("style",wStyles(),W.style||"")}</label>${wxI("feat",W.style)}<div class="muted" style="font-size:var(--fs-sm)">Défense : +1 CA en armure (recommandé). Archerie : +2 aux attaques à distance.</div>`;
     if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")) h+=`<label class="field" style="margin-top:12px"><span>Humain · Compétent : une compétence en plus</span>${wSel("extraSkill",S.C.skills.filter(s=>!have.has(s.id)&&s.id!==spk&&!W.skills.includes(s.id)).map(s=>[s.id,s.name]),W.extraSkill)}</label>`;
     { const ne=wExpN(W); if(ne){ const ex=wExp(W); h+=`<div class="label" style="margin-top:12px">Expertise (${ex.length}/${ne})</div><div class="muted" style="font-size:var(--fs-sm)">Ton bonus de maîtrise compte double pour ces compétences.</div><div class="row wexp" style="flex-wrap:wrap;gap:6px">${wProf(W).map(s=>`<button class="chip" aria-pressed="${ex.includes(s)}" data-act="wexp" data-v="${s}">${esc((S.C.skills.find(x=>x.id===s)||{}).name||s)}</button>`).join("")||`<span class="muted">Choisis d'abord tes compétences.</span>`}</div>`; } }
   }
   if(st==="Sorts"){ const cast=wCast(W), nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0, Dt={cls:c};
     const can=classSpells(Dt,0), l1=classSpells(Dt,null,1);
-    const pick=(key,n,list,lab)=>n?`<div class="label" style="margin-top:10px">${lab} (${n})</div><div class="stack">${Array.from({length:n},(_,i)=>wSel(key+"."+i,list.filter(x=>!W[key].some((r,j)=>j!==i&&r===x.ref)).map(x=>[x.ref,x.s.name]),W[key][i]||"")).join("")}</div>`:"";
+    const pick=(key,n,list,lab)=>n?`<div class="label" style="margin-top:10px">${lab} (${n})</div><div class="stack">${Array.from({length:n},(_,i)=>`<div class="row wxrow">${wSel(key+"."+i,list.filter(x=>!W[key].some((r,j)=>j!==i&&r===x.ref)).map(x=>[x.ref,x.s.name]),W[key][i]||"")}${wxI("spell",W[key][i])}</div>`).join("")}</div>`:"";
     h+=pick("can",nc,can,"Sorts mineurs")+pick("spl",np,l1,"Sorts de niveau 1");
     const ni=wInvN(W); if(ni){ const tmp=wDoc(W); h+=`<div class="label" style="margin-top:10px">Manifestation occulte (${ni})</div>`+Array.from({length:ni},(_,i)=>{ const id=W.inv[i]||""; return `<div class="row" style="gap:6px">${wSel("inv."+i,invAvailFor(tmp,1).map(x=>[x.id,x.name]),id)}${INV_CHOICE[id]?wSel("invc."+i,invChoices(tmp,id,W.can),W.invc[i]||"","— Cible —"):""}</div>${id?`<div class="muted winvtxt" style="font-size:var(--fs-sm)">${esc((S.C.invocations.find(x=>x.id===id)||{}).text||"")}</div>`:""}`; }).join(""); }
   }
