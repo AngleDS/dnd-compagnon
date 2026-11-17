@@ -143,29 +143,62 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => hbs().length), 0, 'fiches restantes après annulation');
   });
  
-  await test('Création niveau 3 : popup protégée, arrêt confirmé, sous-classe du catalogue', async p => {
+  await test('Création au niveau 3 : choix des niveaux sur la page, sous-classe du catalogue, aucune fenêtre ensuite', async p => {
     await open(p, { mcp: true, json: { found: true, summary: 'Lu sur la page.', features: [{ level: 3, name: 'Aptitude', summary: 'x' }], pages: [] } });
-    await newWizardChar(p, { cls: 'paladin', bg: 'srd:soldat', sp: 'srd:humain', level: 3 });
-    ok(await p.evaluate(() => S.pending && S.pending.type === 'lvl'), 'popup de niveau ouverte');
-    await p.mouse.click(3, 450); ok(await p.evaluate(() => !!S.pending), 'un clic à côté ne ferme pas');
-    await p.click('[data-act="lvlStop"]'); ok(await p.evaluate(() => document.getElementById('modal').innerText.includes('Arrêter la création ici')), 'confirmation affichée');
-    await p.click('[data-act="lvlStopNo"]'); await p.click('[data-act="lvlApply"]');
-    ok(await p.evaluate(() => cur().level === 2 && S.pending), 'niveau 2 puis suite');
-    const opts = await p.evaluate(() => [...document.querySelectorAll('#modal select[data-lu="sub"] option')].map(o => o.value));
-    ok(opts.includes('cat:sc-paladin-anciens') && !opts.some(v => /occultiste|barde/.test(v)), 'sous-classes filtrées par classe');
-    await p.selectOption('#modal select[data-lu="sub"]', 'cat:sc-paladin-anciens'); await p.click('[data-act="lvlApply"]');
-    eq(await p.evaluate(() => [cur().level, (hb(cur().subclass) || {}).name, S.rv && S.rv.items.length]), [3, 'Serment des Anciens', 1], 'niveau, sous-classe, relecture');
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Paladine', level: 3, cls: 'paladin', bg: 'srd:soldat', sp: 'srd:nain', langs: ['Elfique', 'Orc'] });
+      for (const st of ['Historique', 'Caractéristiques', 'Compétences', 'Sorts']) Object.assign(W, wSugDraft(W, st)); S.view = 'wizard'; render(); });
+    eq(await p.evaluate(() => [document.querySelector('.wline[data-v="Niveaux"] .nm').textContent, wNeeds(S.W).map(n => n.name), document.querySelector('.wprev').textContent.includes('Paladin 3')]), ['Niveaux 2 à 3', ['Niveaux'], true], 'une ligne pour les niveaux, aperçu au niveau 3');
+    await p.click('.wline[data-v="Niveaux"]');
+    eq(await p.evaluate(() => [document.querySelector('#modal h2').textContent, [...document.querySelectorAll('#modal .wlvpills .chip')].map(b => b.textContent + ':' + b.getAttribute('aria-pressed')), document.querySelector('#modal .wmsg').textContent]), ['Niveaux 2 à 3', ['Niv. 2 •:true', 'Niv. 3 •:false'], 'Niveau 2 : choisis ton style de combat.'], 'fenêtre des niveaux, niveau 2 d’abord');
+    ok(await p.evaluate(() => !/ou plus tard/.test(document.querySelector('#modal').textContent)), 'à la création, rien « pour plus tard »');
+    await p.selectOption('#modal select[data-w="lv.2.style"]', { index: 1 });
+    await p.evaluate(() => { const s = wLevels(S.W).steps[0]; const l = classSpells(s.p.D0, null, s.p.maxSpell).filter(x => !(s.before.spells || []).some(z => z.ref === x.ref)); S.W.lv[2].spl = l.slice(0, s.p.dPrepared).map(x => x.ref); render(); });
+    eq(await p.evaluate(() => [document.querySelector('#modal .wmsg').textContent, document.querySelector('#modal .wlvpills .chip').textContent]), ['Niveau 3 : choisis ta sous-classe.', 'Niv. 2 ✓'], 'niveau 2 complet');
+    await p.click('#modal [data-act="wlvsel"][data-v="3"]');
+    const opts = await p.evaluate(() => [...document.querySelectorAll('#modal select[data-w="lv.3.sub"] option')].map(o => o.value));
+    ok(opts.includes('cat:sc-paladin-anciens') && !opts.some(v => /occultiste|barde/.test(v)), 'sous-classes du catalogue, filtrées par classe');
+    await p.selectOption('#modal select[data-w="lv.3.sub"]', 'cat:sc-paladin-anciens');
+    await p.evaluate(() => { const s = wLevels(S.W).steps[1]; if (s.p.dPrepared) S.W.lv[3].spl = classSpells(s.p.D0, null, s.p.maxSpell).filter(x => !(s.before.spells || []).some(z => z.ref === x.ref)).slice(0, s.p.dPrepared).map(x => x.ref); render(); });
+    eq(await p.evaluate(() => [document.querySelector('#modal .wmsg').textContent, (hb(S.W.lv[3].sub) || {}).name]), ['', 'Serment des Anciens'], 'tout est choisi, sous-classe matérialisée');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => [cur().level, (hb(cur().subclass) || {}).name, S.pending, S.rv && S.rv.items.length, (cur().feats || []).length >= 2]), [3, 'Serment des Anciens', null, 1, true], 'créé au niveau 3 sans fenêtre de montée, relecture de la sous-classe');
     await p.click('[data-act="rvGo"]'); await p.waitForFunction(() => S.rv && !S.rv.run);
     eq(await p.evaluate(() => (window.__calls || []).map(c => c[0] + (c[1].tabId ? ':' + c[1].tabId : ''))), ['preview_start', 'get_page_text:seed', 'tabs_close:seed'], 'lecture AideDD puis fermeture de l’onglet');
     await p.click('[data-act="rvOk"]');
     eq(await p.evaluate(() => { const h = hb(cur().subclass); return [!!h.pending, h.features.length]; }), [false, 1], 'sous-classe remplie');
   });
- 
-  await test('Arrêter la création au niveau 1', async p => {
+
+  await test('Création : niveaux de départ (PV lancés, baisser le niveau, changer de classe, brouillon, iPhone)', async p => {
     await open(p);
-    await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain', level: 4 });
-    await p.click('[data-act="lvlStop"]'); await p.click('[data-act="lvlStopYes"]');
-    eq(await p.evaluate(() => [cur().level, !!S.pending, !!S.lvlTarget]), [1, false, false], 'niveau, popup, enchaînement');
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Guerrier', level: 4, cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain', langs: ['Elfique', 'Orc'] });
+      for (const st of ['Historique', 'Caractéristiques', 'Compétences']) Object.assign(W, wSugDraft(W, st)); S.view = 'wizard'; W.open = 'Niveaux'; render(); });
+    eq(await p.evaluate(() => wLevels(S.W).steps.map(s => wLvMsg(s))), ['', 'Niveau 3 : choisis ta sous-classe.', 'Niveau 4 : choisis tes augmentations de caractéristique.'], 'guerrier : sous-classe au 3, caractéristiques au 4');
+    // PV lancés au niveau 2 : la saisie est exigée, puis comptée
+    await p.click('#modal [data-act="wlvsel"][data-v="2"]'); await p.check('#modal input[data-w="lv.2.hp"][value="roll"]');
+    eq(await p.evaluate(() => wLevels(S.W).steps[0] && wLvMsg(wLevels(S.W).steps[0])), 'Niveau 2 : saisis ton dé de vie (1 à 10).', 'dé de vie à saisir');
+    await p.fill('#modal input[data-w="lv.2.roll"]', '9'); await p.press('#modal input[data-w="lv.2.roll"]', 'Tab');
+    await p.click('#modal [data-act="wlvsel"][data-v="3"]'); await p.selectOption('#modal select[data-w="lv.3.sub"]', { index: 1 });
+    await p.click('#modal [data-act="wlvsel"][data-v="4"]'); await p.selectOption('#modal select[data-w="lv.4.ab1"]', 'for'); await p.selectOption('#modal select[data-w="lv.4.ab2"]', 'for');
+    eq(await p.evaluate(() => wNeeds(S.W).length), 0, 'tous les niveaux remplis');
+    // Brouillon : les choix des niveaux reviennent après un rechargement
+    await p.reload(); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.CAT); await p.click('[data-act="wizard"]');
+    eq(await p.evaluate(() => [S.W.level, S.W.lv[2].roll, S.W.lv[4].ab1, !!S.W.lv[3].sub, wNeeds(S.W).length]), [4, '9', 'for', true, 0], 'choix des niveaux gardés dans le brouillon');
+    // iPhone : la fenêtre des niveaux tient dans l'écran
+    await p.setViewportSize({ width: 390, height: 844 }); await p.click('.wline[data-v="Niveaux"]');
+    eq(await p.evaluate(() => { const r = document.querySelector('#modal .box').getBoundingClientRect(); return [r.right <= 390, document.documentElement.scrollWidth <= 390, [...document.querySelectorAll('#modal select, #modal .chip')].every(e => e.getBoundingClientRect().right <= 390)]; }), [true, true, true], 'fenêtre des niveaux à 390 px');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await p.setViewportSize({ width: 1200, height: 900 });
+    // Créer : PV du dé lancé, Force +2, niveau 4
+    const before = await p.evaluate(() => wBuild(S.W).abilities.for);
+    await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(b => { const c = cur(), D = derive(c); return [c.level, c.abilities.for - b, c.hpMode, D.hpMax === c.hpMaxManual, !!c.subclass, S.pending]; }, before), [4, 2, 'manual', true, true, null], 'fiche au niveau 4, PV manuels, +2 en Force');
+    // Baisser le niveau retire les choix au-delà ; changer de classe les efface tous
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { cls: 'guerrier', level: 4, lv: { 2: { hp: 'avg' }, 3: { sub: 'x' }, 4: { ab1: 'for' } } }); S.view = 'wizard'; render(); });
+    await p.fill('input[data-w="level"]', '3'); await p.press('input[data-w="level"]', 'Tab');
+    eq(await p.evaluate(() => Object.keys(S.W.lv)), ['2', '3'], 'niveau 3 : le choix du niveau 4 disparaît');
+    await p.evaluate(() => { S.W.open = 'Classe'; S.W.chg = 'cls'; render(); }); await p.click('#modal [data-act="wpick"][data-v="magicien"]');
+    eq(await p.evaluate(() => S.W.lv), {}, 'autre classe : choix des niveaux effacés');
+    // Mode guidé : pas de ligne des niveaux
+    eq(await p.evaluate(() => { S.W.mode = 'guide'; return wSteps(S.W).includes('Niveaux'); }), false, 'mode guidé : niveau 1');
   });
  
   await test('Création : nom obligatoire, tableau standard et dés sans doublon, fiche vide nommée', async p => {

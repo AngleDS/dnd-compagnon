@@ -31,7 +31,7 @@ function levelPlan(ch){
 }
 /* Rubriques d'un niveau (sous-classe, PV, caractéristiques ou don, style, manifestations, sorts, arcanum) : partagées par la montée de niveau
    habituelle (lvlModal, champs data-lu) et l'assistant de création (chantier 17, lot C ; champs data-w). lu(k,i) donne l'attribut du champ. */
-function lvlBody(ch,P,p,lu){ const D0=p.D0;
+function lvlBody(ch,P,p,lu,req){ const D0=p.D0;
   const o=(v,l,c)=>`<option value="${esc(v)}" ${String(v)===String(c)?"selected":""}>${esc(l)}</option>`;
   const sec=(t,b)=>`<div class="lusec"><div class="label">${t}</div>${b}</div>`;
   let h="";
@@ -68,7 +68,7 @@ function lvlBody(ch,P,p,lu){ const D0=p.D0;
   // spells
   const have=new Set((ch.spells||[]).map(s=>s.ref).concat(Object.keys(D0.always)));
   if(p.dCantrips){ const l=classSpells(D0,0).filter(x=>!have.has(x.ref)); h+=sec(`Sorts mineurs (${p.dCantrips})`,Array.from({length:p.dCantrips},(_,i)=>`<select ${lu("can",i)}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,(P.can||[])[i]||"")).join("")}</select>`).join("")); }
-  if(p.dPrepared&&p.maxSpell){ const l=classSpells(D0,null,p.maxSpell).filter(x=>!have.has(x.ref)); h+=sec(`Sorts (${p.dPrepared}, jusqu'au niveau ${p.maxSpell})`,Array.from({length:p.dPrepared},(_,i)=>`<select ${lu("spl",i)}>${o("","— Choisir (ou plus tard) —","")}${l.map(x=>o(x.ref,"niv. "+x.s.level+" · "+x.s.name,(P.spl||[])[i]||"")).join("")}</select>`).join("")); }
+  if(p.dPrepared&&p.maxSpell){ const l=classSpells(D0,null,p.maxSpell).filter(x=>!have.has(x.ref)); h+=sec(`Sorts (${p.dPrepared}, jusqu'au niveau ${p.maxSpell})`,Array.from({length:p.dPrepared},(_,i)=>`<select ${lu("spl",i)}>${o("",(req?"— Choisir —":"— Choisir (ou plus tard) —"),"")}${l.map(x=>o(x.ref,"niv. "+x.s.level+" · "+x.s.name,(P.spl||[])[i]||"")).join("")}</select>`).join("")); }
   if(p.arc){ const l=classSpells(D0,p.arc).filter(x=>!have.has(x.ref)); h+=sec(`Arcanum mystique (sort de niveau ${p.arc})`,`<select ${lu("arc")}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,P.arc||"")).join("")}</select><div class="muted" style="font-size:var(--fs-sm)">Lançable une fois par repos long, sans emplacement.</div>`); }
   return h; }
 function lvlModal(){

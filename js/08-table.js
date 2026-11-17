@@ -1541,7 +1541,7 @@ function applyChargeRecovery(ch,id,total,virtual=false){
 }
 
 /* Pavé de saisie des dés physiques, commun aux deux modes de dés. */
-const DICE_INPUTS='input[data-tin],#cc-d1,#cc-d2,#t-hd,#t-death,input[data-w^="dice."],input[data-lu="roll"],[data-form="smitePhysical"] input[name="total"],[data-form="chargeRecovery"] input[name="total"],[data-form="free"] input[name="physical"]';
+const DICE_INPUTS='input[data-tin],#cc-d1,#cc-d2,#t-hd,#t-death,input[data-w^="dice."],input[data-lu="roll"],input[data-w^="lv."][data-w$=".roll"],[data-form="smitePhysical"] input[name="total"],[data-form="chargeRecovery"] input[name="total"],[data-form="free"] input[name="physical"]';
 /* Dés physiques (décision d'Angle, 12 nov. 2026) : plus de pavé à l'écran. Les cases de dés sont des champs numériques
    (clavier numérique sur iPhone / iPad, clavier normal sur ordinateur) ; une valeur hors limites affiche un message et n'est pas enregistrée. */
 function diceFieldError(inp){ const v=String(inp.value||"").trim(); if(v==="") return ""; const n=Number(v), min=inp.min===""?0:Number(inp.min), max=inp.max===""?Infinity:Number(inp.max);

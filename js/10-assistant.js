@@ -8,14 +8,15 @@ function wDraftSave(){ try{ const W=S.W; if(!W) return; const o=Object.assign({}
 function wDraftHas(){ try{ return !!localStorage.getItem(W_DRAFT_KEY); }catch(e){ return false; } }
 function wDraftClear(){ try{ localStorage.removeItem(W_DRAFT_KEY); }catch(e){} }
 function wDraftLoad(){ try{ const j=JSON.parse(localStorage.getItem(W_DRAFT_KEY)||"null"); if(!j||j.v!==1||!j.W||typeof j.W!=="object"||Array.isArray(j.W)) return null;
-    const b=wNew(), W=Object.assign({},b), isO=v=>!!v&&typeof v==="object"&&!Array.isArray(v), extra={langs:Array.isArray,exp:Array.isArray,catMade:Array.isArray,mast:v=>v===null||Array.isArray(v),seen:isO,src:isO};
+    const b=wNew(), W=Object.assign({},b), isO=v=>!!v&&typeof v==="object"&&!Array.isArray(v), extra={lvSel:Number.isFinite,langs:Array.isArray,exp:Array.isArray,catMade:Array.isArray,mast:v=>v===null||Array.isArray(v),seen:isO,src:isO};
     for(const k of Object.keys(j.W)){ const v=j.W[k], d=b[k]; if(k==="nh") continue;
       if(d!==undefined){ if(Array.isArray(d)?Array.isArray(v):isO(d)?isO(v):typeof d===typeof v) W[k]=v; }
       else if(extra[k]?extra[k](v):typeof v==="string") W[k]=v; }
+    for(const L of Object.keys(W.lv||{})){ const P=W.lv[L]; if(!/^\d{1,2}$/.test(L)||!isO(P)){ delete W.lv[L]; continue; } for(const [f,v] of Object.entries(P)) if(!(typeof v==="string"||(Array.isArray(v)&&v.length<=10&&v.every(x=>typeof x==="string")))) delete P[f]; }
     if(W.cls&&!clsOf(W.cls)) W.cls=""; if(W.bg&&!wBg(W)) W.bg=""; if(W.sp&&!(srd("species",W.sp)||hb(W.sp))) W.sp=""; return W; }catch(e){ return null; } }
 // Abandonner : le brouillon et les fiches du catalogue créées pour lui (encore à remplir et inutilisées) disparaissent
 function wAbandon(){ const W=S.W||wDraftLoad(), made=(W&&W.catMade)||[]; S.W=null; wDraftClear(); for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); }
-function wNew(){ return {mode:"",gstep:0,step:0,cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
+function wNew(){ return {mode:"",gstep:0,step:0,lv:{},cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
 function eqOptions(txt){ const t=String(txt||"").replace(/^Choisissez[^:]*:\s*/,""); const out=[]; const re=/\(([A-Z])\)\s*([\s\S]*?)(?=\s*;\s*(?:ou\s*)?\([A-Z]\)|$)/g; let m;
   while((m=re.exec(t))){ const items=[]; let gold=0;
     for(let part of m[2].replace(/\s*;?\s*$/,"").split(/,\s*|\s+\+\s+/)){ part=part.trim(); const last=part.match(/^(.*)\s+et\s+(\d+ po)$/); const segs=last?[last[1],last[2]]:[part];
@@ -133,7 +134,7 @@ function wOrder(W){ return orderOf({order:W.order},wCls(W)); }
 // Sorts mineurs à choisir au niveau 1 (un de plus pour le Thaumaturge et le Mage)
 function wNC(W){ const cast=wCast(W), n=cast?(cast.cantrips||[])[0]||0:0, o=wOrder(W); return n+(n&&o&&o.cantrip?o.cantrip:0); }
 function wSteps(W){ const c=wCls(W), cast=wCast(W); const st=["Classe","Historique","Espèce","Caractéristiques","Compétences"];
-  if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Langues","Équipement","Identité"); return st; }
+  if((cast&&((cast.cantrips||[])[0]||(cast.prepared||[])[0]))||(c&&c.id==="occultiste")) st.push("Sorts"); st.push("Langues","Équipement"); if(wLvN(W)>1) st.push("Niveaux"); st.push("Identité"); return st; }
 function wEqItems(W){ const c=wCls(W), out=[]; let gold=0; const add=(txt,key)=>{ const opts=eqOptions(txt); const cur=opts.find(o=>o.k===W[key])||opts[0]; if(!cur) return; gold+=cur.gold; cur.items.forEach((it,ix)=>{ if(!W.eqOff[key+cur.k+ix]) out.push(it); }); };
   if(c) add(c.equipment,"eqC"); const be=wBgEquip(W); if(be) add(be,"eqB"); return {items:out,gold}; }
 function wDoc(W){ const c=wCls(W); const skills={}; for(const s of [...W.skills,...wBgSkills(W),W.extraSkill,wSpSkills(W)?W.spSkill:""].filter(Boolean)) skills[s]=1; for(const s of wExp(W)) skills[s]=2;
@@ -155,6 +156,7 @@ function wCheck(W,i){ const st=wSteps(W)[i], c=wCls(W);
   if(st==="Compétences"){ const n=c.skillChoices.count; if(W.skills.length!==n) return `Choisis ${n} compétences de classe.`; if(wIsHuman(W)&&srd("species",W.sp).traits.some(t=>t.name==="Compétent")&&!W.extraSkill) return "Humain : choisis ta compétence en plus (Compétent)."; if(wStyle1(W)&&!W.style) return "Choisis ton style de combat."; const ne=wExpN(W); if(ne&&wExp(W).length<ne) return `Choisis ${ne} expertises parmi tes compétences.`; return ""; }
   if(st==="Sorts"){ const cast=wCast(W); const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(W.can.slice(0,nc).filter(Boolean).length<nc) return `Choisis ${nc} sorts mineurs.`; if(W.spl.filter(Boolean).length<np) return `Choisis ${np} sorts de niveau 1.`; if(c.id==="occultiste"&&W.inv.filter(Boolean).length<wInvN(W)) return "Choisis ta manifestation occulte."; if(W.inv.some((id,i)=>id&&INV_CHOICE[id]&&!W.invc[i])) return "Choisis la cible de ta manifestation."; return ""; }
   if(st==="Langues"){ const n=wLangN(W); return wLangs(W).length<n?`Choisis ${n} langues.`:""; }
+  if(st==="Niveaux"){ for(const x of wLevels(W).steps){ const m=wLvMsg(x); if(m) return m; } return ""; }
   if(st==="Identité") return String(W.name||"").trim()?"":"Donne un nom à ton personnage.";
   return ""; }
 // Tout ce qui manque encore avant de pouvoir créer : [{step, name, msg}] (une entrée par étape incomplète)
@@ -244,13 +246,19 @@ function wStepBody(W,st){ const c=wCls(W);
     h+=`<p class="muted">Tu parles déjà : ${esc(fx.join(", "))}. Choisis ${n} autres langues (${L.length}/${n}).</p><div class="row wlangs" style="flex-wrap:wrap;gap:6px">${LANGS.map(l=>`<button class="chip" aria-pressed="${L.includes(l)}" data-act="wlang" data-v="${esc(l)}">${esc(l)}</button>`).join("")}</div>
       <div class="muted" style="font-size:var(--fs-sm);margin-top:10px">Les langues rares se décident avec ton MJ : tu pourras les ajouter dans la fiche.</div>`;
   }
+  if(st==="Niveaux"){ const {steps}=wLevels(W); if(!steps.length) return `<p class="muted">Choisis d'abord une classe.</p>`;
+    let sel=+W.lvSel; if(!steps.some(x=>x.L===sel)) sel=(steps.find(x=>wLvMsg(x))||steps[0]).L; const cs=steps.find(x=>x.L===sel);
+    h+=`<p class="muted" style="font-size:var(--fs-sm)">Les choix de chaque niveau, comme lors d'une montée de niveau. Le personnage sera créé directement au niveau ${wLvN(W)}.</p>
+      <div class="row wlvpills" role="tablist" style="flex-wrap:wrap;gap:6px">${steps.map(x=>`<button class="chip" role="tab" aria-pressed="${x.L===sel}" data-act="wlvsel" data-v="${x.L}">Niv. ${x.L} ${wLvMsg(x)?"•":"✓"}</button>`).join("")}</div>
+      <h3 class="wgh">Niveau ${sel}</h3><div class="stack wlvbody">${lvlBody(cs.before,cs.P,cs.p,(k,i)=>`data-w="lv.${sel}.${k}${i!==undefined?"."+i:""}"`,true)}</div>`;
+    return h; }
   if(st==="Détails"){
     h+=`<div class="field"><span>Alignement (facultatif)</span><div class="row" style="gap:6px">${wSel("alO",[["Loyal","Loyal"],["Neutre","Neutre"],["Chaotique","Chaotique"]],W.alO,"— Ordre —")}${wSel("alM",[["bon","Bon"],["neutre","Neutre"],["mauvais","Mauvais"]],W.alM,"— Morale —")}</div>${wAlign(W)?`<span class="muted" style="font-size:var(--fs-sm)">${esc(wAlign(W))}</span>`:""}</div>
       <label class="field"><span>Notes (apparence, personnalité, histoire)</span><textarea data-w="notes" style="min-height:120px">${esc(W.notes)}</textarea></label>`;
   }
   return h; }
 function wPreview(W){ const c=wCls(W); let pv="";
-  if(c){ try{ const d=wDoc(W), D=derive(d); pv=`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:var(--fs-sm)">${esc([(srd("species",W.sp)||hb(W.sp)||{}).name,c.name+" 1",(wBg(W)||{}).name].filter(Boolean).join(" · "))}</div>
+  if(c){ try{ const d=wLevels(W).d, D=derive(d); pv=`<div class="panel stack wprev"><div class="label">Aperçu</div><b>${esc(W.name||"Nouveau personnage")}</b><div class="muted" style="font-size:var(--fs-sm)">${esc([(srd("species",W.sp)||hb(W.sp)||{}).name,c.name+" "+wLvN(W),(wBg(W)||{}).name].filter(Boolean).join(" · "))}</div>
     <div class="wstats"><span><small class="label">PV</small><b class="num">${D.hpMax}</b></span><span><small class="label">CA</small><b class="num">${D.ac}</b></span><span><small class="label">Init.</small><b class="num">${sg(D.init)}</b></span><span><small class="label">Perc. passive</small><b class="num">${D.passive}</b></span></div>
     <div class="wabmini">${AB.map(a=>`<span><small>${ABS[a]}</small><b class="num">${D.abEff[a]}</b><small class="num">${sg(D.mods[a])}</small></span>`).join("")}</div>
     <div class="muted wsaves" style="font-size:var(--fs-sm)">Sauvegardes : ${AB.filter(a=>D.saves[a].prof).map(a=>ABN[a]).join(", ")}</div></div>`; }catch(e){ pv=""; } }
@@ -283,6 +291,7 @@ function wSugDraft(W,st){ const c=wCls(W), o={}, fill=(cur,n,cands)=>{ const a=A
     const ni=wInvN(W); if(ni){ const av=invAvailFor(wDoc(W),1).map(x=>x.id).filter(id=>!INV_CHOICE[id]); diff("inv",fill(W.inv,ni,["armure-dombres","esprit-occulte",...av].filter(id=>av.includes(id)))); } }
   if(st==="Langues") diff("langs",fill(wLangs(W),wLangN(W),["Elfique","Nain","Gobelin",...LANGS]).filter(Boolean));
   return o; }
+function wLineName(W,st){ return st==="Niveaux"?`Niveaux 2 à ${wLvN(W)}`:st; }
 function wLines(W){ return [...wSteps(W).filter(s=>s!=="Identité"),"Détails"]; }
 function wLineMsg(W,st){ const i=wSteps(W).indexOf(st); return i<0?"":wCheck(W,i); }
 function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)||{}).name||id, pl=(n,w)=>n+" "+w+(n>1?"s":"");
@@ -293,6 +302,7 @@ function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)|
   if(st==="Compétences"){ if(!c) return ""; const l=[...W.skills,W.extraSkill].filter(Boolean); return l.length?l.map(nm).join(", "):"0 / "+c.skillChoices.count; }
   if(st==="Sorts"){ const n=[...W.can,...W.spl].filter(Boolean).length; return n?pl(n,"sort")+" choisi"+(n>1?"s":""):""; }
   if(st==="Langues") return [...wLangFixed(W),...wLangs(W)].join(", ");
+  if(st==="Niveaux"){ const s=wLevels(W).steps, ok=s.filter(x=>!wLvMsg(x)).length; return `${s.length} niveau${s.length>1?"x":""} · ${ok}/${s.length} complet${ok>1?"s":""}`; }
   if(st==="Équipement"){ if(!c) return ""; const e=wEqItems(W); return pl(e.items.length,"objet")+" · "+e.gold+" po"; }
   if(st==="Détails") return [wAlign(W),String(W.notes||"").trim()?"notes":""].filter(Boolean).join(" · ")||"Alignement, notes (facultatif)";
   return ""; }
@@ -326,31 +336,54 @@ function wGuideView(W){ const i=wGStep(W); let h="";
     <div class="wz"><section class="stack" style="min-width:0">${h}${wGFoot(W)}</section>${wPreview(W)}</div>`; }
 // Une ligne pas encore ouverte reste neutre (« À choisir ») ; le rouge est gardé pour une ligne ouverte puis laissée incomplète
 function wRow(W,st){ const c=wCls(W), msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement"), seen=!!(W.seen||{})[st];
-    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(st)}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }
+    return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(wLineName(W,st))}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }
 function wDirectView(W){ const c=wCls(W), lv=+W.level||1, rows=wLines(W).map(st=>wRow(W,st)).join("");
   return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux. <button class="btn small ghost wswitch" data-act="${+W.level>1?"wmodeask":"wmode"}" data-v="guide">Passer en mode guidé</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
     ${W.askGuide&&+W.level>1?`<div class="panel stack wask" role="alert"><div>Le mode guidé crée le personnage au <b>niveau 1</b>. Ton niveau de départ (${+W.level}) sera remis à 1 ; tes autres choix sont gardés.</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="wmode" data-v="guide">Passer en guidé, au niveau 1</button><button class="btn" data-act="wmodeno">Rester en direct</button></div></div>`:""}
     <div class="wz"><section class="stack" style="min-width:0">
       <div class="wid"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
-      ${lv>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${lv}.</div>`:""}
       <div class="wlines">${rows}</div>${wFoot(W)}</section>${wPreview(W)}</div>`; }
 // Fenêtre d'une ligne : ses choix, ce qui manque encore, et un bouton pour revenir à la page
 function wModal(){ const W=S.W, st=W.open, msg=wLineMsg(W,st);
   return `<div class="picker" data-act="wclose"><div class="box wbox" role="dialog" aria-label="${esc(st)}" style="grid-template-rows:auto minmax(0,1fr) auto;max-width:760px">
-    ${winHead(esc(st),"wclose")}<div class="stack wbody">${wStepBody(W,st)}</div>
+    ${winHead(esc(wLineName(W,st)),"wclose")}<div class="stack wbody">${wStepBody(W,st)}</div>
     ${winFoot(`${Object.keys(wSugDraft(W,st)).length?`<button class="btn small" data-act="wsug" title="Remplit ce qui est encore vide ; tu peux tout changer ensuite">Suggestion</button>`:""}<span class="warntxt wmsg" role="status" style="font-size:var(--fs-sm);flex:1;align-self:center">${esc(msg)}</span><button class="btn primary" data-act="wclose">${msg?"Fermer":"Valider"}</button>`)}</div></div>`; }
-function wCreate(){
-  const W=S.W, c=wCls(W); const id="perso_"+uid(); const d=wDoc(W); S.docs[id]=d; d.armor="none"; d.shield=false;
+// Fiche de niveau 1 telle qu'elle sera créée (équipement porté, attaques, PV) : sert à l'aperçu, aux niveaux 2 à N et à la création
+function wBuild(W){ const c=wCls(W), d=wDoc(W); d.armor="none"; d.shield=false;
   const eq=wEqItems(W); for(const it of eq.items) d.bag.push({id:uid(),name:it.name,qty:it.qty,note:""}); d.gold={po:eq.gold};
   for(const b of d.bag){ const e=eqInfo(b); if(e.type==="weapon"&&!d.attacks.some(a=>a.weapon==="srd:"+e.w.id)) d.attacks.push({id:uid(),name:e.w.name,weapon:"srd:"+e.w.id,ability:"auto",prof:true}); }
   { const m=wMast(W); if(m.n&&Array.isArray(W.mast)) d.masteries=m.list; } // sans retouche : la fiche garde son choix par défaut (premières armes)
   const arm=d.bag.find(b=>eqInfo(b).type==="armor"); if(arm) eqSet(d,"corps",arm.id);
-  const sh=d.bag.find(b=>eqInfo(b).type==="shield"); if(sh&&(c.armor||[]).includes("bouclier")) eqSet(d,"mainS",sh.id);
-  const D=derive(d); d.hp={cur:D.hpMax,temp:0};
-  touch(id); S.cur=id; S.view="sheet"; S.tab="jeu"; const lv=Math.max(1,Math.min(20,+W.level||1)); S.W=null; wDraftClear();
+  const sh=d.bag.find(b=>eqInfo(b).type==="shield"); if(sh&&c&&(c.armor||[]).includes("bouclier")) eqSet(d,"mainS",sh.id);
+  const D=derive(d); d.hp={cur:D.hpMax,temp:0}; return d; }
+/* Niveaux 2 à N (chantier 17, lot C) : les choix de chaque niveau sont dans W.lv[L] (mêmes clés que la fenêtre de montée de niveau : hp, roll,
+   sub, asi, ab1, ab2, feat, style, stc, inv, invc, can, spl, arc). Ils sont appliqués dans l'ordre, avec lvlApplyTo, sur une copie (aperçu)
+   ou sur la fiche créée : un personnage créé au niveau N est identique à un personnage monté de 1 à N à la main. */
+function wLvN(W){ return W.mode==="guide"?1:Math.max(1,Math.min(20,Math.round(+W.level)||1)); }
+function wLvP(W,L){ const P=W.lv&&W.lv[L]; return Object.assign({hp:"avg"},P&&typeof P==="object"&&!Array.isArray(P)?JSON.parse(JSON.stringify(P)):{}); }
+let W_LV_CACHE={k:"",v:null};
+function wLevels(W,fresh){ const k=JSON.stringify([W,Object.keys(S.docs).length]); if(!fresh&&W_LV_CACHE.k===k) return W_LV_CACHE.v;
+  const d=wBuild(W), steps=[]; for(let L=2;L<=wLvN(W);L++){ const before=JSON.parse(JSON.stringify(d)), p=levelPlan(before); if(p.from>=20||!p.cls) break; const P=wLvP(W,L); steps.push({L,p,P,before}); lvlApplyTo(d,P,p); }
+  const v={d,steps}; if(!fresh) W_LV_CACHE={k,v}; return v; }
+// Ce qui manque à un niveau (tous les choix sont obligatoires à la création ; les PV ont la moyenne par défaut)
+function wLvMsg(st){ const {L,p,P,before}=st, x="Niveau "+L+" : ", n=(a,k)=>(Array.isArray(a)?a:[]).slice(0,k).filter(Boolean).length;
+  const have=new Set((before.spells||[]).map(s=>s.ref).concat(Object.keys(p.D0.always||{}))), left=l=>l.filter(s=>!have.has(s.ref)).length;
+  if(P.hp==="roll"&&!(+P.roll>=1&&+P.roll<=p.hd)) return x+"saisis ton dé de vie (1 à "+p.hd+").";
+  if(p.needSub&&!P.sub) return x+"choisis ta sous-classe.";
+  if(p.asi&&P.asi!=="feat"&&!(P.ab1&&P.ab2)) return x+"choisis tes augmentations de caractéristique.";
+  if(((p.asi&&P.asi==="feat")||p.epic)&&!P.feat) return x+(p.epic?"choisis ta faveur épique.":"choisis ton don.");
+  if(p.style&&!P.style) return x+"choisis ton style de combat.";
+  if(p.style&&P.style==="alt"&&n(P.stc,2)<2) return x+"choisis tes deux sorts mineurs.";
+  if(p.dInv){ if(n(P.inv,p.dInv)<p.dInv) return x+"choisis "+(p.dInv>1?"tes manifestations.":"ta manifestation."); if((P.inv||[]).slice(0,p.dInv).some((id,i)=>id&&INV_CHOICE[id]&&!(P.invc||[])[i])) return x+"choisis la cible de ta manifestation."; }
+  if(p.dCantrips&&n(P.can,p.dCantrips)<Math.min(p.dCantrips,left(classSpells(p.D0,0)))) return x+"choisis "+(p.dCantrips>1?"tes sorts mineurs.":"ton sort mineur.");
+  if(p.dPrepared&&p.maxSpell&&n(P.spl,p.dPrepared)<Math.min(p.dPrepared,left(classSpells(p.D0,null,p.maxSpell)))) return x+"choisis "+(p.dPrepared>1?"tes sorts.":"ton sort.");
+  if(p.arc&&!P.arc) return x+"choisis ton arcanum mystique.";
+  return ""; }
+function wCreate(){
+  const W=S.W; const id="perso_"+uid(); const d=wLevels(W,true).d; S.docs[id]=d; // niveaux 2 à N déjà appliqués : pas de fenêtre ensuite
+  touch(id); S.cur=id; S.view="sheet"; S.tab="jeu"; S.W=null; wDraftClear();
   for(const hid of W.catMade||[]) if(S.docs[hid]&&S.docs[hid].pending&&!hbUsed(hid)) removeDoc(hid);
-  if(lv>1){ S.lvlTarget={id,to:lv}; S.pending={type:"lvl",hp:"avg"}; }
-  render(); if(lv<=1) rvStart(id);
+  render(); rvStart(id);
 }
 function newNameModal(){ return `<div class="picker" data-act="newCancel"><div class="box" role="dialog" aria-label="Fiche vide" style="grid-template-rows:auto auto auto;max-width:420px">
     ${winHead("Fiche vide","newCancel")}

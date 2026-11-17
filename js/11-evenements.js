@@ -124,6 +124,7 @@ document.addEventListener("click",e=>{
     case "wizard": if(!S.W){ const d=wDraftLoad(); S.W=d||wNew(); if(!d) S.W.mode="?"; } S.W.open=null; /* création neuve : on choisit d'abord le mode */ S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
     case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; (S.W.seen=S.W.seen||{})[t.dataset.v]=true; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;
+    case "wlvsel": S.W.lvSel=+t.dataset.v; S.W.openShown=null; render(); break;
     case "wmodeask": S.W.askGuide=true; render(); break;
     case "wmodeno": S.W.askGuide=false; render(); break;
     case "wmode": { const W=S.W; W.askGuide=false; W.mode=t.dataset.v==="guide"?"guide":""; W.open=null; if(W.mode==="guide"){ W.level=1; W.gstep=wGFirst(W); if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); } render(); window.scrollTo(0,0); break; }
@@ -133,7 +134,7 @@ document.addEventListener("click",e=>{
     case "wcancel": wAbandon(); break;
     case "wdrop": wAbandon(); break; // depuis la liste des personnages
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
-    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
+    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.lv={}; W.lvSel=null; W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; W.spSkill=""; W.size=""; }
       W[k]=v; if(k==="bg"&&W.spSkill&&wBgSkills(W).includes(W.spSkill)) W.spSkill=""; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } if(k==="bg"&&W.hFeat&&W.hFeat===wBgFeat(W)) W.hFeat=""; if(k==="bg"&&W.mode==="guide") wGuideFill(W,["Historique"]); render(); break; }
@@ -410,7 +411,8 @@ document.addEventListener("change",e=>{
     if(k==="level") v=String(Math.max(1,Math.min(20,Math.round(+v)||1)));
     if(k.startsWith("nh.")&&!S.W.nh) return;
     if(k==="spSkill"&&v){ S.W.skills=S.W.skills.filter(s=>s!==v); if(S.W.extraSkill===v) S.W.extraSkill=""; }
-    setPath(S.W,k,v); if(t.tagName==="SELECT"||k.startsWith("dice.")||k==="level") render(); return; }
+    setPath(S.W,k,v); if(k==="level"&&S.W.lv) for(const L of Object.keys(S.W.lv)) if(+L>+v) delete S.W.lv[L]; // baisser le niveau retire les choix au-delà
+    if(t.tagName==="SELECT"||k.startsWith("dice.")||k==="level"||k.startsWith("lv.")) render(); return; }
   if(t.id==="cc-dmg"&&S.T&&S.T.cc){ S.T.cc.dmg=Math.max(0,+t.value||0); render(); return; }
   if(t.dataset.arcsel){ const ch=cur(); if(ch){ ch.arcanum=ch.arcanum||{}; if(t.value) ch.arcanum[t.dataset.arcsel]=t.value; else delete ch.arcanum[t.dataset.arcsel]; touch(S.cur); render(); } return; }
   if(t.dataset.lu&&S.pending&&S.pending.type==="lvl"){ const P=S.pending,k=t.dataset.lu; if(t.dataset.i!==undefined){ P[k]=P[k]||[]; P[k][+t.dataset.i]=t.value; } else P[k]=t.value; renderModal(); return; }
