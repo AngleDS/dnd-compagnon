@@ -660,6 +660,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(([a, b]) => [a, b].map(id => { const x = derive(S.docs[id]); return [x.L, x.hpMax, x.ac, x.cast.dc, x.cast.prepared, x.cast.slots.join('/')].join(); }), [idD, idH]).then(r => [idD !== idH, r[0] === r[1], r[0]]), [true, true, (await p.evaluate(id => { const x = derive(S.docs[id]); return [x.L, x.hpMax, x.ac, x.cast.dc, x.cast.prepared, x.cast.slots.join('/')].join(); }, idD))], 'calculs identiques (niveau, PV, CA, DD, sorts préparés, emplacements)');
   });
 
+  await test('Couleurs : rouge réservé aux alertes, suppressions, dangers et valeurs défavorables ; sélections en laiton (clair et sombre)', async p => {
+    await open(p);
+    // Toute règle qui utilise une teinte rouge doit viser un cas autorisé
+    const bad = await p.evaluate(() => { const red = /var\(--(blood|blood-soft|df-392326|df-401d2350|df-652a30|df-833b40|df-8c353e|df-8f3c40|df-a75e57|df-b36262|df-c35a5555|df-db8a76|df-e1847b)\)|#9b2f2f/i;
+      const ok = /danger|del\b|tdel|btndel|warn|err|fumble|\.neg|low|critical|hpdmg|death|tover|\.ko|over|down|bang|hpcond|qm-d|eqslot|eqcard|eqcur/; const out = [];
+      for (const sh of document.styleSheets) { let rules; try { rules = sh.cssRules; } catch (e) { continue; }
+        const walk = rs => { for (const r of rs) { if (r.cssRules && !r.selectorText) { walk(r.cssRules); continue; } if (!r.selectorText) continue;
+          const body = r.style.cssText.replace(/--[\w-]+\s*:[^;]+;/g, ''); if (red.test(body) && !ok.test(r.selectorText)) out.push(r.selectorText); } };
+        walk(rules); }
+      return out; });
+    eq(bad, [], 'aucune teinte rouge pour une sélection ou une décoration');
+    // Pastille sélectionnée et point d'expertise : laiton, dans les deux thèmes
+    for (const th of ['dark', 'light']) {
+      const c = await p.evaluate(th => { document.documentElement.dataset.theme = th; const b = document.createElement('button'); b.className = 'chip'; b.setAttribute('aria-pressed', 'true'); const d = document.createElement('span'); d.className = 'skill'; d.innerHTML = '<span class="dot p2"></span>'; document.body.append(b, d);
+        const v = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), toRgb = x => { const e = document.createElement('i'); e.style.color = x; document.body.append(e); const r = getComputedStyle(e).color; e.remove(); return r; };
+        const r = [getComputedStyle(b).borderTopColor === toRgb(v('--brass')), getComputedStyle(d.firstChild).backgroundColor === toRgb(v('--brass'))]; b.remove(); d.remove(); return r; }, th);
+      eq(c, [true, true], 'thème ' + th + ' : pastille sélectionnée et expertise en laiton'); }
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],
