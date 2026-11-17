@@ -289,9 +289,27 @@ function wSugDraft(W,st){ const c=wCls(W), o={}, fill=(cur,n,cands)=>{ const a=A
     const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(nc) diff("can",fill(W.can,nc,refs(classSpells(D,0),sg[0]))); if(np) diff("spl",fill(W.spl,np,refs(classSpells(D,null,1),sg[1])));
     // Manifestation : une qui ne demande pas d'autre choix (Armure d'ombres d'abord : meilleure CA qu'une armure légère au niveau 1)
     const ni=wInvN(W); if(ni){ const av=invAvailFor(wDoc(W),1).map(x=>x.id).filter(id=>!INV_CHOICE[id]); diff("inv",fill(W.inv,ni,["armure-dombres","esprit-occulte",...av].filter(id=>av.includes(id)))); } }
+  if(st==="Niveaux"&&c){ const lv=wLvSug(W); if(JSON.stringify(lv)!==JSON.stringify(W.lv||{})) o.lv=lv; }
   if(st==="Langues") diff("langs",fill(wLangs(W),wLangN(W),["Elfique","Nain","Gobelin",...LANGS]).filter(Boolean));
   return o; }
 function wLineName(W,st){ return st==="Niveaux"?`Niveaux 2 à ${wLvN(W)}`:st; }
+/* Suggestions des niveaux 2 à N : remplit ce qui est vide, niveau par niveau (chaque niveau tient compte des précédents), sans toucher aux
+   choix faits. Jamais de sous-classe ni de faveur épique proposée ; le style de combat va à Défense ; +2 sur la caractéristique principale. */
+function wLvSug(W){ const c=wCls(W), out=JSON.parse(JSON.stringify(W.lv||{})), d=wBuild(W), sg=SUG_SP[c&&c.id]||[[],[]];
+  const fill=(cur,n,cands)=>{ const a=Array.from({length:n},(_,i)=>(cur||[])[i]||""); const pool=cands.filter(x=>!a.includes(x)); for(let i=0;i<n;i++) if(!a[i]&&pool.length) a[i]=pool.shift(); return a; };
+  for(let L=2;L<=wLvN(W);L++){ const before=JSON.parse(JSON.stringify(d)), p=levelPlan(before); if(p.from>=20||!p.cls) break;
+    const P=Object.assign({},out[L]||{}), have=new Set((before.spells||[]).map(s=>s.ref).concat(Object.keys(p.D0.always||{})));
+    if(p.asi&&P.asi!=="feat"&&!(P.ab1&&P.ab2)){ const ab=before.abilities||{}, room=a=>20-(+ab[a]||10), pr=wSugPrio(W).filter(a=>room(a)>0);
+      if(pr.length){ const a=pr[0]; if(!P.ab1) P.ab1=a; if(!P.ab2) P.ab2=room(a)>=2?a:(pr[1]||a); } }
+    if(p.style&&!P.style){ const l=wStyles(), x=l.find(s=>s[1]==="Défense")||l[0]; if(x) P.style=x[0]; }
+    if(p.dInv){ const ex=(P.can||[]).filter(Boolean), av=invAvailFor(before,p.to,ex).map(x=>x.id).filter(id=>!INV_CHOICE[id]); P.inv=fill(P.inv,p.dInv,["armure-dombres","esprit-occulte","pacte-de-la-lame",...av].filter(id=>av.includes(id))); }
+    if(p.dCantrips){ const l=classSpells(p.D0,0).map(x=>x.ref).filter(r=>!have.has(r)); P.can=fill(P.can,p.dCantrips,[...sg[0].map(i=>"srd:"+i).filter(r=>l.includes(r)),...l]); }
+    if(p.dPrepared&&p.maxSpell){ const l=classSpells(p.D0,null,p.maxSpell).filter(x=>!have.has(x.ref)).sort((a,b)=>b.s.level-a.s.level), refs=l.map(x=>x.ref);
+      P.spl=fill(P.spl,p.dPrepared,[...sg[1].map(i=>"srd:"+i).filter(r=>refs.includes(r)&&l.find(x=>x.ref===r).s.level===p.maxSpell),...refs]); }
+    if(p.arc&&!P.arc){ const l=classSpells(p.D0,p.arc).map(x=>x.ref).filter(r=>!have.has(r)); if(l[0]) P.arc=l[0]; }
+    for(const k of ["inv","can","spl"]) if(Array.isArray(P[k])&&!P[k].some(Boolean)) delete P[k];
+    if(Object.keys(P).length) out[L]=P; lvlApplyTo(d,Object.assign({hp:"avg"},P),p); }
+  return out; }
 function wLines(W){ return [...wSteps(W).filter(s=>s!=="Identité"),"Détails"]; }
 function wLineMsg(W,st){ const i=wSteps(W).indexOf(st); return i<0?"":wCheck(W,i); }
 function wLineVal(W,st){ const c=wCls(W), nm=id=>(S.C.skills.find(k=>k.id===id)||{}).name||id, pl=(n,w)=>n+" "+w+(n>1?"s":"");

@@ -634,6 +634,31 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       const r = lvlApplyTo(c, { hp: 'avg', spl: [sp] }, p); return [c.level, c.spells.some(s => s.ref === sp), (c.rollLog || []).length === log, r.gain === p.hpAvg, !!S.pending, S.docs[id].level]; }, id), [2, true, true, true, false, 1], 'niveau appliqué à une copie, sans historique ni fenêtre, la vraie fiche intacte');
   });
 
+  await test('Création au niveau 5 : suggestions des niveaux, et fiche identique à une montée de niveau faite à la main', async p => {
+    await open(p);
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Mage', level: 5, cls: 'magicien', bg: 'srd:sage', sp: 'srd:nain', langs: ['Elfique', 'Orc'] });
+      for (const st of ['Historique', 'Caractéristiques', 'Compétences', 'Sorts']) Object.assign(W, wSugDraft(W, st)); S.view = 'wizard'; W.open = 'Niveaux'; render(); });
+    eq(await p.evaluate(() => !!document.querySelector('#modal [data-act="wsug"]')), true, 'bouton Suggestion dans la fenêtre des niveaux');
+    await p.click('#modal [data-act="wsug"]');
+    eq(await p.evaluate(() => wLevels(S.W).steps.map(s => wLvMsg(s))), ['', 'Niveau 3 : choisis ta sous-classe.', '', ''], 'tout est proposé sauf la sous-classe');
+    eq(await p.evaluate(() => [S.W.lv[4].ab1, S.W.lv[4].ab2, S.W.lv[5].spl.every(r => (S.idx.spells[r.slice(4)] || {}).level === 3)]), ['int', 'int', true], '+2 en Intelligence au niveau 4, sorts du plus haut niveau au 5');
+    // Un choix fait n'est pas remplacé ; la suggestion ne choisit jamais la sous-classe
+    await p.evaluate(() => { S.W.lv[4].ab2 = 'con'; S.W.lv[2].spl = ['srd:alarme']; render(); }); await p.evaluate(() => { const s = wSugDraft(S.W, 'Niveaux'); if (s.lv) S.W.lv = s.lv; });
+    eq(await p.evaluate(() => [S.W.lv[4].ab2, S.W.lv[2].spl[0], S.W.lv[3].sub || '']), ['con', 'srd:alarme', ''], 'choix gardés, pas de sous-classe proposée');
+    await p.evaluate(() => { S.W.lv[3].sub = 'srd:' + wCls(S.W).subclasses[0].id; render(); });
+    eq(await p.evaluate(() => [wNeeds(S.W).length, !!document.querySelector('#modal [data-act="wsug"]')]), [0, false], 'complet ; plus rien à proposer');
+    // Même personnage : créé directement au niveau 5, puis monté à la main de 1 à 5 avec les mêmes choix
+    const picks = await p.evaluate(() => JSON.parse(JSON.stringify(S.W.lv)));
+    const W1 = await p.evaluate(() => { const W = JSON.parse(JSON.stringify(S.W)); W.level = 1; W.lv = {}; W.open = null; return W; });
+    await p.evaluate(() => { S.W.open = null; wCreate(); S.rv = null; renderModal(); });
+    const direct = await p.evaluate(() => cur()), idD = await p.evaluate(() => S.cur);
+    await p.evaluate(([W1, picks]) => { S.W = W1; wCreate(); S.rv = null; renderModal(); for (let L = 2; L <= 5; L++) { S.pending = Object.assign({ type: 'lvl', hp: 'avg' }, picks[L] || {}); lvlApply(); S.rv = null; } renderModal(); }, [W1, picks]);
+    const hand = await p.evaluate(() => cur()), idH = await p.evaluate(() => S.cur);
+    const pick = d => { return { level: d.level, abilities: d.abilities, spells: d.spells.map(s => s.ref).sort(), subclass: d.subclass, feats: d.feats, hp: d.hp, hpMode: d.hpMode, skills: d.skills, armor: d.armor, bag: d.bag.map(b => b.name).sort() }; };
+    eq(pick(direct), pick(hand), 'fiche créée au niveau 5 = fiche montée à la main');
+    eq(await p.evaluate(([a, b]) => [a, b].map(id => { const x = derive(S.docs[id]); return [x.L, x.hpMax, x.ac, x.cast.dc, x.cast.prepared, x.cast.slots.join('/')].join(); }), [idD, idH]).then(r => [idD !== idH, r[0] === r[1], r[0]]), [true, true, (await p.evaluate(id => { const x = derive(S.docs[id]); return [x.L, x.hpMax, x.ac, x.cast.dc, x.cast.prepared, x.cast.slots.join('/')].join(); }, idD))], 'calculs identiques (niveau, PV, CA, DD, sorts préparés, emplacements)');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],
