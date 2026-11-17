@@ -3406,6 +3406,27 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(imp, ['ok', 'import_invalid', 'import_invalid', 'import_invalid'], 'import : lignage valide accepté, invalide refusé ; effet sans nom refusé');
   });
 
+  await test('Les plus utilisés (chantier 7) : jets, lancers et utilisations comptés dans la fiche, Toucher puis Dégâts une fois, affichés dans la Recherche vide', async p => {
+    await diceTable(p);
+    await p.evaluate(() => { setVirtualDice(true); setDiceDisplayMode('direct'); cur().level = 3; cur().turn = {}; render(); S.T.pop = 'search'; S.T.q = ''; render(); });
+    ok(await p.evaluate(() => /apparaîtront ici/.test(document.querySelector('.tpop').textContent)), 'au départ : phrase d’attente');
+    const atk = await p.evaluate(() => S.Titems.filter(i => i.kind === 'atk').map(i => i.key));
+    const roll = async (k, r) => { const n = await p.evaluate(() => (cur().rollLog || []).length); await p.evaluate(([k, r]) => quickRoll(k, r, 'n'), [k, r]); await p.waitForFunction(n => (cur().rollLog || []).length > n, n); };
+    await roll(atk[0], 'hit'); await roll(atk[0], 'dmg');
+    await roll(atk[1], 'hit'); await roll(atk[1], 'hit');
+    await p.evaluate(() => { cur().turn = {}; S.T.pop = 'eco:bonus'; render(); }); await p.click('.tpop .trow[data-k="feat:guerrier/second souffle"] [data-act="tuseq"]');
+    const F = await p.evaluate(([a, b]) => { const F = cur().useFreq; return [F[a][0], F[b][0], F['feat:guerrier/second souffle'] && F['feat:guerrier/second souffle'][0]]; }, atk);
+    eq(F, [1, 2, 1], 'Toucher + Dégâts = 1, deux Toucher = 2, une utilisation = 1');
+    await p.evaluate(() => { S.T.pop = 'search'; S.T.q = ''; render(); });
+    const rows = await p.evaluate(() => [...document.querySelectorAll('.tpop .tmostused .trow')].map(r => r.dataset.k));
+    eq([rows.length, rows[0]], [3, atk[1]], 'Recherche vide : « Les plus utilisés », le plus fréquent en tête');
+    ok(await p.evaluate(() => !!document.querySelector('.tpop .tmostused .tkb[data-r="hit"]')), 'lignes avec Toucher / Dégâts directs');
+    await p.fill('#tq', 'second'); ok(await p.evaluate(() => !document.querySelector('.tpop .tmostused')), 'une recherche tapée remplace la liste');
+    const imp = await p.evaluate(() => { const perso = { type: 'perso', name: 'X', level: 1, abilities: { for: 8, dex: 8, con: 8, int: 8, sag: 8, cha: 8 } }, out = [];
+      for (const useFreq of [{ 'atk:a': [2, 5] }, { 'atk:a': 3 }, []]) { try { importPack({ registre: 1, perso: Object.assign({}, perso, { useFreq }) }); out.push('ok'); } catch (e) { out.push(e.message); } } return out; });
+    eq(imp, ['ok', 'import_invalid', 'import_invalid'], 'import : compteurs valides acceptés, invalides refusés');
+  });
+
   await test('Bottes d’arme : seules les armes retenues montrent leur botte, choix limité au nombre de la classe, rien sans l’aptitude', async p => {
     await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.level = 1; delete ch.masteries; ch.attacks = ['epee-longue', 'javeline', 'arc-court', 'lance'].map((w, i) => ({ id: 'a' + i, weapon: 'srd:' + w, name: w, ability: 'auto', prof: true })); render(); });

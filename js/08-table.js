@@ -1176,8 +1176,18 @@ function tempStepper(ch){
 }
 /* Barre de recherche (tuile Recherche en largeur, ou bloc Recherche) : résultats dans une liste déroulante sous la barre. Une seule barre par écran. */
 function searchBar(){ S.T._tq=true; const T=S.T; return `<div class="tsearchwrap"><form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form><div id="tres" class="tresdrop${T.qOpen===false?" closed":""}">${tResults()}</div></div>`; }
+/* Chantier 7 : les plus utilisés. ch.useFreq = {clé: [nombre, dernière fois]} : jets faits depuis « À la table », sorts lancés, utilisations.
+   Un jet de toucher suivi de ses dégâts compte une fois (T.lastBump). Au plus 40 clés gardées. */
+function useBump(key){ const ch=cur(), T=S.T; if(!ch||!key) return; if(T) T.lastBump=key;
+  const F=ch.useFreq=Object.assign({},ch.useFreq), o=F[key]||[0,0]; F[key]=[(+o[0]||0)+1,Date.now()];
+  const ks=Object.keys(F); if(ks.length>40){ ks.sort((a,b)=>F[a][0]-F[b][0]||F[a][1]-F[b][1]); for(const k of ks.slice(0,ks.length-40)) delete F[k]; } touch(S.cur); }
+function mostUsed(ch,items,n=6){ const F=ch&&ch.useFreq||{};
+  return items.filter(i=>Array.isArray(F[i.key])&&F[i.key][0]>0).sort((a,b)=>F[b.key][0]-F[a.key][0]||F[b.key][1]-F[a.key][1]).slice(0,n); }
 function tResults(){
-  const T=S.T; if(!T||!T.q.trim()) return "";
+  const T=S.T; if(!T) return "";
+  if(!T.q.trim()){ const top=mostUsed(cur(),S.Titems||[]);
+    return top.length?`<div class="label" style="margin:8px 0 4px">Les plus utilisés</div><div class="tlist tmostused">${top.map((i,n)=>tRow(i,n===0)).join("")}</div>`
+      :`<div class="muted" style="padding:6px 2px;font-size:var(--fs-sm)">Tes jets et actions les plus fréquents apparaîtront ici.</div>`; }
   const r=searchItems(S.Titems||[],T.q);
   if(!r.length) return `<div class="muted" style="padding:6px 2px">Rien trouvé pour « ${esc(T.q)} ».</div>`;
   return `<div class="tlist">${r.map((i,n)=>tRow(i,n===0)).join("")}</div>`;
@@ -1559,7 +1569,7 @@ function performUse(key,n=1,opt={}){ const ch=cur(), i=(S.Titems||[]).find(x=>x.
   if(u==="res"||u==="pv"){ const r=i.res, used=+((ch.resUsed||{})[r.id]||0), left=r.max-used; n=Math.min(left,Math.floor(+n||0)); if(left<=0||n<1) return false;
     ch.resUsed=Object.assign({},ch.resUsed,{[r.id]:used+n}); note=(u==="pv"?(opt.poison?"5 points dépensés : l’état Empoisonné de la créature touchée prend fin (sans rendre de PV)":n+" PV pris dans la réserve"):(n>1?n+" usages dépensés":"1 usage dépensé"))+" · reste "+(left-n)+"/"+r.max; }
   else if(u==="drink"){ const b=(ch.bag||[]).find(z=>z.id===i.bagId); if(!b||!(+b.qty>0)) return false; b.qty=+b.qty-1; note="1 "+b.name+" bue · reste "+b.qty; }
-  consumeTableCost(i.cost);
+  consumeTableCost(i.cost); useBump(key);
   addLog({label:i.name+(u==="drink"?" bue":" utilisée"),total:u==="pv"?(opt.poison?"−5":"−"+n+" PV"):"✓",bd:note||ECO[i.cost]+" consommée",kind:"info",quiet:true});
   qMenuClose(); qBack();
   Object.assign(T,{sel:key,logSig:"",itemN:1,itemSp:0,d1:"",d2:"",dmg:"",dmgBd:"",castDone:null});
@@ -1609,6 +1619,7 @@ function ensureTableRollUse(){
 }
 function tableRollCommitted(kind){
   const i=tableSelected();
+  if(i&&(kind==="d20"||S.T.lastBump!==i.key)) useBump(i.key); // chantier 7 : Toucher puis Dégâts = un seul usage
   // Weapon damage never changes turn tracking, even after an explicit undo.
   if(i?.kind==="atk"&&kind!=="d20") return;
   if(i?.kind==="atk"){ consumeTableCost(S.T.qr&&S.T.qr.from==="opp"?"reaction":undefined); ammoSpend(cur(),i); }
@@ -1651,6 +1662,7 @@ function performTableCast(data){
       const th=+(sp.mech&&sp.mech.tempHp)||0; S.T.castTemp=null;
       if(th){ const v=th*Math.max(1,rit?sp.level:lvl); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const b0=+ch.hp.temp||0; S.T.castTemp={v,b0};
         if(v>b0){ ch.hp.temp=v; addLog({label:sp.name+" · PV temporaires",total:"+"+v,bd:b0?"remplacent tes "+b0+" PV temporaires (pas de cumul)":"",quiet:true}); } }
+      useBump(data.k||("spell:"+data.ref));
       S.T.castDone=data.k||("spell:"+data.ref); S.T.castLvl=rit?sp.level:lvl; S.T.castRit=rit; S.T.castConc=sp.concentration?sp.name:null;
       touch(S.cur); return true;
 }
@@ -1663,7 +1675,7 @@ function performTableItemUse(data){
       else { b.qty=Math.max(0,(+b.qty||0)-1); }
       const cost=data.cost; consumeTableCost(cost);
       addLog({label:b.name,total:c0&&c0.max?(c0.max-(+c0.used||0)-n)+"/"+c0.max:"×"+b.qty,bd:c0&&c0.max?n+" charge"+(n>1?"s":"")+" dépensée"+(n>1?"s":"")+".":"Objet utilisé.",kind:"info",quiet:true});
-      S.T.itemUseReceipt=tableItemReceipt(); touch(S.cur); return true;
+      useBump(tableSelected()?.key); S.T.itemUseReceipt=tableItemReceipt(); touch(S.cur); return true;
 }
 /* ---------- Historique des jets : un jour à la fois, attaque et dégâts regroupés, « Voir plus » ---------- */
 const HIST_PAGE=30, HIST_PAIR_MS=600000;
