@@ -57,6 +57,8 @@ async function open(p, o = {}) {
   }, o);
   await p.goto('file://' + FILE); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.CAT);
 }
+// Mode direct : « Créer » ouvre la relecture, qui crée vraiment (suites de l'audit, 17 nov. 2026)
+const wcreateClick = async p => { await p.click('[data-act="wcreate"]'); if (await p.locator('.wreview [data-act="wcreate"][data-ok]').count()) await p.click('.wreview [data-act="wcreate"][data-ok]'); };
 const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'Test' }, w);
   for (const k of ['bg', 'sp', 'feat', 'cls']) if (W[k]) W[k] = catRes(W[k]); wCreate(); return S.cur; }, w);
  
@@ -160,7 +162,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.selectOption('#modal select[data-w="lv.3.sub"]', 'cat:sc-paladin-anciens');
     await p.evaluate(() => { const s = wLevels(S.W).steps[1]; if (s.p.dPrepared) S.W.lv[3].spl = classSpells(s.p.D0, null, s.p.maxSpell).filter(x => !(s.before.spells || []).some(z => z.ref === x.ref)).slice(0, s.p.dPrepared).map(x => x.ref); render(); });
     eq(await p.evaluate(() => [document.querySelector('#modal .wmsg').textContent, (hb(S.W.lv[3].sub) || {}).name]), ['', 'Serment des Anciens'], 'tout est choisi, sous-classe matérialisée');
-    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('[data-act="wcreate"]');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await wcreateClick(p);
     eq(await p.evaluate(() => [cur().level, (hb(cur().subclass) || {}).name, S.pending, S.rv && S.rv.items.length, (cur().feats || []).length >= 2]), [3, 'Serment des Anciens', null, 1, true], 'créé au niveau 3 sans fenêtre de montée, relecture de la sous-classe');
     await p.click('[data-act="rvGo"]'); await p.waitForFunction(() => S.rv && !S.rv.run);
     eq(await p.evaluate(() => (window.__calls || []).map(c => c[0] + (c[1].tabId ? ':' + c[1].tabId : ''))), ['preview_start', 'get_page_text:seed', 'tabs_close:seed'], 'lecture AideDD puis fermeture de l’onglet');
@@ -189,14 +191,14 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('#modal .wfoot [data-act="wclose"]'); await p.setViewportSize({ width: 1200, height: 900 });
     // Créer : PV du dé lancé, Force +2, niveau 4
     const before = await p.evaluate(() => wBuild(S.W).abilities.for);
-    await p.click('[data-act="wcreate"]');
+    await wcreateClick(p);
     eq(await p.evaluate(b => { const c = cur(), D = derive(c); return [c.level, c.abilities.for - b, c.hpMode, D.hpMax === c.hpMaxManual, !!c.subclass, S.pending]; }, before), [4, 2, 'manual', true, true, null], 'fiche au niveau 4, PV manuels, +2 en Force');
-    // Baisser le niveau retire les choix au-delà ; changer de classe les efface tous
+    // Baisser le niveau garde les choix au-delà (ignorés à la création) ; changer de classe les efface tous, après confirmation
     await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { cls: 'guerrier', level: 4, lv: { 2: { hp: 'avg' }, 3: { sub: 'x' }, 4: { ab1: 'for' } } }); S.view = 'wizard'; render(); });
     await p.fill('input[data-w="level"]', '3'); await p.press('input[data-w="level"]', 'Tab');
-    eq(await p.evaluate(() => Object.keys(S.W.lv)), ['2', '3'], 'niveau 3 : le choix du niveau 4 disparaît');
-    await p.evaluate(() => { S.W.open = 'Classe'; S.W.chg = 'cls'; render(); }); await p.click('#modal [data-act="wpick"][data-v="magicien"]');
-    eq(await p.evaluate(() => S.W.lv), {}, 'autre classe : choix des niveaux effacés');
+    eq(await p.evaluate(() => [Object.keys(S.W.lv), wLevels(S.W).steps.map(s => s.L)]), [['2', '3', '4'], [2, 3]], 'niveau 3 : le choix du niveau 4 est gardé de côté, ignoré');
+    await p.evaluate(() => { S.W.open = 'Classe'; S.W.chg = 'cls'; render(); }); await p.click('#modal [data-act="wpick"][data-v="magicien"]'); await p.click('.askover [data-act="wpick"][data-ok]');
+    eq(await p.evaluate(() => S.W.lv), {}, 'autre classe (confirmée) : choix des niveaux effacés');
     // Mode guidé : pas de ligne des niveaux
     eq(await p.evaluate(() => { S.W.mode = 'guide'; return wSteps(S.W).includes('Niveaux'); }), false, 'mode guidé : niveau 1');
   });
@@ -227,11 +229,11 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     // Nom obligatoire : le bouton est grisé et dit ce qui manque
     await p.evaluate(() => { const W = S.W; W.method = 'std'; W.std = { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }; W.open = null; render(); });
     eq(await p.evaluate(() => { const b = document.querySelector('[data-act="wcreate"]'); return [wNeeds(S.W).map(n => n.msg), b.disabled, b.textContent]; }), [['Donne un nom à ton personnage.'], true, 'Donne un nom à ton personnage.'], 'création bloquée sans nom');
-    await p.evaluate(() => { document.querySelector('[data-act="wcreate"]').disabled = false; }); await p.click('[data-act="wcreate"]');
+    await p.evaluate(() => { document.querySelector('[data-act="wcreate"]').disabled = false; }); await wcreateClick(p);
     eq(await p.evaluate(() => S.view), 'wizard', 'un clic forcé ne crée rien non plus');
     await p.fill('input[data-w="name"]', 'Mirela');
     eq(await p.evaluate(() => { const b = document.querySelector('[data-act="wcreate"]'); return [b.disabled, b.textContent, document.activeElement.dataset.w]; }), [false, 'Créer le personnage', 'name'], 'bouton libéré pendant la saisie, sans perdre le curseur');
-    await p.click('[data-act="wcreate"]');
+    await wcreateClick(p);
     eq(await p.evaluate(() => [S.view, cur().name]), ['sheet', 'Mirela'], 'personnage créé avec son nom');
   });
 
@@ -318,7 +320,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const f3 = await foot(); eq([f3[0], f3[1], /^Choisis \d+ sorts de niveau 1\.$/.test(f3[2])], ['Reste à faire (1) sorts', true, true], 'le bouton nomme le choix suivant');
     await p.evaluate(() => { const W = S.W, cast = wCast(W); W.spl = classSpells({ cls: wCls(W) }, null, 1).slice(0, cast.prepared[0]).map(x => x.ref); render(); });
     eq(await foot(), ['Tout est choisi.', false, 'Créer le personnage'], 'tout est choisi');
-    await p.click('[data-act="wcreate"]');
+    await wcreateClick(p);
     eq(await p.evaluate(() => [S.view, cur().name, cur().classId, cur().background, !!S.W]), ['sheet', 'Mirela', 'magicien', 'srd:sage', false], 'personnage créé');
   });
 
@@ -343,14 +345,14 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.W.spSkill = 'intuition'; S.W.open = 'Historique'; S.W.chg = 'bg'; render(); }); await p.click('#modal [data-act="wpick"][data-v="srd:acolyte"]');
     eq(await p.evaluate(() => [S.W.spSkill, wSources('espece').base.length > 0 && wLineMsg(S.W, 'Espèce')]), ['', 'Sens aiguisés : choisis ta compétence.'], 'doublon avec l’historique : à rechoisir');
     await p.evaluate(() => { const W = S.W, abs = wBgAbs(W); W.asi2 = abs[0]; W.asi1 = abs[1]; W.spSkill = 'survie'; W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s) && s !== 'survie').slice(0, 2); W.open = null; render(); });
-    await p.click('[data-act="wcreate"]');
+    await wcreateClick(p);
     eq(await p.evaluate(() => { const c = cur(); return [c.skills.survie, c.lineage.id, c.size === undefined, derive(c).skills.survie.lv]; }), [1, 'drow', true, 1], 'elfe créé : compétence, lignage, pas de taille à choisir');
     // Tieffelin : héritage puis taille
     await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Tieffelin test', langs: ['Elfique', 'Nain'], cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:tieffelin', asi2: 'for', asi1: 'con', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 } }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); W.style = styleOpts({ feats: [] })[0][0]; S.view = 'wizard'; W.open = 'Espèce'; render(); });
     eq(await msg(), 'Héritage fiélon : fais ton choix.', 'héritage obligatoire'); await p.selectOption('#modal select[data-w="lin"]', 'infernal');
     eq([await msg(), (await opts('size')).map(v => v.slice(0, 10))], ['Choisis ta taille.', ['M (moyenne', 'P (petite,']], 'taille à choisir');
     await p.selectOption('#modal select[data-w="size"]', { index: 2 }); eq(await msg(), '', 'espèce complète');
-    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('[data-act="wcreate"]');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await wcreateClick(p);
     eq(await p.evaluate(() => [/^P \(petite, [^)]*\)$/.test(cur().size), chSize(cur()) === cur().size]), [true, true], 'taille choisie gardée sur la fiche, sans « ou »');
     // Une fiche créée sans taille (ancienne ou importée) s'ouvre telle quelle
     const id = await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:humain' });
@@ -368,7 +370,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const second = await p.evaluate(() => S.W.exp[1]); await p.click('#modal .chip[data-act="wskill"][data-v="' + second + '"]');
     eq(await p.evaluate(() => [wExp(S.W), wLineMsg(S.W, 'Compétences')]), [['athletisme'], 'Choisis 4 compétences de classe.'], 'expertise retirée avec la compétence');
     await p.click('#modal .chip[data-act="wskill"][data-v="' + second + '"]'); await p.click('#modal .wfoot [data-act="wclose"]');
-    eq(await p.evaluate(() => wNeeds(S.W).length), 0, 'roublard complet'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => wNeeds(S.W).length), 0, 'roublard complet'); await wcreateClick(p);
     eq(await p.evaluate(s => { const c = cur(), D = derive(c); return [c.skills.athletisme, c.skills[s], D.skills.athletisme.lv, Object.values(c.skills).filter(v => v === 2).length]; }, second), [2, 2, 2, 2], 'expertises sur la fiche');
     // Guerrier : style sans contenu à remplir ; bottes parmi les armes du lot
     await p.evaluate(b => { const W = S.W = wNew(); Object.assign(W, b, { name: 'Guerrier test', cls: 'guerrier' }); W.skills = wCls(W).skillChoices.from.filter(s => !wBgSkills(W).includes(s)).slice(0, 2); S.view = 'wizard'; W.open = 'Compétences'; render(); }, base);
@@ -378,7 +380,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     ok(m0[0] === 3 && m0[1] >= 2 && m0[2] === Math.min(3, m0[1]) && m0[3] === m0[2], 'bottes : les premières armes du lot sont retenues par défaut (' + m0 + ')');
     await p.click('#modal .wmast .chip[aria-pressed="true"] >> nth=0');
     const kept = await p.evaluate(() => S.W.mast); eq(kept.length, m0[2] - 1, 'une botte retirée');
-    await p.click('#modal .wfoot [data-act="wclose"]'); await p.click('[data-act="wcreate"]');
+    await p.click('#modal .wfoot [data-act="wclose"]'); await wcreateClick(p);
     eq(await p.evaluate(() => cur().masteries), kept, 'bottes retenues gardées sur la fiche');
     // Sans retouche, la fiche garde le comportement du chantier 14
     const id = await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
@@ -408,7 +410,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [wNeeds(S.W).length, wDoc(S.W).spells.length - S.W.spl.length]), [0, 4], 'clerc complet, 4 sorts mineurs');
     await p.evaluate(() => { S.W.order = 'protecteur'; render(); });
     eq(await p.evaluate(() => [wNeeds(S.W).length, wDoc(S.W).spells.length - S.W.spl.length]), [0, 3], 'Protecteur : le sort mineur en trop n’est pas gardé');
-    await p.evaluate(() => { S.W.order = 'thaumaturge'; render(); }); await p.click('[data-act="wcreate"]');
+    await p.evaluate(() => { S.W.order = 'thaumaturge'; render(); }); await wcreateClick(p);
     eq(await p.evaluate(() => [cur().order, derive(cur()).cast.cantrips]), ['thaumaturge', 4], 'ordre gardé sur la fiche');
     // Onglet de construction : modifiable ; absent pour une classe sans ordre ; changer de classe côté assistant efface l'ordre
     await p.evaluate(() => { S.rv = null; renderModal(); S.unlockEdit = true; S.tab = 'build'; render(); });
@@ -416,7 +418,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const id = await newWizardChar(p, { cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' });
     eq(await p.evaluate(id => { S.rv = null; S.pending = null; renderModal(); S.cur = id; S.unlockEdit = true; S.tab = 'build'; render(); return [!!document.getElementById('b-order'), JSON.stringify(S.docs[id]).includes('"order"')]; }, id), [false, false], 'guerrier : pas d’ordre');
     await p.evaluate(() => { const W = S.W = wNew(); W.cls = 'clerc'; W.order = 'thaumaturge'; S.view = 'wizard'; W.open = 'Classe'; W.chg = 'cls'; render(); });
-    await p.click('#modal [data-act="wpick"][data-v="druide"]'); eq(await p.evaluate(() => [S.W.order, wLineMsg(S.W, 'Classe')]), ['', 'Ordre primitif : fais ton choix.'], 'changer de classe efface l’ordre');
+    await p.click('#modal [data-act="wpick"][data-v="druide"]'); if (await p.locator('.askover [data-ok]').count()) await p.click('.askover [data-ok]'); eq(await p.evaluate(() => [S.W.order, wLineMsg(S.W, 'Classe')]), ['', 'Ordre primitif : fais ton choix.'], 'changer de classe efface l’ordre');
   });
 
   await test('Création : langues (commun acquis, deux au choix, argot des voleurs et druidique)', async p => {
@@ -432,7 +434,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     // Roublard : argot des voleurs et une langue de plus ; Druide : druidique
     eq(await p.evaluate(() => { const W = S.W; W.cls = 'roublard'; return [wLangFixed(W), wLangN(W), wLineMsg(W, 'Langues')]; }), [['Commun', 'Argot des voleurs'], 3, 'Choisis 3 langues.'], 'roublard');
     eq(await p.evaluate(() => { const W = S.W; W.cls = 'druide'; return [wLangFixed(W), wLangN(W), wLineMsg(W, 'Langues')]; }), [['Commun', 'Druidique'], 2, ''], 'druide');
-    await p.evaluate(() => { S.W.cls = 'guerrier'; render(); }); await p.click('[data-act="wcreate"]');
+    await p.evaluate(() => { S.W.cls = 'guerrier'; render(); }); await wcreateClick(p);
     eq(await p.evaluate(() => cur().languages), 'Commun, Nain, Orc', 'langues écrites dans le champ de la fiche');
   });
 
@@ -481,7 +483,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { const W = S.W; W.bg = 'srd:soldat'; W.asi2 = 'for'; W.asi1 = 'con'; W.hFeat = 'srd:vigilant'; W.skills = []; W.extraSkill = ''; Object.assign(W, wSugDraft(W, 'Compétences')); W.open = null; render(); });
     eq(await p.evaluate(() => wNeeds(S.W).map(n => n.msg)), [], 'création complète');
     eq(await p.evaluate(() => ['Historique', 'Espèce'].map(l => document.querySelector('.wline[data-v="' + l + '"] .val').textContent)), ['Soldat · +2 FOR, +1 CON · don : Sauvagerie martiale', 'Humain · don : Vigilant'], 'les dons se lisent sur les lignes, sans écran de relecture');
-    await p.click('[data-act="wcreate"]');
+    await wcreateClick(p);
     eq(await p.evaluate(() => { const f = cur().feats; return [f.includes('srd:sauvagerie-martiale'), f.includes('srd:vigilant'), new Set(f).size === f.length]; }), [true, true, true], 'les deux dons sont sur la fiche');
   });
 
@@ -495,7 +497,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const g0 = await p.evaluate(() => wEqItems(S.W).gold);
     await p.click('#modal [data-act="wpick"][data-k="eqB"][data-v="B"]'); eq(await p.evaluate(() => wEqItems(S.W).gold) - g0, 38, 'option B : 50 po au lieu de 12');
     await p.click('#modal [data-act="wpick"][data-k="eqB"][data-v="A"]'); await p.click('#modal .wfoot [data-act="wclose"]');
-    eq(await p.evaluate(() => wNeeds(S.W).map(n => n.msg)), [], 'création complète'); await p.click('[data-act="wcreate"]');
+    eq(await p.evaluate(() => wNeeds(S.W).map(n => n.msg)), [], 'création complète'); await wcreateClick(p);
     eq(await p.evaluate(() => { const c = cur(), n = c.bag.map(b => b.name); return [n.includes('Menottes'), n.includes('Lanterne à capote'), (c.bag.find(b => b.name === 'Carreaux') || {}).qty, c.attacks.some(a => a.weapon === 'srd:arbalete-legere'), c.attacks.some(a => a.weapon === 'srd:lance')]; }), [true, true, 20, true, true], 'objets, munitions et attaques de l’historique sur la fiche');
     // Une fiche d'historique créée avant cet ajout (sans équipement) le retrouve par le catalogue ; un historique personnel sans équipement est signalé
     eq(await p.evaluate(() => { S.rv = null; const h = Object.keys(S.docs).find(k => S.docs[k].catId === 'bg-garde'); delete S.docs[h].equipment; return eqOptions(wBgEquip({ bg: 'hb:' + h }))[0].gold; }), 12, 'ancienne fiche : équipement lu dans le catalogue');
@@ -524,7 +526,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     // « Abandonner » sur la page fait la même chose ; créer le personnage efface le brouillon
     await p.click('[data-act="wizard"]'); await p.click('[data-act="wmode"][data-v="direct"]'); await p.fill('input[data-w="name"]', 'X'); await p.click('[data-act="wcancel"]'); eq(await p.evaluate(() => [S.view, localStorage.getItem('registre-creation-v1')]), ['list', null], 'abandon depuis la page');
     await p.click('[data-act="wizard"]'); await p.evaluate(() => { const W = S.W; Object.assign(W, { mode: '', name: 'Créé', langs: ['Elfique', 'Nain'], cls: 'guerrier', bg: 'srd:soldat', sp: 'srd:nain' }); for (const st of ['Historique', 'Caractéristiques', 'Compétences']) Object.assign(W, wSugDraft(W, st)); render(); });
-    ok(await p.evaluate(() => !!localStorage.getItem('registre-creation-v1')), 'brouillon enregistré pendant la création'); await p.click('[data-act="wcreate"]');
+    ok(await p.evaluate(() => !!localStorage.getItem('registre-creation-v1')), 'brouillon enregistré pendant la création'); await wcreateClick(p);
     eq(await p.evaluate(() => [cur().name, localStorage.getItem('registre-creation-v1')]), ['Créé', null], 'personnage créé : brouillon effacé');
     // Brouillon abîmé ou mal formé : ignoré ou nettoyé, jamais d'erreur
     await p.evaluate(() => localStorage.setItem('registre-creation-v1', '{oups')); await reload(); await p.click('[data-act="wizard"]');
@@ -593,7 +595,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.setViewportSize({ width: 1200, height: 900 }); await p.click('[data-act="wgnext"]');
     await p.reload(); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.CAT); await p.click('[data-act="wizard"]');
     eq(await p.evaluate(() => [S.W.mode, wGStep(S.W), document.querySelector('h1').textContent, S.W.cls]), ['guide', 1, 'D\'où viens-tu ?', 'guerrier'], 'brouillon repris dans le mode guidé, au même écran');
-    await p.click('[data-act="wgnext"]'); await p.click('[data-act="wcreate"]');
+    await p.click('[data-act="wgnext"]'); await wcreateClick(p);
     eq(await p.evaluate(() => { const c = cur(); return [S.view, c.name, c.classId, c.level, c.lineage.id, c.languages, !!S.pending]; }), ['sheet', 'Mirela', 'guerrier', 1, 'haut-elfe', 'Commun, Nain, Orc', false], 'personnage créé au niveau 1');
   });
 
@@ -613,7 +615,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.W.inv = ['']; render(); });
     eq(await fin(), ['Presque tout est proposé d\'après ta classe et ton origine. Il reste à choisir : manifestation occulte (ligne Sorts).', 'Choisis ta manifestation occulte.'], 'il reste un choix : l’écran le dit');
     await p.evaluate(() => { S.W.inv = ['pacte-de-la-lame']; render(); });
-    await p.click('[data-act="wcreate"]'); eq(await p.evaluate(() => [cur().classId, cur().invocations]), ['occultiste', ['pacte-de-la-lame']], 'occultiste créé');
+    await wcreateClick(p); eq(await p.evaluate(() => [cur().classId, cur().invocations]), ['occultiste', ['pacte-de-la-lame']], 'occultiste créé');
     // Mode direct au niveau 4 : passer en guidé demande confirmation
     await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { mode: '', name: 'Haut', cls: 'guerrier', level: 4 }); S.view = 'wizard'; render(); });
     await p.click('.wswitch'); eq(await p.evaluate(() => [S.W.mode, S.W.level, /niveau 1.*\(4\)/.test(document.querySelector('.wask').textContent)]), ['', 4, true], 'avertissement, rien de changé');
@@ -658,6 +660,42 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const pick = d => { return { level: d.level, abilities: d.abilities, spells: d.spells.map(s => s.ref).sort(), subclass: d.subclass, feats: d.feats, hp: d.hp, hpMode: d.hpMode, skills: d.skills, armor: d.armor, bag: d.bag.map(b => b.name).sort() }; };
     eq(pick(direct), pick(hand), 'fiche créée au niveau 5 = fiche montée à la main');
     eq(await p.evaluate(([a, b]) => [a, b].map(id => { const x = derive(S.docs[id]); return [x.L, x.hpMax, x.ac, x.cast.dc, x.cast.prepared, x.cast.slots.join('/')].join(); }), [idD, idH]).then(r => [idD !== idH, r[0] === r[1], r[0]]), [true, true, (await p.evaluate(id => { const x = derive(S.docs[id]); return [x.L, x.hpMax, x.ac, x.cast.dc, x.cast.prepared, x.cast.slots.join('/')].join(); }, idD))], 'calculs identiques (niveau, PV, CA, DD, sorts préparés, emplacements)');
+  });
+
+  await test('Création, suites de l’audit : niveaux retirés gardés, changement de classe confirmé, relecture avant création', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await open(p);
+    const setup = () => p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Mage', level: 5, cls: 'magicien', bg: 'srd:sage', sp: 'srd:nain', langs: ['Elfique', 'Orc'] });
+      for (const st of ['Historique', 'Caractéristiques', 'Compétences', 'Sorts', 'Niveaux']) Object.assign(W, wSugDraft(W, st)); W.lv[3].sub = 'srd:' + wCls(W).subclasses[0].id; W.lv[4].ab2 = 'con'; S.view = 'wizard'; W.open = null; render(); return wNeeds(W).length; });
+    eq(await setup(), 0, 'personnage de niveau 5 prêt');
+    // 1. baisser puis remonter le niveau
+    await p.fill('[data-w="level"]', '3'); await p.dispatchEvent('[data-w="level"]', 'change');
+    eq(await p.evaluate(() => [wLvN(S.W), !!S.W.lv[4] && S.W.lv[4].ab2, wNeeds(S.W).length]), [3, 'con', 0], 'niveau 3 : le choix du niveau 4 est gardé de côté, rien ne manque');
+    await p.fill('[data-w="level"]', '5'); await p.dispatchEvent('[data-w="level"]', 'change');
+    eq(await p.evaluate(() => [wLvN(S.W), wLevels(S.W).steps.map(s => wLvMsg(s)).join(''), S.W.lv[4].ab2]), [5, '', 'con'], 'retour au niveau 5 : les choix reviennent, rien à refaire');
+    // 2. changer de classe : confirmation
+    await p.evaluate(() => { S.W.open = 'Classe'; S.W.chg = 'cls'; render(); });
+    const other = await p.evaluate(() => [...document.querySelectorAll('#modal [data-act="wpick"][data-k="cls"]')].map(b => b.dataset.v).find(v => catRes(v) !== S.W.cls));
+    await p.click(`#modal [data-act="wpick"][data-k="cls"][data-v="${other}"]`);
+    eq(await p.evaluate(() => [!!document.querySelector('.askover'), /choix des niveaux 2 à 5/.test(document.querySelector('.askover').textContent), S.W.cls]), [true, true, 'magicien'], 'une fenêtre dit ce qui sera à refaire ; rien n’a changé');
+    await p.click('.askover [data-act="wclsNo"]');
+    eq(await p.evaluate(() => [!!document.querySelector('.askover'), S.W.cls, Object.keys(S.W.lv).length >= 4]), [false, 'magicien', true], 'Annuler : classe et choix gardés');
+    await p.evaluate(() => { S.W.open = null; render(); renderModal(); });
+    // 3. relecture avant création
+    await p.click('#wfoot [data-act="wcreate"]');
+    const rv = await p.evaluate(() => [!!document.querySelector('.wreview'), [...document.querySelectorAll('.wreview .wrevrow')].map(r => r.textContent.replace(/\s+/g, ' ').trim()), S.view]);
+    ok(rv[0] && rv[2] === 'wizard', 'Créer ouvre la relecture, rien n’est encore créé');
+    ok(rv[1].some(r => /^Classe Magicien/.test(r)) && rv[1].some(r => /^Niveau 3 sous-classe /.test(r)) && rv[1].some(r => /^Niveau 4 \+1 Intelligence, \+1 Constitution/.test(r)), 'lignes de la fiche et une ligne par niveau : ' + rv[1].filter(r => /^Niveau [34]/.test(r)).join(' | '));
+    await p.click('.wreview [data-act="wrevgo"][data-l="4"]');
+    eq(await p.evaluate(() => [!!document.querySelector('.wreview'), S.W.open, S.W.lvSel]), [false, 'Niveaux', 4], 'une ligne de niveau ouvre ce niveau');
+    await p.evaluate(() => { S.W.open = null; render(); renderModal(); });
+    await p.click('#wfoot [data-act="wcreate"]'); await p.click('.wreview [data-act="wcreate"][data-ok]');
+    eq(await p.evaluate(() => [S.view, cur().level, cur().name]), ['sheet', 5, 'Mage'], 'Créer le personnage : fiche au niveau 5');
+    ok(await p.evaluate(() => !document.querySelector('.wreview') && !S.wReview), 'relecture refermée');
+    // changer de classe confirmé : ce qui dépend de la classe est remis à zéro
+    await setup(); await p.evaluate(() => { S.W.open = 'Classe'; S.W.chg = 'cls'; render(); });
+    await p.click(`#modal [data-act="wpick"][data-k="cls"][data-v="${other}"]`); await p.click('.askover [data-act="wpick"][data-ok]');
+    eq(await p.evaluate(() => [S.W.cls !== 'magicien', Object.keys(S.W.lv).length, S.W.spl.length, !!document.querySelector('.askover')]), [true, 0, 0, false], 'Changer de classe : nouvelle classe, choix dépendants effacés');
+    ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'rien ne dépasse en largeur iPhone');
   });
 
   await test('Couleurs : rouge réservé aux alertes, suppressions, dangers et valeurs défavorables ; sélections en laiton (clair et sombre)', async p => {

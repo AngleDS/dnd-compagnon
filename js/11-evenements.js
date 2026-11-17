@@ -124,7 +124,7 @@ document.addEventListener("click",e=>{
     case "new": S.newName={}; renderModal(); break;
     case "newCancel": if(e.target===t||t.tagName==="BUTTON"){ S.newName=null; renderModal(); } break; // clic à côté de la fenêtre ou sur sa croix, pas dedans
     case "wclose": if(S.W&&(e.target===t||t.tagName==="BUTTON")){ S.W.open=null; render(); } break;
-    case "wizard": if(!S.W){ const d=wDraftLoad(); S.W=d||wNew(); if(!d) S.W.mode="?"; } S.W.open=null; /* création neuve : on choisit d'abord le mode */ S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
+    case "wizard": S.wReview=false; S.wClsAsk=null; if(!S.W){ const d=wDraftLoad(); S.W=d||wNew(); if(!d) S.W.mode="?"; } S.W.open=null; /* création neuve : on choisit d'abord le mode */ S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
     case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; (S.W.seen=S.W.seen||{})[t.dataset.v]=true; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;
     case "wlvsel": S.W.lvSel=+t.dataset.v; S.W.openShown=null; render(); break;
@@ -137,7 +137,7 @@ document.addEventListener("click",e=>{
     case "wcancel": wAbandon(); break;
     case "wdrop": wAbandon(); break; // depuis la liste des personnages
     case "wgo": { const v=+t.dataset.v; if(v>S.W.step&&wCheck(S.W,S.W.step)) break; S.W.step=v; render(); window.scrollTo(0,0); break; }
-    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; W.chg=null; if(k==="cls"&&W.cls!==v){ W.lv={}; W.lvSel=null; W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
+    case "wpick": { const W=S.W, k=t.dataset.k, v=catRes(t.dataset.v); if(!v) break; if(k==="cls"&&W.mode!=="guide"&&W.cls&&W.cls!==v&&!t.dataset.ok&&wClsLoss(W).length){ S.wClsAsk=t.dataset.v; render(); document.querySelector('.askover [data-act="wclsNo"]')?.focus(); break; } S.wClsAsk=null; W.chg=null; if(k==="cls"&&W.cls!==v){ W.lv={}; W.lvSel=null; W.order=""; W.exp=[]; W.mast=null; W.skills=[]; W.can=[]; W.spl=[]; W.inv=[]; W.invc=[]; W.eqOff={}; W.eqC="A"; } if(k==="sp"&&W.sp!==v){ W.lin=""; }
       if(k==="bg"&&W.bg!==v){ W.asi2=""; W.asi1=""; W.asiT=["","",""]; W.feat=""; W.eqB="A"; W.skills=W.skills.filter(s=>!(srd("backgrounds",v)||{skills:[]}).skills.includes(s)); }
       if(k==="sp"&&W.sp!==v){ W.hFeat=""; W.extraSkill=""; W.spSkill=""; W.size=""; }
       W[k]=v; if(k==="bg"&&W.spSkill&&wBgSkills(W).includes(W.spSkill)) W.spSkill=""; if(k==="bg"){ const x=hb(v); if(x&&x.featRef&&!W.feat) W.feat=catRes(x.featRef); } if(k==="bg"&&W.hFeat&&W.hFeat===wBgFeat(W)) W.hFeat=""; if(k==="bg"&&W.mode==="guide") wGuideFill(W,["Historique"]); render(); break; }
@@ -150,7 +150,10 @@ document.addEventListener("click",e=>{
     case "wexp": { const W=S.W, v=t.dataset.v, L=wExp(W); W.exp=L.includes(v)?L.filter(x=>x!==v):(L.length<wExpN(W)?[...L,v]:L); render(); break; }
     case "wmast": { const W=S.W, v=t.dataset.v, m=wMast(W); W.mast=m.list.includes(v)?m.list.filter(x=>x!==v):(m.list.length<m.n?[...m.list,v]:m.list); render(); break; }
     case "weq": { S.W.eqOff[t.dataset.v]=!t.checked; render(); break; }
-    case "wcreate": if(wNeeds(S.W).length) break; wCreate(); break;
+    case "wcreate": if(wNeeds(S.W).length) break; if(!t.dataset.ok&&S.W.mode!=="guide"){ S.wReview=true; render(); break; } S.wReview=false; wCreate(); break; // relecture avant création (mode direct)
+    case "wclsNo": S.wClsAsk=null; render(); break;
+    case "wrevNo": S.wReview=false; render(); break;
+    case "wrevgo": { const W=S.W, st=t.dataset.v; S.wReview=false; if(t.dataset.l) W.lvSel=+t.dataset.l; W.open=st; W.openShown=null; W.chg=null; (W.seen=W.seen||{})[st]=true; render(); break; }
     case "afRun": afRun(t.dataset.mode==="hb"?{mode:"hb",id:t.dataset.id}:{mode:"nh"}); break;
     case "afClose": S.af=null; renderModal(); break;
     case "afApply": afApply(); break;
@@ -412,7 +415,7 @@ document.addEventListener("change",e=>{
     if(k==="level") v=String(Math.max(1,Math.min(20,Math.round(+v)||1)));
     if(k.startsWith("nh.")&&!S.W.nh) return;
     if(k==="spSkill"&&v){ S.W.skills=S.W.skills.filter(s=>s!==v); if(S.W.extraSkill===v) S.W.extraSkill=""; }
-    setPath(S.W,k,v); if(k==="level"&&S.W.lv) for(const L of Object.keys(S.W.lv)) if(+L>+v) delete S.W.lv[L]; // baisser le niveau retire les choix au-delà
+    setPath(S.W,k,v); // baisser le niveau garde les choix des niveaux retirés : ignorés à la création, retrouvés si on remonte (audit, 17 nov. 2026)
     if(t.tagName==="SELECT"||k.startsWith("dice.")||k==="level"||k.startsWith("lv.")) render(); return; }
   if(t.id==="cc-dmg"&&S.T&&S.T.cc){ S.T.cc.dmg=Math.max(0,+t.value||0); render(); return; }
   if(t.dataset.arcsel){ const ch=cur(); if(ch){ ch.arcanum=ch.arcanum||{}; if(t.value) ch.arcanum[t.dataset.arcsel]=t.value; else delete ch.arcanum[t.dataset.arcsel]; touch(S.cur); render(); } return; }

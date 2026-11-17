@@ -15,7 +15,7 @@ function wDraftLoad(){ try{ const j=JSON.parse(localStorage.getItem(W_DRAFT_KEY)
     for(const L of Object.keys(W.lv||{})){ const P=W.lv[L]; if(!/^\d{1,2}$/.test(L)||!isO(P)){ delete W.lv[L]; continue; } for(const [f,v] of Object.entries(P)) if(!(typeof v==="string"||(Array.isArray(v)&&v.length<=10&&v.every(x=>typeof x==="string")))) delete P[f]; }
     if(W.cls&&!clsOf(W.cls)) W.cls=""; if(W.bg&&!wBg(W)) W.bg=""; if(W.sp&&!(srd("species",W.sp)||hb(W.sp))) W.sp=""; return W; }catch(e){ return null; } }
 // Abandonner : le brouillon et les fiches du catalogue créées pour lui (encore à remplir et inutilisées) disparaissent
-function wAbandon(){ const W=S.W||wDraftLoad(), made=(W&&W.catMade)||[]; S.W=null; wDraftClear(); for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); }
+function wAbandon(){ S.wReview=false; S.wClsAsk=null; const W=S.W||wDraftLoad(), made=(W&&W.catMade)||[]; S.W=null; wDraftClear(); for(const id of made) if(S.docs[id]&&S.docs[id].pending&&!hbUsed(id)) removeDoc(id); S.view="list"; render(); }
 function wNew(){ return {mode:"",gstep:0,step:0,lv:{},cls:"",bg:"",sp:"",asiMode:"21",asi2:"",asi1:"",asiT:["","",""],feat:"",hFeat:"",method:"std",std:{},pts:{for:8,dex:8,con:8,int:8,sag:8,cha:8},dice:["","","","","",""],diceAs:{},rolled:false,alO:"",alM:"",nh:null,skills:[],extraSkill:"",can:[],spl:[],inv:[],invc:[],eqC:"A",eqB:"A",eqOff:{},name:"",player:"",align:"",level:1,notes:""}; }
 function eqOptions(txt){ const t=String(txt||"").replace(/^Choisissez[^:]*:\s*/,""); const out=[]; const re=/\(([A-Z])\)\s*([\s\S]*?)(?=\s*;\s*(?:ou\s*)?\([A-Z]\)|$)/g; let m;
   while((m=re.exec(t))){ const items=[]; let gold=0;
@@ -332,7 +332,32 @@ function wCount(W){ const g=W.mode==="guide", n=g?wGNeeds(W,wGStep(W)):wNeeds(W)
 /* Deux modes sur le même état S.W (chantier 17) : W.mode "" = direct (une page, toutes les lignes), "guide" = trois écrans préremplis,
    "?" = écran de choix du mode, montré seulement à l'entrée d'une création neuve. On passe de l'un à l'autre sans rien perdre. */
 function viewWizard(){ const W=S.W; wDraftSave(); // chaque affichage enregistre le brouillon
-  return W.mode==="?"?wModeView(W):W.mode==="guide"?wGuideView(W):wDirectView(W); }
+  return (W.mode==="?"?wModeView(W):W.mode==="guide"?wGuideView(W):wDirectView(W))+wClsAskHtml(W)+(S.wReview&&W.mode!=="guide"&&W.mode!=="?"?wReviewHtml(W):""); }
+/* Suites de l'audit ChatGPT de la création (17 nov. 2026)
+   1. Changer de classe efface ce qui en dépend : on le dit avant, avec Annuler (S.wClsAsk = classe demandée). */
+function wClsLoss(W){ const L=[], some=a=>(Array.isArray(a)?a:[]).some(Boolean), N=wLvN(W);
+  if(some(W.skills)) L.push("compétences de classe"); if(some(W.exp)) L.push("expertise"); if(W.order) L.push("ordre"); if(Array.isArray(W.mast)) L.push("bottes d’arme");
+  if(some(W.can)||some(W.spl)) L.push("sorts"); if(some(W.inv)) L.push("manifestations");
+  if(W.eqC!=="A"||Object.keys(W.eqOff||{}).length) L.push("équipement de classe");
+  if(N>1&&Object.keys(W.lv||{}).some(k=>+k<=N&&W.lv[k]&&Object.keys(W.lv[k]).length)) L.push("choix des niveaux 2 à "+N);
+  return L; }
+function wClsAskHtml(W){ const v=S.wClsAsk; if(!v) return ""; const c=srd("classes",catRes(v))||hb(catRes(v))||{}, L=wClsLoss(W);
+  return `<div class="askover" role="alertdialog" aria-modal="true" aria-label="Changer de classe ?"><div class="askbox"><b>Passer en ${esc(c.name||"nouvelle classe")} ?</b><div class="muted" style="font-size:var(--fs-sm)">Ces choix dépendent de la classe et seront à refaire : ${esc(L.join(", "))}.</div><div class="row" style="justify-content:flex-end;gap:8px"><button class="btn small ghost" data-act="wclsNo">Annuler</button><button class="btn small primary" data-act="wpick" data-k="cls" data-v="${esc(v)}" data-ok="1">Changer de classe</button></div></div></div>`; }
+/* 2. Relecture avant création (mode direct) : chaque ligne ouvre ses choix ; un résumé par niveau. */
+function wLvSum(st){ const {p,P}=st, out=[], ft=r=>(S.C.feats.find(f=>"srd:"+f.id===r)||hb(r)||{}).name||"", sn=r=>(spellOf(r)||{}).name||"";
+  if(P.sub) out.push("sous-classe "+(((p.cls&&p.cls.subclasses)||[]).find(s=>"srd:"+s.id===P.sub)||hb(P.sub)||{name:"choisie"}).name);
+  if(p.epic&&P.feat) out.push("faveur "+ft(P.feat)); else if(p.asi){ if(P.asi==="feat"&&P.feat) out.push("don "+ft(P.feat)); else if(P.ab1&&P.ab2) out.push(P.ab1===P.ab2?"+2 "+ABN[P.ab1]:"+1 "+ABN[P.ab1]+", +1 "+ABN[P.ab2]); }
+  if(P.style) out.push("style "+(ft(P.style)||"choisi"));
+  const sp=[...(P.can||[]),...(P.spl||[])].filter(Boolean).map(sn).filter(Boolean); if(sp.length) out.push("sorts : "+sp.join(", "));
+  const inv=(P.inv||[]).filter(Boolean).length; if(inv) out.push(inv+" manifestation"+(inv>1?"s":""));
+  if(P.arc) out.push("arcanum "+sn(P.arc));
+  out.push(P.hp==="roll"?"PV : dé de "+P.roll:"PV : moyenne");
+  return out.join(" · "); }
+function wReviewHtml(W){ const n=wNeeds(W), rows=wLines(W).filter(st=>st!=="Niveaux").map(st=>`<button class="wrevrow" data-act="wrevgo" data-v="${esc(st)}"><span class="label">${esc(st)}</span> <span>${esc(wLineVal(W,st)||"—")}</span></button>`).join("");
+  const lv=wLvN(W)>1?wLevels(W).steps.map(st=>`<button class="wrevrow" data-act="wrevgo" data-v="Niveaux" data-l="${st.L}"><span class="label">Niveau ${st.L}</span> <span>${esc(wLvMsg(st)||wLvSum(st))}</span></button>`).join(""):"";
+  return `<div class="askover" role="dialog" aria-modal="true" aria-label="Relecture avant création"><div class="askbox wreview"><b>Relecture avant création</b><div class="muted" style="font-size:var(--fs-sm)">${esc(W.name||"Nouveau personnage")} · niveau ${wLvN(W)}. Touche une ligne pour la modifier.</div>
+    <div class="wrevlist">${rows}${lv?`<div class="label" style="margin-top:6px">Niveaux 2 à ${wLvN(W)}</div>${lv}`:""}</div>
+    <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn small ghost" data-act="wrevNo">Modifier</button><button class="btn small primary" data-act="wcreate" data-ok="1"${n.length?" disabled":""}>Créer le personnage</button></div></div></div>`; }
 function wModeView(W){ return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Comment veux-tu le créer ? Tu pourras changer de mode en cours de route.</div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>
     <div class="wmodes"><button class="wcard wmodec" data-act="wmode" data-v="guide"><b>Guidé</b><span>Pour débuter. Trois écrans, et des propositions déjà faites : tu valides ou tu changes. Le personnage commence au niveau 1.</span></button>
     <button class="wcard wmodec" data-act="wmode" data-v="direct"><b>Direct</b><span>Une seule page avec tous les choix, dans l'ordre que tu veux. Pour créer vite, ou à un niveau plus élevé.</span></button></div>`; }
@@ -397,7 +422,7 @@ function wLvMsg(st){ const {L,p,P,before}=st, x="Niveau "+L+" : ", n=(a,k)=>(Arr
   if(p.dPrepared&&p.maxSpell&&n(P.spl,p.dPrepared)<Math.min(p.dPrepared,left(classSpells(p.D0,null,p.maxSpell)))) return x+"choisis "+(p.dPrepared>1?"tes sorts.":"ton sort.");
   if(p.arc&&!P.arc) return x+"choisis ton arcanum mystique.";
   return ""; }
-function wCreate(){
+function wCreate(){ S.wReview=false; S.wClsAsk=null;
   const W=S.W; const id="perso_"+uid(); const d=wLevels(W,true).d; S.docs[id]=d; // niveaux 2 à N déjà appliqués : pas de fenêtre ensuite
   touch(id); S.cur=id; S.view="sheet"; S.tab="jeu"; S.W=null; wDraftClear();
   for(const hid of W.catMade||[]) if(S.docs[hid]&&S.docs[hid].pending&&!hbUsed(hid)) removeDoc(hid);
