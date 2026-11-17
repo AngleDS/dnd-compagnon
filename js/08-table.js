@@ -1192,7 +1192,7 @@ function notesPop(ch){ const L=notesOf(ch).slice().reverse(), ed=S.T.noteEdit;
     <div class="notelist">${rows||`<div class="muted" style="font-size:var(--fs-sm)">Aucune note pour l’instant.</div>`}</div><div class="muted" style="font-size:var(--fs-sm);margin-top:8px">Séparées des notes du personnage. Date et heure ajoutées toutes seules ; touche une note pour la corriger.</div>`; }
 /* Chantier 7 : les plus utilisés. ch.useFreq = {clé: [nombre, dernière fois]} : jets faits depuis « À la table », sorts lancés, utilisations.
    Un jet de toucher suivi de ses dégâts compte une fois (T.lastBump). Au plus 40 clés gardées. */
-function useBump(key){ const ch=cur(), T=S.T; if(!ch||!key) return; if(T) T.lastBump=key;
+function useBump(key,chain){ const ch=cur(), T=S.T; if(!ch||!key) return; if(T) T.lastBump=chain?key:null; // chain : un Toucher ou un sort lancé, dont les dégâts qui suivent ne recomptent pas
   const F=ch.useFreq=Object.assign({},ch.useFreq), o=F[key]||[0,0]; F[key]=[(+o[0]||0)+1,Date.now()];
   const ks=Object.keys(F); if(ks.length>40){ ks.sort((a,b)=>F[a][0]-F[b][0]||F[a][1]-F[b][1]); for(const k of ks.slice(0,ks.length-40)) delete F[k]; } touch(S.cur); }
 function mostUsed(ch,items,n=6){ const F=ch&&ch.useFreq||{};
@@ -1633,7 +1633,7 @@ function ensureTableRollUse(){
 }
 function tableRollCommitted(kind){
   const i=tableSelected();
-  if(i&&(kind==="d20"||S.T.lastBump!==i.key)) useBump(i.key); // chantier 7 : Toucher puis Dégâts = un seul usage
+  if(i){ if(kind!=="d20"&&S.T.lastBump===i.key) S.T.lastBump=null; else useBump(i.key,kind==="d20"); } // chantier 7 : Toucher puis Dégâts = un ; Dégâts répétés = un chacun (audit, 17 nov. 2026)
   // Weapon damage never changes turn tracking, even after an explicit undo.
   if(i?.kind==="atk"&&kind!=="d20") return;
   if(i?.kind==="atk"){ consumeTableCost(S.T.qr&&S.T.qr.from==="opp"?"reaction":undefined); ammoSpend(cur(),i); }
@@ -1676,7 +1676,7 @@ function performTableCast(data){
       const th=+(sp.mech&&sp.mech.tempHp)||0; S.T.castTemp=null;
       if(th){ const v=th*Math.max(1,rit?sp.level:lvl); ch.hp=ch.hp||{cur:D.hpMax,temp:0}; const b0=+ch.hp.temp||0; S.T.castTemp={v,b0};
         if(v>b0){ ch.hp.temp=v; addLog({label:sp.name+" · PV temporaires",total:"+"+v,bd:b0?"remplacent tes "+b0+" PV temporaires (pas de cumul)":"",quiet:true}); } }
-      useBump(data.k||("spell:"+data.ref));
+      useBump(data.k||("spell:"+data.ref),true);
       S.T.castDone=data.k||("spell:"+data.ref); S.T.castLvl=rit?sp.level:lvl; S.T.castRit=rit; S.T.castConc=sp.concentration?sp.name:null;
       touch(S.cur); return true;
 }

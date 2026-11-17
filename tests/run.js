@@ -3529,12 +3529,13 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     const roll = async (k, r) => { const n = await p.evaluate(() => (cur().rollLog || []).length); await p.evaluate(([k, r]) => quickRoll(k, r, 'n'), [k, r]); await p.waitForFunction(n => (cur().rollLog || []).length > n, n); };
     await roll(atk[0], 'hit'); await roll(atk[0], 'dmg');
     await roll(atk[1], 'hit'); await roll(atk[1], 'hit');
+    await roll(atk[2], 'dmg'); await roll(atk[2], 'dmg'); await roll(atk[2], 'dmg'); await roll(atk[2], 'hit'); await roll(atk[2], 'dmg');
     await p.evaluate(() => { cur().turn = {}; S.T.pop = 'eco:bonus'; render(); }); await p.click('.tpop .trow[data-k="feat:guerrier/second souffle"] [data-act="tuseq"]');
-    const F = await p.evaluate(([a, b]) => { const F = cur().useFreq; return [F[a][0], F[b][0], F['feat:guerrier/second souffle'] && F['feat:guerrier/second souffle'][0]]; }, atk);
-    eq(F, [1, 2, 1], 'Toucher + Dégâts = 1, deux Toucher = 2, une utilisation = 1');
+    const F = await p.evaluate(([a, b, c]) => { const F = cur().useFreq; return [F[a][0], F[b][0], F[c][0], F['feat:guerrier/second souffle'] && F['feat:guerrier/second souffle'][0]]; }, atk);
+    eq(F, [1, 2, 4, 1], 'Toucher + Dégâts = 1, deux Toucher = 2, trois Dégâts puis Toucher + Dégâts = 4, une utilisation = 1');
     await p.evaluate(() => { S.T.pop = 'search'; S.T.q = ''; render(); });
     const rows = await p.evaluate(() => [...document.querySelectorAll('.tpop .tmostused .trow')].map(r => r.dataset.k));
-    eq([rows.length, rows[0]], [3, atk[1]], 'Recherche vide : « Les plus utilisés », le plus fréquent en tête');
+    eq([rows.length, rows[0]], [4, atk[2]], 'Recherche vide : « Les plus utilisés », le plus fréquent en tête');
     ok(await p.evaluate(() => !!document.querySelector('.tpop .tmostused .tkb[data-r="hit"]')), 'lignes avec Toucher / Dégâts directs');
     await p.fill('#tq', 'second'); ok(await p.evaluate(() => !document.querySelector('.tpop .tmostused')), 'une recherche tapée remplace la liste');
     const imp = await p.evaluate(() => { const perso = { type: 'perso', name: 'X', level: 1, abilities: { for: 8, dex: 8, con: 8, int: 8, sag: 8, cha: 8 } }, out = [];
