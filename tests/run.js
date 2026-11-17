@@ -2587,7 +2587,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
 
   await test('Tour : Mouvement et Autre manuels et annulables, Nouveau tour réinitialise tout',async p=>{
     await diceTable(p);
-    ok(/^Actions\s+\d+ options?$/.test((await p.innerText('.tturnbtn[data-v="eco:action"]')).trim()),'nombre d’options sous le libellé');
+    ok(/^Actions$/.test((await p.innerText('.tturnbtn[data-v="eco:action"]')).trim()),'plus de nombre d’options sous le libellé (chantier 31, choix d’Angle)');
     await p.click('.tturnbtn[data-v="move"]');
     ok((await p.innerText('.tturnbtn[data-v="move"]')).includes('✓ Mouvement terminé'),'jalon Mouvement');
     await p.click('.tturnbtn[data-v="move"]');
