@@ -76,11 +76,9 @@ function lvlModal(){
   if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto">${winHead("Niveau 20")}<p>Niveau maximum atteint.</p></div></div>`;
   const lu=(k,i)=>`data-lu="${k}"${i!==undefined?` data-i="${i}"`:""}`;
   const h=lvlBody(ch,P,p,lu);
-  const chain=S.lvlTarget&&S.lvlTarget.id===S.cur&&p.from<S.lvlTarget.to?S.lvlTarget:null;
-  const foot=chain&&P.stop?`<div class="panel stack" style="border-color:var(--blood)"><div>Arrêter la création ici ? ${esc(ch.name||"Le personnage")} restera au <b>niveau ${p.from}</b> au lieu du niveau ${chain.to}. Tu pourras continuer plus tard avec le bouton « Niveau ${p.to} ↑ » en haut de la fiche.</div><div class="row" style="justify-content:flex-end;gap:6px"><button class="btn" data-act="lvlStopNo">Reprendre la montée</button><button class="btn danger" data-act="lvlStopYes">Arrêter au niveau ${p.from}</button></div></div>`
-    :`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:var(--fs-sm)">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
-  return `<div class="picker" data-act="${chain?"noop":"closeModal"}"><div class="box" role="dialog" aria-label="Monter de niveau" style="grid-template-rows:auto 1fr auto">
-    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2>${chain?`<div class="muted" style="font-size:var(--fs-sm)">Création du personnage · niveau ${p.to} sur ${chain.to}</div>`:""}</div>${chain?`<button class="btn small ghost" data-act="lvlStop">Arrêter ici</button>`:`<button class="btn small ghost wclose" type="button" data-act="closeModal" aria-label="Fermer">×</button>`}</div>
+  const foot=`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:var(--fs-sm)">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
+  return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" aria-label="Monter de niveau" style="grid-template-rows:auto 1fr auto">
+    <div class="row" style="justify-content:space-between"><div><h2>Passer au niveau ${p.to}</h2></div><button class="btn small ghost wclose" type="button" data-act="closeModal" aria-label="Fermer">×</button></div>
     <div class="stack" style="overflow-y:auto;min-height:0">${h}</div>
     ${foot}</div></div>`;
 }
@@ -172,7 +170,6 @@ function lvlApply(){
   const newTab=[newRep.length?"Repères : "+newRep.join(", "):"",newRes.length?"Ressources : "+newRes.join(", "):""].filter(Boolean).join(" ; ");
   addLog({label:(ch.name||"Personnage")+" passe niveau "+p.to,total:"↑",bd:`+${gain} PV max.`+(p.feats.length?" Nouveau : "+p.feats.map(f=>f.name).join(", ")+".":"")+(newTab?" Nouveau dans À la table : "+newTab+".":""),kind:"info"});
   if(newTab) setBanner("Niveau "+p.to+" — nouveau dans « À la table » : "+newTab+".");
-  if(S.lvlTarget&&S.lvlTarget.id===S.cur&&ch.level<S.lvlTarget.to){ S.pending={type:"lvl",hp:"avg"}; } else S.lvlTarget=null;
   render(); if(!S.pending) rvStart(S.cur);
 }
 function renderModal(){

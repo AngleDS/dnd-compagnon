@@ -315,9 +315,6 @@ document.addEventListener("click",e=>{
     case "editAttack": S.pending={type:"attack",id:t.dataset.id}; renderModal(); break;
     case "rmAttack": ch.attacks=(ch.attacks||[]).filter(x=>x.id!==t.dataset.id); S.pending=null; touch(S.cur); render(); break;
     case "lvlUp": S.pending={type:"lvl",hp:"avg"}; renderModal(); break;
-    case "lvlStop": if(S.pending) S.pending.stop=true; renderModal(); break;
-    case "lvlStopNo": if(S.pending) S.pending.stop=false; renderModal(); break;
-    case "lvlStopYes": S.lvlTarget=null; S.pending=null; renderModal(); render(); rvStart(S.cur); break;
     case "rvGo": for(const it of (S.rv?S.rv.items:[])) if(it.state==="err") it.state="wait"; rvRun(); break;
     case "rvStop": if(S.rv){ S.rv.stop=true; S.af=null; renderModal(); } break;
     case "rvOk": { const it=S.rv&&S.rv.items.find(i=>i.id===t.dataset.id); if(it) rvApply(it); renderModal(); render(); break; }
