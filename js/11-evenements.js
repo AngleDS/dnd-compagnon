@@ -124,7 +124,9 @@ document.addEventListener("click",e=>{
     case "wizard": if(!S.W){ const d=wDraftLoad(); S.W=d||wNew(); if(!d) S.W.mode="?"; } S.W.open=null; /* création neuve : on choisit d'abord le mode */ S.view="wizard"; window.scrollTo(0,0); render(); break; // une création en cours (parti voir « Mes contenus ») est reprise
     case "wopen": S.W.open=t.dataset.v; S.W.openShown=null; S.W.chg=null; (S.W.seen=S.W.seen||{})[t.dataset.v]=true; render(); break;
     case "wchg": S.W.chg=t.dataset.k; render(); break;
-    case "wmode": { const W=S.W; W.mode=t.dataset.v==="guide"?"guide":""; W.open=null; if(W.mode==="guide"){ W.level=1; W.gstep=wGFirst(W); if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); } render(); window.scrollTo(0,0); break; }
+    case "wmodeask": S.W.askGuide=true; render(); break;
+    case "wmodeno": S.W.askGuide=false; render(); break;
+    case "wmode": { const W=S.W; W.askGuide=false; W.mode=t.dataset.v==="guide"?"guide":""; W.open=null; if(W.mode==="guide"){ W.level=1; W.gstep=wGFirst(W); if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); } render(); window.scrollTo(0,0); break; }
     case "wgnext": { const W=S.W, i=wGStep(W); if(wGNeeds(W,i).length) break; W.gstep=i+1; if(W.gstep===2) wGuideFill(W,["Historique",...G_STEPS[2][1]]); render(); window.scrollTo(0,0); break; }
     case "wgprev": S.W.gstep=Math.max(0,wGStep(S.W)-1); render(); window.scrollTo(0,0); break;
     case "wsrc": (S.W.src=S.W.src||{})[t.dataset.k]=t.dataset.v; render(); break;

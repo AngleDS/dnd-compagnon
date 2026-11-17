@@ -549,7 +549,7 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.W.langs, wGStep(S.W)]), [['Nain', 'Orc'], 2], 'aller-retour : le choix du joueur n’est pas remplacé par la proposition');
     await p.click('[data-act="wmode"][data-v="direct"]');
     eq(await p.evaluate(() => [S.W.mode, document.querySelectorAll('.wline').length, document.querySelectorAll('.wline .st').length - [...document.querySelectorAll('.wline .st')].filter(s => !s.textContent).length, document.querySelector('input[data-w="name"]').value]), ['', 9, 8, 'Mirela'], 'mode direct : la même création, toutes les lignes cochées');
-    await p.evaluate(() => { S.W.level = 4; render(); }); await p.click('[data-act="wmode"][data-v="guide"]');
+    await p.evaluate(() => { S.W.level = 4; render(); }); await p.click('.wswitch'); await p.click('.wask [data-act="wmode"]');
     eq(await p.evaluate(() => [S.W.mode, wGStep(S.W), S.W.level]), ['guide', 2, 1], 'retour au guidé : dernier écran, niveau 1');
     // Changer de classe en arrière : les finitions sont reproposées pour la nouvelle classe
     await p.click('[data-act="wgprev"]'); await p.click('[data-act="wgprev"]'); await p.click('[data-act="wchg"][data-k="cls"]'); await p.click('[data-act="wpick"][data-v="guerrier"]'); await p.click('[data-act="wgnext"]'); await p.click('[data-act="wgnext"]');
@@ -562,6 +562,34 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(await p.evaluate(() => [S.W.mode, wGStep(S.W), document.querySelector('h1').textContent, S.W.cls]), ['guide', 1, 'D\'où viens-tu ?', 'guerrier'], 'brouillon repris dans le mode guidé, au même écran');
     await p.click('[data-act="wgnext"]'); await p.click('[data-act="wcreate"]');
     eq(await p.evaluate(() => { const c = cur(); return [S.view, c.name, c.classId, c.level, c.lineage.id, c.languages, !!S.pending]; }), ['sheet', 'Mirela', 'guerrier', 1, 'haut-elfe', 'Commun, Nain, Orc', false], 'personnage créé au niveau 1');
+  });
+
+  await test('Création guidée : manifestation de l’occultiste proposée, écran Finitions honnête, avertissement avant de repasser au niveau 1', async p => {
+    await open(p);
+    // Occultiste guidé : la manifestation est proposée (sans cible à choisir), sa description affichée
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { mode: 'guide', gstep: 1, name: 'Occulte', cls: 'occultiste', sp: 'srd:halfelin' }); S.view = 'wizard'; render(); });
+    await p.click('[data-act="wpick"][data-v="srd:sage"]'); await p.click('[data-act="wgnext"]');
+    const fin = () => p.evaluate(() => [document.querySelector('.wgleft, .wz section > p').textContent, document.querySelector('#wfoot .btn.primary').textContent]);
+    eq(await fin(), ['Tout est déjà proposé d\'après ta classe et ton origine. Touche une ligne pour voir ou changer.', 'Créer le personnage'], 'occultiste : plus rien à choisir en Finitions');
+    eq(await p.evaluate(() => [S.W.inv, wLineMsg(S.W, 'Sorts')]), [['armure-dombres'], ''], 'Armure d’ombres proposée');
+    await p.click('.wline[data-v="Sorts"]'); ok(/armure du mage/i.test(await p.evaluate(() => document.querySelector('#modal .winvtxt').textContent)), 'description de la manifestation sous la liste');
+    eq(await p.evaluate(() => [...document.querySelectorAll('#modal select[data-w="inv.0"] option')].filter(o => o.value).every(o => !INV_CHOICE[o.value])), true, 'au niveau 1, aucune manifestation ne demande de cible');
+    await p.selectOption('#modal select[data-w="inv.0"]', 'pacte-de-la-lame'); await p.click('#modal .wfoot [data-act="wclose"]');
+    await p.click('[data-act="wgprev"]'); await p.click('[data-act="wgnext"]'); eq(await p.evaluate(() => S.W.inv), ['pacte-de-la-lame'], 'le choix du joueur n’est pas remplacé par la proposition');
+    // S'il reste un choix (manifestation vidée), l'écran le dit au lieu d'annoncer que tout est proposé
+    await p.evaluate(() => { S.W.inv = ['']; render(); });
+    eq(await fin(), ['Presque tout est proposé d\'après ta classe et ton origine. Il reste à choisir : manifestation occulte (ligne Sorts).', 'Choisis ta manifestation occulte.'], 'il reste un choix : l’écran le dit');
+    await p.evaluate(() => { S.W.inv = ['pacte-de-la-lame']; render(); });
+    await p.click('[data-act="wcreate"]'); eq(await p.evaluate(() => [cur().classId, cur().invocations]), ['occultiste', ['pacte-de-la-lame']], 'occultiste créé');
+    // Mode direct au niveau 4 : passer en guidé demande confirmation
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { mode: '', name: 'Haut', cls: 'guerrier', level: 4 }); S.view = 'wizard'; render(); });
+    await p.click('.wswitch'); eq(await p.evaluate(() => [S.W.mode, S.W.level, /niveau 1.*\(4\)/.test(document.querySelector('.wask').textContent)]), ['', 4, true], 'avertissement, rien de changé');
+    await p.click('[data-act="wmodeno"]'); eq(await p.evaluate(() => [S.W.mode, S.W.level, !!document.querySelector('.wask')]), ['', 4, false], 'rester en direct : niveau gardé');
+    await p.click('.wswitch'); await p.click('.wask [data-act="wmode"]'); eq(await p.evaluate(() => [S.W.mode, S.W.level, S.W.name, S.W.cls]), ['guide', 1, 'Haut', 'guerrier'], 'confirmé : guidé au niveau 1, choix gardés');
+    await p.setViewportSize({ width: 390, height: 844 }); await p.evaluate(() => { S.W.mode = ''; S.W.level = 3; S.W.askGuide = true; render(); });
+    eq(await p.evaluate(() => [document.documentElement.scrollWidth <= 390, [...document.querySelectorAll('.wask .btn')].every(b => b.getBoundingClientRect().right <= 390)]), [true, true], 'avertissement à 390 px');
+    // Au niveau 1, pas d'avertissement inutile
+    await p.evaluate(() => { S.W.level = 1; S.W.askGuide = false; render(); }); await p.click('.wswitch'); eq(await p.evaluate(() => [S.W.mode, !!document.querySelector('.wask')]), ['guide', false], 'niveau 1 : bascule directe');
   });
 
   for (const [label, o, want, noteRe] of [

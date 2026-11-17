@@ -4,7 +4,7 @@ const STD_ARRAY=[15,14,13,12,10,8], PT_COST={8:0,9:1,10:2,11:3,12:4,13:5,14:7,15
    (elle n'est ni dans S.docs, ni dans la copie personnelle, ni synchronisée). Elle survit à un rechargement ; elle est effacée quand le
    personnage est créé ou la création abandonnée. Un brouillon illisible ou mal formé est ignoré. */
 const W_DRAFT_KEY="registre-creation-v1";
-function wDraftSave(){ try{ const W=S.W; if(!W) return; const o=Object.assign({},W); for(const k of ["open","openShown","chg","nh"]) delete o[k]; localStorage.setItem(W_DRAFT_KEY,JSON.stringify({v:1,t:Date.now(),W:o})); }catch(e){} }
+function wDraftSave(){ try{ const W=S.W; if(!W) return; const o=Object.assign({},W); for(const k of ["open","openShown","chg","nh","askGuide"]) delete o[k]; localStorage.setItem(W_DRAFT_KEY,JSON.stringify({v:1,t:Date.now(),W:o})); }catch(e){} }
 function wDraftHas(){ try{ return !!localStorage.getItem(W_DRAFT_KEY); }catch(e){ return false; } }
 function wDraftClear(){ try{ localStorage.removeItem(W_DRAFT_KEY); }catch(e){} }
 function wDraftLoad(){ try{ const j=JSON.parse(localStorage.getItem(W_DRAFT_KEY)||"null"); if(!j||j.v!==1||!j.W||typeof j.W!=="object"||Array.isArray(j.W)) return null;
@@ -230,7 +230,7 @@ function wStepBody(W,st){ const c=wCls(W);
     const can=classSpells(Dt,0), l1=classSpells(Dt,null,1);
     const pick=(key,n,list,lab)=>n?`<div class="label" style="margin-top:10px">${lab} (${n})</div><div class="stack">${Array.from({length:n},(_,i)=>wSel(key+"."+i,list.filter(x=>!W[key].some((r,j)=>j!==i&&r===x.ref)).map(x=>[x.ref,x.s.name]),W[key][i]||"")).join("")}</div>`:"";
     h+=pick("can",nc,can,"Sorts mineurs")+pick("spl",np,l1,"Sorts de niveau 1");
-    const ni=wInvN(W); if(ni){ const tmp=wDoc(W); h+=`<div class="label" style="margin-top:10px">Manifestation occulte (${ni})</div>`+Array.from({length:ni},(_,i)=>{ const id=W.inv[i]||""; return `<div class="row" style="gap:6px">${wSel("inv."+i,invAvailFor(tmp,1).map(x=>[x.id,x.name]),id)}${INV_CHOICE[id]?wSel("invc."+i,invChoices(tmp,id,W.can),W.invc[i]||"","— Cible —"):""}</div>`; }).join(""); }
+    const ni=wInvN(W); if(ni){ const tmp=wDoc(W); h+=`<div class="label" style="margin-top:10px">Manifestation occulte (${ni})</div>`+Array.from({length:ni},(_,i)=>{ const id=W.inv[i]||""; return `<div class="row" style="gap:6px">${wSel("inv."+i,invAvailFor(tmp,1).map(x=>[x.id,x.name]),id)}${INV_CHOICE[id]?wSel("invc."+i,invChoices(tmp,id,W.can),W.invc[i]||"","— Cible —"):""}</div>${id?`<div class="muted winvtxt" style="font-size:var(--fs-sm)">${esc((S.C.invocations.find(x=>x.id===id)||{}).text||"")}</div>`:""}`; }).join(""); }
   }
   if(st==="Équipement"){ const be=wBgEquip(W), bgN=(wBg(W)||{}).name||"";
     const block=(title,txt,key)=>{ const opts=eqOptions(txt); if(!opts.length) return `<div class="panel"><b>${esc(title)}</b><div class="muted">${esc(txt||"Rien à choisir.")}</div></div>`; const cur=opts.find(o=>o.k===W[key])||opts[0];
@@ -278,7 +278,9 @@ function wSugDraft(W,st){ const c=wCls(W), o={}, fill=(cur,n,cands)=>{ const a=A
     if(wStyle1(W)&&!W.style){ const l=wStyles(), d=l.find(x=>x[1]==="Défense")||l[0]; if(d) o.style=d[0]; }
     const ne=wExpN(W); if(ne){ const prof=[...new Set([...have,...skills,extra].filter(Boolean))], cur=(W.exp||[]).filter(s=>prof.includes(s)).slice(0,ne); diff("exp",fill(cur,ne,[...["discretion","escamotage","perception"].filter(s=>prof.includes(s)),...prof]).filter(Boolean)); } }
   if(st==="Sorts"&&c){ const cast=wCast(W), sg=SUG_SP[c.id]||[[],[]], D={cls:c}, refs=(l,pref)=>{ const all=l.map(x=>x.ref); return [...pref.map(i=>"srd:"+i).filter(r=>all.includes(r)),...all]; };
-    const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(nc) diff("can",fill(W.can,nc,refs(classSpells(D,0),sg[0]))); if(np) diff("spl",fill(W.spl,np,refs(classSpells(D,null,1),sg[1]))); }
+    const nc=wNC(W), np=cast?(cast.prepared||[])[0]||0:0; if(nc) diff("can",fill(W.can,nc,refs(classSpells(D,0),sg[0]))); if(np) diff("spl",fill(W.spl,np,refs(classSpells(D,null,1),sg[1])));
+    // Manifestation : une qui ne demande pas d'autre choix (Armure d'ombres d'abord : meilleure CA qu'une armure légère au niveau 1)
+    const ni=wInvN(W); if(ni){ const av=invAvailFor(wDoc(W),1).map(x=>x.id).filter(id=>!INV_CHOICE[id]); diff("inv",fill(W.inv,ni,["armure-dombres","esprit-occulte",...av].filter(id=>av.includes(id)))); } }
   if(st==="Langues") diff("langs",fill(wLangs(W),wLangN(W),["Elfique","Nain","Gobelin",...LANGS]).filter(Boolean));
   return o; }
 function wLines(W){ return [...wSteps(W).filter(s=>s!=="Identité"),"Détails"]; }
@@ -318,14 +320,16 @@ function wGFoot(W){ const i=wGStep(W), n=wGNeeds(W,i);
 function wGuideView(W){ const i=wGStep(W); let h="";
   if(i===0) h=`<label class="field wgname"><span>Comment s'appelle ton personnage ?</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><h2 class="wgh">Sa classe</h2>${wStepBody(W,"Classe")}`;
   if(i===1) h=`<h2 class="wgh">Son historique</h2>${wStepBody(W,"Historique")}<h2 class="wgh">Son espèce</h2>${wStepBody(W,"Espèce")}`;
-  if(i===2) h=`<p class="muted">Tout est déjà proposé d'après ta classe et ton origine. Touche une ligne pour voir ou changer.</p><div class="wlines">${[...G_STEPS[2][1].filter(s=>wSteps(W).includes(s)),"Détails"].map(st=>wRow(W,st)).join("")}</div>`;
+  if(i===2){ const n=wGNeeds(W,2); h=`<p class="${n.length?"wgleft":"muted"}">${n.length?`Presque tout est proposé d'après ta classe et ton origine. Il reste à choisir : ${esc(n.map(x=>x.msg.replace(/\.$/,"").replace(/^Choisis /,"").replace(/^ta /,"")+" (ligne "+x.name+")").join(" ; "))}.`:"Tout est déjà proposé d'après ta classe et ton origine. Touche une ligne pour voir ou changer."}</p>`; }
+  if(i===2) h+=`<div class="wlines">${[...G_STEPS[2][1].filter(s=>wSteps(W).includes(s)),"Détails"].map(st=>wRow(W,st)).join("")}</div>`;
   return `<div class="list-head"><div><h1>${esc(G_STEPS[i][0])}</h1><div class="muted">Étape ${i+1} sur 3 · mode guidé <button class="btn small ghost wswitch" data-act="wmode" data-v="direct">Passer en mode direct</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
     <div class="wz"><section class="stack" style="min-width:0">${h}${wGFoot(W)}</section>${wPreview(W)}</div>`; }
 // Une ligne pas encore ouverte reste neutre (« À choisir ») ; le rouge est gardé pour une ligne ouverte puis laissée incomplète
 function wRow(W,st){ const c=wCls(W), msg=wLineMsg(W,st), val=wLineVal(W,st), lock=!c&&(st==="Compétences"||st==="Équipement"), seen=!!(W.seen||{})[st];
     return `<button class="wline${msg?" todo":" done"}" data-act="wopen" data-v="${esc(st)}" ${lock?"disabled":""}><span class="nm">${esc(st)}</span><span class="val">${val?esc(val):`<span class="muted">—</span>`}${msg?(lock||!seen?`<small class="muted">${esc(lock?msg:"À choisir")}</small>`:`<small class="warntxt">${esc(msg)}</small>`):""}</span><span class="st" aria-hidden="true">${msg||st==="Détails"?"":"✓"}</span></button>`; }
 function wDirectView(W){ const c=wCls(W), lv=+W.level||1, rows=wLines(W).map(st=>wRow(W,st)).join("");
-  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux. <button class="btn small ghost wswitch" data-act="wmode" data-v="guide">Passer en mode guidé</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
+  return `<div class="list-head"><div><h1>Nouveau personnage</h1><div class="muted">Chaque ligne ouvre ses choix. Fais-les dans l'ordre que tu veux. <button class="btn small ghost wswitch" data-act="${+W.level>1?"wmodeask":"wmode"}" data-v="guide">Passer en mode guidé</button></div></div><button class="btn ghost" data-act="wcancel" title="Efface cette création en cours">Abandonner</button></div>${wCount(W)}
+    ${W.askGuide&&+W.level>1?`<div class="panel stack wask" role="alert"><div>Le mode guidé crée le personnage au <b>niveau 1</b>. Ton niveau de départ (${+W.level}) sera remis à 1 ; tes autres choix sont gardés.</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="wmode" data-v="guide">Passer en guidé, au niveau 1</button><button class="btn" data-act="wmodeno">Rester en direct</button></div></div>`:""}
     <div class="wz"><section class="stack" style="min-width:0">
       <div class="wid"><label class="field"><span>Nom (obligatoire)</span><input type="text" data-w="name" value="${esc(W.name)}" maxlength="80" autocomplete="off"></label><label class="field"><span>Joueur</span><input type="text" data-w="player" value="${esc(W.player)}"></label><label class="field"><span>Niveau de départ</span><input type="number" min="1" max="20" data-w="level" value="${esc(W.level)}"></label></div>
       ${lv>1?`<div class="muted" style="font-size:var(--fs-sm)">Après la création, l'assistant de montée de niveau s'ouvrira pour chaque niveau jusqu'au niveau ${lv}.</div>`:""}
