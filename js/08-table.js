@@ -319,7 +319,7 @@ function tPop(ch,D){
       <div class="lusec"><div class="label">À la fin du repos</div><ul class="lul"><li>${D.cast&&D.cast.type==="pact"?"Emplacements de pacte récupérés":"Pas d'emplacement récupéré (repos long)"}</li>${shortRes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
       ${winFoot(`<button class="btn primary" data-act="restShort" ${cur0<=0?"disabled":""}>Terminer le repos court</button>`)}`); }
   if(k==="search") return wrap("Recherche",searchBar()," tsearchpop");
-  if(k==="notes") return wrap("Notes de partie",`<textarea id="t-notes" data-bind="sessionNotes" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="min-height:260px;width:100%">${esc(ch.sessionNotes||"")}</textarea><div class="muted" style="font-size:var(--fs-sm);margin-top:6px">Séparées des notes du personnage. Enregistrées au fil de la frappe.</div>`);
+  if(k==="notes") return wrap("Notes de partie",notesPop(ch));
   if(k==="card"){ const c=tCard(ch,D); if(!c){ T.pop=null; return ""; } // fenêtres harmonisées, lot 2 : le vrai nom en titre, sous-titre et coût dessous
     return `<div class="tpopback${anim?"":" still"}" data-act="tpopclose"><div class="tpop wide" role="dialog" aria-modal="true" aria-label="${esc(c.title)}" data-act="noop"><div class="tpophead tchead"><div class="tchw"><b>${esc(c.title)}</b>${c.sub||c.cost?`<div class="tcsub">${c.sub?`<span>${esc(c.sub)}</span>`:""}${c.cost}</div>`:""}</div><button class="btn small ghost" data-act="tpopclose" aria-label="Fermer">×</button></div><div class="tpopbody">${c.html}</div></div></div>`; }
   if(k==="hist") return wrap("Historique des jets", histBody(ch));
@@ -511,7 +511,7 @@ function racTileMap(ch,D){
     actions:()=>`<button class="tpbtn" data-act="tpop" data-v="list:actions"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-3.5a1.5 1.5 0 0 1 3 0V11m0-2a1.5 1.5 0 0 1 3 0v5a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14.5V12a1.5 1.5 0 0 1 3 0v1"/></svg>Actions<small class="tpsub">Ce que je peux faire</small></button>`,
     search:()=>`<button class="tpbtn" data-act="tsearch"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>Recherche<small class="tpsub">Jet, action, sort…</small></button>`,
     ...ctrMap(ch,true),
-    notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">Pour cette séance</small></button>`,
+    notes:()=>`<button class="tpbtn" data-act="tpop" data-v="notes"><svg class="tpi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>Notes de partie<small class="tpsub">${(n=>n?n+" note"+(n>1?"s":""):"Pour cette séance")(notesOf(ch).length)}</small></button>`,
   };
 }
 function raccourcisTiles(ch,D){ const R=racTileMap(ch,D), T=repTileMap(ch,D,chSize(ch)), pv=blkHidden(ch,"pv")?"":pvTile(ch,D); return blockTiles(ch,"raccourcis").map(id=>id===pv?"":id).map((id,i)=>(id&&(R[id]?R[id]():T[id]&&T[id]()))||plusTile("raccourcis",i,"tpbtn tplus")).join(""); }
@@ -1176,6 +1176,16 @@ function tempStepper(ch){
 }
 /* Barre de recherche (tuile Recherche en largeur, ou bloc Recherche) : résultats dans une liste déroulante sous la barre. Une seule barre par écran. */
 function searchBar(){ S.T._tq=true; const T=S.T; return `<div class="tsearchwrap"><form data-form="tq" class="tsearch"><input id="tq" type="search" autocomplete="off" placeholder="Jet, action, sort…" value="${esc(T.q)}" aria-label="Recherche rapide"><button type="button" class="tqclear" data-act="tqclear" aria-label="Effacer la recherche" ${T.q?"":"hidden"}>×</button></form><div id="tres" class="tresdrop${T.qOpen===false?" closed":""}">${tResults()}</div></div>`; }
+/* Chantier 6 : notes de partie datées. ch.noteLog = [{id, t, text}] dans l'ordre d'écriture, affichées de la plus récente à la plus ancienne.
+   L'ancienne zone unique (ch.sessionNotes) devient la première note à la première modification ; elle n'est jamais effacée (seulement ignorée ensuite). */
+function notesOf(ch){ if(Array.isArray(ch.noteLog)) return ch.noteLog; const o=String(ch.sessionNotes||"").trim(); return o?[{id:"old",t:+ch.updatedAt||0,text:o,old:true}]:[]; }
+function notesOwn(ch){ if(!Array.isArray(ch.noteLog)) ch.noteLog=notesOf(ch).map(n=>({id:n.old?uid():n.id,t:n.t,text:n.text})); return ch.noteLog; }
+function noteWhen(t){ if(!t) return "Note d’avant"; const d=new Date(t); return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})+" · "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
+function notesPop(ch){ const L=notesOf(ch).slice().reverse(), ed=S.T.noteEdit;
+  const rows=L.map(n=>n.id===ed?`<form class="noteitem stack" data-form="noteedit" data-id="${esc(n.id)}"><div class="muted noteat">${esc(noteWhen(n.t))}</div><textarea id="t-note-ed" rows="4" style="width:100%">${esc(n.text)}</textarea><div class="row" style="justify-content:flex-end;gap:6px"><button type="button" class="btn small ghost" data-act="noteEdit" data-id="">Annuler</button><button type="submit" class="btn small primary">Enregistrer</button></div></form>`
+    :`<div class="noteitem"><div class="row" style="justify-content:space-between;gap:8px;align-items:center"><span class="muted noteat">${esc(noteWhen(n.t))}</span><button class="btn small ghost danger btndel" data-act="noteDel" data-id="${esc(n.id)}" aria-label="Supprimer la note">${ICON_TRASH}</button></div><button class="notetext" data-act="noteEdit" data-id="${esc(n.id)}" aria-label="Corriger la note">${prose(n.text)}</button></div>`).join("");
+  return `<form class="stack" data-form="noteadd" novalidate><textarea id="t-note-new" rows="3" placeholder="Nom d'un PNJ, un indice, une somme gagnée…" style="width:100%"></textarea><div class="row" style="justify-content:flex-end"><button type="submit" class="btn small primary">Ajouter</button></div></form>
+    <div class="notelist">${rows||`<div class="muted" style="font-size:var(--fs-sm)">Aucune note pour l’instant.</div>`}</div><div class="muted" style="font-size:var(--fs-sm);margin-top:8px">Séparées des notes du personnage. Date et heure ajoutées toutes seules ; touche une note pour la corriger.</div>`; }
 /* Chantier 7 : les plus utilisés. ch.useFreq = {clé: [nombre, dernière fois]} : jets faits depuis « À la table », sorts lancés, utilisations.
    Un jet de toucher suivi de ses dégâts compte une fois (T.lastBump). Au plus 40 clés gardées. */
 function useBump(key){ const ch=cur(), T=S.T; if(!ch||!key) return; if(T) T.lastBump=key;

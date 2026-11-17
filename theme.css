@@ -601,6 +601,12 @@ body.blkdragging .tblocks.editing>.tblk:not(.dragging){transition:top .15s ease,
 body.dice3d-busy [data-virtual]{opacity:.5;pointer-events:none}
 /* Chantier 5 : effets actifs et lien vers les défenses */
 .fxrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+/* Notes de partie datées (chantier 6) */
+.notelist{margin-top:12px}
+.noteitem{padding:8px 0;border-top:1px solid var(--line)}
+.noteat{font-size:var(--fs-xs)}
+.notetext{display:block;width:100%;text-align:left;background:none;border:0;padding:4px 0;margin:0;color:inherit;font:inherit;cursor:text;min-height:44px}
+.notetext p{margin:0 0 4px}
 .fxsec .fxadd{width:100%;margin-top:10px}
 .fxdef{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border:1px dashed var(--line);border-radius:var(--r);background:transparent;color:inherit;font-size:var(--fs-sm);cursor:pointer;text-align:left}
 .hpbox .hpdef{justify-self:start}

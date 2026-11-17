@@ -103,6 +103,8 @@ document.addEventListener("click",e=>{
     case "diceDisplay": setDiceDisplayMode(diceDisplayMode()==="3d"?"direct":"3d"); try{ studioWarm(); }catch(_){} renderModal(); break;
     case "dice3dSkip": studioSkip(); break;
     // Défenses (chantier 5)
+    case "noteEdit": S.T.noteEdit=t.dataset.id||null; render(); { const x=document.getElementById("t-note-ed"); if(x){ x.focus(); x.setSelectionRange(x.value.length,x.value.length); } } break; // notes datées (chantier 6)
+    case "noteDel": if(ch){ const L=notesOwn(ch), i=L.findIndex(n=>n.id===t.dataset.id); if(i>=0){ L.splice(i,1); S.T.noteEdit=null; touch(S.cur); render(); } } break;
     case "mastTog": masteryToggle(ch,derive(ch),t.dataset.v); touch(S.cur); render(); break; // bottes d'arme retenues (chantier 14)
     case "defEdit": S.T.defEdit=S.T.defEdit===t.dataset.c?null:t.dataset.c; render(); break;
     case "defTog": defToggle(ch,t.dataset.c,t.dataset.v); touch(S.cur); render(); break;
@@ -501,6 +503,8 @@ document.addEventListener("submit",e=>{
     touch(S.cur); render(); return; }
   if(f.dataset.form==="bag"){ const ch=cur(); const n=document.getElementById("bag-new").value.trim(); const q=Math.max(1,+document.getElementById("bag-newq").value||1); if(ch&&n){ ensureBag(ch); ch.bag.push({id:uid(),name:n,qty:q,note:""}); touch(S.cur); render(); setTimeout(()=>document.getElementById("bag-new")?.focus(),0); } return; }
   if(f.dataset.form==="fxadd"){ fxSubmit(); return; }
+  if(f.dataset.form==="noteadd"){ const ch=cur(), v=(document.getElementById("t-note-new")?.value||"").trim(); if(!ch||!v) return; notesOwn(ch).push({id:uid(),t:Date.now(),text:v.slice(0,4000)}); touch(S.cur); render(); document.getElementById("t-note-new")?.focus(); return; }
+  if(f.dataset.form==="noteedit"){ const ch=cur(), v=(document.getElementById("t-note-ed")?.value||"").trim(); if(!ch) return; const L=notesOwn(ch), n=L.find(x=>x.id===f.dataset.id); if(n){ if(v) n.text=v.slice(0,4000); else L.splice(L.indexOf(n),1); } S.T.noteEdit=null; touch(S.cur); render(); return; }
   if(f.dataset.form==="cnt"){ const ch=cur(), q=s=>f.querySelector(s); const n=(q(".cnt-name")?.value||"").trim().slice(0,60), mx=Math.min(999,Math.floor(+(q(".cnt-max")?.value)||0)), rc=q(".cnt-rec")?.value;
     if(ch&&n&&mx>0){ ch.counters=ch.counters||[]; const c={id:uid(),name:n,cur:mx,max:mx}; if(rc==="court"||rc==="long") c.recharge=rc; ch.counters.push(c); touch(S.cur); render(); } else if(ch) setBanner("Donne un nom et un maximum (au moins 1) au compteur."); }
   if(f.dataset.form==="usepv"){ performUse(f.dataset.k,+(document.getElementById("t-pvn")||{}).value||0); return; }

@@ -3427,6 +3427,25 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     eq(imp, ['ok', 'import_invalid', 'import_invalid'], 'import : compteurs valides acceptés, invalides refusés');
   });
 
+  await test('Notes de partie datées (chantier 6) : ancienne note reprise sans être effacée, ajouter, corriger, supprimer, import', async p => {
+    await p.setViewportSize({ width: 390, height: 844 }); await diceTable(p);
+    await p.evaluate(() => { cur().sessionNotes = 'Ancienne note'; S.T.pop = 'notes'; render(); });
+    eq(await p.evaluate(() => [...document.querySelectorAll('.tpop .notetext')].map(n => n.textContent.trim())), ['Ancienne note'], 'l’ancienne zone devient une note (datée de la dernière modification de la fiche)');
+    await p.fill('#t-note-new', 'Le garde s’appelle Brann'); await p.click('.tpop form[data-form="noteadd"] button[type="submit"]');
+    const st = await p.evaluate(() => [cur().noteLog.map(n => n.text), cur().sessionNotes, [...document.querySelectorAll('.tpop .notetext')].map(n => n.textContent.trim()), /\d{2}:\d{2}/.test(document.querySelector('.tpop .noteat').textContent), document.getElementById('t-note-new').value]);
+    eq(st, [['Ancienne note', 'Le garde s’appelle Brann'], 'Ancienne note', ['Le garde s’appelle Brann', 'Ancienne note'], true, ''], 'ajoutée en tête avec date et heure ; ancienne zone gardée dans les données ; case vidée');
+    await p.locator('.tpop .notetext').first().click(); await p.fill('#t-note-ed', 'Le garde s’appelle Bran'); await p.click('.tpop form[data-form="noteedit"] button[type="submit"]');
+    eq(await p.evaluate(() => [cur().noteLog[1].text, !!document.getElementById('t-note-ed')]), ['Le garde s’appelle Bran', false], 'toucher une note la corrige');
+    await p.locator('.tpop .noteitem [data-act="noteDel"]').last().click();
+    eq(await p.evaluate(() => [cur().noteLog.map(n => n.text), cur().sessionNotes]), [['Le garde s’appelle Bran'], 'Ancienne note'], 'corbeille : la note disparaît (l’ancienne zone reste ignorée, pas effacée)');
+    await p.evaluate(() => { S.T.pop = null; render(); });
+    ok(await p.evaluate(() => /1 note/.test(document.querySelector('[data-act="tpop"][data-v="notes"]').textContent)), 'raccourci : nombre de notes');
+    ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'rien ne dépasse en largeur iPhone');
+    const imp = await p.evaluate(() => { const perso = { type: 'perso', name: 'X', level: 1, abilities: { for: 8, dex: 8, con: 8, int: 8, sag: 8, cha: 8 } }, out = [];
+      for (const noteLog of [[{ id: 'a', t: 1, text: 'x' }], [{ id: 'a', t: 'x', text: 'x' }], 'x']) { try { importPack({ registre: 1, perso: Object.assign({}, perso, { noteLog }) }); out.push('ok'); } catch (e) { out.push(e.message); } } return out; });
+    eq(imp, ['ok', 'import_invalid', 'import_invalid'], 'import : notes valides acceptées, invalides refusées');
+  });
+
   await test('Bottes d’arme : seules les armes retenues montrent leur botte, choix limité au nombre de la classe, rien sans l’aptitude', async p => {
     await diceTable(p);
     await p.evaluate(() => { const ch = cur(); ch.level = 1; delete ch.masteries; ch.attacks = ['epee-longue', 'javeline', 'arc-court', 'lance'].map((w, i) => ({ id: 'a' + i, weapon: 'srd:' + w, name: w, ability: 'auto', prof: true })); render(); });
