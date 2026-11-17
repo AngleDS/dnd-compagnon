@@ -29,11 +29,10 @@ function levelPlan(ch){
   if(D1.pb!==D0.pb) p.pbTxt=`Bonus de maîtrise : ${sg(D0.pb)} → ${sg(D1.pb)}`;
   return p;
 }
-function lvlModal(){
-  const ch=cur(), P=S.pending, p=levelPlan(ch), D0=p.D0;
-  if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto">${winHead("Niveau 20")}<p>Niveau maximum atteint.</p></div></div>`;
+/* Rubriques d'un niveau (sous-classe, PV, caractéristiques ou don, style, manifestations, sorts, arcanum) : partagées par la montée de niveau
+   habituelle (lvlModal, champs data-lu) et l'assistant de création (chantier 17, lot C ; champs data-w). lu(k,i) donne l'attribut du champ. */
+function lvlBody(ch,P,p,lu){ const D0=p.D0;
   const o=(v,l,c)=>`<option value="${esc(v)}" ${String(v)===String(c)?"selected":""}>${esc(l)}</option>`;
-  const lu=(k,i)=>`data-lu="${k}"${i!==undefined?` data-i="${i}"`:""}`;
   const sec=(t,b)=>`<div class="lusec"><div class="label">${t}</div>${b}</div>`;
   let h="";
   // gains
@@ -71,6 +70,12 @@ function lvlModal(){
   if(p.dCantrips){ const l=classSpells(D0,0).filter(x=>!have.has(x.ref)); h+=sec(`Sorts mineurs (${p.dCantrips})`,Array.from({length:p.dCantrips},(_,i)=>`<select ${lu("can",i)}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,(P.can||[])[i]||"")).join("")}</select>`).join("")); }
   if(p.dPrepared&&p.maxSpell){ const l=classSpells(D0,null,p.maxSpell).filter(x=>!have.has(x.ref)); h+=sec(`Sorts (${p.dPrepared}, jusqu'au niveau ${p.maxSpell})`,Array.from({length:p.dPrepared},(_,i)=>`<select ${lu("spl",i)}>${o("","— Choisir (ou plus tard) —","")}${l.map(x=>o(x.ref,"niv. "+x.s.level+" · "+x.s.name,(P.spl||[])[i]||"")).join("")}</select>`).join("")); }
   if(p.arc){ const l=classSpells(D0,p.arc).filter(x=>!have.has(x.ref)); h+=sec(`Arcanum mystique (sort de niveau ${p.arc})`,`<select ${lu("arc")}>${o("","— Choisir —","")}${l.map(x=>o(x.ref,x.s.name,P.arc||"")).join("")}</select><div class="muted" style="font-size:var(--fs-sm)">Lançable une fois par repos long, sans emplacement.</div>`); }
+  return h; }
+function lvlModal(){
+  const ch=cur(), P=S.pending, p=levelPlan(ch);
+  if(p.from>=20) return `<div class="picker" data-act="closeModal"><div class="box" role="dialog" style="grid-template-rows:auto">${winHead("Niveau 20")}<p>Niveau maximum atteint.</p></div></div>`;
+  const lu=(k,i)=>`data-lu="${k}"${i!==undefined?` data-i="${i}"`:""}`;
+  const h=lvlBody(ch,P,p,lu);
   const chain=S.lvlTarget&&S.lvlTarget.id===S.cur&&p.from<S.lvlTarget.to?S.lvlTarget:null;
   const foot=chain&&P.stop?`<div class="panel stack" style="border-color:var(--blood)"><div>Arrêter la création ici ? ${esc(ch.name||"Le personnage")} restera au <b>niveau ${p.from}</b> au lieu du niveau ${chain.to}. Tu pourras continuer plus tard avec le bouton « Niveau ${p.to} ↑ » en haut de la fiche.</div><div class="row" style="justify-content:flex-end;gap:6px"><button class="btn" data-act="lvlStopNo">Reprendre la montée</button><button class="btn danger" data-act="lvlStopYes">Arrêter au niveau ${p.from}</button></div></div>`
     :`<div class="row" style="justify-content:space-between"><span class="muted" style="font-size:var(--fs-sm)">Les choix laissés vides pourront être faits plus tard dans Construction ou Sorts.</span><button class="btn primary" data-act="lvlApply">Passer au niveau ${p.to}</button></div>`;
@@ -138,9 +143,9 @@ function hdSpend(ch,D,r,phys){
   addLog({label:"Dé de vie",total:"+"+heal,bd:`d${D.hd} ${r} ${sg(D.mods.con)}`+(phys?" · dé physique":""),quiet:true});
   touch(S.cur); render();
 }
-function lvlApply(){
-  const ch=cur(), P=S.pending, p=levelPlan(ch); if(p.from>=20) return;
-  const D0=p.D0, rep0=reperesAuto(ch,D0), res0=D0.res.map(r=>r.name);
+/* Applique les choix P d'un niveau (plan p = levelPlan(ch)) à la fiche ch, sans fenêtre ni historique. Utilisée par la montée de niveau
+   habituelle (lvlApply) et par l'assistant de création pour les niveaux 2 à N (chantier 17, lot C) : une seule règle pour les deux. */
+function lvlApplyTo(ch,P,p){ const D0=p.D0;
   const gain = P.hp==="roll"&&+P.roll ? Math.max(1,Math.min(p.hd,+P.roll)+D0.mods.con)+p.pvniv : p.hpAvg;
   if(P.hp==="roll"&&+P.roll&&ch.hpMode!=="manual"){ ch.hpMode="manual"; ch.hpMaxManual=D0.hpMax; }
   if(ch.hpMode==="manual") ch.hpMaxManual=(+ch.hpMaxManual||D0.hpMax)+gain;
@@ -156,6 +161,11 @@ function lvlApply(){
   for(const r of [...(P.can||[]),...(P.spl||[])].filter(Boolean)) if(!ch.spells.some(s=>s.ref===r)) ch.spells.push({ref:r,prepared:true});
   if(p.arc&&P.arc){ ch.arcanum=ch.arcanum||{}; ch.arcanum[p.arc]=P.arc; }
   const D1=derive(ch); ch.hp.cur=Math.min(ch.hp.cur,D1.hpMax);
+  return {gain,D1}; }
+function lvlApply(){
+  const ch=cur(), P=S.pending, p=levelPlan(ch); if(p.from>=20) return;
+  const rep0=reperesAuto(ch,p.D0), res0=p.D0.res.map(r=>r.name);
+  const {gain,D1}=lvlApplyTo(ch,P,p);
   touch(S.cur); S.pending=null; renderModal();
   // Ce qui apparaît dans « À la table » (lot T5) : Repères et Ressources se calculent seuls, on dit au joueur ce qui vient d'y entrer
   const newRep=reperesAuto(ch,D1).filter(id=>!rep0.includes(id)).map(id=>TILE_CAT.reperes[id]||id), newRes=D1.res.map(r=>r.name).filter(n=>!res0.includes(n));

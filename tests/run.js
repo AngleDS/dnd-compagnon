@@ -592,6 +592,15 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.evaluate(() => { S.W.level = 1; S.W.askGuide = false; render(); }); await p.click('.wswitch'); eq(await p.evaluate(() => [S.W.mode, !!document.querySelector('.wask')]), ['guide', false], 'niveau 1 : bascule directe');
   });
 
+  await test('Montée de niveau : rubriques et application partagées (lvlBody, lvlApplyTo), sans fenêtre ni historique', async p => {
+    await open(p);
+    const id = await newWizardChar(p, { cls: 'magicien', bg: 'srd:sage', sp: 'srd:nain' });
+    eq(await p.evaluate(id => { S.rv = null; S.pending = null; renderModal(); const ch = S.docs[id], p = levelPlan(ch), b = lvlBody(ch, { hp: 'avg' }, p, (k, i) => 'data-x="' + k + (i !== undefined ? '.' + i : '') + '"');
+      return [/data-x="hp"/.test(b), /data-x="spl\.0"/.test(b), /data-lu/.test(b), /Ce que tu gagnes/.test(b)]; }, id), [true, true, false, true], 'rubriques produites avec l’attribut demandé');
+    eq(await p.evaluate(id => { const c = JSON.parse(JSON.stringify(S.docs[id])), log = (c.rollLog || []).length, p = levelPlan(c), sp = classSpells(p.D0, null, 1)[0].ref;
+      const r = lvlApplyTo(c, { hp: 'avg', spl: [sp] }, p); return [c.level, c.spells.some(s => s.ref === sp), (c.rollLog || []).length === log, r.gain === p.hpAvg, !!S.pending, S.docs[id].level]; }, id), [2, true, true, true, false, 1], 'niveau appliqué à une copie, sans historique ni fenêtre, la vraie fiche intacte');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],
