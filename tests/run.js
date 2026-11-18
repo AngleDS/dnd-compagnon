@@ -57,6 +57,24 @@ async function open(p, o = {}) {
   }, o);
   await p.goto('file://' + FILE); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.CAT);
 }
+// Base en ligne de l'artefact simulée (chantier 24) : __db.store (fiches en ligne), __db.writes, __db.fail (échecs à venir, code __db.code).
+// o.pend : copie d'attente déjà présente sur l'appareil avant l'ouverture.
+async function openCloud(p, o = {}) {
+  await p.addInitScript(o => {
+    if (o.pend) localStorage.setItem('registre-attente', JSON.stringify(o.pend));
+    const copy = x => JSON.parse(JSON.stringify(x)), store = copy(o.docs || {});
+    const W = window.__db = { store, writes: [], fail: o.fail || 0, code: o.code || 'unavailable' };
+    const err = () => { if (W.fail > 0) { W.fail--; throw { code: W.code }; } };
+    const col = {
+      onSnapshot: cb => { setTimeout(() => cb({ metadata: { fromCache: false }, docs: Object.keys(store), docChanges: () => Object.keys(store).map(id => ({ type: 'added', doc: { id, data: () => copy(store[id]) } })) }), 30); return () => {}; },
+      doc: id => ({ get: async () => ({ exists: id in store, data: () => copy(store[id]) }),
+        set: async d => { err(); W.writes.push(['set', id]); store[id] = copy(d); },
+        delete: async () => { err(); W.writes.push(['delete', id]); delete store[id]; } })
+    };
+    window.claude = { use: async n => n === 'db' ? { collection: () => col } : n === 'user' ? { id: async () => 'u_test' } : null };
+  }, o);
+  await p.goto('file://' + FILE); await p.waitForFunction(() => typeof S !== 'undefined' && S.C && S.mode === 'cloud' && S.loaded);
+}
 // Mode direct : « Créer » ouvre la relecture, qui crée vraiment (suites de l'audit, 17 nov. 2026)
 const wcreateClick = async p => { await p.click('[data-act="wcreate"]'); if (await p.locator('.wreview [data-act="wcreate"][data-ok]').count()) await p.click('.wreview [data-act="wcreate"][data-ok]'); };
 const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object.assign(W, { method: 'std', std: { for: 15, dex: 14, con: 13, int: 12, sag: 10, cha: 8 }, name: 'Test' }, w);
@@ -1144,6 +1162,120 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
       return { present: !!saved.docs.perso_rapide, version: saved.dataVersion, dirty: !!S.dirty.perso_rapide };
     });
     eq(r, { present: true, version: 1, dirty: false }, 'sauvegarde immédiate');
+  });
+
+  // Chantier 24, lot 1 : plus aucune perte silencieuse
+  await test('Sauvegarde : deux onglets ne s’écrasent plus (chacun n’écrit que ses fiches)', async p => {
+    await open(p); const q = await p.context().newPage(); await open(q);
+    await p.evaluate(() => { S.docs.perso_x = { type: 'perso', name: 'Xéna', level: 1 }; S.docs.perso_y = { type: 'perso', name: 'Yorick', level: 1 }; touch('perso_x'); touch('perso_y'); flushLocalNow(); });
+    await q.waitForFunction(() => S.docs.perso_x && S.docs.perso_y); // l'autre onglet reprend les nouvelles fiches
+    await p.evaluate(() => { S.docs.perso_x.level = 4; touch('perso_x'); flushLocalNow(); });
+    await q.waitForFunction(() => S.docs.perso_x.level === 4);
+    const r = await q.evaluate(() => {
+      S.docs.perso_x = { type: 'perso', name: 'Xéna', level: 1, updatedAt: 1 }; S.base.perso_x = 1; // onglet resté ouvert avec une mémoire en retard
+      S.docs.perso_y.level = 2; touch('perso_y'); flushLocalNow();
+      const st = JSON.parse(localStorage.getItem('registre-docs')).docs;
+      return { x: st.perso_x.level, y: st.perso_y.level, memX: S.docs.perso_x.level, copies: Object.values(st).filter(d => /copie du/.test(d.name || '')).length };
+    });
+    eq(r, { x: 4, y: 2, memX: 4, copies: 0 }, 'le niveau 4 fait dans l’autre onglet est gardé');
+  });
+
+  await test('Sauvegarde : même fiche modifiée dans deux onglets → la plus récente garde son nom, l’autre devient une copie', async p => {
+    await open(p); const q = await p.context().newPage(); await open(q);
+    await p.evaluate(() => { S.docs.perso_x = { type: 'perso', name: 'Xéna', level: 1 }; touch('perso_x'); flushLocalNow(); });
+    await q.waitForFunction(() => !!S.docs.perso_x);
+    await q.evaluate(() => { S.docs.perso_x.level = 3; touch('perso_x'); S.docs.perso_x.updatedAt = Date.now() - 5000; }); // modifiée ici, pas encore écrite
+    await p.evaluate(() => { S.docs.perso_x.level = 5; touch('perso_x'); flushLocalNow(); });
+    await q.waitForTimeout(100);
+    const r = await q.evaluate(() => {
+      flushLocalNow(); S.cur = null; S.view = 'list'; render();
+      const st = JSON.parse(localStorage.getItem('registre-docs')).docs, copies = Object.values(st).filter(d => /^Xéna \(copie du \d\d\/\d\d à \d+ h \d\d\)$/.test(d.name || ''));
+      return { kept: st.perso_x.level, copies: copies.map(d => d.level), list: document.getElementById('app').innerText.includes('Xéna (copie du'), banner: document.getElementById('banner').innerText };
+    });
+    eq([r.kept, r.copies, r.list], [5, [3], true], 'version la plus récente sous son nom, l’autre en copie visible');
+    ok(/Rien n'est perdu/.test(r.banner), 'message expliquant la copie : ' + r.banner);
+    const p2 = await p.evaluate(async () => { await new Promise(r => setTimeout(r, 100)); return persos().map(x => x.name).filter(n => /copie du/.test(n)).length; });
+    eq(p2, 1, 'le premier onglet voit aussi la copie');
+  });
+
+  await test('Sauvegarde : fiche supprimée ici mais modifiée dans un autre onglet → gardée', async p => {
+    await open(p); const q = await p.context().newPage(); await open(q);
+    await p.evaluate(() => { S.docs.perso_x = { type: 'perso', name: 'Xéna', level: 1 }; touch('perso_x'); flushLocalNow(); });
+    await q.waitForFunction(() => !!S.docs.perso_x);
+    await q.evaluate(() => { S.base.perso_x = 0; }); // l'autre onglet n'a pas vu la dernière version
+    await p.evaluate(() => { S.docs.perso_x.level = 6; touch('perso_x'); flushLocalNow(); });
+    await q.waitForTimeout(100);
+    const r = await q.evaluate(() => { S.docs.perso_x = { type: 'perso', name: 'Xéna', level: 1, updatedAt: 1 }; S.base.perso_x = 1; removeDoc('perso_x');
+      return { st: (JSON.parse(localStorage.getItem('registre-docs')).docs.perso_x || {}).level, mem: (S.docs.perso_x || {}).level, banner: document.getElementById('banner').innerText }; });
+    eq([r.st, r.mem], [6, 6], 'fiche gardée');
+    ok(/la fiche est gardée/.test(r.banner), 'message : ' + r.banner);
+  });
+
+  await test('Sauvegarde en ligne : une version plus récente en ligne n’est jamais écrasée', async p => {
+    await openCloud(p, { docs: { perso_x: { type: 'perso', name: 'Xéna', level: 1, updatedAt: 1000 } } });
+    const r = await p.evaluate(async () => {
+      __db.store.perso_x = { type: 'perso', name: 'Xéna', level: 4, updatedAt: Date.now() - 1000 }; // montée de niveau faite sur un autre appareil, pas reçue ici (veille)
+      S.docs.perso_x.hp = { cur: 3, temp: 0 }; touch('perso_x'); await flush('perso_x'); await new Promise(r => setTimeout(r, 100));
+      const st = __db.store, copy = Object.entries(st).find(([k, d]) => /^Xéna \(copie du /.test(d.name));
+      return { kept: [st.perso_x.level, st.perso_x.hp && st.perso_x.hp.cur], copy: copy && [copy[1].level, !!copy[1].hp], mem: Object.keys(S.docs).length, banner: document.getElementById('banner').innerText };
+    });
+    eq([r.kept, r.copy, r.mem], [[1, 3], [4, false], 2], 'modification d’ici gardée sous son nom, version d’ailleurs rangée en copie');
+    ok(/Rien n'est perdu/.test(r.banner), 'message : ' + r.banner);
+  });
+
+  await test('Sauvegarde en ligne : un échec garde la fiche, réessaie, puis enregistre', async p => {
+    await openCloud(p, { docs: { perso_x: { type: 'perso', name: 'Xéna', level: 1, updatedAt: 1000 } }, fail: 2 });
+    await p.evaluate(() => { S.docs.perso_x.level = 2; touch('perso_x'); });
+    await p.waitForFunction(() => S.saveError && /Pas encore enregistré en ligne/.test(document.getElementById('banner').innerText));
+    const mid = await p.evaluate(() => ({ dirty: !!S.dirty.perso_x, pend: JSON.parse(localStorage.getItem('registre-attente')).docs.perso_x.d.level, banner: document.getElementById('banner').innerText }));
+    eq([mid.dirty, mid.pend], [true, 2], 'fiche toujours à enregistrer et copie d’attente sur l’appareil');
+    ok(/gardées sur cet appareil/.test(mid.banner), 'message : ' + mid.banner);
+    await p.waitForFunction(() => __db.store.perso_x.level === 2, null, { timeout: 10000 });
+    await p.waitForTimeout(50);
+    eq(await p.evaluate(() => [document.getElementById('banner').innerText.trim(), S.saveError, localStorage.getItem('registre-attente')]), ['', false, null], 'message retiré et copie d’attente effacée une fois enregistré');
+  });
+
+  await test('Sauvegarde en ligne : fermeture → envoi immédiat, puis reprise à l’ouverture suivante', async p => {
+    const docs = { perso_x: { type: 'perso', name: 'Xéna', level: 1, updatedAt: 1000 } };
+    await openCloud(p, { docs, fail: 99 });
+    const a = await p.evaluate(() => { S.docs.perso_x.level = 3; touch('perso_x'); window.dispatchEvent(new PageTransitionEvent('pagehide'));
+      return { tried: __db.fail < 99, pend: JSON.parse(localStorage.getItem('registre-attente')).docs.perso_x.d.level }; });
+    eq(a, { tried: true, pend: 3 }, 'envoi tenté sans attendre et copie d’attente écrite');
+    const ctx = p.context(); await p.close();
+    const q = await ctx.newPage(); await openCloud(q, { docs });
+    await q.waitForFunction(() => __db.store.perso_x.level === 3);
+    await q.waitForTimeout(50);
+    eq(await q.evaluate(() => [S.docs.perso_x.level, localStorage.getItem('registre-attente'), Object.keys(S.docs).length]), [3, null, 1], 'modification renvoyée à l’ouverture suivante, sans copie inutile');
+  });
+
+  await test('Sauvegarde en ligne : reprise à l’ouverture sans écraser une version plus récente', async p => {
+    const pend = { v: 1, uid: 'u_test', at: 2000, docs: { perso_x: { d: { type: 'perso', name: 'Xéna', level: 3, updatedAt: 2000 }, b: 1000 } } };
+    await openCloud(p, { docs: { perso_x: { type: 'perso', name: 'Xéna', level: 4, updatedAt: 5000 } }, pend });
+    await p.waitForFunction(() => Object.keys(__db.store).length === 2);
+    await p.waitForTimeout(50);
+    const r = await p.evaluate(() => ({ kept: __db.store.perso_x.level, copy: Object.values(__db.store).filter(d => /^Xéna \(copie du /.test(d.name)).map(d => d.level), pend: localStorage.getItem('registre-attente'), banner: document.getElementById('banner').innerText }));
+    eq([r.kept, r.copy, r.pend], [4, [3], null], 'version en ligne plus récente gardée, modification en attente rangée en copie');
+    ok(/Rien n'est perdu/.test(r.banner), 'message : ' + r.banner);
+  });
+
+  await test('Sauvegarde en ligne : l’ouverture n’écrit rien quand rien n’est en attente', async p => {
+    await openCloud(p, { docs: { perso_x: { type: 'perso', name: 'Xéna', level: 1, updatedAt: 1000 } } });
+    await p.waitForTimeout(300);
+    eq(await p.evaluate(() => __db.writes), [], 'aucune écriture');
+  });
+
+  await test('Sauvegarde : stockage durable demandé, alerte Safari d’iPhone fermable', async p => {
+    await p.addInitScript(() => { window.__persist = 0; try { Object.defineProperty(navigator, 'storage', { configurable: true, value: { persisted: async () => false, persist: async () => { window.__persist++; return true; } } }); } catch (e) {} });
+    await open(p);
+    await p.waitForFunction(() => window.__persist >= 1);
+    await p.setViewportSize({ width: 390, height: 844 });
+    const r = await p.evaluate(() => { iosTab = () => true; loadLocal(); return { text: document.getElementById('banner').innerText, wide: document.documentElement.scrollWidth > window.innerWidth }; });
+    ok(r.text.includes('Sur l\'écran d\'accueil') && r.text.includes('Exporter'), 'conseil affiché : ' + r.text);
+    ok(!r.wide, 'rien ne dépasse en largeur iPhone');
+    await p.click('#banner [data-act="bannerClose"]');
+    const after = await p.evaluate(() => { loadLocal(); return document.getElementById('banner').innerText; });
+    ok(!after.includes('écran d\'accueil') && after.includes('Mode local'), 'alerte fermée pour de bon : ' + after);
+    eq(await p.evaluate(() => { iosTab = () => false; return typeof navigator.standalone; }), 'undefined', 'Chromium n’est pas un iPhone');
   });
 
   await test('Import : export valide accepté, fichiers dangereux ou incohérents refusés sans ajout partiel', async p => {
