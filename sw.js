@@ -1,5 +1,5 @@
 const PREFIX='dnd-compagnon:'+self.registration.scope+':';
-const CACHE=PREFIX+"04fe692c7ab9";
+const CACHE=PREFIX+"356947bb2ca4";
 const ASSETS=["./", "./index.html", "./manifest.webmanifest", "./pwa.js", "./fonts/fonts.css", "./fonts/font-0.ttf", "./fonts/font-1.ttf", "./fonts/font-2.ttf", "./fonts/font-3.ttf", "./fonts/font-4.ttf", "./fonts/font-5.ttf", "./fonts/font-6.ttf", "./icons/apple-touch-icon.png", "./icons/icon-192.png", "./icons/maskable-512.png", "./icons/icon-512.png"];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));});
 // No skipWaiting: existing sessions finish on their current version.
