@@ -14,7 +14,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 const norm = s => String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’']/g,"'").trim();
 const AIDE="https://www.aidedd.org";
-const aideSlug = s => norm(s).replace(/'/g,"-").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+const aideSlug = s => norm(s).replace(/œ/g,"oe").replace(/æ/g,"ae").replace(/'/g,"-").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 function aideGuess(h){ const sl=aideSlug(h.name);
   if(h.kind==="sort") return AIDE+"/spell/fr/"+sl; if(h.kind==="don") return AIDE+"/feat/fr/"+sl; if(h.kind==="objet") return AIDE+"/magic-item/fr/"+sl;
   if(h.kind==="classe") return AIDE+"/regles-24/classes/"+sl+"/";

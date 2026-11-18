@@ -778,6 +778,27 @@ const newWizardChar = (p, w) => p.evaluate(w => { const W = S.W = wNew(); Object
     await p.click('#modal [data-k="wx:abil:1"]'); t = await tip(); eq([t[1], t[2]], [true, true], 'bulle à 390 px'); await p.setViewportSize({ width: 1200, height: 900 });
   });
 
+  await test('Création : lien AideDD sous les explications des règles de base, lien de la fiche hors SRD', async p => {
+    await open(p);
+    const r = await p.evaluate(() => ({
+      sort: wxAide('spell', 'srd:boule-de-feu'), oeil: wxAide('spell', 'srd:' + S.C.spells.find(s => /Œil du mage/.test(s.name)).id),
+      apos: wxAide('spell', 'srd:chaine-declairs'), autre: wxAide('spell', 'srd:disque-flottant'), aucun: wxAide('spell', 'srd:terreur'),
+      don: wxAide('feat', 'srd:vigilant'), donFix: wxAide('feat', 'srd:armes-a-deux-mains'), cls: wxAide('cls', 'roublard'),
+      sub: wxAide('sub', 'srd:credo-de-la-paume'), bg: wxAide('bg', 'srd:sage'), sp: wxAide('sp', 'srd:nain'), abil: wxAide('abil', '1'), hors: wxAide('spell', 'hb:x') }));
+    eq(r, { sort: 'https://www.aidedd.org/spell/fr/boule-de-feu', oeil: 'https://www.aidedd.org/spell/fr/oeil-du-mage', apos: 'https://www.aidedd.org/spell/fr/chaine-d-eclairs',
+      autre: 'https://www.aidedd.org/spell/fr/disque-flottant-de-tenser', aucun: '', don: 'https://www.aidedd.org/feat/fr/vigilant', donFix: 'https://www.aidedd.org/feat/fr/arme-a-deux-mains',
+      cls: 'https://www.aidedd.org/regles-24/classes/roublard/', sub: 'https://www.aidedd.org/regles-24/classes/moine/#paume',
+      bg: 'https://www.aidedd.org/regles-24/origines-des-personnages/description-des-historiques/#sage',
+      sp: 'https://www.aidedd.org/regles-24/origines-des-personnages/description-des-especes/#nain', abil: '', hors: '' }, 'adresses AideDD');
+    await p.evaluate(() => { const W = S.W = wNew(); Object.assign(W, { name: 'Lien', cls: 'magicien', bg: 'srd:sage', sp: 'srd:humain', level: 1 }); S.view = 'wizard'; W.open = 'Classe'; render(); });
+    await p.click('#modal .wchosen [data-k="wx:cls:magicien"]');
+    const l = await p.evaluate(() => { const t = document.getElementById('tip'), a = t.querySelector('.wxaide a'), txt = t.querySelector('.tiptext'); return [!!a && a.href, a && a.textContent.trim(), a && txt && !!(txt.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING), a && a.target]; });
+    eq(l, ['https://www.aidedd.org/regles-24/classes/magicien/', 'Voir sur AideDD ↗', true, '_blank'], 'lien sous le texte, nouvel onglet');
+    await p.click('#tip [data-act="tipclose"]');
+    await p.evaluate(() => { S.W.open = 'Caractéristiques'; render(); }); await p.click('#modal [data-k="wx:abil:1"]');
+    ok(await p.evaluate(() => !document.querySelector('#tip .wxaide')), 'pas de lien pour une explication générale');
+  });
+
   for (const [label, o, want, noteRe] of [
     ['texte réel', {}, 'tabs_close:seed', null],
     ['réponse structurée', { ps: { content: [{ type: 'text', text: '{}' }], structuredContent: { tabId: 't42' }, payload: { tabId: 't42' } } }, 'tabs_close:t42', null],

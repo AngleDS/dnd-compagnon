@@ -106,7 +106,30 @@ const W_ABIL={for:"puissance physique : attaques au corps à corps avec la plupa
   sag:"perception et intuition : sorts du clerc, du druide et du rôdeur, Perception, Intuition, Médecine, Survie, Dressage.",
   cha:"présence et personnalité : sorts du barde, de l'ensorceleur, de l'occultiste et du paladin, Persuasion, Tromperie, Intimidation, Représentation."};
 function wxI(kind,ref,lab){ return ref&&/^(srd:|hb:)/.test(String(ref))||(ref&&["abil","skills","cls"].includes(kind))?`<button class="btn small ghost wxi" type="button" data-act="tip" data-k="wx:${kind}:${esc(String(ref))}" aria-label="Explication${lab?" : "+esc(lab):""}">${lab?esc(lab):"i"}</button>`:""; }
-function wxTip(spec){ const i=spec.indexOf(":"), kind=spec.slice(0,i), ref=spec.slice(i+1), P=t=>`<div class="prose tiptext">${prose(t||"")||`<p class="muted">Pas encore de description.</p>`}</div>`, h=hb(ref);
+/* Lien AideDD sous l'explication d'un contenu des règles de base (adresses vérifiées le 17 nov. 2026). Les sorts et dons
+   dont AideDD utilise un autre nom ont leur adresse ici ; null = pas de page trouvée, donc pas de lien. Hors SRD : le lien de la fiche. */
+const AIDE_FIX={spell:{"armure-du-mage":"armure-de-mage","aspersion-acide":"aspersion-d-acide","aura-magique-de-larcaniste":"aura-magique-de-nystul",
+  "chien-de-garde":"chien-de-garde-de-mordenkainen","coffre-secret":"coffre-secret-de-leomund","convocations-instantanees":"convocations-instantanees-de-drawmij",
+  "danse-irresistible":"danse-irresistible-d-otto","disque-flottant":"disque-flottant-de-tenser","epee-arcanique":"epee-de-mordenkainen","fleche-acide":"fleche-acide-de-melf",
+  "fou-rire":"fou-rire-de-tasha","lien-telepathique":"lien-telepathique-de-rary","main-arcanique":"main-de-bigby","main-du-mage":"main-de-mage",
+  "manoir-somptueux":"manoir-somptueux-de-mordenkainen","petite-hutte":"petite-hutte-de-leomund","sanctuaire-prive":"sanctuaire-prive-de-mordenkainen",
+  "sphere-glacee":"sphere-glacee-d-otiluke","sphere-resiliente":"sphere-resiliente-d-otiluke","tentacules-noirs":"tentacules-noirs-d-evard",
+  "marche-sur-londe":null,"possession":null,"terreur":null,"verrou-magique":null},
+  feat:{"armes-a-deux-mains":"arme-a-deux-mains","faveur-de-vision-lucide":null},
+  sub:{"voie-du-berserker":"berserker","college-du-savoir":"savoir","domaine-de-la-vie":"vie","cercle-de-la-terre":"terre","sorcellerie-draconique":"draconique",
+  "champion":"champion","evocateur":"evocateur","credo-de-la-paume":"paume","protecteur-fielon":"fielon","serment-de-devotion":"devotion","chasseur":"chasseur","voleur":"voleur"}};
+function wxAide(kind,ref){ const id=String(ref||"").replace(/^srd:/,""), fix=(m,dflt)=>m&&id in m?m[id]:dflt, ORI=AIDE+"/regles-24/origines-des-personnages/";
+  if(!String(ref).startsWith("srd:")&&kind!=="cls") return "";
+  if(kind==="spell"){ const sp=S.idx.spells[id]; const sl=sp?fix(AIDE_FIX.spell,aideSlug(sp.name)):null; return sl?AIDE+"/spell/fr/"+sl:""; }
+  if(kind==="feat"){ const f=S.C.feats.find(x=>x.id===id); const sl=f?fix(AIDE_FIX.feat,aideSlug(f.name)):null; return sl?AIDE+"/feat/fr/"+sl:""; }
+  if(kind==="cls") return S.C.classes.some(c=>c.id===id)?AIDE+"/regles-24/classes/"+id+"/":"";
+  if(kind==="sub"){ for(const c of S.C.classes) if((c.subclasses||[]).some(z=>z.id===id)) return AIDE+"/regles-24/classes/"+c.id+"/#"+(AIDE_FIX.sub[id]||"sous-classes"); return ""; }
+  if(kind==="bg") return srd("backgrounds",ref)?ORI+"description-des-historiques/#"+id:"";
+  if(kind==="sp") return srd("species",ref)?ORI+"description-des-especes/#"+id:"";
+  return ""; }
+function wxTip(spec){ const html=wxTipBody(spec), i=spec.indexOf(":"), u=html&&wxAide(spec.slice(0,i),spec.slice(i+1));
+  return html+(u?`<div class="hbfoot muted wxaide" style="font-size:var(--fs-sm);margin-top:8px">${linkHtml({link:u})}</div>`:""); }
+function wxTipBody(spec){ const i=spec.indexOf(":"), kind=spec.slice(0,i), ref=spec.slice(i+1), P=t=>`<div class="prose tiptext">${prose(t||"")||`<p class="muted">Pas encore de description.</p>`}</div>`, h=hb(ref);
   const tail=x=>h?hbFoot(h):"";
   if(kind==="abil") return tipHead("Les caractéristiques","À quoi elles servent")+`<div class="prose tiptext"><p>Chaque caractéristique donne un modificateur (+2 pour 14 ou 15, +3 pour 16 ou 17…), ajouté aux jets qui l'utilisent.</p>${AB.map(a=>`<p><b>${ABN[a]}</b> : ${esc(W_ABIL[a])}</p>`).join("")}</div>`;
   if(kind==="skills") return tipHead("Les compétences","À quoi elles servent")+`<div class="prose tiptext">${ref.split(",").map(id=>S.C.skills.find(k=>k.id===id)).filter(Boolean).map(k=>`<p><b>${esc(k.name)}</b> (${esc(ABN[k.ability]||"")})${k.examples?" : "+esc(k.examples):""}</p>`).join("")}</div>`;
